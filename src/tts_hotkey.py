@@ -54,15 +54,23 @@ def _speak_and_send(text: str, backspaces: int):
                 member = os.getenv('DISCORD_MEMBER_ID')
                 if member:
                     payload['member_id'] = member
-                resp = requests.post(discord_bot_url.rstrip('/') + '/speak', json=payload, timeout=10)
-                if resp.status_code == 200:
+                url = discord_bot_url.rstrip('/') + '/speak'
+                print(f"[tts_hotkey] POST -> {url} payload={payload}")
+                resp = requests.post(url, json=payload, timeout=10)
+                print(f"[tts_hotkey] bot response: {resp.status_code} {resp.text!r}")
+                if resp.ok:
                     # sent to bot; skip local playback
                     for _ in range(backspaces):
                         keyboard.send('backspace')
                     return
+                else:
+                    print(f"[tts_hotkey] Bot returned non-OK status, falling back to local playback")
             except Exception:
                 # fall back to local playback on error
-                pass
+                import traceback
+                print('[tts_hotkey] Error sending to Discord bot:')
+                traceback.print_exc()
+                print('[tts_hotkey] Falling back to local playback')
 
         if _sd_available and out_device_name:
             # create temporary wav file
