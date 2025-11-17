@@ -6,3 +6,4 @@ discord.py
 aiohttp
 requests
 pynacl
+flask
