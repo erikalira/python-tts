@@ -6,7 +6,7 @@ can check bot health or forward requests.
 
 Run from project root or from `src/`:
 
-    python src\run_with_flask.py
+    python src/run_with_flask.py
 
 Environment variables:
   - DISCORD_BOT_PORT: port used by the bot's internal aiohttp server (default: 5000)
@@ -27,7 +27,8 @@ def home():
 
 
 def run_flask():
-    port = int(os.getenv('FLASK_PORT', '8080'))
+    # Prefer the service PORT env var (Render provides $PORT). Fallback to FLASK_PORT or 8080.
+    port = int(os.getenv('PORT', os.getenv('FLASK_PORT', '8080')))
     # disable the reloader; run in threaded mode so it cooperates with background thread
     app.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
 
@@ -38,9 +39,10 @@ if __name__ == '__main__':
     t.start()
 
     # import and start the existing discord bot
-    # `discord_bot.run_bot()` blocks and runs the event loop inside asyncio.run
+    # Use an explicit package import so imports work both when running the module
+    # directly and when executed via runpy from the project root.
     try:
-        from discord_bot import run_bot
+        from src.discord_bot import run_bot
     except Exception as e:
         print('Failed to import discord bot:', e)
         raise
