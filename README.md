@@ -102,6 +102,27 @@ python src\tts_hotkey.py
 
 Type `{hello world}` in any application to trigger speech. When `DISCORD_BOT_URL` is set the hotkey will try to POST the text to the bot endpoint and skip local playback if the bot responds with success.
 
+### Optional: Run the bot with a small Flask health endpoint
+
+If you want a very small HTTP health/monitoring endpoint in front of the bot (served by Flask) you can use the provided `src/run_with_flask.py` script. It starts a lightweight Flask server in a background thread (default port `8080`) and then runs the existing Discord bot process. This is useful when you want a simple reachable URL such as `http://127.0.0.1:8080/` to indicate the process is alive.
+
+From the project root run:
+
+```powershell
+# optional: set environment variables
+$env:DISCORD_TOKEN = "YOUR_TOKEN_HERE"
+$env:FLASK_PORT = "8080"        # optional, defaults to 8080
+$env:DISCORD_BOT_PORT = "5000" # optional, bot's aiohttp port (default 5000)
+
+python .\src\run_with_flask.py
+```
+
+Notes:
+- The Flask endpoint only provides a simple `/` route that returns `Bot online!` by default. It does not proxy or replace the bot's `/speak` endpoint (the bot still exposes `/speak` on `127.0.0.1:$DISCORD_BOT_PORT`).
+- `use_reloader` is disabled in the Flask server to avoid multiple processes interfering with the bot.
+- Ensure `DISCORD_TOKEN` is set in the environment before running the script.
+
+
 ## Quick Manual Tests
 
 - Test the bot endpoint directly (without using the hotkey):
