@@ -1,2 +1,8 @@
 keyboard
 pyttsx3
+sounddevice
+soundfile
+discord.py
+aiohttp
+requests
+pynacl
