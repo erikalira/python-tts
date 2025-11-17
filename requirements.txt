@@ -5,3 +5,4 @@ soundfile
 discord.py
 aiohttp
 requests
+pynacl
