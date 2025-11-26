@@ -138,7 +138,70 @@ This starts:
 
 3. **Configure token:**
    - Add to `.env` file: `DISCORD_TOKEN=your_token_here`
-   - Or set environment variable
+   - Or set environment variable on Render
+
+## TTS Engine Configuration
+
+The bot supports two TTS engines with flexible configuration via environment variables:
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TTS_ENGINE` | `gtts` | Engine to use: `gtts` (Google TTS, best quality) or `pyttsx3` (espeak-ng, offline) |
+| `TTS_LANGUAGE` | `pt` | Language code for gTTS (e.g., `pt`, `en`, `es`, `fr`) |
+| `TTS_VOICE_ID` | `roa/pt-br` | Voice ID for pyttsx3/espeak-ng (e.g., `roa/pt-br`, `en-us`, `roa/es`) |
+
+### Configuration Examples
+
+**Default (gTTS with Portuguese):**
+```env
+TTS_ENGINE=gtts
+TTS_LANGUAGE=pt
+```
+
+**espeak-ng with Portuguese (Brazil):**
+```env
+TTS_ENGINE=pyttsx3
+TTS_VOICE_ID=roa/pt-br
+```
+
+**gTTS with English:**
+```env
+TTS_ENGINE=gtts
+TTS_LANGUAGE=en
+```
+
+**espeak-ng with Spanish:**
+```env
+TTS_ENGINE=pyttsx3
+TTS_VOICE_ID=roa/es
+```
+
+### Available espeak-ng Voices
+
+espeak-ng provides 200+ voices across many languages. Common voice IDs:
+- Portuguese (Brazil): `roa/pt-br`
+- Portuguese (Portugal): `roa/pt`
+- English (US): `en-us`
+- English (UK): `en-gb`
+- Spanish: `roa/es`
+- French: `roa/fr`
+- German: `gmw/de`
+- Italian: `roa/it`
+- Japanese: `ja`
+- Chinese (Mandarin): `sit/cmn`
+
+To see all available voices, check the startup logs when using `TTS_ENGINE=pyttsx3`.
+
+### Configuring on Render
+
+1. Go to Render Dashboard → Your Service → Environment
+2. Add environment variables:
+   - `TTS_ENGINE` = `gtts` (or `pyttsx3`)
+   - `TTS_LANGUAGE` = `pt` (or your preferred language)
+   - `TTS_VOICE_ID` = `roa/pt-br` (if using pyttsx3)
+3. Save changes (triggers automatic redeploy)
 
 ## Discord Bot Commands
 
@@ -146,6 +209,31 @@ Once the bot is running:
 - `/join` - Bot joins your current voice channel
 - `/leave` - Bot leaves the voice channel
 - `/speak <text>` - Bot speaks the provided text
+- `/config` - Configure TTS settings for your server (Admin only)
+
+### Using `/config` Command
+
+**View current configuration:**
+```
+/config
+```
+
+**Change to gTTS with English:**
+```
+/config engine:gtts language:en
+```
+
+**Change to espeak-ng with Portuguese (Brazil):**
+```
+/config engine:pyttsx3 voice_id:roa/pt-br
+```
+
+**Change to espeak-ng with Spanish:**
+```
+/config engine:pyttsx3 voice_id:roa/es
+```
+
+**Note:** Configuration set via `/config` is temporary and resets when the bot restarts. For permanent settings, use environment variables on Render.
 
 ## Architecture
 

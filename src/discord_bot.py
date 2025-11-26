@@ -31,6 +31,14 @@ load_dotenv(env_path, override=True)
 TOKEN = os.getenv('DISCORD_TOKEN')
 PORT = int(os.getenv('DISCORD_BOT_PORT', '5000'))
 
+# TTS Configuration
+# TTS_ENGINE: 'gtts' (default, Google TTS - best quality) or 'pyttsx3' (espeak-ng - offline)
+TTS_ENGINE = os.getenv('TTS_ENGINE', 'gtts').lower()
+# TTS_LANGUAGE: Language code for gTTS (e.g., 'pt', 'en', 'es') or voice ID for pyttsx3
+TTS_LANGUAGE = os.getenv('TTS_LANGUAGE', 'pt')
+# TTS_VOICE_ID: Specific voice ID for pyttsx3 (e.g., 'roa/pt-br' for Portuguese Brazil in espeak-ng)
+TTS_VOICE_ID = os.getenv('TTS_VOICE_ID', 'roa/pt-br')
+
 intents = discord.Intents.default()
 intents.voice_states = True
 
@@ -45,51 +53,95 @@ _tts_engine = None
 _tts_warning_shown = False
 _member_voice_cache = {}  # Cache: member_id -> voice_channel
 
-def get_tts_engine():
-    """Get or create a cached TTS engine instance."""
+# Server-specific TTS configuration (guild_id -> config dict)
+_guild_tts_config = {}  # Format: {guild_id: {'engine': 'gtts', 'language': 'pt', 'voice_id': 'roa/pt-br'}}
+
+def get_guild_config(guild_id):
+    """Get TTS configuration for a specific guild."""
+    if guild_id and guild_id in _guild_tts_config:
+        return _guild_tts_config[guild_id]
+    # Return global defaults
+    return {
+        'engine': TTS_ENGINE,
+        'language': TTS_LANGUAGE,
+        'voice_id': TTS_VOICE_ID
+    }
+
+def get_tts_engine(guild_id=None):
+    """Get or create a cached TTS engine instance based on configuration.
+    
+    Returns None if using gTTS (Google TTS), otherwise returns pyttsx3 engine.
+    """
     global _tts_engine, _tts_warning_shown
+    
+    config = get_guild_config(guild_id)
+    engine_type = config['engine']
+    
+    # Check if user wants to force gTTS (Google TTS)
+    if engine_type == 'gtts':
+        if not _tts_warning_shown:
+            logger.info(f"🎤 Using gTTS (Google Text-to-Speech) - Language: {TTS_LANGUAGE}")
+            logger.info("   Configure with TTS_ENGINE=pyttsx3 to use espeak-ng instead")
+            _tts_warning_shown = True
+        return None  # None triggers gTTS usage in the calling code
+    
+    # Initialize pyttsx3 engine (espeak-ng on Linux, SAPI5 on Windows)
     if _tts_engine is None:
-        # Use SAPI5 on Windows, default (eSpeak) on Linux
         if platform.system() == 'Windows':
             logger.info("🎤 Initializing TTS with SAPI5 (Windows native)")
-            _tts_engine = pyttsx3.init(driverName='sapi5')
+            try:
+                _tts_engine = pyttsx3.init(driverName='sapi5')
+            except Exception as e:
+                logger.error(f"Failed to initialize SAPI5: {e}")
+                logger.info("Falling back to gTTS")
+                return None
         else:
             try:
-                logger.info("🎤 Initializing TTS with pyttsx3 (will use espeak/espeak-ng on Linux)")
+                logger.info("🎤 Initializing TTS with pyttsx3 (espeak-ng on Linux)")
                 _tts_engine = pyttsx3.init()
             except Exception as e:
-                # Fallback: use gTTS (Google TTS) if eSpeak not available
                 if not _tts_warning_shown:
-                    logger.warning(f"pyttsx3 init failed: {e}. Will use gTTS as fallback.")
+                    logger.warning(f"pyttsx3 init failed: {e}. Falling back to gTTS.")
                     _tts_warning_shown = True
-                _tts_engine = None  # Will trigger gTTS usage
                 return None
+        
         if _tts_engine:
             _tts_engine.setProperty('rate', 180)
             
-            # Log available voices
+            # List and configure voices
             try:
                 voices = _tts_engine.getProperty('voices')
-                current_voice = _tts_engine.getProperty('voice')
-                logger.info(f"📢 Available TTS voices: {len(voices)}")
+                logger.info(f"📢 Available pyttsx3 voices: {len(voices)}")
                 
-                # Try to find Portuguese (Brazil) voice
-                pt_br_voice = None
+                # Try to set the configured voice
+                target_voice_id = config.get('voice_id', TTS_VOICE_ID)
+                target_voice = None
                 for voice in voices:
-                    logger.info(f"  Voice: {voice.name} (ID: {voice.id[:50]}...)")
-                    # Look for Portuguese/Brazil voice
-                    if 'brazil' in voice.id.lower() or 'pt-br' in voice.id.lower() or 'pt_br' in voice.id.lower():
-                        pt_br_voice = voice.id
-                        logger.info(f"  ✅ Found Portuguese (Brazil) voice!")
+                    voice_id_lower = voice.id.lower()
+                    # Check if voice matches configured voice ID
+                    if target_voice_id.lower() in voice_id_lower:
+                        target_voice = voice.id
+                        logger.info(f"  ✅ Found configured voice: {voice.name} (ID: {voice.id[:80]}...)")
+                        break
                 
-                # Set Portuguese voice if found
-                if pt_br_voice:
-                    _tts_engine.setProperty('voice', pt_br_voice)
-                    logger.info(f"🔊 Using Portuguese (Brazil) voice: {pt_br_voice[:80]}...")
-                else:
-                    logger.warning(f"⚠️ No Portuguese (Brazil) voice found, using default: {current_voice[:80]}...")
+                # If specific voice not found, list some options
+                if not target_voice:
+                    logger.warning(f"⚠️ Configured voice '{target_voice_id}' not found. Available voices:")
+                    for i, voice in enumerate(voices[:10]):  # Show first 10
+                        logger.info(f"    - {voice.name} (ID: {voice.id[:60]}...)")
+                    if len(voices) > 10:
+                        logger.info(f"    ... and {len(voices) - 10} more voices")
+                    logger.info(f"   Use /config command to set a different voice")
+                    target_voice = voices[0].id if voices else None
+                
+                # Set the voice
+                if target_voice:
+                    _tts_engine.setProperty('voice', target_voice)
+                    logger.info(f"🔊 Using voice: {target_voice[:80]}...")
+                    
             except Exception as e:
-                logger.warning(f"Could not list voices: {e}")
+                logger.warning(f"Could not configure voices: {e}")
+                
     return _tts_engine
 
 
@@ -187,20 +239,24 @@ async def handle_speak(request):
 
     def _save():
         try:
-            engine = get_tts_engine()
+            guild_id = voice_channel.guild.id if voice_channel and voice_channel.guild else None
+            config = get_guild_config(guild_id)
+            engine = get_tts_engine(guild_id)
             if engine is None:
-                # Fallback to gTTS (Google TTS) - works without eSpeak
-                logger.info("Using gTTS as fallback")
-                tts = gTTS(text=text, lang='pt')
+                # Using gTTS (Google TTS)
+                tts = gTTS(text=text, lang=config['language'])
                 tts.save(tmpname)
             else:
+                # Using pyttsx3 (espeak-ng on Linux, SAPI5 on Windows)
                 engine.save_to_file(text, tmpname)
                 engine.runAndWait()
         except Exception as e:
             # Last fallback: always use gTTS
-            logger.error(f'pyttsx3 TTS error: {e}, falling back to gTTS')
+            logger.error(f'TTS error: {e}, falling back to gTTS')
             try:
-                tts = gTTS(text=text, lang='pt')
+                guild_id = voice_channel.guild.id if voice_channel and voice_channel.guild else None
+                config = get_guild_config(guild_id)
+                tts = gTTS(text=text, lang=config['language'])
                 tts.save(tmpname)
             except Exception as e2:
                 logger.error(f'gTTS error: {e2}')
@@ -260,6 +316,10 @@ async def on_ready():
         print(f'   - {guild.name} (ID: {guild.id})')
     print(f'   PyNaCl: {"✅ Available" if HAS_PYNACL else "❌ Missing"}')
     print(f'   FFmpeg: {"✅ Available" if HAS_FFMPEG else "❌ Missing"}')
+    print(f'   TTS Engine: {TTS_ENGINE.upper()}')
+    print(f'   TTS Language: {TTS_LANGUAGE}')
+    if TTS_ENGINE == 'pyttsx3':
+        print(f'   TTS Voice ID: {TTS_VOICE_ID}')
     try:
         await tree.sync()
         print('✅ Slash commands synced')
@@ -340,26 +400,25 @@ async def speak(interaction: discord.Interaction, text: str):
     tmp.close()
 
     def _save():
-        global _tts_warning_shown
         try:
-            engine = get_tts_engine()
+            guild_id = interaction.guild.id if interaction.guild else None
+            config = get_guild_config(guild_id)
+            engine = get_tts_engine(guild_id)
             if engine is None:
-                # Fallback to gTTS (Google TTS) - works without eSpeak
-                if not _tts_warning_shown:
-                    logger.info("Using gTTS as fallback")
-                    _tts_warning_shown = True
-                tts = gTTS(text=text, lang='pt')
+                # Using gTTS (Google TTS)
+                tts = gTTS(text=text, lang=config['language'])
                 tts.save(tmpname)
             else:
+                # Using pyttsx3 (espeak-ng on Linux, SAPI5 on Windows)
                 engine.save_to_file(text, tmpname)
                 engine.runAndWait()
         except Exception as e:
             # Last fallback: always use gTTS
-            if not _tts_warning_shown:
-                logger.error(f'pyttsx3 TTS error: {e}, falling back to gTTS')
-                _tts_warning_shown = True
+            logger.error(f'TTS error: {e}, falling back to gTTS')
             try:
-                tts = gTTS(text=text, lang='pt')
+                guild_id = interaction.guild.id if interaction.guild else None
+                config = get_guild_config(guild_id)
+                tts = gTTS(text=text, lang=config['language'])
                 tts.save(tmpname)
             except Exception as e2:
                 logger.error(f'gTTS error: {e2}')
@@ -392,6 +451,107 @@ async def speak(interaction: discord.Interaction, text: str):
         except Exception:
             pass
         await interaction.followup.send(f'❌ Error playing audio: {e}', ephemeral=True)
+
+
+@tree.command(name='config', description='Configure TTS settings for this server (Admin only)')
+@app_commands.describe(
+    engine='TTS engine: gtts (Google TTS, best quality) or pyttsx3 (espeak-ng, offline)',
+    language='Language code for gTTS (pt, en, es, fr, etc.) or leave empty',
+    voice_id='Voice ID for pyttsx3/espeak-ng (e.g., roa/pt-br, en-us) or leave empty'
+)
+@app_commands.default_permissions(administrator=True)
+async def config(
+    interaction: discord.Interaction,
+    engine: str = None,
+    language: str = None,
+    voice_id: str = None
+):
+    """Configure TTS settings for this server."""
+    if not interaction.guild:
+        await interaction.response.send_message('This command can only be used in a server.', ephemeral=True)
+        return
+    
+    guild_id = interaction.guild.id
+    
+    # Get current config
+    current_config = get_guild_config(guild_id)
+    
+    # If no parameters, show current config
+    if engine is None and language is None and voice_id is None:
+        embed = discord.Embed(
+            title="🎤 TTS Configuration",
+            description=f"Current settings for **{interaction.guild.name}**",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="Engine", value=current_config['engine'].upper(), inline=True)
+        embed.add_field(name="Language", value=current_config['language'], inline=True)
+        embed.add_field(name="Voice ID", value=current_config['voice_id'], inline=True)
+        embed.add_field(
+            name="How to change",
+            value="Use `/config engine:gtts` or `/config engine:pyttsx3 voice_id:roa/pt-br`",
+            inline=False
+        )
+        embed.add_field(
+            name="Available Engines",
+            value="• **gtts** - Google TTS (best quality, online)\n• **pyttsx3** - espeak-ng (offline, robotic)",
+            inline=False
+        )
+        embed.add_field(
+            name="Common Languages (gTTS)",
+            value="• **pt** - Portuguese\n• **en** - English\n• **es** - Spanish\n• **fr** - French",
+            inline=False
+        )
+        embed.add_field(
+            name="Common Voice IDs (pyttsx3)",
+            value="• **roa/pt-br** - Portuguese (Brazil)\n• **en-us** - English (US)\n• **roa/es** - Spanish",
+            inline=False
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    
+    # Validate and update config
+    new_config = current_config.copy()
+    
+    if engine is not None:
+        engine = engine.lower()
+        if engine not in ['gtts', 'pyttsx3']:
+            await interaction.response.send_message(
+                '❌ Invalid engine. Use `gtts` or `pyttsx3`.',
+                ephemeral=True
+            )
+            return
+        new_config['engine'] = engine
+    
+    if language is not None:
+        new_config['language'] = language.lower()
+    
+    if voice_id is not None:
+        new_config['voice_id'] = voice_id
+    
+    # Save config
+    _guild_tts_config[guild_id] = new_config
+    
+    # Clear TTS engine cache to force reinitialization with new settings
+    global _tts_engine, _tts_warning_shown
+    _tts_engine = None
+    _tts_warning_shown = False
+    
+    # Show success message
+    embed = discord.Embed(
+        title="✅ TTS Configuration Updated",
+        description=f"New settings for **{interaction.guild.name}**",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="Engine", value=new_config['engine'].upper(), inline=True)
+    embed.add_field(name="Language", value=new_config['language'], inline=True)
+    embed.add_field(name="Voice ID", value=new_config['voice_id'], inline=True)
+    embed.add_field(
+        name="Note",
+        value="Settings are temporary and will reset when the bot restarts. Use environment variables for permanent settings.",
+        inline=False
+    )
+    
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def _start():
