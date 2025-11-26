@@ -8,6 +8,9 @@ from src.core.entities import AudioFile
 
 logger = logging.getLogger(__name__)
 
+# Timeout configuration
+IDLE_DISCONNECT_TIMEOUT = 180  # 3 minutes of inactivity before auto-disconnect
+
 
 class DiscordVoiceChannel(IVoiceChannel):
     """Discord voice channel wrapper.
@@ -24,6 +27,8 @@ class DiscordVoiceChannel(IVoiceChannel):
         """
         self._channel = channel
         self._voice_client: Optional[discord.VoiceClient] = None
+        self._disconnect_task: Optional[asyncio.Task] = None
+        self._last_activity: float = 0
     
     async def connect(self) -> None:
         """Connect to the voice channel."""
@@ -44,6 +49,9 @@ class DiscordVoiceChannel(IVoiceChannel):
     
     async def disconnect(self) -> None:
         """Disconnect from the voice channel."""
+        # Cancel any pending disconnect timer
+        self._cancel_disconnect_timer()
+        
         if self._voice_client and self._voice_client.is_connected():
             await self._voice_client.disconnect()
             self._voice_client = None
@@ -57,6 +65,9 @@ class DiscordVoiceChannel(IVoiceChannel):
         if not self._voice_client or not self._voice_client.is_connected():
             raise RuntimeError("Not connected to voice channel")
         
+        # Cancel any pending disconnect
+        self._cancel_disconnect_timer()
+        
         # Stop current playback if any
         if self._voice_client.is_playing():
             self._voice_client.stop()
@@ -68,6 +79,9 @@ class DiscordVoiceChannel(IVoiceChannel):
         # Wait for playback to finish
         while self._voice_client.is_playing():
             await asyncio.sleep(0.1)
+        
+        # Schedule auto-disconnect after idle timeout
+        self._schedule_disconnect()
     
     def is_connected(self) -> bool:
         """Check if connected to voice channel."""
@@ -77,6 +91,40 @@ class DiscordVoiceChannel(IVoiceChannel):
     def guild_id(self) -> int:
         """Get guild ID."""
         return self._channel.guild.id
+    
+    def _schedule_disconnect(self) -> None:
+        """Schedule automatic disconnect after idle timeout."""
+        import time
+        self._last_activity = time.time()
+        
+        # Cancel existing timer if any
+        self._cancel_disconnect_timer()
+        
+        # Schedule new disconnect
+        logger.info(f"[VOICE_CHANNEL] Scheduling auto-disconnect in {IDLE_DISCONNECT_TIMEOUT}s")
+        self._disconnect_task = asyncio.create_task(self._auto_disconnect())
+    
+    def _cancel_disconnect_timer(self) -> None:
+        """Cancel scheduled disconnect."""
+        if self._disconnect_task and not self._disconnect_task.done():
+            logger.info("[VOICE_CHANNEL] Cancelling scheduled disconnect (new activity)")
+            self._disconnect_task.cancel()
+            self._disconnect_task = None
+    
+    async def _auto_disconnect(self) -> None:
+        """Auto-disconnect after timeout."""
+        try:
+            await asyncio.sleep(IDLE_DISCONNECT_TIMEOUT)
+            
+            # Double-check we're still connected and idle
+            if self.is_connected():
+                logger.info(f"[VOICE_CHANNEL] Auto-disconnecting after {IDLE_DISCONNECT_TIMEOUT}s of inactivity")
+                await self.disconnect()
+                logger.info("[VOICE_CHANNEL] Auto-disconnect completed")
+        except asyncio.CancelledError:
+            logger.debug("[VOICE_CHANNEL] Auto-disconnect cancelled")
+        except Exception as e:
+            logger.error(f"[VOICE_CHANNEL] Error during auto-disconnect: {e}", exc_info=True)
 
 
 class DiscordVoiceChannelRepository(IVoiceChannelRepository):
