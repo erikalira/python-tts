@@ -18,6 +18,7 @@ from aiohttp import web
 import discord
 from discord import app_commands
 import shutil
+import platform
 
 env_path = Path(__file__).resolve().parents[1] / ".env"
 # override=True força o .env a sobrescrever variáveis de ambiente existentes
@@ -42,7 +43,11 @@ def get_tts_engine():
     """Get or create a cached TTS engine instance."""
     global _tts_engine
     if _tts_engine is None:
-        _tts_engine = pyttsx3.init()
+        # Use SAPI5 on Windows, default (eSpeak) on Linux
+        if platform.system() == 'Windows':
+            _tts_engine = pyttsx3.init(driverName='sapi5')
+        else:
+            _tts_engine = pyttsx3.init()
         _tts_engine.setProperty('rate', 180)
     return _tts_engine
 
