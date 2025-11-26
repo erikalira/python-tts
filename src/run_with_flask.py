@@ -29,8 +29,9 @@ def home():
 def run_flask():
     # Prefer the service PORT env var (Render provides $PORT). Fallback to FLASK_PORT or 8080.
     port = int(os.getenv('PORT', os.getenv('FLASK_PORT', '8080')))
-    # disable the reloader; run in threaded mode so it cooperates with background thread
-    app.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+    # In production, Gunicorn will handle the app. This is only for development.
+    # Use debug=False and disable reloader for production-like behavior
+    app.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False, debug=False)
 
 
 if __name__ == '__main__':

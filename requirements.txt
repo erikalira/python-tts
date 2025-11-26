@@ -8,3 +8,4 @@ requests
 pynacl
 flask
 python-dotenv
+gunicorn
