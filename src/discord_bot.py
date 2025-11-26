@@ -72,10 +72,22 @@ def get_tts_engine():
                 voices = _tts_engine.getProperty('voices')
                 current_voice = _tts_engine.getProperty('voice')
                 logger.info(f"📢 Available TTS voices: {len(voices)}")
-                for i, voice in enumerate(voices):
-                    is_current = "✅" if voice.id == current_voice else "  "
-                    logger.info(f"{is_current} Voice {i}: {voice.name} (ID: {voice.id[:50]}...)")
-                logger.info(f"🔊 Using voice: {current_voice[:80]}...")
+                
+                # Try to find Portuguese (Brazil) voice
+                pt_br_voice = None
+                for voice in voices:
+                    logger.info(f"  Voice: {voice.name} (ID: {voice.id[:50]}...)")
+                    # Look for Portuguese/Brazil voice
+                    if 'brazil' in voice.id.lower() or 'pt-br' in voice.id.lower() or 'pt_br' in voice.id.lower():
+                        pt_br_voice = voice.id
+                        logger.info(f"  ✅ Found Portuguese (Brazil) voice!")
+                
+                # Set Portuguese voice if found
+                if pt_br_voice:
+                    _tts_engine.setProperty('voice', pt_br_voice)
+                    logger.info(f"🔊 Using Portuguese (Brazil) voice: {pt_br_voice[:80]}...")
+                else:
+                    logger.warning(f"⚠️ No Portuguese (Brazil) voice found, using default: {current_voice[:80]}...")
             except Exception as e:
                 logger.warning(f"Could not list voices: {e}")
     return _tts_engine
