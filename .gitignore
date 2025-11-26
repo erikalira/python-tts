@@ -27,3 +27,9 @@ Thumbs.db
 test_espeak_voices.py
 *.wav
 *.mp3
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+.pytest_cache/
