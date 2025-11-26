@@ -258,7 +258,7 @@ async def leave(interaction: discord.Interaction):
 @app_commands.describe(text='Text to speak')
 async def speak(interaction: discord.Interaction, text: str):
     # Respond immediately to avoid timeout
-    await interaction.response.defer(ephemeral=False, thinking=True)
+    await interaction.response.defer(ephemeral=True, thinking=True)
     
     target_vc = None
     if interaction.guild and interaction.guild.voice_client and interaction.guild.voice_client.is_connected():
@@ -270,18 +270,18 @@ async def speak(interaction: discord.Interaction, text: str):
         if member and member.voice and member.voice.channel:
             try:
                     if not HAS_PYNACL:
-                        await interaction.followup.send('PyNaCl is required for voice support. Install it with `pip install pynacl` in the project venv.')
+                        await interaction.followup.send('PyNaCl is required for voice support. Install it with `pip install pynacl` in the project venv.', ephemeral=True)
                         return
                     if not HAS_FFMPEG:
-                        await interaction.followup.send('FFmpeg is required but not found in PATH.')
+                        await interaction.followup.send('FFmpeg is required but not found in PATH.', ephemeral=True)
                         return
                     target_vc = await member.voice.channel.connect()
             except Exception as e:
-                await interaction.followup.send(f'Could not join your channel: {e}')
+                await interaction.followup.send(f'Could not join your channel: {e}', ephemeral=True)
                 return
 
     if not target_vc:
-        await interaction.followup.send('No voice channel available to speak in.')
+        await interaction.followup.send('No voice channel available to speak in.', ephemeral=True)
         return
 
     loop = asyncio.get_running_loop()
@@ -330,13 +330,13 @@ async def speak(interaction: discord.Interaction, text: str):
         except Exception:
             pass
         
-        await interaction.followup.send('✅ Spoke the text.')
+        await interaction.followup.send('✅ Spoke the text.', ephemeral=True)
     except Exception as e:
         try:
             os.unlink(tmpname)
         except Exception:
             pass
-        await interaction.followup.send(f'❌ Error playing audio: {e}')
+        await interaction.followup.send(f'❌ Error playing audio: {e}', ephemeral=True)
 
 
 async def _start():
