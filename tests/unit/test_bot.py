@@ -10,32 +10,43 @@ class TestBot:
     async def test_main_creates_container(self):
         """Test that main creates and initializes container."""
         with patch('src.bot.Container') as MockContainer, \
-             patch('src.bot.Config') as MockConfig:
+             patch('src.bot.Config') as MockConfig, \
+             patch('src.bot.HTTPServer') as MockHTTPServer:
             
             # Mock config validation
             mock_config = Mock()
             mock_config.validate.return_value = (True, None)
+            mock_config.discord_bot_port = 5000
             MockConfig.return_value = mock_config
+            
+            # Mock HTTP server
+            mock_http_server = Mock()
+            mock_http_server.start = AsyncMock()
+            MockHTTPServer.return_value = mock_http_server
             
             # Mock container
             mock_container = Mock()
-            mock_container.http_server = Mock()
-            mock_container.http_server.start = AsyncMock()
+            mock_container.speak_controller = Mock()
             mock_container.discord_client = Mock()
-            mock_container.discord_client.start = AsyncMock()
+            # Make start raise an exception to stop the bot from running
+            mock_container.discord_client.start = AsyncMock(
+                side_effect=KeyboardInterrupt("Test interrupt")
+            )
             MockContainer.return_value = mock_container
             
             # Import and run
             from src.bot import main
             
-            # Should not raise exception
+            # Should handle KeyboardInterrupt gracefully
             try:
                 await main()
-            except Exception:
-                pass  # Bot will try to start, just testing initialization
+            except KeyboardInterrupt:
+                pass
             
             # Verify container was created
             MockContainer.assert_called_once()
+            # Verify HTTP server was started
+            mock_http_server.start.assert_called_once()
     
     async def test_main_validates_config(self):
         """Test that main validates configuration."""

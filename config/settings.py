@@ -18,7 +18,7 @@ class Config:
             env_file: Path to .env file or None to use default
         """
         if env_file is None:
-            env_file = Path(__file__).resolve().parents[2] / ".env"
+            env_file = Path(__file__).resolve().parents[1] / ".env"
         
         # Load environment variables
         load_dotenv(env_file, override=True)

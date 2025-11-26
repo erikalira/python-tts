@@ -46,7 +46,10 @@ async def main():
     except Exception as e:
         logger.error(f"Error running bot: {e}", exc_info=True)
     finally:
-        await http_server.stop()
+        try:
+            await http_server.stop()
+        except Exception as e:
+            logger.error(f"Error stopping HTTP server: {e}")
 
 
 def run():

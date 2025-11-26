@@ -192,3 +192,115 @@ class TestDiscordCommands:
         # Verify config was updated
         config = mock_config_repository.get_config(12345)
         assert config.engine == "pyttsx3"
+    
+    @pytest.mark.asyncio
+    async def test_handle_join_no_voice_channel(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository
+    ):
+        """Test /join when user is not in voice channel."""
+        speak_use_case = SpeakTextUseCase(
+            mock_tts_engine,
+            mock_channel_repository,
+            mock_config_repository
+        )
+        config_use_case = ConfigureTTSUseCase(mock_config_repository)
+        
+        tree = Mock(spec=app_commands.CommandTree)
+        tree.command = Mock(return_value=lambda func: func)
+        
+        commands = DiscordCommands(
+            tree,
+            speak_use_case,
+            config_use_case,
+            mock_channel_repository
+        )
+        
+        # Mock interaction with user not in voice
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.voice = None
+        interaction.guild = None
+        interaction.response = AsyncMock()
+        interaction.followup = AsyncMock()
+        
+        await commands._handle_join(interaction)
+        
+        interaction.response.send_message.assert_called_once()
+        call_args = interaction.response.send_message.call_args
+        assert "not connected" in call_args[0][0].lower()
+    
+    @pytest.mark.asyncio
+    async def test_handle_leave(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository
+    ):
+        """Test /leave command."""
+        speak_use_case = SpeakTextUseCase(
+            mock_tts_engine,
+            mock_channel_repository,
+            mock_config_repository
+        )
+        config_use_case = ConfigureTTSUseCase(mock_config_repository)
+        
+        tree = Mock(spec=app_commands.CommandTree)
+        tree.command = Mock(return_value=lambda func: func)
+        
+        commands = DiscordCommands(
+            tree,
+            speak_use_case,
+            config_use_case,
+            mock_channel_repository
+        )
+        
+        # Mock interaction with voice client
+        interaction = Mock()
+        interaction.guild = Mock()
+        voice_client = AsyncMock()
+        interaction.guild.voice_client = voice_client
+        interaction.response = AsyncMock()
+        
+        await commands._handle_leave(interaction)
+        
+        voice_client.disconnect.assert_called_once()
+        interaction.response.send_message.assert_called_once()
+    
+    @pytest.mark.asyncio
+    async def test_handle_about(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository
+    ):
+        """Test /about command."""
+        speak_use_case = SpeakTextUseCase(
+            mock_tts_engine,
+            mock_channel_repository,
+            mock_config_repository
+        )
+        config_use_case = ConfigureTTSUseCase(mock_config_repository)
+        
+        tree = Mock(spec=app_commands.CommandTree)
+        tree.command = Mock(return_value=lambda func: func)
+        
+        commands = DiscordCommands(
+            tree,
+            speak_use_case,
+            config_use_case,
+            mock_channel_repository
+        )
+        
+        # Mock interaction
+        interaction = Mock()
+        interaction.response = AsyncMock()
+        
+        await commands._handle_about(interaction)
+        
+        interaction.response.send_message.assert_called_once()
+        # About command sends embed, not text message
+        call_kwargs = interaction.response.send_message.call_args[1]
+        assert "embed" in call_kwargs

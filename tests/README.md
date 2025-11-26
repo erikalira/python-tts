@@ -71,7 +71,8 @@ Após executar `pytest`, abra o relatório HTML:
 .\htmlcov\index.html
 ```
 
-**Meta de cobertura:** 68%+ (configurado em `pytest.ini`)
+**Meta de cobertura:** 68%+ (configurado em `pytest.ini`)  
+**Cobertura atual:** 76% (62 testes - 61 passando, 1 skipped)
 
 ## ✅ O que está sendo testado
 
