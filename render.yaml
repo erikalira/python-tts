@@ -1,11 +1,10 @@
 services:
   - type: web
     name: python-tts
-    env: python
+    env: docker
     region: ohio
     plan: free
-    buildCommand: bash render-build.sh
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --log-level info wsgi:app
+    dockerfilePath: ./Dockerfile
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
+      - key: PORT
+        value: 10000
