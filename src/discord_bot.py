@@ -42,10 +42,11 @@ HAS_FFMPEG = shutil.which('ffmpeg') is not None
 
 # TTS engine cache to avoid slow initialization
 _tts_engine = None
+_tts_warning_shown = False
 
 def get_tts_engine():
     """Get or create a cached TTS engine instance."""
-    global _tts_engine
+    global _tts_engine, _tts_warning_shown
     if _tts_engine is None:
         # Use SAPI5 on Windows, default (eSpeak) on Linux
         if platform.system() == 'Windows':
@@ -55,7 +56,9 @@ def get_tts_engine():
                 _tts_engine = pyttsx3.init()
             except Exception as e:
                 # Fallback: use gTTS (Google TTS) if eSpeak not available
-                logger.warning(f"pyttsx3 init failed: {e}. Will use gTTS as fallback.")
+                if not _tts_warning_shown:
+                    logger.warning(f"pyttsx3 init failed: {e}. Will use gTTS as fallback.")
+                    _tts_warning_shown = True
                 _tts_engine = None  # Will trigger gTTS usage
                 return None
         if _tts_engine:
@@ -290,11 +293,14 @@ async def speak(interaction: discord.Interaction, text: str):
     tmp.close()
 
     def _save():
+        global _tts_warning_shown
         try:
             engine = get_tts_engine()
             if engine is None:
                 # Fallback to gTTS (Google TTS) - works without eSpeak
-                logger.info("Using gTTS as fallback")
+                if not _tts_warning_shown:
+                    logger.info("Using gTTS as fallback")
+                    _tts_warning_shown = True
                 tts = gTTS(text=text, lang='pt')
                 tts.save(tmpname)
             else:
@@ -302,7 +308,9 @@ async def speak(interaction: discord.Interaction, text: str):
                 engine.runAndWait()
         except Exception as e:
             # Last fallback: always use gTTS
-            logger.error(f'pyttsx3 TTS error: {e}, falling back to gTTS')
+            if not _tts_warning_shown:
+                logger.error(f'pyttsx3 TTS error: {e}, falling back to gTTS')
+                _tts_warning_shown = True
             try:
                 tts = gTTS(text=text, lang='pt')
                 tts.save(tmpname)
