@@ -1,7 +1,10 @@
 """Application layer - use cases following Single Responsibility Principle."""
+import logging
 from typing import Optional
 from src.core.interfaces import ITTSEngine, IVoiceChannelRepository, IConfigRepository
 from src.core.entities import TTSRequest
+
+logger = logging.getLogger(__name__)
 
 
 class SpeakTextUseCase:
@@ -37,31 +40,50 @@ class SpeakTextUseCase:
         Returns:
             dict with success status and message
         """
+        logger.info(f"[USE_CASE] SpeakUseCase.execute called with text: '{request.text[:50]}...', guild_id: {request.guild_id}, member_id: {request.member_id}")
+        
         if not request.text:
+            logger.warning("[USE_CASE] Missing text in request")
             return {"success": False, "message": "missing text"}
         
         # Find voice channel
+        logger.info(f"[USE_CASE] Finding voice channel...")
         voice_channel = await self._find_voice_channel(request)
         if not voice_channel:
+            logger.warning(f"[USE_CASE] No voice channel found for request")
             return {"success": False, "message": "no voice channel found"}
         
+        logger.info(f"[USE_CASE] Voice channel found, getting config...")
         # Get TTS config for guild
         config = self._config_repository.get_config(request.guild_id)
+        logger.info(f"[USE_CASE] Config: engine={config.engine}, language={config.language}")
         
         # Generate audio
+        logger.info(f"[USE_CASE] Generating audio...")
         audio = await self._tts_engine.generate_audio(request.text, config)
+        logger.info(f"[USE_CASE] Audio generated: {audio.path}")
         
         try:
             # Connect if needed
             if not voice_channel.is_connected():
+                logger.info(f"[USE_CASE] Not connected, connecting to voice channel...")
                 await voice_channel.connect()
+                logger.info(f"[USE_CASE] Connected to voice channel")
+            else:
+                logger.info(f"[USE_CASE] Already connected to voice channel")
             
             # Play audio
+            logger.info(f"[USE_CASE] Playing audio...")
             await voice_channel.play_audio(audio)
+            logger.info(f"[USE_CASE] Audio playback completed")
             
             return {"success": True, "message": "ok"}
+        except Exception as e:
+            logger.error(f"[USE_CASE] Error during audio playback: {e}", exc_info=True)
+            return {"success": False, "message": f"playback error: {str(e)}"}
         finally:
             # Clean up audio file
+            logger.info(f"[USE_CASE] Cleaning up audio file")
             audio.cleanup()
     
     async def _find_voice_channel(self, request: TTSRequest):

@@ -128,34 +128,47 @@ class DiscordCommands:
     
     async def _handle_speak(self, interaction: discord.Interaction, text: str):
         """Handle /speak command."""
+        logger.info(f"[SPEAK] Command received from user {interaction.user.id} ({interaction.user.name}) with text: {text[:50]}...")
         await interaction.response.defer(ephemeral=True, thinking=True)
         
         if not HAS_PYNACL or not HAS_FFMPEG:
+            logger.warning("[SPEAK] Missing PyNaCl or FFmpeg dependencies")
             await interaction.followup.send(
                 'PyNaCl and FFmpeg are required for voice support.',
                 ephemeral=True
             )
             return
         
-        # Determine channel and member info
-        member = interaction.user
-        if not isinstance(member, discord.Member) and interaction.guild:
-            member = interaction.guild.get_member(member.id)
-        
-        # Create request
-        tts_request = TTSRequest(
-            text=text,
-            guild_id=interaction.guild.id if interaction.guild else None,
-            member_id=member.id if member else None
-        )
-        
-        # Execute use case
-        result = await self._speak_use_case.execute(tts_request)
-        
-        if result["success"]:
-            await interaction.followup.send('✅ Spoke the text.', ephemeral=True)
-        else:
-            await interaction.followup.send(f'❌ Error: {result["message"]}', ephemeral=True)
+        try:
+            # Determine channel and member info
+            member = interaction.user
+            if not isinstance(member, discord.Member) and interaction.guild:
+                member = interaction.guild.get_member(member.id)
+            
+            logger.info(f"[SPEAK] Member ID: {member.id if member else 'None'}, Guild ID: {interaction.guild.id if interaction.guild else 'None'}")
+            
+            # Create request
+            tts_request = TTSRequest(
+                text=text,
+                guild_id=interaction.guild.id if interaction.guild else None,
+                member_id=member.id if member else None
+            )
+            
+            # Execute use case
+            logger.info(f"[SPEAK] Executing TTS use case...")
+            result = await self._speak_use_case.execute(tts_request)
+            logger.info(f"[SPEAK] Use case result: {result}")
+            
+            if result["success"]:
+                await interaction.followup.send('✅ Spoke the text.', ephemeral=True)
+            else:
+                await interaction.followup.send(f'❌ Error: {result["message"]}', ephemeral=True)
+        except Exception as e:
+            logger.error(f"[SPEAK] Unexpected error in _handle_speak: {e}", exc_info=True)
+            try:
+                await interaction.followup.send(f'❌ Unexpected error: {str(e)}', ephemeral=True)
+            except Exception as followup_error:
+                logger.error(f"[SPEAK] Failed to send error followup: {followup_error}")
     
     async def _handle_config(
         self,
