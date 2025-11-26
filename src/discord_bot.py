@@ -17,6 +17,7 @@ import pyttsx3
 from aiohttp import web
 import discord
 from discord import app_commands
+import shutil
 
 env_path = Path(__file__).resolve().parents[1] / ".env"
 # override=True força o .env a sobrescrever variáveis de ambiente existentes
@@ -30,6 +31,9 @@ intents.voice_states = True
 
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
+
+# Check if ffmpeg is available
+HAS_FFMPEG = shutil.which('ffmpeg') is not None
 
 
 # detect optional PyNaCl (required by discord.py for voice support)
@@ -124,6 +128,9 @@ async def handle_speak(request):
     try:
         if not HAS_PYNACL:
             return web.Response(text='PyNaCl (pip install pynacl) is required for voice support', status=500)
+        
+        if not HAS_FFMPEG:
+            return web.Response(text='FFmpeg is required for voice support but was not found in PATH', status=500)
 
         vc = voice_channel.guild.voice_client
         if not vc or not vc.is_connected():
@@ -155,12 +162,17 @@ async def handle_speak(request):
 
 @client.event
 async def on_ready():
-    print('Discord bot ready as', client.user)
+    print(f'✅ Discord bot ready as {client.user}')
+    print(f'   Connected to {len(client.guilds)} guild(s)')
+    for guild in client.guilds:
+        print(f'   - {guild.name} (ID: {guild.id})')
+    print(f'   PyNaCl: {"✅ Available" if HAS_PYNACL else "❌ Missing"}')
+    print(f'   FFmpeg: {"✅ Available" if HAS_FFMPEG else "❌ Missing"}')
     try:
         await tree.sync()
-        print('Slash commands synced')
+        print('✅ Slash commands synced')
     except Exception as e:
-        print('Failed to sync commands:', e)
+        print(f'❌ Failed to sync commands: {e}')
 
 
 @tree.command(name='join', description='Make the bot join your voice channel')
