@@ -21,6 +21,7 @@ import shutil
 import platform
 from gtts import gTTS
 import logging
+from . __version__ import __version__, __author__, __description__
 
 logger = logging.getLogger(__name__)
 
@@ -551,6 +552,28 @@ async def config(
         inline=False
     )
     
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+@tree.command(name='about', description='Show bot information and version')
+async def about(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="🤖 TTS Bot Information",
+        description=__description__,
+        color=discord.Color.blue()
+    )
+    embed.add_field(name="Version", value=f"`{__version__}`", inline=True)
+    embed.add_field(name="Author", value=__author__, inline=True)
+    embed.add_field(name="TTS Engine", value=TTS_ENGINE.upper(), inline=True)
+    embed.add_field(name="Language", value=TTS_LANGUAGE, inline=True)
+    embed.add_field(name="FFmpeg", value="✅ Available" if HAS_FFMPEG else "❌ Not found", inline=True)
+    embed.add_field(name="PyNaCl", value="✅ Installed" if HAS_PYNACL else "❌ Not installed", inline=True)
+    embed.add_field(
+        name="Commands",
+        value="• `/join` - Join your voice channel\n• `/leave` - Leave voice channel\n• `/speak` - Speak text\n• `/config` - Configure TTS settings\n• `/about` - Show this info",
+        inline=False
+    )
+    embed.set_footer(text=f"Running on {platform.system()} {platform.release()}")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 

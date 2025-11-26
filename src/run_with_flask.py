@@ -15,7 +15,14 @@ Environment variables:
 import os
 import threading
 
-from flask import Flask
+from flask import Flask, jsonify
+
+try:
+    from src.__version__ import __version__, __author__, __description__
+except ImportError:
+    __version__ = "unknown"
+    __author__ = "unknown"
+    __description__ = "unknown"
 
 
 app = Flask(__name__)
@@ -24,6 +31,26 @@ app = Flask(__name__)
 @app.route("/")
 def home():
     return "Bot online!"
+
+
+@app.route("/version")
+def version():
+    return jsonify({
+        "version": __version__,
+        "author": __author__,
+        "description": __description__
+    })
+
+
+@app.route("/about")
+def about():
+    return jsonify({
+        "name": "TTS Hotkey Windows",
+        "version": __version__,
+        "author": __author__,
+        "description": __description__,
+        "status": "online"
+    })
 
 
 def run_flask():
