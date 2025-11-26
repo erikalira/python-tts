@@ -3,8 +3,9 @@ services:
     name: python-tts
     env: python
     buildCommand: |
-      apt-get update && apt-get install -y ffmpeg
+      apt-get update && apt-get install -y ffmpeg espeak-ng libespeak-ng1
       pip install -r requirements.txt
+      python test_dependencies.py
     startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --log-level info wsgi:app
     envVars:
       - key: PYTHON_VERSION

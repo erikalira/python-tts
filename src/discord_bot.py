@@ -35,6 +35,17 @@ tree = app_commands.CommandTree(client)
 # Check if ffmpeg is available
 HAS_FFMPEG = shutil.which('ffmpeg') is not None
 
+# TTS engine cache to avoid slow initialization
+_tts_engine = None
+
+def get_tts_engine():
+    """Get or create a cached TTS engine instance."""
+    global _tts_engine
+    if _tts_engine is None:
+        _tts_engine = pyttsx3.init()
+        _tts_engine.setProperty('rate', 180)
+    return _tts_engine
+
 
 # detect optional PyNaCl (required by discord.py for voice support)
 try:
@@ -118,10 +129,13 @@ async def handle_speak(request):
     tmp.close()
 
     def _save():
-        engine = pyttsx3.init()
-        engine.setProperty('rate', 180)
-        engine.save_to_file(text, tmpname)
-        engine.runAndWait()
+        try:
+            engine = get_tts_engine()
+            engine.save_to_file(text, tmpname)
+            engine.runAndWait()
+        except Exception as e:
+            print(f'TTS error in handle_speak: {e}')
+            raise
 
     await loop.run_in_executor(None, _save)
 
@@ -215,7 +229,9 @@ async def leave(interaction: discord.Interaction):
 @tree.command(name='speak', description='Make the bot speak the given text in voice channel')
 @app_commands.describe(text='Text to speak')
 async def speak(interaction: discord.Interaction, text: str):
-    await interaction.response.defer(ephemeral=True)
+    # Respond immediately to avoid timeout
+    await interaction.response.defer(ephemeral=False, thinking=True)
+    
     target_vc = None
     if interaction.guild and interaction.guild.voice_client and interaction.guild.voice_client.is_connected():
         target_vc = interaction.guild.voice_client
@@ -226,15 +242,18 @@ async def speak(interaction: discord.Interaction, text: str):
         if member and member.voice and member.voice.channel:
             try:
                     if not HAS_PYNACL:
-                        await interaction.followup.send('PyNaCl is required for voice support. Install it with `pip install pynacl` in the project venv.', ephemeral=True)
+                        await interaction.followup.send('PyNaCl is required for voice support. Install it with `pip install pynacl` in the project venv.')
+                        return
+                    if not HAS_FFMPEG:
+                        await interaction.followup.send('FFmpeg is required but not found in PATH.')
                         return
                     target_vc = await member.voice.channel.connect()
             except Exception as e:
-                await interaction.followup.send(f'Could not join your channel: {e}', ephemeral=True)
+                await interaction.followup.send(f'Could not join your channel: {e}')
                 return
 
     if not target_vc:
-        await interaction.followup.send('No voice channel available to speak in.', ephemeral=True)
+        await interaction.followup.send('No voice channel available to speak in.')
         return
 
     loop = asyncio.get_running_loop()
@@ -243,31 +262,41 @@ async def speak(interaction: discord.Interaction, text: str):
     tmp.close()
 
     def _save():
-        engine = pyttsx3.init()
-        engine.setProperty('rate', 180)
-        engine.save_to_file(text, tmpname)
-        engine.runAndWait()
-
-    await loop.run_in_executor(None, _save)
+        try:
+            engine = get_tts_engine()
+            engine.save_to_file(text, tmpname)
+            engine.runAndWait()
+        except Exception as e:
+            print(f'Error generating TTS: {e}')
+            raise
 
     try:
+        # Generate audio file
+        await loop.run_in_executor(None, _save)
+        
+        # Play audio
         if target_vc.is_playing():
             target_vc.stop()
         source = discord.FFmpegPCMAudio(tmpname)
         target_vc.play(source)
+        
+        # Wait for playback to finish
         while target_vc.is_playing():
             await asyncio.sleep(0.1)
+        
+        # Clean up
         try:
             os.unlink(tmpname)
         except Exception:
             pass
-        await interaction.followup.send('Spoke the text.', ephemeral=True)
+        
+        await interaction.followup.send('✅ Spoke the text.')
     except Exception as e:
         try:
             os.unlink(tmpname)
         except Exception:
             pass
-        await interaction.followup.send(f'Error playing audio: {e}', ephemeral=True)
+        await interaction.followup.send(f'❌ Error playing audio: {e}')
 
 
 async def _start():
