@@ -51,9 +51,11 @@ def get_tts_engine():
     if _tts_engine is None:
         # Use SAPI5 on Windows, default (eSpeak) on Linux
         if platform.system() == 'Windows':
+            logger.info("🎤 Initializing TTS with SAPI5 (Windows native)")
             _tts_engine = pyttsx3.init(driverName='sapi5')
         else:
             try:
+                logger.info("🎤 Initializing TTS with pyttsx3 (will use espeak/espeak-ng on Linux)")
                 _tts_engine = pyttsx3.init()
             except Exception as e:
                 # Fallback: use gTTS (Google TTS) if eSpeak not available
@@ -64,6 +66,18 @@ def get_tts_engine():
                 return None
         if _tts_engine:
             _tts_engine.setProperty('rate', 180)
+            
+            # Log available voices
+            try:
+                voices = _tts_engine.getProperty('voices')
+                current_voice = _tts_engine.getProperty('voice')
+                logger.info(f"📢 Available TTS voices: {len(voices)}")
+                for i, voice in enumerate(voices):
+                    is_current = "✅" if voice.id == current_voice else "  "
+                    logger.info(f"{is_current} Voice {i}: {voice.name} (ID: {voice.id[:50]}...)")
+                logger.info(f"🔊 Using voice: {current_voice[:80]}...")
+            except Exception as e:
+                logger.warning(f"Could not list voices: {e}")
     return _tts_engine
 
 
