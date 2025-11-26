@@ -8,7 +8,8 @@ Slash commands:
 
 Requirements: set `DISCORD_TOKEN` env var and have `ffmpeg` available in PATH.
 """
-
+from dotenv import load_dotenv
+from pathlib import Path
 import os
 import tempfile
 import asyncio
@@ -16,6 +17,10 @@ import pyttsx3
 from aiohttp import web
 import discord
 from discord import app_commands
+
+env_path = Path(__file__).resolve().parents[1] / ".env"
+# override=True força o .env a sobrescrever variáveis de ambiente existentes
+load_dotenv(env_path, override=True)
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 PORT = int(os.getenv('DISCORD_BOT_PORT', '5000'))

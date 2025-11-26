@@ -4,6 +4,14 @@ import tempfile
 import keyboard
 import pyttsx3
 import threading
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load .env file
+env_path = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(env_path, override=True)
+print(f"[tts_hotkey] Loaded .env from: {env_path}")
+print(f"[tts_hotkey] DISCORD_BOT_URL = {os.getenv('DISCORD_BOT_URL')!r}")
 
 # Optional: play audio directly to a specific output device (virtual cable)
 try:
@@ -41,6 +49,7 @@ def _speak_and_send(text: str, backspaces: int):
 
         # If DISCORD_BOT_URL is set, send the text to the bot instead of local playback
         discord_bot_url = os.getenv('DISCORD_BOT_URL')
+        print(f"[tts_hotkey] Checking Discord bot URL: {discord_bot_url!r}")
         if discord_bot_url:
             # send POST to bot (non-blocking behavior is acceptable here since we're in a worker thread)
             try:
@@ -186,9 +195,9 @@ def on_key(event):
 
 def main():
     print("TTS Hotkey running. Type {text} anywhere to speak it out loud.")
-    print("Press ESC to exit.")
+    print("Press del to exit.")
     keyboard.hook(on_key)
-    keyboard.wait('esc')
+    keyboard.wait('del')
 
 if __name__ == '__main__':
     main()

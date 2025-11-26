@@ -68,7 +68,16 @@ ffmpeg -version
 5) Configure Discord bot token and (optional) local bot URL
 
 - Create a bot in the Discord Developer Portal, invite it to your server with `applications.commands` + `bot` scopes and the `Connect/Speak` permissions.
-- Set the token (temporary for current shell):
+
+**Recommended: use a `.env` file** (the bot already loads it via `python-dotenv`):
+
+```powershell
+# Copy the example file and edit with your actual token
+Copy-Item .env.example .env
+# Then open .env in your editor and replace YOUR_ACTUAL_DISCORD_TOKEN_HERE with your real token
+```
+
+**Alternative: set environment variables manually (temporary for current shell)**:
 
 ```powershell
 $env:DISCORD_TOKEN = "YOUR_TOKEN_HERE"
@@ -80,7 +89,7 @@ $env:DISCORD_TOKEN = "YOUR_TOKEN_HERE"
 setx DISCORD_TOKEN "YOUR_TOKEN_HERE"
 ```
 
-- If you run the bot locally and want the hotkey app to send TTS to it, set the bot URL in the same shell you will run `tts_hotkey.py` from:
+- If you run the bot locally and want the hotkey app to send TTS to it, set the bot URL in the same shell you will run `tts_hotkey.py` from (or add `DISCORD_BOT_URL=http://127.0.0.1:5000` to your `.env`):
 
 ```powershell
 $env:DISCORD_BOT_URL = 'http://127.0.0.1:5000'
