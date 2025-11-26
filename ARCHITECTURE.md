@@ -55,12 +55,21 @@ tts-hotkey-windows/
 │   ├── __version__.py        # Informações de versão
 │   ├── bot.py                # Entry point do bot (novo)
 │   ├── app.py                # Flask app (compatibilidade)
-│   ├── discord_bot.py        # ⚠️ LEGADO (manter por compatibilidade)
-│   ├── tts_hotkey.py         # ⚠️ LEGADO (manter por compatibilidade)
-│   └── run_with_flask.py     # ⚠️ LEGADO (manter por compatibilidade)
+│   └── tts_hotkey.py         # 🎹 Windows hotkey listener (opcional)
+│
+├── tests/
+│   ├── unit/                 # Testes unitários (77% coverage)
+│   │   ├── core/
+│   │   ├── application/
+│   │   ├── infrastructure/
+│   │   └── presentation/
+│   ├── conftest.py          # Fixtures e mocks
+│   └── README.md            # Documentação de testes
 │
 ├── .env                       # Variáveis de ambiente
 ├── requirements.txt           # Dependências Python
+├── requirements-test.txt      # Dependências de teste
+├── pytest.ini                 # Configuração de testes
 ├── wsgi.py                    # Entry point para Gunicorn
 ├── Dockerfile                 # Container Docker
 └── README.md                  # Documentação
@@ -276,18 +285,22 @@ def test_speak_use_case():
     assert len(mock_channel.played_audio) == 1
 ```
 
-## 📝 Migração dos Arquivos Legados
+## 🧪 Testes Unitários
 
-Os arquivos antigos foram mantidos para compatibilidade:
-- `discord_bot.py` - pode ser removido após validação
-- `tts_hotkey.py` - mantido para funcionalidade de hotkey (precisa ser refatorado)
-- `run_with_flask.py` - substituído por `app.py`
+O projeto possui uma suíte completa de testes.
 
-**Próximos passos:**
-1. Refatorar `tts_hotkey.py` usando a nova arquitetura
-2. Criar testes unitários para cada camada
-3. Documentar APIs e contratos
-4. Adicionar logging estruturado
+### Executar testes:
+```powershell
+# Todos os testes
+pytest
+
+# Testes rápidos (sem integração lenta)
+pytest -m "not slow"
+
+# Com relatório HTML
+pytest --cov-report=html
+```
+Veja `tests/README.md` para mais detalhes.
 
 ## 🎓 Referências
 

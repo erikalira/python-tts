@@ -16,6 +16,12 @@ def home():
     return "Bot online!"
 
 
+@app.route("/health")
+def health():
+    """Health check endpoint for Docker/Render."""
+    return jsonify({"status": "healthy"})
+
+
 @app.route("/version")
 def version():
     return jsonify({

@@ -72,7 +72,6 @@ Após executar `pytest`, abra o relatório HTML:
 ```
 
 **Meta de cobertura:** 68%+ (configurado em `pytest.ini`)
-**Cobertura atual:** 77%+ ✅
 
 ## ✅ O que está sendo testado
 

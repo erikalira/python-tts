@@ -95,26 +95,26 @@ $env:DISCORD_BOT_URL = "http://127.0.0.1:5000"
 
 **5. Run the Discord bot:**
 ```powershell
-python src\discord_bot.py
+python -m src.bot
 ```
 
-**6. Run the hotkey app (separate terminal):**
+O bot iniciará automaticamente o servidor HTTP na porta configurada.
+
+**6. (Opcional) Run the hotkey app para controle via teclado:**
 ```powershell
+# Em outro terminal
 python src\tts_hotkey.py
 ```
 
-Type `{hello world}` in any application to trigger TTS.
+Agora você pode digitar `{hello world}` em qualquer aplicativo Windows e o bot falará no Discord!
 
 ### 🌐 Production with Gunicorn (Local Testing)
 
 Test the production setup locally:
 
 ```powershell
-# Using wsgi.py (Flask wrapper + Discord bot)
+# Using wsgi.py (produção)
 gunicorn --bind 0.0.0.0:10000 --workers 1 --threads 2 --timeout 120 wsgi:app
-
-# Or using run_with_flask.py
-python src\run_with_flask.py
 ```
 
 This starts:
@@ -244,10 +244,10 @@ Once the bot is running:
 └────────┬────────┘
          │ POST /speak
          ▼
-┌─────────────────┐
-│  Discord Bot    │  (Render Docker container)
-│  discord_bot.py │  ← espeak-ng TTS engine
-└────────┬────────┘  ← FFmpeg audio processing
+┌────────────────┐
+│  Discord Bot   │  (Render Docker container)
+│  src.bot       │  ← espeak-ng TTS engine
+└────────┬───────┘  ← FFmpeg audio processing
          │
          ▼
 ┌─────────────────┐
@@ -389,17 +389,28 @@ pyinstaller --onefile --noconsole tts_hotkey.py
 ```
 tts-hotkey-windows/
 ├── src/
-│   ├── discord_bot.py      # Discord bot with TTS
-│   ├── tts_hotkey.py       # Windows hotkey app
-│   └── run_with_flask.py   # Flask wrapper (optional)
-├── Dockerfile              # Docker image with espeak-ng
-├── .dockerignore          # Docker build exclusions
-├── render.yaml            # Render deployment config
-├── render-build.sh        # Build script (Docker handles deps)
-├── wsgi.py               # Gunicorn entry point
-├── requirements.txt      # Python dependencies
-├── .env.example         # Environment template
-└── README.md           # This file
+│   ├── core/               # Domain entities & interfaces
+│   ├── application/        # Use cases (business logic)
+│   ├── infrastructure/     # TTS engines, Discord, HTTP
+│   ├── presentation/       # Controllers & commands
+│   ├── bot.py             # Main entry point
+│   └── app.py             # Application factory
+├── config/
+│   ├── settings.py        # Configuration
+│   └── container.py       # Dependency injection
+├── tests/
+│   ├── unit/              # Unit tests (77% coverage)
+│   └── conftest.py        # Test fixtures
+├── Dockerfile             # Docker image with espeak-ng
+├── .dockerignore         # Docker build exclusions
+├── render.yaml           # Render deployment config
+├── wsgi.py              # Gunicorn entry point
+├── requirements.txt     # Python dependencies
+├── requirements-test.txt # Test dependencies
+├── pytest.ini          # Test configuration
+├── .env.example       # Environment template
+├── README.md         # This file
+└── ARCHITECTURE.md   # Architecture documentation
 ```
 
 ## Contributing
