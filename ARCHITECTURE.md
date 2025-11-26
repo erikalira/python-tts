@@ -159,16 +159,69 @@ container = Container(config)
 
 ## 🚀 Como Executar
 
-### Desenvolvimento Local
+### Desenvolvimento Local (Python)
 ```bash
-# Opção 1: Novo entry point
+# Opção 1: Novo entry point (bot completo)
 python -m src.bot
 
-# Opção 2: Com Flask (compatibilidade)
+# Opção 2: Servidor de teste (sem Discord)
+python -m src.test_server
+
+# Opção 3: Com Flask (compatibilidade)
 python -m src.app
 ```
 
-### Produção (Gunicorn + Docker)
+### Desenvolvimento Local (Docker)
+```bash
+# 0. Iniciar Docker Desktop (se não estiver rodando)
+# Windows PowerShell:
+Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+
+# Aguardar alguns segundos até Docker iniciar, então verificar:
+docker ps  # Deve retornar sem erro
+
+# 1. Build da imagem
+docker build -t tts-hotkey .
+
+# 2. Executar container
+docker run -p 10000:10000 --env-file .env tts-hotkey
+
+# 3. Parar o container
+docker ps  # Ver containers rodando
+docker stop <container_id>
+
+# 4. Ver logs
+docker logs <container_id>
+
+# 5. Remover container
+docker rm <container_id>
+
+# 6. Remover imagem
+docker rmi tts-hotkey
+```
+
+**Comandos úteis Docker:**
+```bash
+# Ver containers rodando
+docker ps
+
+# Ver todos os containers (incluindo parados)
+docker ps -a
+
+# Ver imagens
+docker images
+
+# Executar em modo interativo (ver logs em tempo real)
+docker run -it -p 10000:10000 --env-file .env tts-hotkey
+
+# Executar em background (detached)
+docker run -d -p 10000:10000 --env-file .env tts-hotkey
+
+# Limpar tudo
+docker system prune -a
+```
+
+### Produção (Gunicorn + Docker no Render)
 ```bash
 # Render/Docker usa wsgi.py automaticamente
 gunicorn --bind 0.0.0.0:$PORT wsgi:app
