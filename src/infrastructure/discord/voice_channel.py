@@ -141,6 +141,8 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
         """
         self._client = client
         self._member_cache: Dict[int, DiscordVoiceChannel] = {}
+        # Cache to reuse same instance per channel (critical for timer management)
+        self._channel_instances: Dict[int, DiscordVoiceChannel] = {}
     
     async def find_by_member_id(self, member_id: int) -> Optional[IVoiceChannel]:
         """Find voice channel where member is connected.
@@ -151,13 +153,15 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
         Returns:
             IVoiceChannel if found, None otherwise
         """
-        # Search all guilds - don't use cache to avoid connection state issues
+        # Search all guilds
         for guild in self._client.guilds:
             for vc in guild.voice_channels:
                 for member in vc.members:
                     if member.id == member_id:
-                        # Always return a fresh instance to avoid connection state conflicts
-                        return DiscordVoiceChannel(vc)
+                        # Reuse existing instance if available to preserve timer state
+                        if vc.id not in self._channel_instances:
+                            self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
+                        return self._channel_instances[vc.id]
         
         return None
     
@@ -173,7 +177,10 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
         try:
             channel = self._client.get_channel(channel_id)
             if isinstance(channel, discord.VoiceChannel):
-                return DiscordVoiceChannel(channel)
+                # Reuse existing instance if available to preserve timer state
+                if channel.id not in self._channel_instances:
+                    self._channel_instances[channel.id] = DiscordVoiceChannel(channel)
+                return self._channel_instances[channel.id]
         except Exception as e:
             logger.error(f"Error finding channel by ID {channel_id}: {e}")
         
@@ -196,18 +203,29 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
                     if guild.voice_client and guild.voice_client.is_connected():
                         for vc in guild.voice_channels:
                             if vc.guild.voice_client == guild.voice_client:
-                                return DiscordVoiceChannel(vc)
+                                # Reuse existing instance if available
+                                if vc.id not in self._channel_instances:
+                                    self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
+                                return self._channel_instances[vc.id]
                     
                     # Return first available channel
                     if guild.voice_channels:
-                        return DiscordVoiceChannel(guild.voice_channels[0])
+                        vc = guild.voice_channels[0]
+                        # Reuse existing instance if available
+                        if vc.id not in self._channel_instances:
+                            self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
+                        return self._channel_instances[vc.id]
             except Exception as e:
                 logger.error(f"Error finding channel by guild ID {guild_id}: {e}")
         
         # Fallback: any available channel
         for guild in self._client.guilds:
             if guild.voice_channels:
-                return DiscordVoiceChannel(guild.voice_channels[0])
+                vc = guild.voice_channels[0]
+                # Reuse existing instance if available
+                if vc.id not in self._channel_instances:
+                    self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
+                return self._channel_instances[vc.id]
         
         return None
     
