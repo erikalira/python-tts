@@ -19,6 +19,10 @@ import discord
 from discord import app_commands
 import shutil
 import platform
+from gtts import gTTS
+import logging
+
+logger = logging.getLogger(__name__)
 
 env_path = Path(__file__).resolve().parents[1] / ".env"
 # override=True força o .env a sobrescrever variáveis de ambiente existentes
@@ -47,8 +51,15 @@ def get_tts_engine():
         if platform.system() == 'Windows':
             _tts_engine = pyttsx3.init(driverName='sapi5')
         else:
-            _tts_engine = pyttsx3.init()
-        _tts_engine.setProperty('rate', 180)
+            try:
+                _tts_engine = pyttsx3.init()
+            except Exception as e:
+                # Fallback: use gTTS (Google TTS) if eSpeak not available
+                logger.warning(f"pyttsx3 init failed: {e}. Will use gTTS as fallback.")
+                _tts_engine = None  # Will trigger gTTS usage
+                return None
+        if _tts_engine:
+            _tts_engine.setProperty('rate', 180)
     return _tts_engine
 
 
@@ -136,11 +147,23 @@ async def handle_speak(request):
     def _save():
         try:
             engine = get_tts_engine()
-            engine.save_to_file(text, tmpname)
-            engine.runAndWait()
+            if engine is None:
+                # Fallback to gTTS (Google TTS) - works without eSpeak
+                logger.info("Using gTTS as fallback")
+                tts = gTTS(text=text, lang='pt')
+                tts.save(tmpname)
+            else:
+                engine.save_to_file(text, tmpname)
+                engine.runAndWait()
         except Exception as e:
-            print(f'TTS error in handle_speak: {e}')
-            raise
+            # Last fallback: always use gTTS
+            logger.error(f'pyttsx3 TTS error: {e}, falling back to gTTS')
+            try:
+                tts = gTTS(text=text, lang='pt')
+                tts.save(tmpname)
+            except Exception as e2:
+                logger.error(f'gTTS error: {e2}')
+                raise
 
     await loop.run_in_executor(None, _save)
 
@@ -269,11 +292,23 @@ async def speak(interaction: discord.Interaction, text: str):
     def _save():
         try:
             engine = get_tts_engine()
-            engine.save_to_file(text, tmpname)
-            engine.runAndWait()
+            if engine is None:
+                # Fallback to gTTS (Google TTS) - works without eSpeak
+                logger.info("Using gTTS as fallback")
+                tts = gTTS(text=text, lang='pt')
+                tts.save(tmpname)
+            else:
+                engine.save_to_file(text, tmpname)
+                engine.runAndWait()
         except Exception as e:
-            print(f'Error generating TTS: {e}')
-            raise
+            # Last fallback: always use gTTS
+            logger.error(f'pyttsx3 TTS error: {e}, falling back to gTTS')
+            try:
+                tts = gTTS(text=text, lang='pt')
+                tts.save(tmpname)
+            except Exception as e2:
+                logger.error(f'gTTS error: {e2}')
+                raise
 
     try:
         # Generate audio file

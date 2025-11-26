@@ -9,3 +9,4 @@ pynacl
 flask
 python-dotenv
 gunicorn
+gtts
