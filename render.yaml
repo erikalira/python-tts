@@ -1,10 +1,10 @@
 services:
   - type: web
     name: python-tts
-    env: docker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
     region: ohio
     plan: free
-    dockerfilePath: ./Dockerfile
     envVars:
       - key: PORT
         value: 10000

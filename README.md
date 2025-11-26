@@ -1,235 +1,321 @@
 # tts-hotkey-windows
 
 ## Overview
-This project is a text-to-speech hotkey application that allows users to input text using specific keyboard shortcuts and have it spoken aloud. It utilizes the `pyttsx3` library for text-to-speech functionality and the `keyboard` library to capture key events.
+This project is a text-to-speech hotkey application that allows users to input text using specific keyboard shortcuts and have it spoken aloud. It includes:
+- **Discord Bot**: Joins voice channels and plays TTS messages
+- **Hotkey App**: Captures text input (`{text here}`) and sends to Discord bot
+- **Docker Support**: Deploys on Render with espeak-ng for high-quality TTS
 
 ## Features
-- Capture text input using keyboard shortcuts.
-- Convert the captured text to speech.
-- Simple and intuitive interface.
+- Capture text input using keyboard shortcuts
+- Discord bot with slash commands (`/join`, `/leave`, `/speak`)
+- TTS engine with automatic fallback (pyttsx3 → gTTS)
+- Voice channel support with audio streaming
+- Docker deployment for production
+- Simple and intuitive interface
 
 ## Requirements
-To run this project, you need to install the following dependencies:
 
-- `keyboard`
-- `pyttsx3`
+### Local Development (Windows)
+- Python 3.11+
+- FFmpeg (for Discord voice support)
+- Virtual environment (recommended)
 
-You can install the required packages using pip:
+### Production (Render with Docker)
+- Docker-enabled environment
+- All dependencies installed via Dockerfile
 
-```
+Install Python dependencies:
+```powershell
 pip install -r requirements.txt
 ```
 
-This README below adds step-by-step setup for the Discord bot, voice support and troubleshooting.
+## Running the Application
 
-## Full Setup (Windows)
+### 🐳 Docker (Production - Render)
 
-Follow these steps from the project root (where `requirements.txt` and `.venv` live).
+The application is configured to run with Docker on Render, which includes:
+- **espeak-ng**: Native TTS engine (faster, offline)
+- **FFmpeg**: Audio processing for Discord
+- **Gunicorn**: Production WSGI server
 
-1) Create a virtual environment (if you don't have one):
+**Automatic Deployment:**
+1. Push to `main` branch triggers auto-deploy on Render
+2. Render builds Docker image with all system dependencies
+3. Container starts with gunicorn + Discord bot
 
+**Manual Docker Build (Local Testing):**
+```powershell
+# Build the image
+docker build -t tts-hotkey .
+
+# Run locally (requires .env file with DISCORD_TOKEN)
+docker run -p 10000:10000 --env-file .env tts-hotkey
+```
+
+### 💻 Local Development (Windows - No Docker)
+
+Best for development and testing on Windows:
+
+### 💻 Local Development (Windows - No Docker)
+
+Best for development and testing on Windows:
+
+**1. Create and activate virtual environment:**
 ```powershell
 python -m venv .venv
-```
-
-2) Activate the venv (PowerShell):
-
-```powershell
-Set-Location <project-root>
-# allow script execution for the session
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-& .\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
-If you prefer not to activate, you can invoke the venv python directly:
-
-```powershell
-.\.venv\Scripts\python.exe src\discord_bot.py
-```
-
-3) Install Python dependencies:
-
+**2. Install dependencies:**
 ```powershell
 pip install -r requirements.txt
-# For voice support (discord.py voice) also install PyNaCl:
-pip install pynacl
+pip install pynacl  # For Discord voice support
 ```
 
-4) Install `ffmpeg` and add to PATH (required by the bot to stream audio to Discord):
+**3. Install FFmpeg:**
+- Download from https://www.gyan.dev/ffmpeg/builds/
+- Extract and add `bin` folder to PATH
+- Verify: `ffmpeg -version`
 
-- Download a static Windows build (eg. from https://www.gyan.dev/ffmpeg/builds/ or https://ffmpeg.org/download.html).
-- Unzip and add the `bin` folder to your Windows `PATH` (or place `ffmpeg.exe` somewhere on PATH).
-- Verify with:
+**4. Configure Discord token:**
 
-```powershell
-ffmpeg -version
+Create `.env` file:
+```env
+DISCORD_TOKEN=your_token_here
+DISCORD_BOT_URL=http://127.0.0.1:5000
 ```
 
-5) Configure Discord bot token and (optional) local bot URL
-
-- Create a bot in the Discord Developer Portal, invite it to your server with `applications.commands` + `bot` scopes and the `Connect/Speak` permissions.
-
-**Recommended: use a `.env` file** (the bot already loads it via `python-dotenv`):
-
-```powershell
-# Copy the example file and edit with your actual token
-Copy-Item .env.example .env
-# Then open .env in your editor and replace YOUR_ACTUAL_DISCORD_TOKEN_HERE with your real token
-```
-
-**Alternative: set environment variables manually (temporary for current shell)**:
-
+Or set environment variables:
 ```powershell
 $env:DISCORD_TOKEN = "YOUR_TOKEN_HERE"
+$env:DISCORD_BOT_URL = "http://127.0.0.1:5000"
 ```
 
-- (Optional) Persist the token in Windows environment variables:
-
-```powershell
-setx DISCORD_TOKEN "YOUR_TOKEN_HERE"
-```
-
-- If you run the bot locally and want the hotkey app to send TTS to it, set the bot URL in the same shell you will run `tts_hotkey.py` from (or add `DISCORD_BOT_URL=http://127.0.0.1:5000` to your `.env`):
-
-```powershell
-$env:DISCORD_BOT_URL = 'http://127.0.0.1:5000'
-```
-
-6) Run the Discord bot (from project root):
-
+**5. Run the Discord bot:**
 ```powershell
 python src\discord_bot.py
 ```
 
-Expected output: `Discord bot ready as <name>` and `Slash commands synced` (or a message about sync failure).
-
-7) Run the TTS hotkey app (in a separate shell where you set `DISCORD_BOT_URL` if you want bot playback):
-
+**6. Run the hotkey app (separate terminal):**
 ```powershell
 python src\tts_hotkey.py
 ```
 
-Type `{hello world}` in any application to trigger speech. When `DISCORD_BOT_URL` is set the hotkey will try to POST the text to the bot endpoint and skip local playback if the bot responds with success.
+Type `{hello world}` in any application to trigger TTS.
 
-### Optional: Run the bot with a small Flask health endpoint
+### 🌐 Production with Gunicorn (Local Testing)
 
-If you want a very small HTTP health/monitoring endpoint in front of the bot (served by Flask) you can use the provided `src/run_with_flask.py` script. It starts a lightweight Flask server in a background thread (default port `8080`) and then runs the existing Discord bot process. This is useful when you want a simple reachable URL such as `http://127.0.0.1:8080/` to indicate the process is alive.
-
-From the project root run:
+Test the production setup locally:
 
 ```powershell
-# optional: set environment variables
-$env:DISCORD_TOKEN = "YOUR_TOKEN_HERE"
-$env:FLASK_PORT = "8080"        # optional, defaults to 8080
-$env:DISCORD_BOT_PORT = "5000" # optional, bot's aiohttp port (default 5000)
+# Using wsgi.py (Flask wrapper + Discord bot)
+gunicorn --bind 0.0.0.0:10000 --workers 1 --threads 2 --timeout 120 wsgi:app
 
-python .\src\run_with_flask.py
+# Or using run_with_flask.py
+python src\run_with_flask.py
 ```
 
-Notes:
-- The Flask endpoint only provides a simple `/` route that returns `Bot online!` by default. It does not proxy or replace the bot's `/speak` endpoint (the bot still exposes `/speak` on `127.0.0.1:$DISCORD_BOT_PORT`).
-- `use_reloader` is disabled in the Flask server to avoid multiple processes interfering with the bot.
-- Ensure `DISCORD_TOKEN` is set in the environment before running the script.
+This starts:
+- Flask health endpoint on port 8080 (returns "Bot online!")
+- Discord bot with `/speak` endpoint on port 5000
 
 
-## Quick Manual Tests
+## Discord Bot Setup
 
-- Test the bot endpoint directly (without using the hotkey):
+1. **Create bot in Discord Developer Portal:**
+   - Go to https://discord.com/developers/applications
+   - Create new application → Bot section
+   - Enable "Message Content Intent" and "Server Members Intent"
+   - Copy the bot token
 
+2. **Invite bot to server:**
+   - OAuth2 → URL Generator
+   - Scopes: `bot`, `applications.commands`
+   - Permissions: `Connect`, `Speak`, `Use Voice Activity`
+   - Use generated URL to invite
+
+3. **Configure token:**
+   - Add to `.env` file: `DISCORD_TOKEN=your_token_here`
+   - Or set environment variable
+
+## Discord Bot Commands
+
+Once the bot is running:
+- `/join` - Bot joins your current voice channel
+- `/leave` - Bot leaves the voice channel
+- `/speak <text>` - Bot speaks the provided text
+
+## Architecture
+
+```
+┌─────────────────┐
+│  Hotkey App     │  (Windows local)
+│  tts_hotkey.py  │  Captures {text} input
+└────────┬────────┘
+         │ POST /speak
+         ▼
+┌─────────────────┐
+│  Discord Bot    │  (Render Docker container)
+│  discord_bot.py │  ← espeak-ng TTS engine
+└────────┬────────┘  ← FFmpeg audio processing
+         │
+         ▼
+┌─────────────────┐
+│  Discord Voice  │
+│  Channel        │  Audio playback
+└─────────────────┘
+```
+
+## Deployment (Render)
+
+### Files for Docker Deployment:
+- `Dockerfile` - Installs espeak-ng, ffmpeg, Python deps
+- `render.yaml` - Render configuration (env: docker)
+- `.dockerignore` - Excludes unnecessary files from build
+
+### Automatic Deployment:
+1. Push to `main` branch on GitHub
+2. Render detects changes and builds Docker image
+3. Deploys container with all dependencies
+4. Bot auto-connects to Discord
+
+### Environment Variables on Render:
+Set in Render dashboard:
+- `DISCORD_TOKEN` - Your bot token (required)
+- `PORT` - Set to `10000` (default)
+
+### TTS Engine Behavior:
+- **Local (Windows)**: Uses pyttsx3 with SAPI5
+- **Render (Docker)**: Uses pyttsx3 with espeak-ng
+- **Fallback**: Uses gTTS (Google) if pyttsx3 fails
+
+## Testing
+
+### Test Discord Bot Endpoint:
 ```powershell
-#$body = @{ text = "Olá do teste" } | ConvertTo-Json
-#Invoke-RestMethod -Method Post -Uri http://127.0.0.1:5000/speak -Body $body -ContentType 'application/json'
+$body = @{ text = "Hello from test" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:5000/speak -Body $body -ContentType 'application/json'
 ```
 
-If the bot plays audio in the target Discord voice channel the endpoint is working.
+### Test Hotkey App:
+1. Run `python src\tts_hotkey.py`
+2. Type `{hello world}` in any text editor
+3. Bot should speak in Discord voice channel
 
 ## Troubleshooting
 
-- `ModuleNotFoundError: No module named 'aiohttp'` — install dependencies: `pip install -r requirements.txt` or `pip install aiohttp`.
-- `Could not join channel: PyNaCl library needed in order to use voice` — run `pip install pynacl` in the venv.
-- `'.\.venv\Scripts\Activate.ps1' is not recognized` — you are likely in the `src` folder; change to project root and run the activate command. Verify the venv exists with `Test-Path .\.venv\Scripts\Activate.ps1`.
-- If hotkey still plays locally: check the `DISCORD_BOT_URL` environment variable in the shell where you run `tts_hotkey.py` and check the hotkey logs — it prints lines like:
+## Troubleshooting
 
-```
-[tts_hotkey] POST -> http://127.0.0.1:5000/speak payload={'text': '...'}
-[tts_hotkey] bot response: 200 'ok'
+### Common Issues:
+
+**`ModuleNotFoundError: No module named 'aiohttp'`**
+```powershell
+pip install -r requirements.txt
 ```
 
-If the bot response is non-200, the hotkey falls back to local playback and prints the response body.
+**`PyNaCl library needed in order to use voice`**
+```powershell
+pip install pynacl
+```
+
+**Virtual environment activation fails:**
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+```
+
+**Hotkey not triggering bot:**
+- Check `DISCORD_BOT_URL` environment variable
+- Verify bot is running: `http://127.0.0.1:5000`
+- Check hotkey logs for POST response
+
+**FFmpeg not found:**
+- Download from https://www.gyan.dev/ffmpeg/builds/
+- Add to PATH or place `ffmpeg.exe` in project root
+- Verify: `ffmpeg -version`
+
+**Docker build fails on Render:**
+- Check logs in Render dashboard
+- Verify `Dockerfile` has correct dependencies
+- Ensure `render.yaml` has `env: docker`
+
+**Bot not speaking in Discord:**
+- Use `/join` command first
+- Check bot has `Connect` and `Speak` permissions
+- Verify FFmpeg is installed
+- Check Render logs for TTS errors
+
+### Render Logs:
+```powershell
+# Using MCP (if configured)
+# Ask in Copilot Chat: "Mostre os logs do serviço python-tts"
+```
 
 ## Notes / Security
 
-- Keep your bot token secret. Do not commit it to the repo.
-- When you run `setx` to persist environment variables, new shells will see the variable; existing shells need the temporary `$env:...` assignment.
+- **Never commit** your Discord token to the repository
+- Use `.env` file for local development (already in `.gitignore`)
+- Set environment variables in Render dashboard for production
+- `setx` persists variables (new shells only); use `$env:` for current shell
 
 
-## Usage
-1. Run the application by executing the `src/tts_hotkey.py` script.
-2. To input text, type `{your text here}` using the specified hotkey.
-3. The application will read the text aloud.
-4. Press `ESC` to exit the application.
+## Building Windows Executable
 
-## **Building The Executable**
-Below are precise, tested steps to create a standalone `*.exe` on Windows using PowerShell (the project already includes helper scripts).
+Create a standalone `.exe` for Windows distribution:
 
-- **Prerequisites**: Python 3.8+ and a virtual environment (recommended).
-
-- **From the project root** (where `requirements.txt`, `build_exe.ps1` and `build_exe.bat` live) run:
-
+**Prerequisites:**
 ```powershell
-# activate the virtual environment (only if you created it at `.venv`)
-.\.venv\Scripts\Activate.ps1
-
-# upgrade pip and install dependencies + PyInstaller
-python -m pip install --upgrade pip
-pip install -r .\requirements.txt
 pip install pyinstaller
 ```
 
-- **Option A — use the provided PowerShell script (recommended)**:
-
+**Option A - PowerShell script (recommended):**
 ```powershell
-# allow script execution for this session
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-
-# run the build script from the project root
 .\build_exe.ps1
 ```
 
-This script will call PyInstaller from inside `src\` and, if successful, move the generated executable to the project root as `tts_hotkey.exe`.
-
-- **Option B — use the provided batch script**:
-
-```powershell
-# run from project root (Command Prompt or PowerShell)
+**Option B - Batch script:**
+```cmd
 .\build_exe.bat
 ```
 
-- **Option C — run PyInstaller manually** (gives more control):
-
+**Option C - Manual PyInstaller:**
 ```powershell
-# change to the src folder
-Set-Location -Path .\src
-
-# create a single-file, no-console executable
+cd src
 pyinstaller --onefile --noconsole tts_hotkey.py
-
-# after success the exe will be in .\dist\tts_hotkey.exe
+# Executable: src\dist\tts_hotkey.exe
 ```
 
-**Where the result appears**: after a successful build the executable will be in the project root as `tts_hotkey.exe` (or in `src\dist\tts_hotkey.exe` before being moved).
+**Result:** `tts_hotkey.exe` in project root
 
-**Troubleshooting / Tips**
-- **Missing modules at runtime**: if PyInstaller fails due to dynamically imported modules, add `--hidden-import modulename` or add them in the spec file.
-- **Missing data files**: include with `--add-data "path\to\file;dest_folder"` or list them in the spec `datas` section.
-- **PowerShell blocked**: use `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` (temporary for the session).
-- **Antivirus warnings**: newly built EXEs can trigger AV heuristics; code-signing is recommended for broad distribution.
-- **Visual C++ runtime**: if the EXE complains on another machine, install the Microsoft Visual C++ Redistributable.
+### Build Troubleshooting:
+- **Missing modules**: Add `--hidden-import modulename`
+- **Missing data**: Use `--add-data "file;dest"`
+- **AV warnings**: Code-signing recommended
+- **Runtime errors**: Install Visual C++ Redistributable
 
-If you want, I can also add `pyinstaller` to `requirements.txt` so future installs include it automatically.
+## Project Structure
+
+```
+tts-hotkey-windows/
+├── src/
+│   ├── discord_bot.py      # Discord bot with TTS
+│   ├── tts_hotkey.py       # Windows hotkey app
+│   └── run_with_flask.py   # Flask wrapper (optional)
+├── Dockerfile              # Docker image with espeak-ng
+├── .dockerignore          # Docker build exclusions
+├── render.yaml            # Render deployment config
+├── render-build.sh        # Build script (Docker handles deps)
+├── wsgi.py               # Gunicorn entry point
+├── requirements.txt      # Python dependencies
+├── .env.example         # Environment template
+└── README.md           # This file
+```
 
 ## Contributing
-Feel free to fork the repository and submit pull requests for any improvements or bug fixes.
+Fork the repository and submit pull requests for improvements or bug fixes.
 
 ## License
-This project is licensed under the MIT License. See the LICENSE file for more details.
+This project is licensed under the MIT License.
