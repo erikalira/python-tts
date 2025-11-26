@@ -27,8 +27,20 @@ class DiscordVoiceChannel(IVoiceChannel):
     
     async def connect(self) -> None:
         """Connect to the voice channel."""
-        if not self._voice_client or not self._voice_client.is_connected():
-            self._voice_client = await self._channel.connect()
+        # Check if already connected to this guild
+        guild = self._channel.guild
+        existing_client = guild.voice_client
+        
+        if existing_client:
+            # If connected to the same channel, reuse
+            if existing_client.channel.id == self._channel.id:
+                self._voice_client = existing_client
+                return
+            # If connected to different channel, disconnect first
+            await existing_client.disconnect()
+        
+        # Connect to the channel
+        self._voice_client = await self._channel.connect()
     
     async def disconnect(self) -> None:
         """Disconnect from the voice channel."""
@@ -91,23 +103,13 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
         Returns:
             IVoiceChannel if found, None otherwise
         """
-        # Check cache first
-        if member_id in self._member_cache:
-            channel = self._member_cache[member_id]
-            # Verify channel is still valid
-            if self._is_member_in_channel(member_id, channel):
-                return channel
-            else:
-                self._member_cache.pop(member_id, None)
-        
-        # Search all guilds
+        # Search all guilds - don't use cache to avoid connection state issues
         for guild in self._client.guilds:
             for vc in guild.voice_channels:
                 for member in vc.members:
                     if member.id == member_id:
-                        channel = DiscordVoiceChannel(vc)
-                        self._member_cache[member_id] = channel
-                        return channel
+                        # Always return a fresh instance to avoid connection state conflicts
+                        return DiscordVoiceChannel(vc)
         
         return None
     
