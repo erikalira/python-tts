@@ -43,6 +43,7 @@ HAS_FFMPEG = shutil.which('ffmpeg') is not None
 # TTS engine cache to avoid slow initialization
 _tts_engine = None
 _tts_warning_shown = False
+_member_voice_cache = {}  # Cache: member_id -> voice_channel
 
 def get_tts_engine():
     """Get or create a cached TTS engine instance."""
@@ -76,10 +77,21 @@ except Exception:
 
 async def find_voice_channel_for_member(member_id: int):
     """Search all guilds' voice channels for a member with the given id and return the channel."""
+    # First check cache
+    if member_id in _member_voice_cache:
+        channel = _member_voice_cache[member_id]
+        # Verify channel is still valid
+        if channel and any(m.id == member_id for m in channel.members):
+            return channel
+        else:
+            _member_voice_cache.pop(member_id, None)
+    
+    # Fallback to full search (happens on bot startup or cache miss)
     for g in client.guilds:
         for vc in g.voice_channels:
             for m in vc.members:
                 if m.id == member_id:
+                    _member_voice_cache[member_id] = vc  # Update cache
                     return vc
     return None
 
@@ -203,6 +215,15 @@ async def handle_speak(request):
         return web.Response(text=f'play error: {e}', status=500)
 
     return web.Response(text='ok')
+
+
+@client.event
+async def on_voice_state_update(member, before, after):
+    """Track member voice state changes to maintain cache."""
+    if after.channel:
+        _member_voice_cache[member.id] = after.channel
+    else:
+        _member_voice_cache.pop(member.id, None)
 
 
 @client.event
