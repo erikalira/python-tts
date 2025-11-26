@@ -9,7 +9,7 @@ from src.core.entities import AudioFile
 logger = logging.getLogger(__name__)
 
 # Timeout configuration
-IDLE_DISCONNECT_TIMEOUT = 180  # 3 minutes of inactivity before auto-disconnect
+IDLE_DISCONNECT_TIMEOUT = 900  # 15 minutes of inactivity before auto-disconnect
 
 
 class DiscordVoiceChannel(IVoiceChannel):
