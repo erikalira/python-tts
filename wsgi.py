@@ -12,7 +12,7 @@ import asyncio
 import logging
 
 # Import the Flask app
-from src.run_with_flask import app
+from src.app import app
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,10 +23,13 @@ def start_discord_bot():
     """Start the Discord bot with its own event loop in a background thread."""
     try:
         logger.info("Starting Discord bot thread...")
-        from src.discord_bot import _start, TOKEN
+        from src.bot import main
+        from config.settings import Config
         
-        if not TOKEN:
-            logger.error('DISCORD_TOKEN not set!')
+        config = Config()
+        is_valid, error_msg = config.validate()
+        if not is_valid:
+            logger.error(f'Configuration error: {error_msg}')
             return
         
         # Create a new event loop for this thread
@@ -34,7 +37,7 @@ def start_discord_bot():
         asyncio.set_event_loop(loop)
         
         logger.info("Discord bot event loop created, starting bot...")
-        loop.run_until_complete(_start())
+        loop.run_until_complete(main())
     except KeyboardInterrupt:
         logger.info('Discord bot shutting down')
     except Exception as e:
