@@ -5,6 +5,7 @@ services:
     dockerfilePath: ./Dockerfile
     region: ohio
     plan: free
+    # Docker container configuration
     envVars:
       - key: PORT
         value: 10000
