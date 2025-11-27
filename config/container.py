@@ -39,12 +39,13 @@ class Container:
         self.config_repository = InMemoryConfigRepository(config.tts_config)
         self.voice_channel_repository = DiscordVoiceChannelRepository(self.discord_client)
         
-        # TTS Engine Factory
+        # TTS Engine - create default engine based on config
         self.tts_engine_factory = TTSEngineFactory()
+        self.tts_engine = self.tts_engine_factory.create(config.tts_config)
         
         # Use cases
         self.speak_use_case = SpeakTextUseCase(
-            tts_engine_factory=self.tts_engine_factory,
+            tts_engine=self.tts_engine,
             channel_repository=self.voice_channel_repository,
             config_repository=self.config_repository
         )
