@@ -282,6 +282,24 @@ Set in Render dashboard:
 - **Render (Docker)**: Uses pyttsx3 with espeak-ng
 - **Fallback**: Uses gTTS (Google) if pyttsx3 fails
 
+### ⚠️ Free Tier Limitations (Render):
+The **free tier on Render** automatically spins down the service after **15 minutes of inactivity**. 
+
+**What happens:**
+- Bot goes offline after inactivity
+- Discord commands will show "Bot está desligando ou inativo!" with reactivation link
+- Service needs manual restart
+
+**How to reactivate:**
+1. Access the bot URL: https://python-tts-s3z8.onrender.com/
+2. Service will automatically wake up when you access it
+3. Bot reconnects to Discord (may take 30-60 seconds)
+
+**Upgrading to paid tier:**
+- $7/month removes spin-down behavior
+- Bot stays online 24/7
+- No manual reactivation needed
+
 ## Testing
 
 ### Test Discord Bot Endpoint:
@@ -326,6 +344,13 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - Download from https://www.gyan.dev/ffmpeg/builds/
 - Add to PATH or place `ffmpeg.exe` in project root
 - Verify: `ffmpeg -version`
+
+**Bot not responding or showing "interpreter shutdown" error:**
+- Free tier Render service has spun down due to inactivity
+- Access the bot URL to wake it up: https://python-tts-s3z8.onrender.com/
+- Or use any Discord command - the bot will show the reactivation link
+- Wait 30-60 seconds for bot to reconnect to Discord
+- Consider upgrading to paid tier for 24/7 availability
 
 **Docker build fails on Render:**
 - Check logs in Render dashboard
