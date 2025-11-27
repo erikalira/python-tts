@@ -1,0 +1,17 @@
+tools:
+    - name: lizard
+      languages: [Python]
+      extensions: [.py]
+      files: []
+    - name: pylint
+      languages: [Python]
+      extensions: [.py]
+      files: []
+    - name: semgrep
+      languages: [Dockerfile, Python, Shell, YAML]
+      extensions: [.bash, .dockerfile, .py, .sh, .yaml, .yml]
+      files: []
+    - name: trivy
+      languages: [Dockerfile, Python, YAML]
+      extensions: [.dockerfile, .py, .yaml, .yml]
+      files: [Dockerfile, Pipfile.lock, poetry.lock, requirements.txt, uv.lock]
