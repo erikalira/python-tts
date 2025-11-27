@@ -12,7 +12,7 @@ import asyncio
 import logging
 
 # Import the Flask app
-from src.app import app
+from src.app import app, set_container
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,8 +23,8 @@ def start_discord_bot():
     """Start the Discord bot with its own event loop in a background thread."""
     try:
         logger.info("Starting Discord bot thread...")
-        from src.bot import main
         from config.settings import Config
+        from config.container import Container
         
         config = Config()
         is_valid, error_msg = config.validate()
@@ -32,12 +32,25 @@ def start_discord_bot():
             logger.error(f'Configuration error: {error_msg}')
             return
         
+        # Create dependency injection container
+        container = Container(config)
+        
+        # Set container for Flask app to use
+        set_container(container)
+        logger.info("Container initialized and set for Flask app")
+        
         # Create a new event loop for this thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
         logger.info("Discord bot event loop created, starting bot...")
-        loop.run_until_complete(main())
+        
+        # Start Discord bot (without HTTP server since Flask handles HTTP)
+        try:
+            loop.run_until_complete(container.discord_client.start(config.discord_token))
+        except Exception as e:
+            logger.error(f"Error running Discord bot: {e}", exc_info=True)
+            
     except KeyboardInterrupt:
         logger.info('Discord bot shutting down')
     except Exception as e:

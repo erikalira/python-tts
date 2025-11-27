@@ -65,6 +65,9 @@ def _speak_and_send(text: str, backspaces: int):
                     payload['member_id'] = member
                 url = discord_bot_url.rstrip('/') + '/speak'
                 print(f"[tts_hotkey] POST -> {url} payload={payload}")
+                
+                # Use longer timeout for Render cold starts + TTS processing
+                # First attempt: wake up the server
                 resp = requests.post(url, json=payload, timeout=10)
                 print(f"[tts_hotkey] bot response: {resp.status_code} {resp.text!r}")
                 if resp.ok:
@@ -74,6 +77,9 @@ def _speak_and_send(text: str, backspaces: int):
                     return
                 else:
                     print(f"[tts_hotkey] Bot returned non-OK status, falling back to local playback")
+            except requests.exceptions.Timeout:
+                print('[tts_hotkey] Request timed out after 10s (server might be cold starting)')
+                print('[tts_hotkey] Falling back to local playback')
             except Exception:
                 # fall back to local playback on error
                 import traceback
@@ -190,7 +196,16 @@ def on_key(event):
             buffer = []
             return
 
-        if len(key) == 1:
+        # Handle backspace - remove last character from buffer
+        if key in ('backspace', 'back'):
+            if buffer:
+                buffer.pop()
+            return
+
+        # Capture single characters and space
+        if key == 'space':
+            buffer.append(' ')
+        elif len(key) == 1:
             buffer.append(key)
 
 def main():

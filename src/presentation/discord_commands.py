@@ -103,8 +103,12 @@ class DiscordCommands:
         async def about(interaction: discord.Interaction):
             await self._handle_about(interaction)
     
-    async def _send_bot_inactive_message(self, interaction: discord.Interaction) -> None:
-        """Send message about bot being inactive with Render reactivation link."""
+    async def _send_bot_inactive_message(self, interaction: discord.Interaction) -> bool:
+        """Send message about bot being inactive with Render reactivation link.
+        
+        Returns:
+            True if message was sent successfully, False otherwise.
+        """
         try:
             await interaction.followup.send(
                 '❌ **Bot está desligando ou inativo!**\n\n'
@@ -113,8 +117,10 @@ class DiscordCommands:
                 '_(O servidor gratuito do Render desliga após inatividade)_',
                 ephemeral=True
             )
+            return True
         except Exception as e:
             logger.error(f"Failed to send bot inactive message: {e}")
+            return False
     
     async def _handle_join(self, interaction: discord.Interaction):
         """Handle /join command."""
@@ -141,10 +147,23 @@ class DiscordCommands:
             except Exception as e:
                 logger.error(f"[JOIN] Error joining channel: {e}", exc_info=True)
                 error_msg = str(e).lower()
-                if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
-                    await self._send_bot_inactive_message(interaction)
-                else:
-                    await interaction.followup.send(f'Could not join channel: {e}', ephemeral=True)
+                
+                # Try to send appropriate error message
+                try:
+                    if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
+                        success = await self._send_bot_inactive_message(interaction)
+                        # If inactive message failed, send generic error
+                        if not success:
+                            await interaction.followup.send('❌ Bot is shutting down or inactive.', ephemeral=True)
+                    else:
+                        await interaction.followup.send(f'Could not join channel: {e}', ephemeral=True)
+                except Exception as followup_error:
+                    # If even sending error fails, try one last generic message
+                    logger.error(f"[JOIN] Failed to send error message: {followup_error}")
+                    try:
+                        await interaction.followup.send('❌ Bot encountered an error and may be shutting down.', ephemeral=True)
+                    except:
+                        logger.error(f"[JOIN] Could not send any followup message - interaction may be expired")
         else:
             await interaction.response.send_message(
                 'You are not connected to a voice channel.',
@@ -209,13 +228,23 @@ class DiscordCommands:
             
             # Check if it's a shutdown error
             error_msg = str(e).lower()
-            if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
-                await self._send_bot_inactive_message(interaction)
-            else:
-                try:
+            
+            # Try to send appropriate error message
+            try:
+                if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
+                    success = await self._send_bot_inactive_message(interaction)
+                    # If inactive message failed, send generic error
+                    if not success:
+                        await interaction.followup.send('❌ Bot is shutting down or inactive.', ephemeral=True)
+                else:
                     await interaction.followup.send(f'❌ Unexpected error: {str(e)}', ephemeral=True)
-                except Exception as followup_error:
-                    logger.error(f"[SPEAK] Failed to send error followup: {followup_error}")
+            except Exception as followup_error:
+                # If even sending error fails, try one last generic message
+                logger.error(f"[SPEAK] Failed to send error message: {followup_error}")
+                try:
+                    await interaction.followup.send('❌ Bot encountered an error and may be shutting down.', ephemeral=True)
+                except:
+                    logger.error(f"[SPEAK] Could not send any followup message - interaction may be expired")
     
     async def _handle_config(
         self,
