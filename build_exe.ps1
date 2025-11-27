@@ -9,12 +9,13 @@ Set-Location -Path ".\src"
 # --add-data: include icon.png for runtime
 $iconPath = "..\icon.ico"
 $iconDataPath = "..\icon.png;."
+$pyinstaller = "..\.venv\Scripts\pyinstaller.exe"
 
 if (Test-Path $iconPath) {
-    pyinstaller --onefile --noconsole --icon="$iconPath" --add-data="$iconDataPath" tts_hotkey.py
+    & $pyinstaller --onefile --noconsole --icon="$iconPath" --add-data="$iconDataPath" tts_hotkey.py
 } else {
     Write-Host "⚠️ icon.ico not found, building without custom icon"
-    pyinstaller --onefile --noconsole tts_hotkey.py
+    & $pyinstaller --onefile --noconsole tts_hotkey.py
 }
 
 # Move the executable to the root directory if it was created

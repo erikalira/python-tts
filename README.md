@@ -412,9 +412,14 @@ pip install pyinstaller
 
 **Option A - PowerShell script (recommended):**
 ```powershell
+# Se encontrar erro de política de execução, execute primeiro:
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+# Depois execute o script de build:
 .\build_exe.ps1
 ```
+
+**Nota:** O script já está configurado para usar o PyInstaller do ambiente virtual (`.venv`), então não é necessário ativar o venv manualmente.
 
 **Option B - Batch script:**
 ```cmd
