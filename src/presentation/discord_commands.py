@@ -110,12 +110,11 @@ class DiscordCommands:
             True if message was sent successfully, False otherwise.
         """
         try:
-            await interaction.followup.send(
-                '❌ **Bot está desligando ou inativo!**\n\n'
+            await interaction.edit_original_response(
+                content='❌ **Bot está desligando ou inativo!**\n\n'
                 '🔄 Para reativar o bot, acesse:\n'
                 '**https://python-tts-s3z8.onrender.com/**\n\n'
-                '_(O servidor gratuito do Render desliga após inatividade)_',
-                ephemeral=True
+                '_(O servidor gratuito do Render desliga após inatividade)_'
             )
             return True
         except Exception as e:
@@ -141,9 +140,9 @@ class DiscordCommands:
                 channel = await self._channel_repository.find_by_channel_id(member.voice.channel.id)
                 if channel:
                     await channel.connect()
-                    await interaction.followup.send('Joined your channel.', ephemeral=True)
+                    await interaction.edit_original_response(content='Joined your channel.')
                 else:
-                    await interaction.followup.send('Could not find voice channel.', ephemeral=True)
+                    await interaction.edit_original_response(content='Could not find voice channel.')
             except Exception as e:
                 logger.error(f"[JOIN] Error joining channel: {e}", exc_info=True)
                 error_msg = str(e).lower()
@@ -154,16 +153,16 @@ class DiscordCommands:
                         success = await self._send_bot_inactive_message(interaction)
                         # If inactive message failed, send generic error
                         if not success:
-                            await interaction.followup.send('❌ Bot is shutting down or inactive.', ephemeral=True)
+                            await interaction.edit_original_response(content='❌ Bot is shutting down or inactive.')
                     else:
-                        await interaction.followup.send(f'Could not join channel: {e}', ephemeral=True)
+                        await interaction.edit_original_response(content=f'Could not join channel: {e}')
                 except Exception as followup_error:
                     # If even sending error fails, try one last generic message
                     logger.error(f"[JOIN] Failed to send error message: {followup_error}")
                     try:
-                        await interaction.followup.send('❌ Bot encountered an error and may be shutting down.', ephemeral=True)
+                        await interaction.edit_original_response(content='❌ Bot encountered an error and may be shutting down.')
                     except:
-                        logger.error(f"[JOIN] Could not send any followup message - interaction may be expired")
+                        logger.error(f"[JOIN] Could not edit response - interaction may be expired")
         else:
             await interaction.response.send_message(
                 'You are not connected to a voice channel.',
@@ -191,9 +190,8 @@ class DiscordCommands:
         
         if not HAS_PYNACL or not HAS_FFMPEG:
             logger.warning("[SPEAK] Missing PyNaCl or FFmpeg dependencies")
-            await interaction.followup.send(
-                'PyNaCl and FFmpeg are required for voice support.',
-                ephemeral=True
+            await interaction.edit_original_response(
+                content='PyNaCl and FFmpeg are required for voice support.'
             )
             return
         
@@ -220,9 +218,9 @@ class DiscordCommands:
             logger.info(f"[SPEAK] Use case result: {result}")
             
             if result["success"]:
-                await interaction.followup.send('✅ Spoke the text.', ephemeral=True)
+                await interaction.edit_original_response(content='✅ Spoke the text.')
             else:
-                await interaction.followup.send(f'❌ Error: {result["message"]}', ephemeral=True)
+                await interaction.edit_original_response(content=f'❌ Error: {result["message"]}')
         except Exception as e:
             logger.error(f"[SPEAK] Unexpected error in _handle_speak: {e}", exc_info=True)
             
@@ -235,16 +233,16 @@ class DiscordCommands:
                     success = await self._send_bot_inactive_message(interaction)
                     # If inactive message failed, send generic error
                     if not success:
-                        await interaction.followup.send('❌ Bot is shutting down or inactive.', ephemeral=True)
+                        await interaction.edit_original_response(content='❌ Bot is shutting down or inactive.')
                 else:
-                    await interaction.followup.send(f'❌ Unexpected error: {str(e)}', ephemeral=True)
+                    await interaction.edit_original_response(content=f'❌ Unexpected error: {str(e)}')
             except Exception as followup_error:
                 # If even sending error fails, try one last generic message
                 logger.error(f"[SPEAK] Failed to send error message: {followup_error}")
                 try:
-                    await interaction.followup.send('❌ Bot encountered an error and may be shutting down.', ephemeral=True)
+                    await interaction.edit_original_response(content='❌ Bot encountered an error and may be shutting down.')
                 except:
-                    logger.error(f"[SPEAK] Could not send any followup message - interaction may be expired")
+                    logger.error(f"[SPEAK] Could not edit response - interaction may be expired")
     
     async def _handle_config(
         self,

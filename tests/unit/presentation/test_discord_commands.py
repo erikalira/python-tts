@@ -72,13 +72,13 @@ class TestDiscordCommands:
         interaction.guild_id = 67890
         interaction.user.id = 11111
         interaction.response = AsyncMock()
-        interaction.followup = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
         
         # Call handler
         await commands._handle_speak(interaction, "Test message")
         
-        # Verify followup was sent
-        interaction.followup.send.assert_called_once()
+        # Verify edit_original_response was called
+        interaction.edit_original_response.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_handle_speak_not_in_voice_channel(
@@ -109,13 +109,13 @@ class TestDiscordCommands:
         interaction = Mock()
         interaction.user.voice = None
         interaction.response = AsyncMock()
-        interaction.followup = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
         
         # Call handler
         await commands._handle_speak(interaction, "Test")
         
-        # Verify followup response
-        interaction.followup.send.assert_called_once()
+        # Verify edit_original_response was called
+        interaction.edit_original_response.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_handle_config_get(
