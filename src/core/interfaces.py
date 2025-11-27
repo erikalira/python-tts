@@ -53,6 +53,11 @@ class IVoiceChannelRepository(ABC):
     """Interface for finding voice channels."""
     
     @abstractmethod
+    async def find_connected_channel(self) -> Optional[IVoiceChannel]:
+        """Find any voice channel where bot is already connected."""
+        pass
+    
+    @abstractmethod
     async def find_by_member_id(self, member_id: int) -> Optional[IVoiceChannel]:
         """Find voice channel where member is connected."""
         pass

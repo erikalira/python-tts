@@ -89,7 +89,13 @@ class SpeakTextUseCase:
     
     async def _find_voice_channel(self, request: TTSRequest):
         """Find appropriate voice channel based on request parameters."""
-        # Try explicit channel ID first
+        # PRIORITY: Try to find already connected channel first
+        connected_channel = await self._channel_repository.find_connected_channel()
+        if connected_channel:
+            logger.info("[USE_CASE] Using already connected voice channel")
+            return connected_channel
+        
+        # Try explicit channel ID
         if request.channel_id:
             channel = await self._channel_repository.find_by_channel_id(request.channel_id)
             if channel:

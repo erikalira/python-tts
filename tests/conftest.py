@@ -53,6 +53,10 @@ class MockVoiceChannelRepository(IVoiceChannelRepository):
         self.channel = channel or MockVoiceChannel()
         self.return_none = return_none
     
+    async def find_connected_channel(self):
+        """Mock find connected channel."""
+        return None if self.return_none else self.channel
+    
     async def find_by_member_id(self, member_id: int):
         """Mock find by member ID."""
         return None if self.return_none else self.channel

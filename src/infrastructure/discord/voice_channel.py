@@ -41,12 +41,26 @@ class DiscordVoiceChannel(IVoiceChannel):
             # If connected to the same channel, reuse
             if existing_client.channel.id == self._channel.id:
                 self._voice_client = existing_client
+                logger.info("[VOICE_CHANNEL] Already connected to this channel, reusing connection")
                 return
             # If connected to different channel, disconnect first
+            logger.info("[VOICE_CHANNEL] Connected to different channel, disconnecting first")
             await existing_client.disconnect()
+            await asyncio.sleep(0.5)  # Wait for disconnect to complete
         
         # Connect to the channel
+        logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name}")
         self._voice_client = await self._channel.connect()
+        
+        # Wait a bit for connection to fully establish
+        await asyncio.sleep(1)
+        
+        # Verify connection
+        if self._voice_client and self._voice_client.is_connected():
+            logger.info("[VOICE_CHANNEL] Successfully connected and verified")
+        else:
+            logger.error("[VOICE_CHANNEL] Connection established but verification failed")
+            raise RuntimeError("Failed to verify voice connection")
     
     async def disconnect(self) -> None:
         """Disconnect from the voice channel."""
@@ -63,23 +77,38 @@ class DiscordVoiceChannel(IVoiceChannel):
         Args:
             audio: AudioFile to play
         """
-        if not self._voice_client or not self._voice_client.is_connected():
+        # Double-check connection status
+        if not self._voice_client:
+            logger.error("[VOICE_CHANNEL] No voice client available")
             raise RuntimeError("Not connected to voice channel")
+        
+        if not self._voice_client.is_connected():
+            logger.error(f"[VOICE_CHANNEL] Voice client exists but is_connected() = False")
+            logger.error(f"[VOICE_CHANNEL] Voice client state: {self._voice_client}")
+            raise RuntimeError("Not connected to voice channel")
+        
+        logger.info(f"[VOICE_CHANNEL] Voice client is connected, preparing to play audio: {audio.path}")
         
         # Cancel any pending disconnect
         self._cancel_disconnect_timer()
         
         # Stop current playback if any
         if self._voice_client.is_playing():
+            logger.info("[VOICE_CHANNEL] Stopping current playback")
             self._voice_client.stop()
+            await asyncio.sleep(0.2)  # Wait for stop to complete
         
         # Play audio
+        logger.info("[VOICE_CHANNEL] Starting audio playback")
         source = discord.FFmpegPCMAudio(audio.path)
         self._voice_client.play(source)
         
         # Wait for playback to finish
+        logger.info("[VOICE_CHANNEL] Waiting for playback to complete...")
         while self._voice_client.is_playing():
             await asyncio.sleep(0.1)
+        
+        logger.info("[VOICE_CHANNEL] Playback completed")
         
         # Schedule auto-disconnect after idle timeout (disabled)
         # self._schedule_disconnect()
@@ -148,6 +177,27 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
         self._member_cache: Dict[int, DiscordVoiceChannel] = {}
         # Cache to reuse same instance per channel (critical for timer management)
         self._channel_instances: Dict[int, DiscordVoiceChannel] = {}
+    
+    async def find_connected_channel(self) -> Optional[IVoiceChannel]:
+        """Find any voice channel where bot is already connected.
+        
+        Returns:
+            IVoiceChannel if bot is connected, None otherwise
+        """
+        try:
+            for guild in self._client.guilds:
+                if guild.voice_client and guild.voice_client.is_connected():
+                    channel = guild.voice_client.channel
+                    if channel:
+                        logger.info(f"Found connected channel: {channel.name} in guild {guild.name}")
+                        # Reuse existing instance if available
+                        if channel.id not in self._channel_instances:
+                            self._channel_instances[channel.id] = DiscordVoiceChannel(channel)
+                        return self._channel_instances[channel.id]
+        except Exception as e:
+            logger.error(f"Error finding connected channel: {e}")
+        
+        return None
     
     async def find_by_member_id(self, member_id: int) -> Optional[IVoiceChannel]:
         """Find voice channel where member is connected.
