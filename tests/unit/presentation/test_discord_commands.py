@@ -144,7 +144,9 @@ class TestDiscordCommands:
         
         # Mock interaction
         interaction = Mock()
-        interaction.guild_id = 12345
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.user.mention = "<@67890>"
         interaction.response = AsyncMock()
         
         # Call handler with no parameters (get current config)
@@ -180,7 +182,8 @@ class TestDiscordCommands:
         
         # Mock interaction
         interaction = Mock()
-        interaction.guild_id = 12345
+        interaction.user = Mock()
+        interaction.user.id = 67890
         interaction.response = AsyncMock()
         
         # Call handler with engine parameter
@@ -190,7 +193,7 @@ class TestDiscordCommands:
         interaction.response.send_message.assert_called_once()
         
         # Verify config was updated
-        config = mock_config_repository.get_config(12345)
+        config = mock_config_repository.get_config(67890)
         assert config.engine == "pyttsx3"
     
     @pytest.mark.asyncio

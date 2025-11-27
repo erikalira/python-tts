@@ -78,15 +78,15 @@ class MockConfigRepository(IConfigRepository):
             rate=180
         )
     
-    def get_config(self, guild_id: int = None) -> TTSConfig:
+    def get_config(self, user_id: int = None) -> TTSConfig:
         """Get config."""
-        if guild_id and guild_id in self.configs:
-            return self.configs[guild_id]
+        if user_id and user_id in self.configs:
+            return self.configs[user_id]
         return self.default_config
     
-    def set_config(self, guild_id: int, config: TTSConfig) -> None:
+    def set_config(self, user_id: int, config: TTSConfig) -> None:
         """Set config."""
-        self.configs[guild_id] = config
+        self.configs[user_id] = config
 
 
 # Pytest fixtures

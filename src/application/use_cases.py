@@ -54,8 +54,8 @@ class SpeakTextUseCase:
             return {"success": False, "message": "no voice channel found"}
         
         logger.info(f"[USE_CASE] Voice channel found, getting config...")
-        # Get TTS config for guild
-        config = self._config_repository.get_config(request.guild_id)
+        # Get TTS config for user
+        config = self._config_repository.get_config(request.member_id)
         logger.info(f"[USE_CASE] Config: engine={config.engine}, language={config.language}")
         
         # Generate audio
@@ -121,12 +121,12 @@ class ConfigureTTSUseCase:
         """
         self._config_repository = config_repository
     
-    def execute(self, guild_id: int, engine: Optional[str] = None, 
+    def execute(self, user_id: int, engine: Optional[str] = None, 
                 language: Optional[str] = None, voice_id: Optional[str] = None) -> dict:
         """Execute TTS configuration.
         
         Args:
-            guild_id: Guild to configure
+            user_id: User to configure
             engine: TTS engine ('gtts' or 'pyttsx3')
             language: Language code
             voice_id: Voice ID for pyttsx3
@@ -134,7 +134,7 @@ class ConfigureTTSUseCase:
         Returns:
             dict with current configuration
         """
-        current_config = self._config_repository.get_config(guild_id)
+        current_config = self._config_repository.get_config(user_id)
         
         # If no parameters, return current config
         if engine is None and language is None and voice_id is None:
@@ -160,7 +160,7 @@ class ConfigureTTSUseCase:
             current_config.voice_id = voice_id
         
         # Save configuration
-        self._config_repository.set_config(guild_id, current_config)
+        self._config_repository.set_config(user_id, current_config)
         
         return {
             "success": True,

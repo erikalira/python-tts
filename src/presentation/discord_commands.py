@@ -63,13 +63,12 @@ class DiscordCommands:
         async def speak(interaction: discord.Interaction, text: str):
             await self._handle_speak(interaction, text)
         
-        @self._tree.command(name='config', description='Configure TTS settings for this server (Admin only)')
+        @self._tree.command(name='config', description='Configure your personal TTS settings')
         @app_commands.describe(
             engine='TTS engine: gtts (Google TTS, best quality) or pyttsx3 (espeak-ng, offline)',
             language='Language code for gTTS (pt, en, es, fr, etc.) or leave empty',
             voice_id='Voice ID for pyttsx3/espeak-ng (e.g., roa/pt-br, en-us) or leave empty'
         )
-        @app_commands.default_permissions(administrator=True)
         async def config(
             interaction: discord.Interaction,
             engine: str = None,
@@ -178,15 +177,8 @@ class DiscordCommands:
         voice_id: str | None
     ):
         """Handle /config command."""
-        if not interaction.guild:
-            await interaction.response.send_message(
-                'This command can only be used in a server.',
-                ephemeral=True
-            )
-            return
-        
         result = self._config_use_case.execute(
-            guild_id=interaction.guild.id,
+            user_id=interaction.user.id,
             engine=engine,
             language=language,
             voice_id=voice_id
@@ -204,8 +196,8 @@ class DiscordCommands:
         # If no parameters, show current config
         if engine is None and language is None and voice_id is None:
             embed = discord.Embed(
-                title="🎤 TTS Configuration",
-                description=f"Current settings for **{interaction.guild.name}**",
+                title="🎤 Your TTS Configuration",
+                description=f"Personal settings for {interaction.user.mention}",
                 color=discord.Color.blue()
             )
             embed.add_field(name="Engine", value=config['engine'].upper(), inline=True)
@@ -220,7 +212,7 @@ class DiscordCommands:
             # Show success message
             embed = discord.Embed(
                 title="✅ TTS Configuration Updated",
-                description=f"New settings for **{interaction.guild.name}**",
+                description=f"Your personal settings have been updated",
                 color=discord.Color.green()
             )
             embed.add_field(name="Engine", value=config['engine'].upper(), inline=True)

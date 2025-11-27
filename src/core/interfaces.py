@@ -72,13 +72,13 @@ class IConfigRepository(ABC):
     """Interface for configuration management."""
     
     @abstractmethod
-    def get_config(self, guild_id: Optional[int] = None) -> TTSConfig:
-        """Get TTS configuration for guild or global default."""
+    def get_config(self, user_id: Optional[int] = None) -> TTSConfig:
+        """Get TTS configuration for user or global default."""
         pass
     
     @abstractmethod
-    def set_config(self, guild_id: int, config: TTSConfig) -> None:
-        """Set TTS configuration for a specific guild."""
+    def set_config(self, user_id: int, config: TTSConfig) -> None:
+        """Set TTS configuration for a specific user."""
         pass
 
 

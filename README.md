@@ -209,11 +209,11 @@ Once the bot is running:
 - `/join` - Bot joins your current voice channel
 - `/leave` - Bot leaves the voice channel
 - `/speak <text>` - Bot speaks the provided text
-- `/config` - Configure TTS settings for your server (Admin only)
+- `/config` - Configure your personal TTS settings
 
 ### Using `/config` Command
 
-**View current configuration:**
+**View your current configuration:**
 ```
 /config
 ```
@@ -233,7 +233,7 @@ Once the bot is running:
 /config engine:pyttsx3 voice_id:roa/es
 ```
 
-**Note:** Configuration set via `/config` is temporary and resets when the bot restarts. For permanent settings, use environment variables on Render.
+**Note:** Each user has their own voice configuration. Changes you make only affect your voice, not other users. Configuration set via `/config` is temporary and resets when the bot restarts. For permanent default settings, use environment variables on Render.
 
 ## Architecture
 

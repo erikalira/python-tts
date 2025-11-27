@@ -17,19 +17,19 @@ class InMemoryConfigRepository(IConfigRepository):
             default_config: Default TTS configuration
         """
         self._default_config = default_config
-        self._guild_configs: Dict[int, TTSConfig] = {}
+        self._user_configs: Dict[int, TTSConfig] = {}
     
-    def get_config(self, guild_id: Optional[int] = None) -> TTSConfig:
-        """Get TTS configuration for guild or global default.
+    def get_config(self, user_id: Optional[int] = None) -> TTSConfig:
+        """Get TTS configuration for user or global default.
         
         Args:
-            guild_id: Guild ID or None for default
+            user_id: User ID or None for default
             
         Returns:
-            TTSConfig for the guild or default
+            TTSConfig for the user or default
         """
-        if guild_id and guild_id in self._guild_configs:
-            return self._guild_configs[guild_id]
+        if user_id and user_id in self._user_configs:
+            return self._user_configs[user_id]
         
         # Return copy to avoid external modification
         return TTSConfig(
@@ -39,14 +39,14 @@ class InMemoryConfigRepository(IConfigRepository):
             rate=self._default_config.rate
         )
     
-    def set_config(self, guild_id: int, config: TTSConfig) -> None:
-        """Set TTS configuration for a specific guild.
+    def set_config(self, user_id: int, config: TTSConfig) -> None:
+        """Set TTS configuration for a specific user.
         
         Args:
-            guild_id: Guild ID
+            user_id: User ID
             config: New configuration
         """
-        self._guild_configs[guild_id] = TTSConfig(
+        self._user_configs[user_id] = TTSConfig(
             engine=config.engine,
             language=config.language,
             voice_id=config.voice_id,
