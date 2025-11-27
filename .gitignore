@@ -40,6 +40,9 @@ build/
 *.spec
 tts_hotkey.exe
 
+# Log Files
+*.log
+
 # Generated icons (keep in repo)
 # icon.ico
 # icon.png
