@@ -217,32 +217,32 @@ class DiscordCommands:
             result = await self._speak_use_case.execute(tts_request)
             logger.info(f"[SPEAK] Use case result: {result}")
             
-            if result["success"]:
-                await interaction.edit_original_response(content='✅ Spoke the text.')
-            else:
-                await interaction.edit_original_response(content=f'❌ Error: {result["message"]}')
+            # Try to delete the "thinking..." message to avoid clutter
+            # If it fails (e.g., Cloudflare rate limit), just ignore silently
+            try:
+                if result["success"]:
+                    # Delete the thinking message on success
+                    await interaction.delete_original_response()
+                else:
+                    # On error, try to edit with error message
+                    await interaction.edit_original_response(content=f'❌ Error: {result["message"]}')
+            except Exception as msg_error:
+                # Ignore message update errors - audio already played or failed
+                logger.debug(f"[SPEAK] Could not update interaction message: {msg_error}")
+                
         except Exception as e:
             logger.error(f"[SPEAK] Unexpected error in _handle_speak: {e}", exc_info=True)
             
-            # Check if it's a shutdown error
-            error_msg = str(e).lower()
-            
-            # Try to send appropriate error message
+            # Try to send error message, but don't fail if we can't
             try:
+                error_msg = str(e).lower()
                 if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
-                    success = await self._send_bot_inactive_message(interaction)
-                    # If inactive message failed, send generic error
-                    if not success:
-                        await interaction.edit_original_response(content='❌ Bot is shutting down or inactive.')
+                    await interaction.edit_original_response(content='❌ Bot is shutting down or inactive.')
                 else:
                     await interaction.edit_original_response(content=f'❌ Unexpected error: {str(e)}')
-            except Exception as followup_error:
-                # If even sending error fails, try one last generic message
-                logger.error(f"[SPEAK] Failed to send error message: {followup_error}")
-                try:
-                    await interaction.edit_original_response(content='❌ Bot encountered an error and may be shutting down.')
-                except:
-                    logger.error(f"[SPEAK] Could not edit response - interaction may be expired")
+            except:
+                # If we can't send error message, just log it
+                logger.debug(f"[SPEAK] Could not send error message to user")
     
     async def _handle_config(
         self,
