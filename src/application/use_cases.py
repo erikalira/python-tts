@@ -56,7 +56,8 @@ class SpeakTextUseCase:
         logger.info(f"[USE_CASE] Voice channel found, getting config...")
         # Get TTS config for user
         config = self._config_repository.get_config(request.member_id)
-        logger.info(f"[USE_CASE] Config: engine={config.engine}, language={config.language}")
+        logger.info(f"[USE_CASE] User ID for config: {request.member_id}")
+        logger.info(f"[USE_CASE] Config retrieved: engine={config.engine}, language={config.language}, voice_id={config.voice_id}")
         
         # Generate audio
         logger.info(f"[USE_CASE] Generating audio...")

@@ -144,13 +144,15 @@ class DiscordCommands:
             if not isinstance(member, discord.Member) and interaction.guild:
                 member = interaction.guild.get_member(member.id)
             
-            logger.info(f"[SPEAK] Member ID: {member.id if member else 'None'}, Guild ID: {interaction.guild.id if interaction.guild else 'None'}")
+            # Always use interaction.user.id to ensure we have the user ID
+            user_id = interaction.user.id
+            logger.info(f"[SPEAK] User ID: {user_id}, Member ID: {member.id if member else 'None'}, Guild ID: {interaction.guild.id if interaction.guild else 'None'}")
             
-            # Create request
+            # Create request (use user_id for member_id to ensure config lookup works)
             tts_request = TTSRequest(
                 text=text,
                 guild_id=interaction.guild.id if interaction.guild else None,
-                member_id=member.id if member else None
+                member_id=user_id
             )
             
             # Execute use case
