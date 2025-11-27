@@ -39,12 +39,12 @@ class Container:
         self.config_repository = InMemoryConfigRepository(config.tts_config)
         self.voice_channel_repository = DiscordVoiceChannelRepository(self.discord_client)
         
-        # TTS Engine (created per request via factory)
-        self._tts_engine_factory = TTSEngineFactory()
+        # TTS Engine Factory
+        self.tts_engine_factory = TTSEngineFactory()
         
         # Use cases
         self.speak_use_case = SpeakTextUseCase(
-            tts_engine=self._create_tts_engine(),
+            tts_engine_factory=self.tts_engine_factory,
             channel_repository=self.voice_channel_repository,
             config_repository=self.config_repository
         )
@@ -66,10 +66,6 @@ class Container:
         
         # Register event handlers
         self._register_events()
-    
-    def _create_tts_engine(self):
-        """Create TTS engine based on configuration."""
-        return self._tts_engine_factory.create(self.config.tts_config)
     
     def _register_events(self):
         """Register Discord event handlers."""

@@ -16,18 +16,18 @@ class SpeakTextUseCase:
     
     def __init__(
         self,
-        tts_engine: ITTSEngine,
+        tts_engine_factory,
         channel_repository: IVoiceChannelRepository,
         config_repository: IConfigRepository
     ):
         """Initialize use case with dependencies (Dependency Injection).
         
         Args:
-            tts_engine: TTS engine implementation
+            tts_engine_factory: Factory to create TTS engines
             channel_repository: Voice channel repository
             config_repository: Configuration repository
         """
-        self._tts_engine = tts_engine
+        self._tts_engine_factory = tts_engine_factory
         self._channel_repository = channel_repository
         self._config_repository = config_repository
     
@@ -59,9 +59,13 @@ class SpeakTextUseCase:
         logger.info(f"[USE_CASE] User ID for config: {request.member_id}")
         logger.info(f"[USE_CASE] Config retrieved: engine={config.engine}, language={config.language}, voice_id={config.voice_id}")
         
+        # Create appropriate TTS engine based on user config
+        logger.info(f"[USE_CASE] Creating TTS engine for: {config.engine}")
+        tts_engine = self._tts_engine_factory.create(config)
+        
         # Generate audio
         logger.info(f"[USE_CASE] Generating audio...")
-        audio = await self._tts_engine.generate_audio(request.text, config)
+        audio = await tts_engine.generate_audio(request.text, config)
         logger.info(f"[USE_CASE] Audio generated: {audio.path}")
         
         try:

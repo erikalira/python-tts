@@ -248,17 +248,17 @@ The `/config` command now has **user-friendly dropdown menus** with all availabl
 Simply use `/config` and select from the dropdown options:
 - **Voz** (Voice):
   - 🎭 **Mulher do Google** (Google TTS - best quality, requires internet)
-  - 🤖 **Repo** (Robotic voice - faster, works offline)
+  - 🤖 **R.E.P.O.** (Robotic voice - faster, works offline)
 
 - **Idioma** (Language) - for Google voice only:
   - Português, Inglês, Espanhol, Francês, Alemão, Italiano, Japonês, Coreano, Chinês
 
-- **Sotaque** (Accent) - for Repo voice only:
+- **Sotaque** (Accent) - for R.E.P.O. voice only:
   - Português (Brasil), Inglês (EUA), Inglês (Reino Unido), Espanhol, Francês
 
 **Examples:**
 - Select "Mulher do Google" + "Inglês" for English Google TTS
-- Select "Repo" + "Português (Brasil)" for Brazilian Portuguese robotic voice
+- Select "R.E.P.O." + "Português (Brasil)" for Brazilian Portuguese robotic voice
 
 **Note:** Each user has their own voice configuration. Changes you make only affect your voice, not other users. Configuration set via `/config` is temporary and resets when the bot restarts. For permanent default settings, use environment variables on Render.
 

@@ -67,11 +67,11 @@ class DiscordCommands:
         @app_commands.describe(
             voz='Escolha a voz do TTS',
             idioma='Escolha o idioma (apenas para Mulher do Google)',
-            sotaque='Escolha o sotaque (apenas para Repo)'
+            sotaque='Escolha o sotaque (apenas para R.E.P.O.)'
         )
         @app_commands.choices(voz=[
             app_commands.Choice(name='Mulher do Google (melhor qualidade)', value='gtts'),
-            app_commands.Choice(name='Repo (robótico, mais rápido)', value='pyttsx3')
+            app_commands.Choice(name='R.E.P.O. (robótico, mais rápido)', value='pyttsx3')
         ])
         @app_commands.choices(idioma=[
             app_commands.Choice(name='Português', value='pt'),
@@ -271,7 +271,7 @@ class DiscordCommands:
         # If no parameters, show current config
         if voz is None and idioma is None and sotaque is None:
             # Map engine values to friendly names
-            voz_nome = "Mulher do Google" if config['engine'] == 'gtts' else "Repo (robótico)"
+            voz_nome = "Mulher do Google" if config['engine'] == 'gtts' else "R.E.P.O. (robótico)"
             
             embed = discord.Embed(
                 title="🎤 Sua Configuração de Voz",
@@ -288,7 +288,7 @@ class DiscordCommands:
             )
         else:
             # Show success message
-            voz_nome = "Mulher do Google" if config['engine'] == 'gtts' else "Repo (robótico)"
+            voz_nome = "Mulher do Google" if config['engine'] == 'gtts' else "R.E.P.O. (robótico)"
             
             embed = discord.Embed(
                 title="✅ Configuração de Voz Atualizada",
