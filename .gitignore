@@ -47,3 +47,4 @@ tts_hotkey.exe
 # icon.ico
 # icon.png
 # create_icon.py is kept for rebuilding
+.codacy/logs/codacy-cli.log
