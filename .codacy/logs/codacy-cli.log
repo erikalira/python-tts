@@ -16,3 +16,14 @@
 2025-11-27T18:34:50-03:00 [DEBUG] (codacy-cli-v2/config/runtimes-installer.go:151) Runtime extraction completed runtime=python version=3.11.11
 2025-11-27T18:34:50-03:00 [DEBUG] (codacy-cli-v2/config/tools-installer.go:361) Creating Python virtual environment tool=semgrep version=1.78.0 venvDir=/home/lira/.cache/codacy/tools/semgrep@1.78.0/venv
 2025-11-27T18:34:54-03:00 [DEBUG] (codacy-cli-v2/config/tools-installer.go:375) Installing Python package tool=semgrep version=1.78.0 pipPath=/home/lira/.cache/codacy/tools/semgrep@1.78.0/venv/bin/pip
+2025-11-27T18:35:04-03:00 [DEBUG] (codacy-cli-v2/config/tools-installer.go:387) Python tool installation completed tool=semgrep version=1.78.0
+2025-11-27T18:35:07-03:00 [INFO] (codacy-cli-v2/cli-v2.go:27) Starting Codacy CLI version=1.0.0-main.362.sha.6b54110 (6b54110) built at 2025-11-25T14:54:35Z
+2025-11-27T18:35:07-03:00 [INFO] (codacy-cli-v2/cmd/root.go:34) Executing CLI command full_command=[/home/lira/.cache/codacy/codacy-cli-v2/1.0.0-main.362.sha.6b54110/codacy-cli-v2 install] args=[] command=install
+2025-11-27T18:35:07-03:00 [INFO] (codacy-cli-v2/cmd/install.go:78) Starting installation process
+2025-11-27T18:35:07-03:00 [INFO] (codacy-cli-v2/cmd/install.go:116) Tool scheduled for installation tool=trivy version=0.66.0
+2025-11-27T18:35:07-03:00 [INFO] (codacy-cli-v2/cmd/install.go:116) Tool scheduled for installation version=1.17.31 tool=lizard
+2025-11-27T18:35:07-03:00 [INFO] (codacy-cli-v2/cmd/install.go:116) Tool scheduled for installation tool=pylint version=3.3.9
+2025-11-27T18:35:07-03:00 [INFO] (codacy-cli-v2/cmd/install.go:185) Installing tool tool=lizard version=1.17.31
+2025-11-27T18:35:07-03:00 [DEBUG] (codacy-cli-v2/config/tools-installer.go:125) Installing Python tool version=1.17.31 tool=lizard
+2025-11-27T18:35:07-03:00 [DEBUG] (codacy-cli-v2/config/tools-installer.go:334) Starting Python tool installation tool=lizard version=1.17.31
+2025-11-27T18:35:07-03:00 [DEBUG] (codacy-cli-v2/config/tools-installer.go:361) Creating Python virtual environment tool=lizard version=1.17.31 venvDir=/home/lira/.cache/codacy/tools/lizard@1.17.31/venv
