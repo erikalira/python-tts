@@ -1,5 +1,4 @@
 """HTTP server using aiohttp."""
-import asyncio
 import logging
 from aiohttp import web
 from src.presentation.http_controllers import SpeakController

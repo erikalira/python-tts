@@ -1,7 +1,5 @@
 """Tests for WSGI entry point."""
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-import threading
+from unittest.mock import Mock, patch
 
 
 class TestWSGI:
@@ -33,8 +31,8 @@ class TestWSGI:
         """Test that start_discord_bot creates new event loop."""
         with patch('wsgi.asyncio.new_event_loop') as mock_new_loop, \
              patch('wsgi.asyncio.set_event_loop'), \
-             patch('config.settings.Config') as MockConfig, \
-             patch('src.bot.main'):
+             patch('wsgi.config.settings.Config') as MockConfig, \
+             patch('wsgi.src.bot.main'):
             
             # Mock valid config
             mock_config = Mock()
@@ -45,14 +43,15 @@ class TestWSGI:
             mock_loop = Mock()
             mock_new_loop.return_value = mock_loop
             
-            from wsgi import start_discord_bot
+            # Import and reload to ensure fresh state
+            import importlib
+            import wsgi
+            importlib.reload(wsgi)
+            
+            # Call the function directly
+            wsgi.start_discord_bot()
             
             # Should create and use new loop
-            try:
-                start_discord_bot()
-            except Exception:
-                pass  # Expected to fail without full setup
-            
             mock_new_loop.assert_called_once()
     
     def test_start_discord_bot_validates_config(self):

@@ -1,5 +1,4 @@
 """Tests for core entities."""
-import pytest
 from src.core.entities import TTSRequest, TTSConfig, AudioFile
 
 

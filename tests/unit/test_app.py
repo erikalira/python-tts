@@ -1,7 +1,4 @@
 """Tests for Flask app factory."""
-import pytest
-from unittest.mock import Mock, patch
-
 
 class TestFlaskApp:
     """Test Flask app creation."""
