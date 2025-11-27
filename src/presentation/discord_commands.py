@@ -65,17 +65,39 @@ class DiscordCommands:
         
         @self._tree.command(name='config', description='Configure your personal TTS settings')
         @app_commands.describe(
-            engine='TTS engine: gtts (Google TTS, best quality) or pyttsx3 (espeak-ng, offline)',
-            language='Language code for gTTS (pt, en, es, fr, etc.) or leave empty',
-            voice_id='Voice ID for pyttsx3/espeak-ng (e.g., roa/pt-br, en-us) or leave empty'
+            voz='Escolha a voz do TTS',
+            idioma='Escolha o idioma (apenas para Mulher do Google)',
+            sotaque='Escolha o sotaque (apenas para Repo)'
         )
+        @app_commands.choices(voz=[
+            app_commands.Choice(name='Mulher do Google (melhor qualidade)', value='gtts'),
+            app_commands.Choice(name='Repo (robótico, mais rápido)', value='pyttsx3')
+        ])
+        @app_commands.choices(idioma=[
+            app_commands.Choice(name='Português', value='pt'),
+            app_commands.Choice(name='Inglês', value='en'),
+            app_commands.Choice(name='Espanhol', value='es'),
+            app_commands.Choice(name='Francês', value='fr'),
+            app_commands.Choice(name='Alemão', value='de'),
+            app_commands.Choice(name='Italiano', value='it'),
+            app_commands.Choice(name='Japonês', value='ja'),
+            app_commands.Choice(name='Coreano', value='ko'),
+            app_commands.Choice(name='Chinês', value='zh')
+        ])
+        @app_commands.choices(sotaque=[
+            app_commands.Choice(name='Português (Brasil)', value='roa/pt-br'),
+            app_commands.Choice(name='Inglês (EUA)', value='en-us'),
+            app_commands.Choice(name='Inglês (Reino Unido)', value='en-gb'),
+            app_commands.Choice(name='Espanhol', value='roa/es'),
+            app_commands.Choice(name='Francês', value='roa/fr')
+        ])
         async def config(
             interaction: discord.Interaction,
-            engine: str = None,
-            language: str = None,
-            voice_id: str = None
+            voz: str = None,
+            idioma: str = None,
+            sotaque: str = None
         ):
-            await self._handle_config(interaction, engine, language, voice_id)
+            await self._handle_config(interaction, voz, idioma, sotaque)
         
         @self._tree.command(name='about', description='Show bot information and version')
         async def about(interaction: discord.Interaction):
@@ -174,16 +196,16 @@ class DiscordCommands:
     async def _handle_config(
         self,
         interaction: discord.Interaction,
-        engine: str | None,
-        language: str | None,
-        voice_id: str | None
+        voz: str | None,
+        idioma: str | None,
+        sotaque: str | None
     ):
         """Handle /config command."""
         result = self._config_use_case.execute(
             user_id=interaction.user.id,
-            engine=engine,
-            language=language,
-            voice_id=voice_id
+            engine=voz,
+            language=idioma,
+            voice_id=sotaque
         )
         
         if not result["success"]:
@@ -196,30 +218,35 @@ class DiscordCommands:
         config = result["config"]
         
         # If no parameters, show current config
-        if engine is None and language is None and voice_id is None:
+        if voz is None and idioma is None and sotaque is None:
+            # Map engine values to friendly names
+            voz_nome = "Mulher do Google" if config['engine'] == 'gtts' else "Repo (robótico)"
+            
             embed = discord.Embed(
-                title="🎤 Your TTS Configuration",
-                description=f"Personal settings for {interaction.user.mention}",
+                title="🎤 Sua Configuração de Voz",
+                description=f"Configurações pessoais de {interaction.user.mention}",
                 color=discord.Color.blue()
             )
-            embed.add_field(name="Engine", value=config['engine'].upper(), inline=True)
-            embed.add_field(name="Language", value=config['language'], inline=True)
-            embed.add_field(name="Voice ID", value=config['voice_id'], inline=True)
+            embed.add_field(name="Voz", value=voz_nome, inline=True)
+            embed.add_field(name="Idioma", value=config['language'].upper(), inline=True)
+            embed.add_field(name="Sotaque", value=config['voice_id'], inline=True)
             embed.add_field(
-                name="How to change",
-                value="Use `/config engine:gtts` or `/config engine:pyttsx3 voice_id:roa/pt-br`",
+                name="Como alterar",
+                value="Use `/config` e escolha as opções no menu dropdown",
                 inline=False
             )
         else:
             # Show success message
+            voz_nome = "Mulher do Google" if config['engine'] == 'gtts' else "Repo (robótico)"
+            
             embed = discord.Embed(
-                title="✅ TTS Configuration Updated",
-                description=f"Your personal settings have been updated",
+                title="✅ Configuração de Voz Atualizada",
+                description=f"Suas configurações pessoais foram atualizadas",
                 color=discord.Color.green()
             )
-            embed.add_field(name="Engine", value=config['engine'].upper(), inline=True)
-            embed.add_field(name="Language", value=config['language'], inline=True)
-            embed.add_field(name="Voice ID", value=config['voice_id'], inline=True)
+            embed.add_field(name="Voz", value=voz_nome, inline=True)
+            embed.add_field(name="Idioma", value=config['language'].upper(), inline=True)
+            embed.add_field(name="Sotaque", value=config['voice_id'], inline=True)
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
     

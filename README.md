@@ -209,29 +209,32 @@ Once the bot is running:
 - `/join` - Bot joins your current voice channel
 - `/leave` - Bot leaves the voice channel
 - `/speak <text>` - Bot speaks the provided text
-- `/config` - Configure your personal TTS settings
+- `/config` - Configure your personal TTS settings (with friendly dropdown menus)
 
 ### Using `/config` Command
+
+The `/config` command now has **user-friendly dropdown menus** with all available options:
 
 **View your current configuration:**
 ```
 /config
 ```
 
-**Change to gTTS with English:**
-```
-/config engine:gtts language:en
-```
+**Change your voice settings:**
+Simply use `/config` and select from the dropdown options:
+- **Voz** (Voice):
+  - 🎭 **Mulher do Google** (Google TTS - best quality, requires internet)
+  - 🤖 **Repo** (Robotic voice - faster, works offline)
 
-**Change to espeak-ng with Portuguese (Brazil):**
-```
-/config engine:pyttsx3 voice_id:roa/pt-br
-```
+- **Idioma** (Language) - for Google voice only:
+  - Português, Inglês, Espanhol, Francês, Alemão, Italiano, Japonês, Coreano, Chinês
 
-**Change to espeak-ng with Spanish:**
-```
-/config engine:pyttsx3 voice_id:roa/es
-```
+- **Sotaque** (Accent) - for Repo voice only:
+  - Português (Brasil), Inglês (EUA), Inglês (Reino Unido), Espanhol, Francês
+
+**Examples:**
+- Select "Mulher do Google" + "Inglês" for English Google TTS
+- Select "Repo" + "Português (Brasil)" for Brazilian Portuguese robotic voice
 
 **Note:** Each user has their own voice configuration. Changes you make only affect your voice, not other users. Configuration set via `/config` is temporary and resets when the bot restarts. For permanent default settings, use environment variables on Render.
 
