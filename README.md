@@ -100,13 +100,37 @@ python -m src.bot
 
 O bot iniciará automaticamente o servidor HTTP na porta configurada.
 
-**6. (Opcional) Run the hotkey app para controle via teclado:**
+**6. Run the hotkey app (Windows System Tray):**
 ```powershell
 # Em outro terminal
 python src\tts_hotkey.py
 ```
 
-Agora você pode digitar `{hello world}` em qualquer aplicativo Windows e o bot falará no Discord!
+O aplicativo aparecerá na **bandeja do sistema** (system tray) do Windows com um ícone de microfone! 🎤
+
+**Como usar:**
+- Digite `{hello world}` em **qualquer aplicativo Windows** e o bot falará no Discord!
+- **Clique com botão direito** no ícone da bandeja para ver opções
+- Escolha **Exit** para fechar o aplicativo
+- Não precisa mais usar `del` para sair - use o menu da bandeja!
+
+### 🎯 Criando Executável (.exe) para Windows
+
+Para criar um executável standalone que não precisa do Python instalado:
+
+```powershell
+# Instalar PyInstaller
+pip install pyinstaller
+
+# Executar o script de build
+.\build_exe.ps1
+```
+
+Isso criará `tts_hotkey.exe` na pasta raiz. Você pode:
+- ✅ Executar direto (duplo clique) - abre na bandeja do sistema
+- ✅ Adicionar ao **Iniciar com o Windows** (pasta `shell:startup`)
+- ✅ Distribuir para outros computadores (não precisa Python instalado)
+- ✅ Ícone customizado aparece na bandeja e no executável
 
 ### 🌐 Production with Gunicorn (Local Testing)
 

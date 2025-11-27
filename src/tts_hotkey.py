@@ -6,6 +6,8 @@ import pyttsx3
 import threading
 from dotenv import load_dotenv
 from pathlib import Path
+from pystray import Icon, Menu, MenuItem
+from PIL import Image
 
 # Load .env file
 env_path = Path(__file__).resolve().parents[1] / ".env"
@@ -208,11 +210,65 @@ def on_key(event):
         elif len(key) == 1:
             buffer.append(key)
 
+# System tray icon management
+tray_icon = None
+
+def create_icon_image():
+    """Load icon from file or create a simple default one."""
+    icon_path = Path(__file__).resolve().parents[1] / "icon.png"
+    
+    if icon_path.exists():
+        return Image.open(icon_path)
+    
+    # Fallback: create simple icon
+    img = Image.new('RGB', (64, 64), color='#2C2F33')
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([22, 15, 42, 35], fill='#7289DA')
+    draw.ellipse([22, 30, 42, 45], fill='#7289DA')
+    return img
+
+def on_status_click(icon, item):
+    """Show status message."""
+    discord_url = os.getenv('DISCORD_BOT_URL')
+    if discord_url:
+        print(f"✅ Connected to Discord bot: {discord_url}")
+    else:
+        print("⚠️ No Discord bot configured (local TTS only)")
+
+def on_quit(icon, item):
+    """Exit the application."""
+    print("🛑 TTS Hotkey exiting...")
+    icon.stop()
+    os._exit(0)
+
+def setup_tray_icon():
+    """Setup system tray icon with menu."""
+    global tray_icon
+    
+    menu = Menu(
+        MenuItem('TTS Hotkey Running', on_status_click, default=True),
+        MenuItem('Type {text} to speak', lambda: None, enabled=False),
+        Menu.SEPARATOR,
+        MenuItem('Exit', on_quit)
+    )
+    
+    icon_image = create_icon_image()
+    tray_icon = Icon("TTS Hotkey", icon_image, "TTS Hotkey - Type {text}", menu)
+    
+    return tray_icon
+
 def main():
-    print("TTS Hotkey running. Type {text} anywhere to speak it out loud.")
-    print("Press del to exit.")
+    print("🎤 TTS Hotkey running in system tray")
+    print("📝 Type {text} anywhere to speak it out loud")
+    print("🖱️ Right-click the tray icon to exit")
+    
+    # Setup keyboard hook
     keyboard.hook(on_key)
-    keyboard.wait('del')
+    
+    # Setup and run system tray icon (blocks until quit)
+    icon = setup_tray_icon()
+    icon.run()
 
 if __name__ == '__main__':
     main()

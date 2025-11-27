@@ -33,3 +33,14 @@ htmlcov/
 .coverage
 coverage.xml
 .pytest_cache/
+
+# Build files
+dist/
+build/
+*.spec
+tts_hotkey.exe
+
+# Generated icons (keep in repo)
+# icon.ico
+# icon.png
+# create_icon.py is kept for rebuilding
