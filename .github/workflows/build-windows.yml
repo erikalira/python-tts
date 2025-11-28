@@ -1,0 +1,72 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Permite executar manualmente
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build executable
+      run: |
+        cd src
+        python -m pyinstaller --onefile --windowed --icon=../icon.ico --name=tts_hotkey_premium tts_hotkey_configurable.py
+        
+    - name: Test executable
+      run: |
+        cd src/dist
+        dir
+        
+    - name: Upload Artifact (sempre)
+      uses: actions/upload-artifact@v3
+      with:
+        name: tts-hotkey-windows-exe
+        path: src/dist/tts_hotkey_premium.exe
+        retention-days: 30
+        
+    - name: Create Release (só em tags)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: src/dist/tts_hotkey_premium.exe
+        name: "TTS Hotkey ${{ github.ref_name }}"
+        body: |
+          ## 🎯 TTS Hotkey Premium - Windows Executable
+          
+          ### ✨ Recursos:
+          - 🎤 Discord TTS integrado
+          - ⌨️ Hotkeys configuráveis  
+          - 🔊 Múltiplas vozes
+          - 📱 Interface gráfica
+          - 🚀 100% Portável
+          
+          ### 📥 Como usar:
+          1. Baixe o arquivo `tts_hotkey_premium.exe`
+          2. Execute diretamente (não precisa instalar nada!)
+          3. Configure suas hotkeys
+          4. Divirta-se!
+          
+          **Tamanho**: ~30MB | **Compatibilidade**: Windows 10/11
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
