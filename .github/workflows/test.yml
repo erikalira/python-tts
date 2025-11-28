@@ -13,18 +13,39 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.x"
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y portaudio19-dev python3-pyaudio espeak espeak-data libespeak1 libespeak-dev ffmpeg
 
       - name: Install dependencies
         run: |
-          pip install pytest pytest-cov
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=src --cov-report=xml
+          export PYTHONPATH="${PYTHONPATH}:${PWD}"
+          pytest --cov=src --cov-report=xml --tb=short -v
 
       - name: Upload coverage to Codacy
+        continue-on-error: true
         run: |
-          bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
+          if [ -n "$CODACY_PROJECT_TOKEN" ]; then
+            bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
+          else
+            echo "CODACY_PROJECT_TOKEN not set, skipping coverage upload"
+          fi
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}

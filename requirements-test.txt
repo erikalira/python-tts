@@ -4,5 +4,8 @@ pytest-asyncio>=0.23.0
 pytest-cov>=4.1.0
 pytest-mock>=3.12.0
 
-# Testing utilities
+# Testing utilities - dependencies needed by test modules
 aiohttp[speedups]
+discord.py
+pyttsx3
+gtts
