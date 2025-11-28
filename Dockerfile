@@ -29,5 +29,5 @@ USER appuser
 # Expose port (Render provides this via $PORT)
 EXPOSE 10000
 
-# Run the application with gunicorn
-CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --log-level info wsgi:app
+# Run the bot directly with Python
+CMD ["python3", "main.py"]

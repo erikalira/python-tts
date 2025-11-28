@@ -131,7 +131,8 @@ def _parse_int(value):
 def run_flask():
     """Run Flask server (used in threading mode)."""
     port = int(os.getenv('PORT', os.getenv('FLASK_PORT', '8080')))
-    app.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False, debug=False)
+    host = os.getenv('FLASK_HOST', '127.0.0.1')
+    app.run(host=host, port=port, threaded=True, use_reloader=False, debug=False)
 
 
 if __name__ == '__main__':
