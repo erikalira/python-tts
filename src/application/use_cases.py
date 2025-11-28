@@ -135,41 +135,47 @@ class SpeakTextUseCase:
             logger.info("[USE_CASE] Using already connected voice channel")
             return connected_channel
         
-        # Try to find user in a voice channel (most common case for executável)
+        # EXECUTÁVEL INDEPENDENCE: Find target channel and auto-connect
+        target_channel = None
+        
+        # SECURITY FIRST: Only connect to channel where user is currently connected
         if request.member_id:
             logger.info(f"[USE_CASE] Looking for member {request.member_id} in voice channels...")
-            channel = await self._channel_repository.find_by_member_id(request.member_id)
-            if channel:
-                logger.info(f"[USE_CASE] Found member {request.member_id} in voice channel, will connect there")
-                return channel
+            target_channel = await self._channel_repository.find_by_member_id(request.member_id)
+            if target_channel:
+                logger.info(f"[USE_CASE] Found member {request.member_id} in voice channel, will auto-connect there")
+                # AUTO-CONNECT: Only to user's current channel for security
+                await self._auto_connect_to_channel(target_channel)
+                return target_channel
             else:
-                logger.warning(f"[USE_CASE] Member {request.member_id} not found in any voice channel")
+                logger.warning(f"[USE_CASE] SECURITY: Member {request.member_id} not in any voice channel - no auto-connect")
+                return None
         
-        # Try explicit channel ID
+        # Try explicit channel ID (for manual /join commands)
         if request.channel_id:
             logger.info(f"[USE_CASE] Trying explicit channel ID: {request.channel_id}")
-            channel = await self._channel_repository.find_by_channel_id(request.channel_id)
-            if channel:
-                logger.info("[USE_CASE] Found channel by explicit channel ID")
-                return channel
+            target_channel = await self._channel_repository.find_by_channel_id(request.channel_id)
+            if target_channel:
+                logger.info("[USE_CASE] Found channel by explicit channel ID, will connect")
+                await self._auto_connect_to_channel(target_channel)
+                return target_channel
         
-        # Try guild ID - find any available channel
-        if request.guild_id:
-            logger.info(f"[USE_CASE] Trying any channel in guild: {request.guild_id}")
-            channel = await self._channel_repository.find_by_guild_id(request.guild_id)
-            if channel:
-                logger.info("[USE_CASE] Found available channel in specified guild")
-                return channel
-        
-        # Last resort: try any available channel
-        logger.info("[USE_CASE] Last resort: trying any available channel")
-        fallback_channel = await self._channel_repository.find_by_guild_id(None)
-        if fallback_channel:
-            logger.info("[USE_CASE] Found fallback channel")
-        else:
-            logger.warning("[USE_CASE] No voice channels found anywhere")
-        
-        return fallback_channel
+        # If no member_id or explicit channel_id, don't auto-connect for security
+        logger.warning("[USE_CASE] SECURITY: No member_id provided - refusing to auto-connect to prevent information leakage")
+        return None
+    
+    async def _auto_connect_to_channel(self, channel):
+        """Auto-connect bot to voice channel ONLY where user is currently connected."""
+        try:
+            logger.info("[USE_CASE] AUTO-CONNECT: Connecting to user's current voice channel")
+            if not channel.is_connected():
+                await channel.connect()
+                logger.info("[USE_CASE] AUTO-CONNECT: Successfully connected bot to user's voice channel")
+            else:
+                logger.info("[USE_CASE] AUTO-CONNECT: Bot already connected to user's voice channel")
+        except Exception as e:
+            logger.warning(f"[USE_CASE] AUTO-CONNECT: Failed to auto-connect: {e}")
+            # Continue anyway, the regular connection logic will handle retries
 
 
 class ConfigureTTSUseCase:

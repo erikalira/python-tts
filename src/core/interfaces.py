@@ -68,7 +68,7 @@ class IVoiceChannelRepository(ABC):
         pass
     
     @abstractmethod
-    async def find_by_guild_id(self, guild_id: int) -> Optional[IVoiceChannel]:
+    async def find_by_guild_id(self, guild_id: Optional[int]) -> Optional[IVoiceChannel]:
         """Find first available voice channel in guild."""
         pass
 

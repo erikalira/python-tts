@@ -81,7 +81,7 @@ class DiscordVoiceChannel(IVoiceChannel):
                 if self._voice_client:
                     try:
                         await self._voice_client.disconnect()
-                    except:
+                    except (discord.errors.ClientException, Exception):
                         pass
                     self._voice_client = None
                 
@@ -156,7 +156,7 @@ class DiscordVoiceChannel(IVoiceChannel):
             try:
                 if self._voice_client and self._voice_client.is_playing():
                     self._voice_client.stop()
-            except:
+            except (discord.errors.ClientException, Exception):
                 pass
             raise
         
