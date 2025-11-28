@@ -56,30 +56,34 @@ Write-Host "INSTALANDO DEPENDENCIAS..." -ForegroundColor Green
 if (Test-Path "requirements.txt") {
     Write-Host "Instalando requirements.txt..." -ForegroundColor Yellow
     try {
-        & pip install -r requirements.txt
+        & python -m pip install -r requirements.txt
         Write-Host "Requirements instalados com sucesso!" -ForegroundColor Green
     } catch {
         Write-Host "ERRO ao instalar requirements!" -ForegroundColor Red
-        Write-Host "Verifique se pip esta disponivel" -ForegroundColor Yellow
+        Write-Host "Verifique se python esta disponivel" -ForegroundColor Yellow
         exit 1
     }
 } else {
     Write-Host "requirements.txt nao encontrado - instalando dependencias basicas..." -ForegroundColor Yellow
 }
 
-# Instalar PyInstaller se necessario
+# Instalar PyInstaller usando python -m pip
 Write-Host "Verificando PyInstaller..." -ForegroundColor Yellow
 try {
-    $pyinstaller_check = & pyinstaller --version 2>&1
-    Write-Host "PyInstaller ja instalado: $pyinstaller_check" -ForegroundColor Green
+    $pyinstaller_check = & python -m PyInstaller --version 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "PyInstaller ja instalado: $pyinstaller_check" -ForegroundColor Green
+    } else {
+        throw "PyInstaller nao encontrado"
+    }
 } catch {
     Write-Host "Instalando PyInstaller..." -ForegroundColor Yellow
     try {
-        & pip install pyinstaller
+        & python -m pip install pyinstaller
         Write-Host "PyInstaller instalado com sucesso!" -ForegroundColor Green
     } catch {
         Write-Host "ERRO ao instalar PyInstaller!" -ForegroundColor Red
-        Write-Host "Execute manualmente: pip install pyinstaller" -ForegroundColor Yellow
+        Write-Host "Execute manualmente: python -m pip install pyinstaller" -ForegroundColor Yellow
         exit 1
     }
 }
@@ -87,19 +91,38 @@ try {
 # Verificar novamente se PyInstaller funciona
 Write-Host "Testando PyInstaller..." -ForegroundColor Yellow
 try {
-    $final_check = & pyinstaller --version 2>&1
-    Write-Host "PyInstaller funcionando: $final_check" -ForegroundColor Green
+    $final_check = & python -m PyInstaller --version 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "PyInstaller funcionando: $final_check" -ForegroundColor Green
+    } else {
+        throw "PyInstaller nao responde"
+    }
 } catch {
     Write-Host "ERRO: PyInstaller nao esta funcionando!" -ForegroundColor Red
-    Write-Host "Tente reinstalar: pip install --upgrade pyinstaller" -ForegroundColor Yellow
-    exit 1
+    Write-Host "Tentando via python -c..." -ForegroundColor Yellow
+    
+    # Teste alternativo
+    try {
+        & python -c "import PyInstaller; print('PyInstaller OK')" 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "PyInstaller importado com sucesso!" -ForegroundColor Green
+        } else {
+            throw "Falha na importacao"
+        }
+    } catch {
+        Write-Host "ERRO CRITICO: PyInstaller nao pode ser usado!" -ForegroundColor Red
+        Write-Host "Solucoes:" -ForegroundColor Yellow
+        Write-Host "1. python -m pip install --upgrade pyinstaller" -ForegroundColor White
+        Write-Host "2. Reiniciar terminal/PowerShell" -ForegroundColor White
+        Write-Host "3. Verificar PATH do Python" -ForegroundColor White
+        exit 1
+    }
 }
 
 Write-Host "Todas as dependencias verificadas!" -ForegroundColor Green
 Write-Host
 
 # Confirmar build
-Write-Host
 Write-Host "PRONTO PARA COMPILAR!" -ForegroundColor Yellow
 Write-Host "Resultado: dist/tts_hotkey_premium.exe" -ForegroundColor Cyan
 Write-Host
@@ -117,16 +140,17 @@ Write-Host "COMPILANDO..." -ForegroundColor Yellow
 if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
 if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
 
-# Comando PyInstaller otimizado
-$pyinstaller_args = @(
+# Comando PyInstaller usando python -m
+Write-Host "Executando PyInstaller via python -m..." -ForegroundColor Yellow
+
+$pyinstaller_cmd = @(
+    "python", "-m", "PyInstaller",
     "--onefile",
-    "--windowed",
+    "--windowed", 
     "--name=tts_hotkey_premium",
-    "--icon=icon.ico",
-    "--add-data=*.py;.",
     "--hidden-import=pystray",
     "--hidden-import=PIL",
-    "--hidden-import=PIL._tkinter_finder",
+    "--hidden-import=PIL._tkinter_finder", 
     "--hidden-import=pyttsx3",
     "--hidden-import=pyttsx3.drivers",
     "--hidden-import=pyttsx3.drivers.sapi5",
@@ -137,7 +161,7 @@ $pyinstaller_args = @(
 )
 
 try {
-    & pyinstaller @pyinstaller_args
+    & @pyinstaller_cmd
 
     if (Test-Path "dist/tts_hotkey_premium.exe") {
         Write-Host
@@ -163,7 +187,7 @@ try {
         Write-Host "=" * 60 -ForegroundColor Cyan
         
     } else {
-        throw "Arquivo executável não foi criado"
+        throw "Arquivo executavel nao foi criado"
     }
     
 } catch {
@@ -172,10 +196,10 @@ try {
     Write-Host "Detalhes: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host
     Write-Host "SOLUCOES:" -ForegroundColor Yellow
-    Write-Host "   1. Instalar dependencias: pip install -r requirements.txt" -ForegroundColor White
-    Write-Host "   2. Atualizar PyInstaller: pip install --upgrade pyinstaller" -ForegroundColor White
-    Write-Host "   3. Executar como Administrador" -ForegroundColor White
-    Write-Host "   4. Verificar antivirus (pode bloquear)" -ForegroundColor White
+    Write-Host "   1. python -m pip install --upgrade pyinstaller" -ForegroundColor White
+    Write-Host "   2. Reiniciar PowerShell como Administrador" -ForegroundColor White
+    Write-Host "   3. Verificar antivirus (pode bloquear)" -ForegroundColor White
+    Write-Host "   4. Testar: python -c 'import PyInstaller'" -ForegroundColor White
     exit 1
 }
 
