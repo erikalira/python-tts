@@ -35,6 +35,8 @@ class Config:
                     cls.TTS_ENGINE = data.get('tts_engine', cls.TTS_ENGINE)
                     cls.TTS_LANGUAGE = data.get('tts_language', cls.TTS_LANGUAGE)
                     print(f"[CONFIG] ✅ Configuração carregada de: {config_file}")
+                    # Update environment variables after loading
+                    cls.update_environment_variables()
             except Exception as e:
                 print(f"[CONFIG] ⚠️ Erro ao carregar configuração: {e}")
     
@@ -56,6 +58,21 @@ class Config:
         except Exception as e:
             print(f"[CONFIG] ❌ Erro ao salvar configuração: {e}")
     
+    @classmethod
+    def update_environment_variables(cls):
+        """Update environment variables after configuration changes."""
+        os.environ['DISCORD_BOT_URL'] = cls.DISCORD_BOT_URL or ''
+        if cls.DISCORD_CHANNEL_ID:
+            os.environ['DISCORD_CHANNEL_ID'] = cls.DISCORD_CHANNEL_ID
+        if cls.DISCORD_MEMBER_ID:
+            os.environ['DISCORD_MEMBER_ID'] = cls.DISCORD_MEMBER_ID
+        os.environ['TTS_ENGINE'] = cls.TTS_ENGINE
+        os.environ['TTS_LANGUAGE'] = cls.TTS_LANGUAGE
+        os.environ['TTS_VOICE_ID'] = cls.TTS_VOICE_ID
+        if cls.TTS_OUTPUT_DEVICE:
+            os.environ['TTS_OUTPUT_DEVICE'] = cls.TTS_OUTPUT_DEVICE
+        print(f"[CONFIG] ✅ Variáveis de ambiente atualizadas - DISCORD_MEMBER_ID: {cls.DISCORD_MEMBER_ID}")
+
     @classmethod
     def is_configured(cls):
         """Check if minimum configuration is present."""
@@ -268,6 +285,9 @@ class ConfigWindow:
         # Save to file
         Config.save_to_file()
         
+        # CRITICAL: Update environment variables for immediate use
+        Config.update_environment_variables()
+        
         self.result = True
         self.root.quit()
         self.root.destroy()
@@ -387,8 +407,12 @@ def _speak_and_send(text: str, backspaces: int):
                 if ch:
                     payload['channel_id'] = ch
                 member = os.getenv('DISCORD_MEMBER_ID')
+                print(f"[DEBUG] DISCORD_MEMBER_ID from env: '{member}'")
+                print(f"[DEBUG] Config.DISCORD_MEMBER_ID: '{Config.DISCORD_MEMBER_ID}'")
                 if member:
                     payload['member_id'] = member
+                else:
+                    print("[DEBUG] No member_id found in environment variables!")
                 
                 url = discord_bot_url.rstrip('/') + '/speak'
                 resp = requests.post(url, json=payload, timeout=Config.REQUEST_TIMEOUT)
