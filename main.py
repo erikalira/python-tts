@@ -1,12 +1,12 @@
-"""Main entry point for the Discord bot with Flask health check server.
+"""Main entry point for the Discord bot with keep-alive HTTP server.
 
-This runs both the Discord bot and a Flask server for keep-alive monitoring.
+Runs the Discord bot and the Flask app defined in `src.app`.
 """
 import os
 import threading
 import asyncio
 import logging
-from flask import Flask
+from src.app import run_flask, set_container
 
 # Configure logging
 logging.basicConfig(
@@ -14,25 +14,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-# Simple Flask app for health checks
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return {"status": "online", "bot": "Discord TTS Bot"}, 200
-
-@app.route('/health')
-def health():
-    return {"status": "healthy"}, 200
-
-
-def run_flask():
-    """Run Flask server in a separate thread."""
-    port = int(os.getenv('PORT', '10000'))
-    logger.info(f"Starting Flask health check server on port {port}")
-    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
-
 
 def run_discord_bot():
     """Run the Discord bot."""
@@ -50,9 +31,14 @@ def run_discord_bot():
     # Create dependency injection container
     container = Container(config)
     logger.info("Container initialized")
+    # Make container available to Flask endpoints (e.g., /speak)
+    set_container(container)
     
     # Start Discord bot
     try:
+        if config.discord_token is None:
+            logger.error("Discord token is not set")
+            return
         asyncio.run(container.discord_client.start(config.discord_token))
     except KeyboardInterrupt:
         logger.info('Bot shutting down...')
@@ -64,7 +50,7 @@ if __name__ == '__main__':
     # Start Flask in background thread
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
-    logger.info("Flask health check server started")
+    logger.info("Flask server started")
     
     # Run Discord bot in main thread
     run_discord_bot()

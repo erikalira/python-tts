@@ -40,6 +40,9 @@ async def main():
     
     # Start Discord bot
     try:
+        if config.discord_token is None:
+            logger.error("Discord token is not configured")
+            return
         await container.discord_client.start(config.discord_token)
     except KeyboardInterrupt:
         logger.info("Shutting down...")

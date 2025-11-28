@@ -8,7 +8,6 @@ requests
 pynacl
 flask
 python-dotenv
-gunicorn
 gtts
 pystray
 Pillow

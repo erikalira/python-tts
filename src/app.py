@@ -1,7 +1,7 @@
-"""Flask server entry point (for production with Gunicorn).
+"""Flask HTTP server used for keep-alive and HTTP endpoints.
 
-This keeps compatibility with the existing wsgi.py and run_with_flask.py
-while using the new architecture.
+This app is used together with the Discord bot. The DI container
+is injected by `main.py` via `set_container`.
 """
 import os
 import threading
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Global variable to store the container (will be set by wsgi.py)
+# Global variable to store the container (set by main.py)
 _container = None
 
 
@@ -82,28 +82,12 @@ def speak():
         )
         
         # Execute use case in the Discord bot's event loop
-        # We need to run this asynchronously in the bot's loop
-        loop = None
-        for thread in threading.enumerate():
-            if hasattr(thread, '_loop'):
-                loop = thread._loop
-                break
-        
-        # If we can't find the bot's loop, create a task in a new way
-        if not loop:
-            # Get the current event loop from the bot thread
-            future = asyncio.run_coroutine_threadsafe(
-                _container.speak_use_case.execute(tts_request),
-                _container.discord_client.loop
-            )
-            # Wait for result with timeout
-            result = future.result(timeout=30)
-        else:
-            future = asyncio.run_coroutine_threadsafe(
-                _container.speak_use_case.execute(tts_request),
-                loop
-            )
-            result = future.result(timeout=30)
+        # Always use the Discord client's loop set in the container
+        future = asyncio.run_coroutine_threadsafe(
+            _container.speak_use_case.execute(tts_request),
+            _container.discord_client.loop
+        )
+        result = future.result(timeout=30)
         
         if result["success"]:
             return jsonify({"message": result["message"]}), 200
@@ -130,8 +114,9 @@ def _parse_int(value):
 
 def run_flask():
     """Run Flask server (used in threading mode)."""
-    port = int(os.getenv('PORT', os.getenv('FLASK_PORT', '8080')))
-    host = os.getenv('FLASK_HOST', '127.0.0.1')
+    # Bind to 0.0.0.0 in containers; default port 10000 or $PORT
+    port = int(os.getenv('PORT', os.getenv('FLASK_PORT', '10000')))
+    host = os.getenv('FLASK_HOST', '0.0.0.0')
     app.run(host=host, port=port, threaded=True, use_reloader=False, debug=False)
 
 
