@@ -2,7 +2,6 @@
 
 Runs the Discord bot and the Flask app defined in `src.app`.
 """
-import os
 import threading
 import asyncio
 import logging

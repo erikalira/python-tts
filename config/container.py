@@ -6,7 +6,6 @@ and injecting them into components.
 import discord
 from discord import app_commands
 from config.settings import Config
-from src.core.entities import TTSConfig
 from src.application.use_cases import SpeakTextUseCase, ConfigureTTSUseCase
 from src.infrastructure.tts.engines import TTSEngineFactory
 from src.infrastructure.tts.config_repository import InMemoryConfigRepository
