@@ -25,7 +25,7 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(sample_tts_request)
         
         assert result["success"] is True
-        assert result["message"] == "ok"
+        assert result["message"] == "Áudio reproduzido com sucesso"
         assert len(mock_tts_engine.calls) == 1
         assert len(mock_channel_repository.channel.played_audio) == 1
     
@@ -69,7 +69,7 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(sample_tts_request)
         
         assert result["success"] is False
-        assert result["message"] == "no voice channel found"
+        assert result["message"] == "Bot não está conectado a nenhuma sala de voz. Use o comando /join primeiro ou certifique-se de que o bot tenha acesso ao canal."
     
     async def test_execute_finds_by_channel_id(
         self,
