@@ -34,9 +34,9 @@ jobs:
       - name: Build executable
         run: |
           python -c "import sys; print('Python path:', sys.executable)"
-          pip show pyinstaller
+          where pyinstaller
           cd src
-          python -m pyinstaller --onefile --windowed --name=tts_hotkey_premium --collect-all pyttsx3 --collect-all keyboard --collect-all requests --collect-all pystray --collect-all PIL tts_hotkey_configurable.py
+          pyinstaller --onefile --windowed --name=tts_hotkey_premium --collect-all pyttsx3 --collect-all keyboard --collect-all requests --collect-all pystray --collect-all PIL tts_hotkey_configurable.py
 
       - name: Test executable
         run: |
