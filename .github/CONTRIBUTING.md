@@ -1,6 +1,6 @@
 # 🤝 Contributing to TTS Hotkey Windows
 
-Obrigado pelo interesse em contribuir! Este projeto segue **Clean Architecture** e os princípios **SOLID**. 
+Obrigado pelo interesse em contribuir! Este projeto segue **Clean Architecture** e os princípios **SOLID**.
 
 ## 📐 Arquitetura do Projeto
 
@@ -44,7 +44,9 @@ Presentation → Application → Domain ← Infrastructure
 ## 🎓 Princípios SOLID Obrigatórios
 
 ### 1. **S**ingle Responsibility Principle (SRP)
+
 ✅ **FAÇA**: Cada classe deve ter uma única responsabilidade
+
 ```python
 # ✅ BOM - Uma responsabilidade: gerar áudio com gTTS
 class GTTSEngine(ITTSEngine):
@@ -54,6 +56,7 @@ class GTTSEngine(ITTSEngine):
 ```
 
 ❌ **NÃO FAÇA**: Misturar responsabilidades
+
 ```python
 # ❌ RUIM - Muitas responsabilidades
 class TTSService:
@@ -63,7 +66,9 @@ class TTSService:
 ```
 
 ### 2. **O**pen/Closed Principle (OCP)
+
 ✅ **FAÇA**: Aberto para extensão, fechado para modificação
+
 ```python
 # ✅ BOM - Adicione novos engines sem modificar código existente
 class ElevenLabsEngine(ITTSEngine):  # Nova implementação
@@ -73,6 +78,7 @@ class ElevenLabsEngine(ITTSEngine):  # Nova implementação
 ```
 
 ❌ **NÃO FAÇA**: Modificar código existente para adicionar funcionalidades
+
 ```python
 # ❌ RUIM - Modificando classe existente
 class GTTSEngine:
@@ -82,7 +88,9 @@ class GTTSEngine:
 ```
 
 ### 3. **L**iskov Substitution Principle (LSP)
+
 ✅ **FAÇA**: Implementações devem ser substituíveis por suas interfaces
+
 ```python
 # ✅ BOM - Qualquer ITTSEngine funciona no use case
 class SpeakTextUseCase:
@@ -91,7 +99,9 @@ class SpeakTextUseCase:
 ```
 
 ### 4. **I**nterface Segregation Principle (ISP)
+
 ✅ **FAÇA**: Interfaces pequenas e específicas
+
 ```python
 # ✅ BOM - Interface focada
 class ITTSEngine(ABC):
@@ -101,6 +111,7 @@ class ITTSEngine(ABC):
 ```
 
 ❌ **NÃO FAÇA**: Interfaces gordas com métodos não relacionados
+
 ```python
 # ❌ RUIM - Interface muito grande
 class ITTSService(ABC):
@@ -110,7 +121,9 @@ class ITTSService(ABC):
 ```
 
 ### 5. **D**ependency Inversion Principle (DIP)
+
 ✅ **FAÇA**: Dependa de abstrações (interfaces), não de implementações
+
 ```python
 # ✅ BOM - Use case depende de interface
 class SpeakTextUseCase:
@@ -124,6 +137,7 @@ class SpeakTextUseCase:
 ```
 
 ❌ **NÃO FAÇA**: Depender de implementações concretas
+
 ```python
 # ❌ RUIM - Use case depende de implementação concreta
 class SpeakTextUseCase:
@@ -137,6 +151,7 @@ class SpeakTextUseCase:
 Antes de submeter seu PR, verifique:
 
 ### ✅ Arquitetura
+
 - [ ] Código está na camada correta
 - [ ] Dependências apontam para dentro (não viola Clean Architecture)
 - [ ] Não há import circular
@@ -144,6 +159,7 @@ Antes de submeter seu PR, verifique:
 - [ ] Entidades estão em `core/entities.py`
 
 ### ✅ SOLID
+
 - [ ] **SRP**: Cada classe tem uma única responsabilidade
 - [ ] **OCP**: Novo código não modifica classes existentes
 - [ ] **LSP**: Implementações seguem contratos das interfaces
@@ -151,12 +167,14 @@ Antes de submeter seu PR, verifique:
 - [ ] **DIP**: Use cases dependem de interfaces, não de implementações concretas
 
 ### ✅ Testes
+
 - [ ] Testes unitários para novas classes
 - [ ] Coverage mantém ou melhora (mínimo 77%)
 - [ ] Mocks usam interfaces, não implementações concretas
 - [ ] Testes rodam com `pytest`
 
 ### ✅ Código Limpo
+
 - [ ] Nomes descritivos (classes, métodos, variáveis)
 - [ ] Métodos pequenos (máximo ~20 linhas)
 - [ ] Sem código comentado
@@ -164,8 +182,9 @@ Antes de submeter seu PR, verifique:
 - [ ] Type hints em todos os métodos
 
 ### ✅ Documentação
+
 - [ ] README.md atualizado (se necessário)
-- [ ] ARCHITECTURE.md atualizado (se mudou arquitetura)
+- [ ] docs/ARCHITECTURE.md atualizado (se mudou arquitetura)
 - [ ] Comentários explicam "por quê", não "o quê"
 
 ## 🔨 Como Adicionar Novas Funcionalidades
@@ -173,6 +192,7 @@ Antes de submeter seu PR, verifique:
 ### Exemplo: Adicionar novo TTS Engine
 
 1. **Crie a interface no Domain** (se não existir):
+
 ```python
 # src/core/interfaces.py
 class ITTSEngine(ABC):
@@ -182,6 +202,7 @@ class ITTSEngine(ABC):
 ```
 
 2. **Implemente na Infrastructure**:
+
 ```python
 # src/infrastructure/tts/engines.py
 class ElevenLabsEngine(ITTSEngine):
@@ -191,6 +212,7 @@ class ElevenLabsEngine(ITTSEngine):
 ```
 
 3. **Registre no Factory**:
+
 ```python
 # src/infrastructure/tts/engines.py
 class TTSEngineFactory:
@@ -201,6 +223,7 @@ class TTSEngineFactory:
 ```
 
 4. **Adicione testes**:
+
 ```python
 # tests/unit/infrastructure/tts/test_engines.py
 @pytest.mark.asyncio
@@ -213,6 +236,7 @@ async def test_elevenlabs_engine_generates_audio():
 ## 🚨 O Que NÃO Fazer
 
 ### ❌ Não misture camadas:
+
 ```python
 # ❌ RUIM - Use case importando implementation
 from src.infrastructure.tts.engines import GTTSEngine
@@ -223,6 +247,7 @@ class SpeakTextUseCase:
 ```
 
 ### ❌ Não coloque lógica de negócio na Presentation:
+
 ```python
 # ❌ RUIM - Controller com lógica de negócio
 class SpeakController:
@@ -235,6 +260,7 @@ class SpeakController:
 ```
 
 ### ❌ Não acople Domain à Infrastructure:
+
 ```python
 # ❌ RUIM - Entidade com dependência externa
 # src/core/entities.py

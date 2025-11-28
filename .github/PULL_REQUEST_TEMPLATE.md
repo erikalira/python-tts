@@ -14,6 +14,7 @@
 ## ✅ Checklist de Arquitetura
 
 ### Clean Architecture
+
 - [ ] ✅ Código está na camada correta (Domain/Application/Infrastructure/Presentation)
 - [ ] ✅ Dependências apontam para dentro (camadas externas → internas)
 - [ ] ✅ Não há import circular
@@ -23,23 +24,28 @@
 ### SOLID Principles
 
 #### Single Responsibility Principle (SRP)
+
 - [ ] ✅ Cada classe tem uma única responsabilidade
 - [ ] ✅ Métodos fazem apenas uma coisa
 - [ ] ✅ Não há "god classes" com múltiplas responsabilidades
 
 #### Open/Closed Principle (OCP)
+
 - [ ] ✅ Novo código não modifica classes existentes
 - [ ] ✅ Extensões são feitas via herança/composição, não modificação
 
 #### Liskov Substitution Principle (LSP)
+
 - [ ] ✅ Implementações respeitam contratos das interfaces
 - [ ] ✅ Subclasses podem substituir classes base sem quebrar funcionalidade
 
 #### Interface Segregation Principle (ISP)
+
 - [ ] ✅ Interfaces são pequenas e focadas
 - [ ] ✅ Nenhuma classe é forçada a implementar métodos que não usa
 
 #### Dependency Inversion Principle (DIP)
+
 - [ ] ✅ Use cases dependem de interfaces (abstrações)
 - [ ] ✅ Não há dependência direta de implementações concretas
 - [ ] ✅ Dependency Injection é usado corretamente
@@ -56,7 +62,7 @@
 - [ ] ✅ Docstrings adicionadas/atualizadas
 - [ ] ✅ Type hints em todos os métodos públicos
 - [ ] ✅ README.md atualizado (se necessário)
-- [ ] ✅ ARCHITECTURE.md atualizado (se mudou arquitetura)
+- [ ] ✅ docs/ARCHITECTURE.md atualizado (se mudou arquitetura)
 - [ ] ✅ Comentários explicam "por quê", não "o quê"
 
 ## 🎨 Código Limpo
@@ -70,21 +76,25 @@
 ## 🔍 Revisão de Camadas
 
 ### Se modificou `src/core/` (Domain):
+
 - [ ] ✅ Apenas entidades puras ou interfaces
 - [ ] ✅ Sem dependências externas (sem imports de libraries externas)
 - [ ] ✅ Sem lógica de infraestrutura ou apresentação
 
 ### Se modificou `src/application/` (Application):
+
 - [ ] ✅ Apenas casos de uso (use cases)
 - [ ] ✅ Depende apenas de interfaces do Domain
 - [ ] ✅ Não importa Infrastructure ou Presentation
 
 ### Se modificou `src/infrastructure/` (Infrastructure):
+
 - [ ] ✅ Implementa interfaces do Domain
 - [ ] ✅ Contém apenas código de infraestrutura (DB, APIs, TTS, etc)
 - [ ] ✅ Não contém lógica de negócio
 
 ### Se modificou `src/presentation/` (Presentation):
+
 - [ ] ✅ Apenas controllers/commands (HTTP, Discord, etc)
 - [ ] ✅ Delega lógica de negócio para use cases
 - [ ] ✅ Trata apenas entrada/saída de dados
@@ -112,6 +122,7 @@
 ---
 
 **Ao submeter este PR, confirmo que:**
+
 - ✅ Li e segui o guia [CONTRIBUTING.md](../CONTRIBUTING.md)
 - ✅ Meu código segue os princípios SOLID e Clean Architecture
 - ✅ Testei localmente e tudo funciona conforme esperado

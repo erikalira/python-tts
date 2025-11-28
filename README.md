@@ -21,7 +21,7 @@ This project is a text-to-speech hotkey application that allows users to input t
 
 **For users who want a single `.exe` file without external dependencies:**
 
-- 📄 **[`README_STANDALONE.md`](README_STANDALONE.md)** - Complete Premium guide
+- 📄 **[`README_STANDALONE.md`](docs/README_STANDALONE.md)** - Complete Premium guide
 - 🎯 **Zero hardcode** - everything configurable via class
 - 🎮 **Specialized profiles** - Gaming, Office, Streaming
 - 📊 **Professional interface** - colorful logs and dashboard
@@ -535,7 +535,8 @@ tts-hotkey-windows/
 ├── pytest.ini          # Test configuration
 ├── .env.example       # Environment template
 ├── README.md         # This file
-└── ARCHITECTURE.md   # Architecture documentation
+└── docs/
+    └── ARCHITECTURE.md   # Architecture documentation (moved to docs)
 ```
 
 ## Contributing
