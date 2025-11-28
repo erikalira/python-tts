@@ -143,25 +143,8 @@ if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
 # Comando PyInstaller usando python -m
 Write-Host "Executando PyInstaller via python -m..." -ForegroundColor Yellow
 
-$pyinstaller_cmd = @(
-    "python", "-m", "PyInstaller",
-    "--onefile",
-    "--windowed", 
-    "--name=tts_hotkey_premium",
-    "--hidden-import=pystray",
-    "--hidden-import=PIL",
-    "--hidden-import=PIL._tkinter_finder", 
-    "--hidden-import=pyttsx3",
-    "--hidden-import=pyttsx3.drivers",
-    "--hidden-import=pyttsx3.drivers.sapi5",
-    "--hidden-import=requests",
-    "--hidden-import=keyboard",
-    "--collect-all=pyttsx3",
-    "tts_hotkey_configurable.py"
-)
-
 try {
-    & @pyinstaller_cmd
+    & python -m PyInstaller --onefile --windowed --name=tts_hotkey_premium --hidden-import=pystray --hidden-import=PIL --hidden-import=PIL._tkinter_finder --hidden-import=pyttsx3 --hidden-import=pyttsx3.drivers --hidden-import=pyttsx3.drivers.sapi5 --hidden-import=requests --hidden-import=keyboard --collect-all=pyttsx3 tts_hotkey_configurable.py
 
     if (Test-Path "dist/tts_hotkey_premium.exe") {
         Write-Host
