@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -30,7 +30,7 @@ jobs:
       - name: Build executable
         run: |
           cd src
-          python -m pyinstaller --onefile --windowed --icon=../icon.ico --name=tts_hotkey_premium tts_hotkey_configurable.py
+          python -m pyinstaller --onefile --windowed --name=tts_hotkey_premium tts_hotkey_configurable.py
 
       - name: Test executable
         run: |
@@ -38,7 +38,7 @@ jobs:
           dir
 
       - name: Upload Artifact (sempre)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tts-hotkey-windows-exe
           path: src/dist/tts_hotkey_premium.exe
