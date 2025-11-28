@@ -136,9 +136,41 @@ if ($confirm -ne "s" -and $confirm -ne "S") {
 Write-Host
 Write-Host "COMPILANDO..." -ForegroundColor Yellow
 
-# Limpar builds anteriores
-if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
-if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
+# Limpar builds anteriores (com tratamento de arquivos em uso)
+Write-Host "Limpando builds anteriores..." -ForegroundColor Yellow
+
+if (Test-Path "build") { 
+    try {
+        Remove-Item -Recurse -Force "build"
+        Write-Host "Pasta build removida" -ForegroundColor Green
+    } catch {
+        Write-Host "Aviso: Pasta build nao pode ser removida (pode estar em uso)" -ForegroundColor Yellow
+    }
+}
+
+if (Test-Path "dist") { 
+    try {
+        # Tentar fechar processos que podem estar usando o arquivo
+        Get-Process | Where-Object {$_.ProcessName -like "*tts_hotkey*"} | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+        
+        Remove-Item -Recurse -Force "dist"
+        Write-Host "Pasta dist removida" -ForegroundColor Green
+    } catch {
+        Write-Host "AVISO: Pasta dist nao pode ser removida completamente" -ForegroundColor Yellow
+        Write-Host "       O executavel pode estar sendo executado" -ForegroundColor Yellow
+        Write-Host "       Continuando compilacao..." -ForegroundColor Yellow
+        
+        # Tentar remover só o executável
+        try {
+            if (Test-Path "dist/tts_hotkey_premium.exe") {
+                Remove-Item -Force "dist/tts_hotkey_premium.exe"
+            }
+        } catch {
+            Write-Host "       Executavel em uso - sera sobrescrito" -ForegroundColor Yellow
+        }
+    }
+}
 
 # PyInstaller com configuração MAXIMA de portabilidade
 Write-Host "Executando PyInstaller com configuracao portatil..." -ForegroundColor Yellow
