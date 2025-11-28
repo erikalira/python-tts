@@ -33,28 +33,30 @@ jobs:
 
       - name: Build executable
         run: |
-          python -c "import sys; print('Python path:', sys.executable)"
-          where pyinstaller
-          cd src
+          echo "=== Checking directory structure ==="
+          dir
+          echo "=== Looking for tts_hotkey files ==="
+          dir tts_hotkey*.py
+          echo "=== Building executable ==="
           pyinstaller --onefile --windowed --name=tts_hotkey_premium --collect-all pyttsx3 --collect-all keyboard --collect-all requests --collect-all pystray --collect-all PIL tts_hotkey_configurable.py
 
       - name: Test executable
         run: |
-          cd src/dist
+          cd dist
           dir
 
       - name: Upload Artifact (sempre)
         uses: actions/upload-artifact@v4
         with:
           name: tts-hotkey-windows-exe
-          path: src/dist/tts_hotkey_premium.exe
+          path: dist/tts_hotkey_premium.exe
           retention-days: 30
 
       - name: Create Release (só em tags)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: src/dist/tts_hotkey_premium.exe
+          files: dist/tts_hotkey_premium.exe
           name: "TTS Hotkey ${{ github.ref_name }}"
           body: |
             ## 🎯 TTS Hotkey Premium - Windows Executable
