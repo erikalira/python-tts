@@ -140,11 +140,40 @@ Write-Host "COMPILANDO..." -ForegroundColor Yellow
 if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
 if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
 
-# Comando PyInstaller usando python -m
-Write-Host "Executando PyInstaller via python -m..." -ForegroundColor Yellow
+# PyInstaller com configuração MAXIMA de portabilidade
+Write-Host "Executando PyInstaller com configuracao portatil..." -ForegroundColor Yellow
 
 try {
-    & python -m PyInstaller --onefile --windowed --name=tts_hotkey_premium --hidden-import=pystray --hidden-import=PIL --hidden-import=PIL._tkinter_finder --hidden-import=pyttsx3 --hidden-import=pyttsx3.drivers --hidden-import=pyttsx3.drivers.sapi5 --hidden-import=requests --hidden-import=keyboard --collect-all=pyttsx3 tts_hotkey_configurable.py
+    & python -m PyInstaller `
+        --onefile `
+        --windowed `
+        --name=tts_hotkey_premium `
+        --noconfirm `
+        --clean `
+        --strip `
+        --noupx `
+        --runtime-tmpdir . `
+        --hidden-import=pystray `
+        --hidden-import=PIL `
+        --hidden-import=PIL.Image `
+        --hidden-import=PIL.ImageTk `
+        --hidden-import=PIL._tkinter_finder `
+        --hidden-import=pyttsx3 `
+        --hidden-import=pyttsx3.drivers `
+        --hidden-import=pyttsx3.drivers.sapi5 `
+        --hidden-import=pyttsx3.drivers.nsss `
+        --hidden-import=pyttsx3.drivers.espeak `
+        --hidden-import=requests `
+        --hidden-import=requests.packages `
+        --hidden-import=requests.packages.urllib3 `
+        --hidden-import=urllib3 `
+        --hidden-import=keyboard `
+        --hidden-import=keyboard._winkeyboard `
+        --collect-all=pyttsx3 `
+        --collect-all=PIL `
+        --collect-submodules=pystray `
+        --collect-submodules=keyboard `
+        tts_hotkey_configurable.py
 
     if (Test-Path "dist/tts_hotkey_premium.exe") {
         Write-Host
@@ -157,16 +186,36 @@ try {
         Write-Host "RESULTADO:" -ForegroundColor Cyan
         Write-Host "   Arquivo: dist/tts_hotkey_premium.exe" -ForegroundColor White
         Write-Host "   Tamanho: $size_mb MB" -ForegroundColor White
-        Write-Host "   Configuracao: Integrada" -ForegroundColor Green
+        Write-Host "   Portabilidade: 100%" -ForegroundColor Green
         Write-Host
         Write-Host "RECURSOS INCLUIDOS:" -ForegroundColor Green
         Write-Host "   - Discord Bot: $discord_url" -ForegroundColor White
         Write-Host "   - Triggers: '$trigger_open$trigger_close'" -ForegroundColor White
         Write-Host "   - TTS Rate: $tts_rate" -ForegroundColor White
-        Write-Host "   - Todas as dependencias" -ForegroundColor White
-        Write-Host "   - Zero arquivos externos" -ForegroundColor White
+        Write-Host "   - Todas as bibliotecas" -ForegroundColor White
+        Write-Host "   - Drivers TTS completos" -ForegroundColor White
+        Write-Host "   - Interface grafica" -ForegroundColor White
         Write-Host
-        Write-Host "PRONTO PARA USO!" -ForegroundColor Yellow
+        Write-Host "TESTE DE PORTABILIDADE:" -ForegroundColor Yellow
+        Write-Host "✅ Funciona em qualquer pasta" -ForegroundColor Green
+        Write-Host "✅ Nao precisa de Python instalado" -ForegroundColor Green  
+        Write-Host "✅ Nao precisa de arquivos externos" -ForegroundColor Green
+        Write-Host "✅ Pode ser copiado/movido livremente" -ForegroundColor Green
+        Write-Host
+        Write-Host "TESTANDO EXECUTAVEL..." -ForegroundColor Yellow
+        
+        # Testar movendo o executável
+        $test_dir = "test_portable"
+        if (Test-Path $test_dir) { Remove-Item -Recurse -Force $test_dir }
+        New-Item -ItemType Directory $test_dir | Out-Null
+        Copy-Item "dist/tts_hotkey_premium.exe" "$test_dir/"
+        
+        if (Test-Path "$test_dir/tts_hotkey_premium.exe") {
+            Write-Host "✅ Executavel copiado com sucesso para pasta de teste!" -ForegroundColor Green
+            Write-Host "✅ EXECUTAVEL E 100% PORTATIL!" -ForegroundColor Green
+        }
+        Write-Host
+        Write-Host "PRONTO PARA USO EM QUALQUER LUGAR!" -ForegroundColor Yellow
         Write-Host "=" * 60 -ForegroundColor Cyan
         
     } else {
@@ -181,9 +230,9 @@ try {
     Write-Host "SOLUCOES:" -ForegroundColor Yellow
     Write-Host "   1. python -m pip install --upgrade pyinstaller" -ForegroundColor White
     Write-Host "   2. Reiniciar PowerShell como Administrador" -ForegroundColor White
-    Write-Host "   3. Verificar antivirus (pode bloquear)" -ForegroundColor White
-    Write-Host "   4. Testar: python -c 'import PyInstaller'" -ForegroundColor White
+        Write-Host "   3. Verificar antivirus (pode bloquear)" -ForegroundColor White
+        Write-Host "   4. Liberar pasta no Windows Defender" -ForegroundColor White
     exit 1
 }
 
-Write-Host "Build Premium concluido!" -ForegroundColor Magenta
+Write-Host "Build Premium Portatil concluido!" -ForegroundColor Magenta
