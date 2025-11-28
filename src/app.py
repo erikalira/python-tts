@@ -27,7 +27,7 @@ def set_container(container):
 
 @app.route("/")
 def home():
-    return "Bot online!"
+    return "Bot online! v2.0"
 
 
 @app.route("/health")

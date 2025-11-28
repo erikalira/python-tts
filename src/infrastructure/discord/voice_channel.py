@@ -53,24 +53,26 @@ class DiscordVoiceChannel(IVoiceChannel):
             except Exception as e:
                 logger.warning(f"[VOICE_CHANNEL] Error during disconnect: {e}")
         
-        # Retry connection logic
+        # Retry connection logic with longer delays for Render
         max_retries = 3
-        retry_delay = 2
+        retry_delay = 5
         
         for attempt in range(max_retries):
             try:
                 logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name} (attempt {attempt + 1}/{max_retries})")
                 self._voice_client = await self._channel.connect()
                 
-                # Wait for connection to fully establish
-                await asyncio.sleep(2)
+                # Wait longer for connection to fully establish (Render can be slow)
+                await asyncio.sleep(5)
                 
-                # Verify connection
-                if self._voice_client and self._voice_client.is_connected():
-                    logger.info("[VOICE_CHANNEL] Successfully connected and verified")
-                    return
-                else:
-                    logger.warning(f"[VOICE_CHANNEL] Connection verification failed on attempt {attempt + 1}")
+                # Multiple verification attempts
+                for verify_attempt in range(3):
+                    if self._voice_client and self._voice_client.is_connected():
+                        logger.info("[VOICE_CHANNEL] Successfully connected and verified")
+                        return
+                    await asyncio.sleep(2)
+                
+                logger.warning(f"[VOICE_CHANNEL] Connection verification failed on attempt {attempt + 1} after multiple checks")
                     
             except Exception as e:
                 logger.warning(f"[VOICE_CHANNEL] Connection attempt {attempt + 1} failed: {e}")
