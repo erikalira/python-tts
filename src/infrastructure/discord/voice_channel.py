@@ -49,28 +49,28 @@ class DiscordVoiceChannel(IVoiceChannel):
             logger.info("[VOICE_CHANNEL] Existing connection needs to be reset, disconnecting first")
             try:
                 await existing_client.disconnect()
-                await asyncio.sleep(1)  # Wait for disconnect to complete
+                await asyncio.sleep(0.3)  # Wait for disconnect to complete
             except Exception as e:
                 logger.warning(f"[VOICE_CHANNEL] Error during disconnect: {e}")
         
         # Retry connection logic with longer delays for Render
         max_retries = 3
-        retry_delay = 5
+        retry_delay = 1
         
         for attempt in range(max_retries):
             try:
                 logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name} (attempt {attempt + 1}/{max_retries})")
                 self._voice_client = await self._channel.connect()
                 
-                # Wait longer for connection to fully establish (Render can be slow)
-                await asyncio.sleep(5)
+                # Brief wait for connection to establish
+                await asyncio.sleep(0.5)
                 
-                # Multiple verification attempts
-                for verify_attempt in range(3):
+                # Quick verification attempts
+                for verify_attempt in range(2):
                     if self._voice_client and self._voice_client.is_connected():
                         logger.info("[VOICE_CHANNEL] Successfully connected and verified")
                         return
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(0.3)
                 
                 logger.warning(f"[VOICE_CHANNEL] Connection verification failed on attempt {attempt + 1} after multiple checks")
                     
@@ -127,7 +127,7 @@ class DiscordVoiceChannel(IVoiceChannel):
         if self._voice_client.is_playing():
             logger.info("[VOICE_CHANNEL] Stopping current playback")
             self._voice_client.stop()
-            await asyncio.sleep(0.2)  # Wait for stop to complete
+            await asyncio.sleep(0.1)  # Wait for stop to complete
         
         # Play audio with timeout protection
         try:
@@ -141,7 +141,7 @@ class DiscordVoiceChannel(IVoiceChannel):
             wait_time = 0
             
             while self._voice_client.is_playing() and wait_time < max_wait_time:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
                 wait_time += 0.1
             
             if wait_time >= max_wait_time:
