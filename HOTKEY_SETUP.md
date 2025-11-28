@@ -1,122 +1,170 @@
-# 🎤 Configuração do Hotkey TTS
+# 🎤 TTS Hotkey Premium - Configuração Avançada
 
-Este documento explica como configurar o script `tts_hotkey.py` para se comunicar com o bot Discord no Render.
+## 🏆 Versão Premium: Configuração Inteligente
 
-## 🎯 Problema
+**Arquivo**: `tts_hotkey_configurable.py` → `tts_hotkey_premium.exe`
 
-Quando você usa `{texto}` no teclado, o script envia para o endpoint `/speak`, mas o bot não sabe **em qual canal de voz você está**. Por isso o erro:
+### ✨ **Discord ID Automático**
 
-```
-[USE_CASE] Error during audio playback: Not connected to voice channel
-```
+A versão premium pode encontrar automaticamente em qual canal você está!
 
-## ✅ Solução 1: Usar canal já conectado (RECOMENDADO)
-
-**Essa solução já foi implementada!** O bot agora:
-
-1. **SEMPRE verifica primeiro** se ele já está conectado em algum canal
-2. Se estiver, usa esse canal para tocar o áudio
-3. Só tenta procurar por IDs se não estiver conectado
-
-### Como usar:
-
-1. Entre no Discord em um canal de voz
-2. Use o comando `/join` no Discord para conectar o bot
-3. Agora use o hotkey `{texto}` - o bot vai falar no canal onde ele já está! 🎉
-
-**Vantagem:** Não precisa configurar nada no `.env`
-
-## 🔧 Solução 2: Configurar seu Discord Member ID
-
-Se você quer que o bot **encontre automaticamente** em qual canal você está (mesmo sem usar `/join` antes), adicione seu Discord ID ao `.env`:
-
-### Passo 1: Descobrir seu Discord Member ID
-
-1. Abra Discord
-2. Vá em **Configurações do Usuário** > **Avançado**
-3. Ative **Modo Desenvolvedor**
-4. Clique com botão direito no seu nome
-5. Clique em **Copiar ID do Usuário**
-
-### Passo 2: Adicionar ao .env
-
-Crie ou edite o arquivo `.env` na mesma pasta do `tts_hotkey.py`:
-
-```env
-# URL do bot no Render
-DISCORD_BOT_URL=https://tts-hotkey-windows.onrender.com
-
-# Seu Discord Member ID (copie do Discord com Modo Desenvolvedor ativado)
-DISCORD_MEMBER_ID=123456789012345678
-
-# Opcional: ID do canal específico (se quiser forçar um canal fixo)
-# DISCORD_CHANNEL_ID=987654321098765432
+```python
+class Config:
+    # 🌐 Discord Configuration
+    DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
+    DISCORD_MEMBER_ID = "123456789012345678"  # Seu Discord ID
+    DISCORD_CHANNEL_ID = None  # Opcional
 ```
 
-### Passo 3: Testar
+## 🔧 **Como Descobrir seu Discord ID**
 
-Agora quando você usar `{texto}`, o bot vai:
+### Passo 1: Ativar Modo Desenvolvedor
+1. Discord → **Configurações do Usuário**
+2. **Avançado** → Ativar **Modo Desenvolvedor**
 
-1. Procurar se você está conectado em algum canal de voz
-2. Entrar nesse canal automaticamente
-3. Tocar o áudio
+### Passo 2: Copiar seu ID
+1. Clique direito no **seu nome** em qualquer chat
+2. **Copiar ID do Usuário**
+3. Cole na Config class
 
-## 🔄 Fluxo de Busca do Canal
+## 🎯 **Funcionamento Inteligente**
 
-O bot procura nessa ordem:
+O bot usa esta **ordem de prioridade**:
 
-1. ✅ **Canal onde o bot JÁ está conectado** ← NOVA PRIORIDADE!
-2. `channel_id` (se configurado no `.env` com `DISCORD_CHANNEL_ID`)
-3. `member_id` (se configurado no `.env` com `DISCORD_MEMBER_ID`)
-4. Qualquer canal disponível no servidor (fallback)
+1. 🎯 **Canal já conectado** (se usou `/join` antes)
+2. 📍 **Channel ID específico** (se configurou `DISCORD_CHANNEL_ID`)  
+3. 👤 **Member ID** (encontra onde você está)
+4. ❌ **Erro** se nenhuma opção funcionar
 
-## 🐛 Troubleshooting
+## 🎮 **Configurações por Perfil**
 
-### Bot ainda não entra no canal
-
-**Verifique se:**
-- Você usou `/join` no Discord primeiro (Solução 1)
-- OU configurou o `DISCORD_MEMBER_ID` corretamente (Solução 2)
-- O bot tem permissões para entrar no canal
-- Você reiniciou o `tts_hotkey.py` depois de editar o `.env`
-
-### Erro "Not connected to voice channel"
-
-**Isso acontece quando:**
-- Você não usou `/join` E não configurou `DISCORD_MEMBER_ID`
-- O bot não consegue encontrar em qual canal você está
-- O Render está em cold start (primeira requisição falha, segunda funciona)
-
-**Solução:** Use `/join` primeiro ou configure o `DISCORD_MEMBER_ID` no `.env`
-
-## 📝 Exemplo de Uso Completo
-
-### Opção A: Com /join (sem configuração)
-
-```bash
-# 1. Entre em um canal de voz no Discord
-# 2. Digite no Discord: /join
-# 3. Aperte {texto para falar}
-# ✅ Bot fala no canal onde está conectado!
+### Gaming Profile (Resposta Rápida)
+```python
+class Config:
+    DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
+    DISCORD_MEMBER_ID = "seu_id_aqui"
+    TTS_RATE = 200                    # Fala rápida
+    SHOW_NOTIFICATIONS = False        # Sem distrações
+    REQUEST_TIMEOUT = 5               # Timeout baixo
 ```
 
-### Opção B: Com DISCORD_MEMBER_ID (automático)
-
-```bash
-# 1. Configure .env com seu DISCORD_MEMBER_ID
-# 2. Entre em qualquer canal de voz no Discord
-# 3. Aperte {texto para falar}
-# ✅ Bot encontra você e entra no canal automaticamente!
+### Office Profile (Mais Confiável)  
+```python
+class Config:
+    DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
+    DISCORD_MEMBER_ID = "seu_id_aqui" 
+    TTS_RATE = 150                    # Fala clara
+    SHOW_NOTIFICATIONS = True         # Feedback visual
+    REQUEST_TIMEOUT = 15              # Mais tolerante
 ```
 
-## 🚀 Melhorias Implementadas
+### Streaming Profile (OBS Ready)
+```python
+class Config:
+    DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
+    DISCORD_CHANNEL_ID = "id_do_canal_fixo"  # Canal específico
+    TTS_RATE = 160                           # Boa para stream
+    CONSOLE_LOGS = False                     # Sem logs no OBS
+    SHOW_NOTIFICATIONS = False               # UI limpa
+```
 
-- ✅ Bot procura primeiro o canal onde JÁ está conectado
-- ✅ Logs detalhados para debug
-- ✅ Delays para garantir conexão antes de tocar áudio
-- ✅ Fallback para TTS local se bot não responder
-- ✅ Timeout de 10s para requisições HTTP
+## ⚡ **Triggers Personalizáveis**
 
----
+Evite conflitos com outros programas:
 
-**Dica:** Use a Solução 1 (`/join` primeiro) se você sempre usa o mesmo canal. É mais simples! 😊
+```python
+class Config:
+    # Triggers únicos para cada cenário
+    TRIGGER_OPEN = "["        # Gaming: não conflita com chat
+    TRIGGER_CLOSE = "]"       # Gaming: fácil de digitar
+    
+    # OU para Office:
+    TRIGGER_OPEN = "="        # Office: tecla única
+    TRIGGER_CLOSE = "+"       # Office: ao lado no teclado
+```
+
+## 🔊 **Configuração de Áudio Avançada**
+
+```python
+class Config:
+    # Dispositivo de áudio específico (opcional)
+    AUDIO_DEVICE = None              # Padrão do sistema
+    # AUDIO_DEVICE = "VB-Cable"     # Para streaming
+    # AUDIO_DEVICE = "Headset"      # Para gaming
+    
+    # Configurações de TTS
+    TTS_RATE = 180                   # Velocidade (120-300)
+    TTS_VOLUME = 0.9                 # Volume (0.0-1.0)  
+    TTS_LANGUAGE = "pt"              # Idioma
+```
+
+## 📊 **Dashboard de Status Premium**
+
+Quando executado, mostra status completo:
+
+```
+================================================================
+🎯 TTS Hotkey Premium - Configuration Dashboard
+================================================================
+🌐 Discord: ✅ https://python-tts-s3z8.onrender.com
+👤 Member ID: ✅ 123456789012345678
+🎤 TTS Engine: ✅ Portuguese, Rate: 180
+⌨️ Triggers: ✅ { } - No conflicts detected
+🔊 Audio: ✅ Default output device
+⚡ Network: ✅ Timeout: 10s
+================================================================
+```
+
+## 🚀 **Compilar e Usar**
+
+```powershell
+# 1. Configurar
+code tts_hotkey_configurable.py
+
+# 2. Compilar
+./build_configurable.ps1
+
+# 3. Usar
+dist/tts_hotkey_premium.exe
+```
+
+## 🎯 **Modo de Uso**
+
+1. **Entre em um canal de voz** no Discord
+2. **Execute o .exe** (dashboard aparece)
+3. **Aperte sua trigger key** (ex: `{`)
+4. **Digite o texto** que quer falar
+5. **Aperte a close key** (ex: `}`)
+6. **Bot fala automaticamente!**
+
+## 🛠️ **Troubleshooting Premium**
+
+### ❌ "Hotkey registration failed"
+```python
+# Mude os triggers:
+TRIGGER_OPEN = "["
+TRIGGER_CLOSE = "]" 
+```
+
+### ❌ "Discord not found"
+```python
+# Verifique a URL:
+DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
+```
+
+### ❌ "Member not found"
+```python  
+# Use o ID correto ou configure canal fixo:
+DISCORD_CHANNEL_ID = "987654321098765432"
+```
+
+## 💎 **Vantagens da Versão Premium**
+
+- 🎯 **Zero arquivos externos** - tudo embutido
+- 🎮 **Perfis especializados** pré-configurados
+- 📊 **Dashboard visual** com status detalhado
+- ⚡ **Build inteligente** detecta problemas
+- 🔧 **Altamente configurável** sem hardcode
+- 🎨 **Interface profissional** com logs coloridos
+
+**Resultado**: Um único arquivo `.exe` totalmente personalizado para suas necessidades!

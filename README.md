@@ -17,6 +17,27 @@ This project is a text-to-speech hotkey application that allows users to input t
 - Docker deployment for production
 - Simple and intuitive interface
 
+## 🏆 TTS Hotkey Premium (Standalone)
+
+**For users who want a single `.exe` file without external dependencies:**
+
+- 📄 **[`README_STANDALONE.md`](README_STANDALONE.md)** - Complete Premium guide
+- 🎯 **Zero hardcode** - everything configurable via class
+- 🎮 **Specialized profiles** - Gaming, Office, Streaming
+- 📊 **Professional interface** - colorful logs and dashboard
+- ⚡ **Intelligent build** - automatic configuration analysis
+
+```powershell
+# Edit configuration class
+code tts_hotkey_configurable.py
+
+# Build premium version
+./build_configurable.ps1
+
+# Single file ready!
+dist/tts_hotkey_premium.exe
+```
+
 ## Requirements
 
 ### Local Development (Windows)
