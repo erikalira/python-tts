@@ -49,17 +49,54 @@ Write-Host "   Triggers: '$trigger_open' e '$trigger_close'" -ForegroundColor Wh
 Write-Host "   TTS Rate: $tts_rate" -ForegroundColor White
 Write-Host
 
-# Verificar se PyInstaller esta instalado
-Write-Host "VERIFICANDO DEPENDENCIAS..." -ForegroundColor Green
+# Instalar dependencias automaticamente
+Write-Host "INSTALANDO DEPENDENCIAS..." -ForegroundColor Green
 
+# Verificar se requirements.txt existe
+if (Test-Path "requirements.txt") {
+    Write-Host "Instalando requirements.txt..." -ForegroundColor Yellow
+    try {
+        & pip install -r requirements.txt
+        Write-Host "Requirements instalados com sucesso!" -ForegroundColor Green
+    } catch {
+        Write-Host "ERRO ao instalar requirements!" -ForegroundColor Red
+        Write-Host "Verifique se pip esta disponivel" -ForegroundColor Yellow
+        exit 1
+    }
+} else {
+    Write-Host "requirements.txt nao encontrado - instalando dependencias basicas..." -ForegroundColor Yellow
+}
+
+# Instalar PyInstaller se necessario
+Write-Host "Verificando PyInstaller..." -ForegroundColor Yellow
 try {
     $pyinstaller_check = & pyinstaller --version 2>&1
-    Write-Host "PyInstaller: $pyinstaller_check" -ForegroundColor Green
+    Write-Host "PyInstaller ja instalado: $pyinstaller_check" -ForegroundColor Green
 } catch {
-    Write-Host "PyInstaller nao encontrado!" -ForegroundColor Red
-    Write-Host "INSTALAR: pip install pyinstaller" -ForegroundColor Yellow
+    Write-Host "Instalando PyInstaller..." -ForegroundColor Yellow
+    try {
+        & pip install pyinstaller
+        Write-Host "PyInstaller instalado com sucesso!" -ForegroundColor Green
+    } catch {
+        Write-Host "ERRO ao instalar PyInstaller!" -ForegroundColor Red
+        Write-Host "Execute manualmente: pip install pyinstaller" -ForegroundColor Yellow
+        exit 1
+    }
+}
+
+# Verificar novamente se PyInstaller funciona
+Write-Host "Testando PyInstaller..." -ForegroundColor Yellow
+try {
+    $final_check = & pyinstaller --version 2>&1
+    Write-Host "PyInstaller funcionando: $final_check" -ForegroundColor Green
+} catch {
+    Write-Host "ERRO: PyInstaller nao esta funcionando!" -ForegroundColor Red
+    Write-Host "Tente reinstalar: pip install --upgrade pyinstaller" -ForegroundColor Yellow
     exit 1
 }
+
+Write-Host "Todas as dependencias verificadas!" -ForegroundColor Green
+Write-Host
 
 # Confirmar build
 Write-Host
