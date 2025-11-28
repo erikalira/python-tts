@@ -1,19 +1,19 @@
 # Build Script Premium para TTS Hotkey
-# Versão corrigida com encoding UTF-8
+# Versao corrigida - PowerShell compativel
 
 Write-Host "=" * 60 -ForegroundColor Cyan
-Write-Host "🚀 BUILD TTS HOTKEY PREMIUM" -ForegroundColor Yellow
+Write-Host "BUILD TTS HOTKEY PREMIUM" -ForegroundColor Yellow
 Write-Host "=" * 60 -ForegroundColor Cyan
 Write-Host
 
 # Verificar se o arquivo existe
 if (-not (Test-Path "tts_hotkey_configurable.py")) {
-    Write-Host "❌ ERRO: Arquivo tts_hotkey_configurable.py não encontrado!" -ForegroundColor Red
-    Write-Host "📍 Certifique-se de que está no diretório correto" -ForegroundColor Yellow
+    Write-Host "ERRO: Arquivo tts_hotkey_configurable.py nao encontrado!" -ForegroundColor Red
+    Write-Host "Certifique-se de que esta no diretorio correto" -ForegroundColor Yellow
     exit 1
 }
 
-Write-Host "📋 ANALISANDO CONFIGURAÇÃO..." -ForegroundColor Green
+Write-Host "ANALISANDO CONFIGURACAO..." -ForegroundColor Green
 
 # Ler configurações (método mais simples)
 $config_content = Get-Content "tts_hotkey_configurable.py" -Raw -Encoding UTF8
@@ -43,38 +43,38 @@ if ($config_content -match 'TTS_RATE\s*=\s*(\d+)') {
     $tts_rate = $matches[1]
 }
 
-Write-Host "🎯 CONFIGURAÇÃO DETECTADA:" -ForegroundColor Cyan
+Write-Host "CONFIGURACAO DETECTADA:" -ForegroundColor Cyan
 Write-Host "   Discord Bot: $discord_url" -ForegroundColor White
 Write-Host "   Triggers: '$trigger_open' e '$trigger_close'" -ForegroundColor White
 Write-Host "   TTS Rate: $tts_rate" -ForegroundColor White
 Write-Host
 
-# Verificar se PyInstaller está instalado
-Write-Host "🔧 VERIFICANDO DEPENDÊNCIAS..." -ForegroundColor Green
+# Verificar se PyInstaller esta instalado
+Write-Host "VERIFICANDO DEPENDENCIAS..." -ForegroundColor Green
 
 try {
     $pyinstaller_check = & pyinstaller --version 2>&1
-    Write-Host "✅ PyInstaller: $pyinstaller_check" -ForegroundColor Green
+    Write-Host "PyInstaller: $pyinstaller_check" -ForegroundColor Green
 } catch {
-    Write-Host "❌ PyInstaller não encontrado!" -ForegroundColor Red
-    Write-Host "💡 INSTALAR: pip install pyinstaller" -ForegroundColor Yellow
+    Write-Host "PyInstaller nao encontrado!" -ForegroundColor Red
+    Write-Host "INSTALAR: pip install pyinstaller" -ForegroundColor Yellow
     exit 1
 }
 
 # Confirmar build
 Write-Host
-Write-Host "🚀 PRONTO PARA COMPILAR!" -ForegroundColor Yellow
-Write-Host "📦 Resultado: dist/tts_hotkey_premium.exe" -ForegroundColor Cyan
+Write-Host "PRONTO PARA COMPILAR!" -ForegroundColor Yellow
+Write-Host "Resultado: dist/tts_hotkey_premium.exe" -ForegroundColor Cyan
 Write-Host
 $confirm = Read-Host "Continuar? (s/N)"
 
 if ($confirm -ne "s" -and $confirm -ne "S") {
-    Write-Host "❌ Build cancelado." -ForegroundColor Red
+    Write-Host "Build cancelado." -ForegroundColor Red
     exit 0
 }
 
 Write-Host
-Write-Host "⚡ COMPILANDO..." -ForegroundColor Yellow
+Write-Host "COMPILANDO..." -ForegroundColor Yellow
 
 # Limpar builds anteriores
 if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
@@ -104,25 +104,25 @@ try {
 
     if (Test-Path "dist/tts_hotkey_premium.exe") {
         Write-Host
-        Write-Host "🎉 BUILD CONCLUÍDO COM SUCESSO!" -ForegroundColor Green
+        Write-Host "BUILD CONCLUIDO COM SUCESSO!" -ForegroundColor Green
         Write-Host "=" * 60 -ForegroundColor Cyan
         
         $file_size = (Get-Item "dist/tts_hotkey_premium.exe").Length
         $size_mb = [math]::Round($file_size / 1MB, 2)
         
-        Write-Host "📦 RESULTADO:" -ForegroundColor Cyan
+        Write-Host "RESULTADO:" -ForegroundColor Cyan
         Write-Host "   Arquivo: dist/tts_hotkey_premium.exe" -ForegroundColor White
         Write-Host "   Tamanho: $size_mb MB" -ForegroundColor White
-        Write-Host "   Configuração: Integrada" -ForegroundColor Green
+        Write-Host "   Configuracao: Integrada" -ForegroundColor Green
         Write-Host
-        Write-Host "✅ RECURSOS INCLUÍDOS:" -ForegroundColor Green
-        Write-Host "   • Discord Bot: $discord_url" -ForegroundColor White
-        Write-Host "   • Triggers: '$trigger_open$trigger_close'" -ForegroundColor White
-        Write-Host "   • TTS Rate: $tts_rate" -ForegroundColor White
-        Write-Host "   • Todas as dependências" -ForegroundColor White
-        Write-Host "   • Zero arquivos externos" -ForegroundColor White
+        Write-Host "RECURSOS INCLUIDOS:" -ForegroundColor Green
+        Write-Host "   - Discord Bot: $discord_url" -ForegroundColor White
+        Write-Host "   - Triggers: '$trigger_open$trigger_close'" -ForegroundColor White
+        Write-Host "   - TTS Rate: $tts_rate" -ForegroundColor White
+        Write-Host "   - Todas as dependencias" -ForegroundColor White
+        Write-Host "   - Zero arquivos externos" -ForegroundColor White
         Write-Host
-        Write-Host "🚀 PRONTO PARA USO!" -ForegroundColor Yellow
+        Write-Host "PRONTO PARA USO!" -ForegroundColor Yellow
         Write-Host "=" * 60 -ForegroundColor Cyan
         
     } else {
@@ -131,15 +131,15 @@ try {
     
 } catch {
     Write-Host
-    Write-Host "❌ ERRO NO BUILD!" -ForegroundColor Red
+    Write-Host "ERRO NO BUILD!" -ForegroundColor Red
     Write-Host "Detalhes: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host
-    Write-Host "💡 SOLUÇÕES:" -ForegroundColor Yellow
-    Write-Host "   1. Instalar dependências: pip install -r requirements.txt" -ForegroundColor White
+    Write-Host "SOLUCOES:" -ForegroundColor Yellow
+    Write-Host "   1. Instalar dependencias: pip install -r requirements.txt" -ForegroundColor White
     Write-Host "   2. Atualizar PyInstaller: pip install --upgrade pyinstaller" -ForegroundColor White
     Write-Host "   3. Executar como Administrador" -ForegroundColor White
-    Write-Host "   4. Verificar antivírus (pode bloquear)" -ForegroundColor White
+    Write-Host "   4. Verificar antivirus (pode bloquear)" -ForegroundColor White
     exit 1
 }
 
-Write-Host "💎 Build Premium concluído!" -ForegroundColor Magenta
+Write-Host "Build Premium concluido!" -ForegroundColor Magenta
