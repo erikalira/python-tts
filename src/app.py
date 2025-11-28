@@ -87,7 +87,8 @@ def speak():
             _container.speak_use_case.execute(tts_request),
             _container.discord_client.loop
         )
-        result = future.result(timeout=30)
+        # Increased timeout to 2 minutes to handle Discord connection issues
+        result = future.result(timeout=120)
         
         if result["success"]:
             return jsonify({"message": result["message"]}), 200

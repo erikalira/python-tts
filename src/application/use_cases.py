@@ -65,38 +65,63 @@ class SpeakTextUseCase:
         logger.info(f"[USE_CASE] Audio generated: {audio.path}")
         
         try:
-            # Connect if needed
-            if not voice_channel.is_connected():
-                logger.info("[USE_CASE] Not connected, attempting to connect to voice channel...")
-                try:
-                    await voice_channel.connect()
-                    logger.info("[USE_CASE] Successfully connected to voice channel")
-                except Exception as connect_error:
-                    logger.error(f"[USE_CASE] Failed to connect to voice channel: {connect_error}")
-                    return {"success": False, "message": f"Não foi possível conectar ao canal de voz: {str(connect_error)}. Verifique se o bot tem permissão para entrar no canal."}
-            else:
-                logger.info("[USE_CASE] Already connected to voice channel")
+            # Ensure connection with retry logic
+            max_connection_attempts = 2
             
-            # Double-check connection after potential connect attempt
+            for attempt in range(max_connection_attempts):
+                if not voice_channel.is_connected():
+                    logger.info(f"[USE_CASE] Connection attempt {attempt + 1}/{max_connection_attempts}...")
+                    try:
+                        await voice_channel.connect()
+                        logger.info("[USE_CASE] Successfully connected to voice channel")
+                        break
+                    except Exception as connect_error:
+                        logger.warning(f"[USE_CASE] Connection attempt {attempt + 1} failed: {connect_error}")
+                        if attempt == max_connection_attempts - 1:
+                            logger.error("[USE_CASE] All connection attempts failed")
+                            return {"success": False, "message": f"Não foi possível conectar ao canal de voz após {max_connection_attempts} tentativas. Verifique se o bot tem permissão para entrar no canal."}
+                        # Wait before retry
+                        import asyncio
+                        await asyncio.sleep(1)
+                else:
+                    logger.info("[USE_CASE] Already connected to voice channel")
+                    break
+            
+            # Final connection verification
             if not voice_channel.is_connected():
                 logger.error("[USE_CASE] Voice channel connection verification failed")
-                return {"success": False, "message": "Falha na verificação de conexão com o canal de voz. Tente novamente ou use o comando /join primeiro."}
+                return {"success": False, "message": "Falha na verificação final de conexão com o canal de voz. Tente novamente."}
             
-            # Play audio
+            # Play audio with timeout protection
             logger.info("[USE_CASE] Playing audio...")
-            await voice_channel.play_audio(audio)
-            logger.info("[USE_CASE] Audio playback completed")
+            import asyncio
             
-            return {"success": True, "message": "Áudio reproduzido com sucesso"}
+            try:
+                # Wrap play_audio in timeout to prevent hanging
+                await asyncio.wait_for(voice_channel.play_audio(audio), timeout=60)
+                logger.info("[USE_CASE] Audio playback completed")
+                return {"success": True, "message": "Áudio reproduzido com sucesso"}
+                
+            except asyncio.TimeoutError:
+                logger.error("[USE_CASE] Audio playback timed out after 60 seconds")
+                return {"success": False, "message": "Tempo limite excedido durante reprodução de áudio. Tente novamente."}
+                
         except Exception as e:
             logger.error(f"[USE_CASE] Error during audio playback: {e}", exc_info=True)
             error_msg = str(e)
+            
+            # More detailed error handling
             if "not connected" in error_msg.lower():
-                return {"success": False, "message": "Bot não está conectado ao canal de voz. Use o comando /join primeiro."}
+                return {"success": False, "message": "Bot perdeu a conexão com o canal de voz. Tente novamente ou use o comando /join."}
             elif "permission" in error_msg.lower():
                 return {"success": False, "message": "Bot não tem permissão para reproduzir áudio neste canal."}
+            elif "timeout" in error_msg.lower():
+                return {"success": False, "message": "Tempo limite excedido. O servidor pode estar sobrecarregado, tente novamente."}
+            elif "failed to establish" in error_msg.lower():
+                return {"success": False, "message": "Não foi possível estabelecer conexão estável. Verifique a conexão de internet e tente novamente."}
             else:
-                return {"success": False, "message": f"Erro durante reprodução: {error_msg}"}
+                return {"success": False, "message": f"Erro inesperado durante reprodução. Tente novamente em alguns segundos."}
+                
         finally:
             # Clean up audio file
             logger.info("[USE_CASE] Cleaning up audio file")

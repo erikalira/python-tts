@@ -32,35 +32,65 @@ class DiscordVoiceChannel(IVoiceChannel):
         self._last_activity: float = 0
     
     async def connect(self) -> None:
-        """Connect to the voice channel."""
+        """Connect to the voice channel with retry logic."""
         # Check if already connected to this guild
         guild = self._channel.guild
         existing_client = guild.voice_client
         
         if existing_client:
-            # If connected to the same channel, reuse
-            if existing_client.channel.id == self._channel.id:
+            # If connected to the same channel and working, reuse
+            if (existing_client.channel.id == self._channel.id and 
+                existing_client.is_connected()):
                 self._voice_client = existing_client
                 logger.info("[VOICE_CHANNEL] Already connected to this channel, reusing connection")
                 return
-            # If connected to different channel, disconnect first
-            logger.info("[VOICE_CHANNEL] Connected to different channel, disconnecting first")
-            await existing_client.disconnect()
-            await asyncio.sleep(0.5)  # Wait for disconnect to complete
+            
+            # If connected but broken or to different channel, disconnect first
+            logger.info("[VOICE_CHANNEL] Existing connection needs to be reset, disconnecting first")
+            try:
+                await existing_client.disconnect()
+                await asyncio.sleep(1)  # Wait for disconnect to complete
+            except Exception as e:
+                logger.warning(f"[VOICE_CHANNEL] Error during disconnect: {e}")
         
-        # Connect to the channel
-        logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name}")
-        self._voice_client = await self._channel.connect()
+        # Retry connection logic
+        max_retries = 3
+        retry_delay = 2
         
-        # Wait a bit for connection to fully establish
-        await asyncio.sleep(1)
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name} (attempt {attempt + 1}/{max_retries})")
+                self._voice_client = await self._channel.connect()
+                
+                # Wait for connection to fully establish
+                await asyncio.sleep(2)
+                
+                # Verify connection
+                if self._voice_client and self._voice_client.is_connected():
+                    logger.info("[VOICE_CHANNEL] Successfully connected and verified")
+                    return
+                else:
+                    logger.warning(f"[VOICE_CHANNEL] Connection verification failed on attempt {attempt + 1}")
+                    
+            except Exception as e:
+                logger.warning(f"[VOICE_CHANNEL] Connection attempt {attempt + 1} failed: {e}")
+                
+                # Clean up failed connection
+                if self._voice_client:
+                    try:
+                        await self._voice_client.disconnect()
+                    except:
+                        pass
+                    self._voice_client = None
+                
+                # Wait before retry (except on last attempt)
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
         
-        # Verify connection
-        if self._voice_client and self._voice_client.is_connected():
-            logger.info("[VOICE_CHANNEL] Successfully connected and verified")
-        else:
-            logger.error("[VOICE_CHANNEL] Connection established but verification failed")
-            raise RuntimeError("Failed to verify voice connection")
+        # All attempts failed
+        logger.error("[VOICE_CHANNEL] All connection attempts failed")
+        raise RuntimeError("Failed to establish voice connection after 3 attempts")
     
     async def disconnect(self) -> None:
         """Disconnect from the voice channel."""
@@ -72,20 +102,19 @@ class DiscordVoiceChannel(IVoiceChannel):
             self._voice_client = None
     
     async def play_audio(self, audio: AudioFile) -> None:
-        """Play audio in the voice channel.
+        """Play audio in the voice channel with resilient connection handling.
         
         Args:
             audio: AudioFile to play
         """
-        # Double-check connection status
-        if not self._voice_client:
-            logger.error("[VOICE_CHANNEL] No voice client available")
-            raise RuntimeError("Not connected to voice channel")
-        
-        if not self._voice_client.is_connected():
-            logger.error(f"[VOICE_CHANNEL] Voice client exists but is_connected() = False")
-            logger.error(f"[VOICE_CHANNEL] Voice client state: {self._voice_client}")
-            raise RuntimeError("Not connected to voice channel")
+        # Check and fix connection if needed
+        if not self._voice_client or not self._voice_client.is_connected():
+            logger.warning("[VOICE_CHANNEL] Connection lost, attempting to reconnect...")
+            try:
+                await self.connect()
+            except Exception as e:
+                logger.error(f"[VOICE_CHANNEL] Failed to reconnect: {e}")
+                raise RuntimeError("Failed to reconnect to voice channel")
         
         logger.info(f"[VOICE_CHANNEL] Voice client is connected, preparing to play audio: {audio.path}")
         
@@ -98,17 +127,36 @@ class DiscordVoiceChannel(IVoiceChannel):
             self._voice_client.stop()
             await asyncio.sleep(0.2)  # Wait for stop to complete
         
-        # Play audio
-        logger.info("[VOICE_CHANNEL] Starting audio playback")
-        source = discord.FFmpegPCMAudio(audio.path)
-        self._voice_client.play(source)
-        
-        # Wait for playback to finish
-        logger.info("[VOICE_CHANNEL] Waiting for playback to complete...")
-        while self._voice_client.is_playing():
-            await asyncio.sleep(0.1)
-        
-        logger.info("[VOICE_CHANNEL] Playback completed")
+        # Play audio with timeout protection
+        try:
+            logger.info("[VOICE_CHANNEL] Starting audio playback")
+            source = discord.FFmpegPCMAudio(audio.path)
+            self._voice_client.play(source)
+            
+            # Wait for playbook to finish with timeout protection
+            logger.info("[VOICE_CHANNEL] Waiting for playback to complete...")
+            max_wait_time = 300  # 5 minutes max wait
+            wait_time = 0
+            
+            while self._voice_client.is_playing() and wait_time < max_wait_time:
+                await asyncio.sleep(0.1)
+                wait_time += 0.1
+            
+            if wait_time >= max_wait_time:
+                logger.warning("[VOICE_CHANNEL] Playback timeout, stopping...")
+                self._voice_client.stop()
+                
+            logger.info("[VOICE_CHANNEL] Playback completed")
+            
+        except Exception as e:
+            logger.error(f"[VOICE_CHANNEL] Error during playback: {e}")
+            # Try to stop playback on error
+            try:
+                if self._voice_client and self._voice_client.is_playing():
+                    self._voice_client.stop()
+            except:
+                pass
+            raise
         
         # Schedule auto-disconnect after idle timeout
         self._schedule_disconnect()
