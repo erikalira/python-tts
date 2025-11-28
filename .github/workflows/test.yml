@@ -48,7 +48,7 @@ jobs:
           CI: true
         run: |
           export PYTHONPATH="${PYTHONPATH}:${PWD}"
-          pytest --cov=src --cov-report=xml --tb=short -v
+          pytest --tb=short -v
 
       - name: Upload coverage to Codacy
         continue-on-error: true

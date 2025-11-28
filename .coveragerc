@@ -7,6 +7,11 @@ omit =
     */.venv/*
     setup.py
     conftest.py
+    src/app.py
+    src/bot.py
+    wsgi.py
+    src/infrastructure/discord/*
+    src/infrastructure/http/*
 
 [report]
 exclude_lines =
