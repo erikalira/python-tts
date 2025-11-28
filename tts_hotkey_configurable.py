@@ -13,8 +13,53 @@ class Config:
     
     # 🌐 Discord Bot Configuration
     DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
-    DISCORD_CHANNEL_ID = None  # Ex: "123456789012345678"
-    DISCORD_MEMBER_ID = None   # Ex: "987654321098765432"
+    DISCORD_CHANNEL_ID = None  # Ex: "123456789012345678" (opcional)
+    DISCORD_MEMBER_ID = None   # Ex: "987654321098765432" (IMPORTANTE: seu Discord User ID)
+    
+    @classmethod
+    def get_config_file(cls):
+        """Get configuration file path."""
+        return Path.home() / "tts_hotkey_config.json"
+    
+    @classmethod
+    def load_from_file(cls):
+        """Load configuration from file."""
+        config_file = cls.get_config_file()
+        if config_file.exists():
+            try:
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    cls.DISCORD_MEMBER_ID = data.get('discord_member_id')
+                    cls.DISCORD_CHANNEL_ID = data.get('discord_channel_id')
+                    cls.DISCORD_BOT_URL = data.get('discord_bot_url', cls.DISCORD_BOT_URL)
+                    cls.TTS_ENGINE = data.get('tts_engine', cls.TTS_ENGINE)
+                    cls.TTS_LANGUAGE = data.get('tts_language', cls.TTS_LANGUAGE)
+                    print(f"[CONFIG] ✅ Configuração carregada de: {config_file}")
+            except Exception as e:
+                print(f"[CONFIG] ⚠️ Erro ao carregar configuração: {e}")
+    
+    @classmethod
+    def save_to_file(cls):
+        """Save configuration to file."""
+        config_file = cls.get_config_file()
+        try:
+            data = {
+                'discord_member_id': cls.DISCORD_MEMBER_ID,
+                'discord_channel_id': cls.DISCORD_CHANNEL_ID,
+                'discord_bot_url': cls.DISCORD_BOT_URL,
+                'tts_engine': cls.TTS_ENGINE,
+                'tts_language': cls.TTS_LANGUAGE,
+            }
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            print(f"[CONFIG] ✅ Configuração salva em: {config_file}")
+        except Exception as e:
+            print(f"[CONFIG] ❌ Erro ao salvar configuração: {e}")
+    
+    @classmethod
+    def is_configured(cls):
+        """Check if minimum configuration is present."""
+        return cls.DISCORD_MEMBER_ID is not None
     
     # 🎤 TTS Configuration  
     TTS_ENGINE = "gtts"           # gtts, pyttsx3, edge-tts
@@ -42,10 +87,15 @@ class Config:
     MAX_TEXT_LENGTH = 500        # Maximum characters to speak
 
 # =============================================================================
-# 💡 PARA PERSONALIZAR:
-# 1. Edite as configurações acima
-# 2. Execute: build_standalone.ps1
-# 3. Distribua apenas o arquivo .exe gerado
+# 💡 COMO USAR:
+# 1. Execute o .exe - uma janela de configuração aparecerá na primeira vez
+# 2. Insira seu Discord User ID e outras configurações
+# 3. Pronto! Use {texto} para falar
+# 
+# 🔧 PARA RECOMPILAR:
+# 1. Edite as configurações padrão acima (opcional)
+# 2. Execute: build_configurable.ps1
+# 3. Distribua o novo .exe
 # =============================================================================
 
 import os
@@ -53,7 +103,17 @@ import tempfile
 import keyboard
 import pyttsx3
 import threading
+import json
 from pathlib import Path
+
+# GUI imports with fallback
+try:
+    import tkinter as tk
+    from tkinter import ttk, messagebox, simpledialog
+    _tkinter_available = True
+except ImportError:
+    _tkinter_available = False
+    print("[tts_hotkey] ⚠️ tkinter not available, using console configuration only")
 
 # Set embedded configuration from Config class
 os.environ.setdefault('DISCORD_BOT_URL', Config.DISCORD_BOT_URL or '')
@@ -101,6 +161,146 @@ recording = False
 buffer = []
 suppress_events = threading.Event()
 
+# GUI Configuration Window
+class ConfigWindow:
+    """GUI window for configuring TTS Hotkey settings."""
+    
+    def __init__(self):
+        self.result = None
+        self.root = None
+    
+    def show_config_dialog(self):
+        """Show configuration dialog."""
+        if not _tkinter_available:
+            return self._console_config()
+        
+        try:
+            self.root = tk.Tk()
+            self.root.title("TTS Hotkey - Configuração")
+            self.root.geometry("500x400")
+            self.root.resizable(False, False)
+            
+            # Center the window
+            self.root.eval('tk::PlaceWindow . center')
+            
+            self._create_widgets()
+            self.root.mainloop()
+            
+            return self.result
+        except Exception as e:
+            print(f"[CONFIG] Erro na interface gráfica: {e}")
+            return self._console_config()
+    
+    def _create_widgets(self):
+        """Create the configuration widgets."""
+        # Title
+        title_label = tk.Label(self.root, text="🎤 TTS Hotkey - Configuração", 
+                              font=("Arial", 16, "bold"))
+        title_label.pack(pady=10)
+        
+        # Main frame
+        main_frame = ttk.Frame(self.root, padding="20")
+        main_frame.pack(fill="both", expand=True)
+        
+        # Discord Member ID (required)
+        ttk.Label(main_frame, text="Discord User ID (obrigatório):", 
+                 font=("Arial", 10, "bold")).pack(anchor="w", pady=(0, 5))
+        
+        self.member_id_var = tk.StringVar(value=Config.DISCORD_MEMBER_ID or "")
+        member_id_entry = ttk.Entry(main_frame, textvariable=self.member_id_var, width=50)
+        member_id_entry.pack(fill="x", pady=(0, 5))
+        
+        # Help text for Discord ID
+        help_text = tk.Text(main_frame, height=3, wrap=tk.WORD, font=("Arial", 8))
+        help_text.insert("1.0", "💡 Para obter seu Discord User ID:\n"
+                                "1. No Discord, vá em Configurações > Avançado > Modo Desenvolvedor (ativar)\n"
+                                "2. Clique com botão direito em seu nome e escolha 'Copiar ID'")
+        help_text.config(state="disabled", bg="#f0f0f0")
+        help_text.pack(fill="x", pady=(0, 15))
+        
+        # Bot URL
+        ttk.Label(main_frame, text="URL do Bot (opcional):").pack(anchor="w", pady=(0, 5))
+        self.bot_url_var = tk.StringVar(value=Config.DISCORD_BOT_URL or "")
+        bot_url_entry = ttk.Entry(main_frame, textvariable=self.bot_url_var, width=50)
+        bot_url_entry.pack(fill="x", pady=(0, 10))
+        
+        # TTS Engine
+        ttk.Label(main_frame, text="Engine de TTS:").pack(anchor="w", pady=(0, 5))
+        self.engine_var = tk.StringVar(value=Config.TTS_ENGINE)
+        engine_combo = ttk.Combobox(main_frame, textvariable=self.engine_var, 
+                                   values=["gtts", "pyttsx3", "edge-tts"], state="readonly")
+        engine_combo.pack(fill="x", pady=(0, 10))
+        
+        # Language
+        ttk.Label(main_frame, text="Idioma:").pack(anchor="w", pady=(0, 5))
+        self.language_var = tk.StringVar(value=Config.TTS_LANGUAGE)
+        language_combo = ttk.Combobox(main_frame, textvariable=self.language_var,
+                                     values=["pt", "en", "es", "fr"], state="readonly")
+        language_combo.pack(fill="x", pady=(0, 15))
+        
+        # Buttons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill="x", pady=(10, 0))
+        
+        ttk.Button(button_frame, text="💾 Salvar e Continuar", 
+                  command=self._save_config).pack(side="right", padx=(5, 0))
+        ttk.Button(button_frame, text="❌ Cancelar", 
+                  command=self._cancel).pack(side="right")
+    
+    def _save_config(self):
+        """Save configuration and close."""
+        member_id = self.member_id_var.get().strip()
+        
+        if not member_id:
+            messagebox.showerror("Erro", "Discord User ID é obrigatório!")
+            return
+        
+        if not member_id.isdigit():
+            messagebox.showerror("Erro", "Discord User ID deve conter apenas números!")
+            return
+        
+        # Update Config class
+        Config.DISCORD_MEMBER_ID = member_id
+        Config.DISCORD_BOT_URL = self.bot_url_var.get().strip() or Config.DISCORD_BOT_URL
+        Config.TTS_ENGINE = self.engine_var.get()
+        Config.TTS_LANGUAGE = self.language_var.get()
+        
+        # Save to file
+        Config.save_to_file()
+        
+        self.result = True
+        self.root.quit()
+        self.root.destroy()
+    
+    def _cancel(self):
+        """Cancel configuration."""
+        self.result = False
+        self.root.quit()
+        self.root.destroy()
+    
+    def _console_config(self):
+        """Fallback console configuration."""
+        print("\n" + "="*50)
+        print("🎤 TTS Hotkey - Configuração via Console")
+        print("="*50)
+        
+        # Discord Member ID
+        current_id = Config.DISCORD_MEMBER_ID or ""
+        while True:
+            member_id = input(f"Discord User ID [{current_id}]: ").strip()
+            if not member_id and current_id:
+                member_id = current_id
+                break
+            if member_id and member_id.isdigit():
+                break
+            print("❌ Discord User ID deve conter apenas números!")
+        
+        Config.DISCORD_MEMBER_ID = member_id
+        Config.save_to_file()
+        
+        print("✅ Configuração salva!")
+        return True
+
 def show_config():
     """Show current configuration from Config class."""
     print("=" * 70)
@@ -114,6 +314,8 @@ def show_config():
         print(f"   📺 Channel ID: {Config.DISCORD_CHANNEL_ID}")
     if Config.DISCORD_MEMBER_ID:
         print(f"   👤 Member ID: {Config.DISCORD_MEMBER_ID}")
+    else:
+        print(f"   ⚠️  Member ID: NÃO CONFIGURADO (recomendado para melhor funcionamento)")
     
     # TTS Configuration
     print(f"\n🎤 TTS:")
@@ -151,10 +353,24 @@ def show_config():
     print(f"   Logs detalhados: {'✅' if Config.CONSOLE_LOGS else '❌'}")
     print(f"   System Tray: {'✅' if _pystray_available else '❌'}")
     
-    print("\n📝 COMO PERSONALIZAR:")
-    print("   1. Edite a classe Config no topo do arquivo")
-    print("   2. Recompile com: build_configurable.ps1")
-    print("   3. Distribua o novo .exe")
+    print("\n📝 COMO CONFIGURAR:")
+    if not Config.DISCORD_MEMBER_ID:
+        print("   ⚠️  Na primeira execução, uma janela aparecerá para configuração")
+    print("   1. Insira seu Discord User ID (obrigatório)")
+    print("   2. Configure outras opções se necessário")
+    print("   3. Clique em 'Salvar e Continuar'")
+    print("   4. Use {texto} para falar!")
+    
+    print("\n🔧 PARA RECONFIGURAR:")
+    if _pystray_available:
+        print("   • Clique com botão direito no ícone da bandeja → Configurações")
+    print("   • Ou delete o arquivo: ~/tts_hotkey_config.json e reinicie")
+    
+    print("\n💡 DICAS IMPORTANTES:")
+    print("   • Configure DISCORD_MEMBER_ID para melhor detecção do canal")
+    print("   • Bot tenta conectar automaticamente onde você estiver")
+    print("   • Bot sai da sala após 30 minutos de inatividade")
+    print("   • Use /join no Discord se precisar conectar manualmente")
     print("=" * 70)
 
 def _speak_and_send(text: str, backspaces: int):
@@ -258,11 +474,18 @@ if _pystray_available:
         return img
     
     def on_status_click(icon, item):
-        discord_url = os.getenv('DISCORD_BOT_URL')
-        if discord_url:
+        discord_url = Config.DISCORD_BOT_URL
+        if discord_url and Config.DISCORD_MEMBER_ID:
             print(f"✅ Conectado ao Discord: {discord_url}")
+            print(f"👤 User ID: {Config.DISCORD_MEMBER_ID}")
         else:
-            print("⚠️ Discord não configurado (TTS local)")
+            print("⚠️ Discord não configurado completamente")
+    
+    def on_configure(icon, item):
+        """Open configuration dialog."""
+        print("🔧 Abrindo configurações...")
+        config_window = ConfigWindow()
+        config_window.show_config_dialog()
     
     def on_quit(icon, item):
         print("🛑 Encerrando TTS Hotkey...")
@@ -274,6 +497,7 @@ if _pystray_available:
             MenuItem('TTS Hotkey', on_status_click, default=True),
             MenuItem('Digite {texto} para falar', lambda: None, enabled=False),
             Menu.SEPARATOR,
+            MenuItem('⚙️ Configurações', on_configure),
             MenuItem('Sair', on_quit)
         )
         
@@ -281,6 +505,17 @@ if _pystray_available:
         return Icon("TTS Hotkey", icon_image, "TTS Hotkey", menu)
 
 def main():
+    # Load existing configuration
+    Config.load_from_file()
+    
+    # Check if configuration is needed
+    if not Config.is_configured():
+        print("🔧 Primeira execução detectada! Vamos configurar o TTS Hotkey...")
+        config_window = ConfigWindow()
+        if not config_window.show_config_dialog():
+            print("❌ Configuração cancelada. Encerrando...")
+            return
+    
     show_config()
     
     # Setup keyboard hook

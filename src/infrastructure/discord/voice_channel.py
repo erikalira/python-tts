@@ -9,8 +9,8 @@ from src.core.entities import AudioFile
 logger = logging.getLogger(__name__)
 
 # Timeout configuration
-# Disabled auto-disconnect - bot will stay connected until manually disconnected
-IDLE_DISCONNECT_TIMEOUT = None  # No auto-disconnect
+# Auto-disconnect after 30 minutes of inactivity
+IDLE_DISCONNECT_TIMEOUT = 30 * 60  # 30 minutes in seconds
 
 
 class DiscordVoiceChannel(IVoiceChannel):
@@ -110,8 +110,8 @@ class DiscordVoiceChannel(IVoiceChannel):
         
         logger.info("[VOICE_CHANNEL] Playback completed")
         
-        # Schedule auto-disconnect after idle timeout (disabled)
-        # self._schedule_disconnect()
+        # Schedule auto-disconnect after idle timeout
+        self._schedule_disconnect()
     
     def is_connected(self) -> bool:
         """Check if connected to voice channel."""
@@ -124,9 +124,6 @@ class DiscordVoiceChannel(IVoiceChannel):
     
     def _schedule_disconnect(self) -> None:
         """Schedule automatic disconnect after idle timeout."""
-        # Auto-disconnect disabled - bot stays connected until manual /leave
-        return
-        
         import time
         self._last_activity = time.time()
         
@@ -135,7 +132,7 @@ class DiscordVoiceChannel(IVoiceChannel):
         
         # Schedule new disconnect
         if IDLE_DISCONNECT_TIMEOUT:
-            logger.info(f"[VOICE_CHANNEL] Scheduling auto-disconnect in {IDLE_DISCONNECT_TIMEOUT}s")
+            logger.info(f"[VOICE_CHANNEL] Scheduling auto-disconnect in {IDLE_DISCONNECT_TIMEOUT}s (30 minutes)")
             self._disconnect_task = asyncio.create_task(self._auto_disconnect())
     
     def _cancel_disconnect_timer(self) -> None:

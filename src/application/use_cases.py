@@ -51,7 +51,7 @@ class SpeakTextUseCase:
         voice_channel = await self._find_voice_channel(request)
         if not voice_channel:
             logger.warning("[USE_CASE] No voice channel found for request")
-            return {"success": False, "message": "no voice channel found"}
+            return {"success": False, "message": "Bot não está conectado a nenhuma sala de voz. Use o comando /join primeiro ou certifique-se de que o bot tenha acesso ao canal."}
         
         logger.info("[USE_CASE] Voice channel found, getting config...")
         # Get TTS config for user
@@ -67,21 +67,36 @@ class SpeakTextUseCase:
         try:
             # Connect if needed
             if not voice_channel.is_connected():
-                logger.info("[USE_CASE] Not connected, connecting to voice channel...")
-                await voice_channel.connect()
-                logger.info("[USE_CASE] Connected to voice channel")
+                logger.info("[USE_CASE] Not connected, attempting to connect to voice channel...")
+                try:
+                    await voice_channel.connect()
+                    logger.info("[USE_CASE] Successfully connected to voice channel")
+                except Exception as connect_error:
+                    logger.error(f"[USE_CASE] Failed to connect to voice channel: {connect_error}")
+                    return {"success": False, "message": f"Não foi possível conectar ao canal de voz: {str(connect_error)}. Verifique se o bot tem permissão para entrar no canal."}
             else:
                 logger.info("[USE_CASE] Already connected to voice channel")
+            
+            # Double-check connection after potential connect attempt
+            if not voice_channel.is_connected():
+                logger.error("[USE_CASE] Voice channel connection verification failed")
+                return {"success": False, "message": "Falha na verificação de conexão com o canal de voz. Tente novamente ou use o comando /join primeiro."}
             
             # Play audio
             logger.info("[USE_CASE] Playing audio...")
             await voice_channel.play_audio(audio)
             logger.info("[USE_CASE] Audio playback completed")
             
-            return {"success": True, "message": "ok"}
+            return {"success": True, "message": "Áudio reproduzido com sucesso"}
         except Exception as e:
             logger.error(f"[USE_CASE] Error during audio playback: {e}", exc_info=True)
-            return {"success": False, "message": f"playback error: {str(e)}"}
+            error_msg = str(e)
+            if "not connected" in error_msg.lower():
+                return {"success": False, "message": "Bot não está conectado ao canal de voz. Use o comando /join primeiro."}
+            elif "permission" in error_msg.lower():
+                return {"success": False, "message": "Bot não tem permissão para reproduzir áudio neste canal."}
+            else:
+                return {"success": False, "message": f"Erro durante reprodução: {error_msg}"}
         finally:
             # Clean up audio file
             logger.info("[USE_CASE] Cleaning up audio file")
@@ -95,26 +110,41 @@ class SpeakTextUseCase:
             logger.info("[USE_CASE] Using already connected voice channel")
             return connected_channel
         
-        # Try explicit channel ID
-        if request.channel_id:
-            channel = await self._channel_repository.find_by_channel_id(request.channel_id)
-            if channel:
-                return channel
-        
-        # Try member ID
+        # Try to find user in a voice channel (most common case for executável)
         if request.member_id:
+            logger.info(f"[USE_CASE] Looking for member {request.member_id} in voice channels...")
             channel = await self._channel_repository.find_by_member_id(request.member_id)
             if channel:
+                logger.info(f"[USE_CASE] Found member {request.member_id} in voice channel, will connect there")
+                return channel
+            else:
+                logger.warning(f"[USE_CASE] Member {request.member_id} not found in any voice channel")
+        
+        # Try explicit channel ID
+        if request.channel_id:
+            logger.info(f"[USE_CASE] Trying explicit channel ID: {request.channel_id}")
+            channel = await self._channel_repository.find_by_channel_id(request.channel_id)
+            if channel:
+                logger.info("[USE_CASE] Found channel by explicit channel ID")
                 return channel
         
-        # Try guild ID
+        # Try guild ID - find any available channel
         if request.guild_id:
+            logger.info(f"[USE_CASE] Trying any channel in guild: {request.guild_id}")
             channel = await self._channel_repository.find_by_guild_id(request.guild_id)
             if channel:
+                logger.info("[USE_CASE] Found available channel in specified guild")
                 return channel
         
-        # Try any available channel as fallback
-        return await self._channel_repository.find_by_guild_id(None)
+        # Last resort: try any available channel
+        logger.info("[USE_CASE] Last resort: trying any available channel")
+        fallback_channel = await self._channel_repository.find_by_guild_id(None)
+        if fallback_channel:
+            logger.info("[USE_CASE] Found fallback channel")
+        else:
+            logger.warning("[USE_CASE] No voice channels found anywhere")
+        
+        return fallback_channel
 
 
 class ConfigureTTSUseCase:
