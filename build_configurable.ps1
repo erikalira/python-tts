@@ -1,160 +1,145 @@
-# 🎯 TTS Hotkey - Build Script Configurável (Versão Premium)
+# Build Script Premium para TTS Hotkey
+# Versão corrigida com encoding UTF-8
 
-Write-Host ""
-Write-Host "=" * 70
-Write-Host "🎯 TTS HOTKEY - COMPILADOR INTELIGENTE" -ForegroundColor Cyan
-Write-Host "=" * 70
-Write-Host ""
+Write-Host "=" * 60 -ForegroundColor Cyan
+Write-Host "🚀 BUILD TTS HOTKEY PREMIUM" -ForegroundColor Yellow
+Write-Host "=" * 60 -ForegroundColor Cyan
+Write-Host
 
-$config_file = "tts_hotkey_configurable.py"
-
-# Verificar se arquivo existe
-if (-not (Test-Path $config_file)) {
-    Write-Host "❌ Arquivo $config_file não encontrado!" -ForegroundColor Red
-    Write-Host "   Certifique-se de estar no diretório correto."
-    Read-Host "   Pressione Enter para sair"
+# Verificar se o arquivo existe
+if (-not (Test-Path "tts_hotkey_configurable.py")) {
+    Write-Host "❌ ERRO: Arquivo tts_hotkey_configurable.py não encontrado!" -ForegroundColor Red
+    Write-Host "📍 Certifique-se de que está no diretório correto" -ForegroundColor Yellow
     exit 1
 }
 
-# Mostrar configuração atual
-Write-Host "🔍 ANALISANDO CONFIGURAÇÃO ATUAL..." -ForegroundColor Yellow
-Write-Host ""
+Write-Host "📋 ANALISANDO CONFIGURAÇÃO..." -ForegroundColor Green
 
-try {
-    $config_content = Get-Content $config_file -Raw
-    
-    # Extrair configurações básicas
-    if ($config_content -match 'DISCORD_BOT_URL = "([^"]*)"') {
-        $discord_url = $matches[1]
-        Write-Host "🌐 Discord Bot: $discord_url" -ForegroundColor Green
-    }
-    
-    if ($config_content -match 'TTS_LANGUAGE = "([^"]*)"') {
-        $language = $matches[1]
-        Write-Host "🎤 Idioma TTS: $language" -ForegroundColor Green
-    }
-    
-    if ($config_content -match 'TTS_RATE = (\d+)') {
-        $rate = $matches[1]
-        Write-Host "⚡ Velocidade: $rate wpm" -ForegroundColor Green
-    }
-    
-    if ($config_content -match 'TRIGGER_OPEN = "([^"]*)"') {
-        $trigger_open = $matches[1]
-        if ($config_content -match 'TRIGGER_CLOSE = "([^"]*)"') {
-            $trigger_close = $matches[1]
-            Write-Host "⌨️ Triggers: '$trigger_open'texto'$trigger_close'" -ForegroundColor Green
-        }
-    }
-    
-    Write-Host ""
-} catch {
-    Write-Host "⚠️ Não foi possível analisar as configurações" -ForegroundColor Yellow
+# Ler configurações (método mais simples)
+$config_content = Get-Content "tts_hotkey_configurable.py" -Raw -Encoding UTF8
+
+# Extrair configurações principais
+$discord_url = ""
+$trigger_open = ""
+$trigger_close = ""
+$tts_rate = ""
+
+# Procurar Discord URL
+if ($config_content -match 'DISCORD_BOT_URL\s*=\s*"([^"]+)"') {
+    $discord_url = $matches[1]
 }
 
-# Confirmar antes de compilar
-Write-Host "📋 PRONTO PARA COMPILAR!" -ForegroundColor Cyan
-Write-Host "   ✅ Configuração personalizada detectada"
-Write-Host "   ✅ Arquivo fonte encontrado"
-Write-Host "   🎯 Resultado: Um único .exe standalone"
-Write-Host ""
+# Procurar triggers
+if ($config_content -match 'TRIGGER_OPEN\s*=\s*"([^"]+)"') {
+    $trigger_open = $matches[1]
+}
 
-$confirmation = Read-Host "Continuar com a compilação? (S/n)"
-if ($confirmation -and $confirmation.ToLower() -ne 's' -and $confirmation.ToLower() -ne 'y' -and $confirmation.ToLower() -ne 'yes' -and $confirmation.ToLower() -ne 'sim') {
-    Write-Host "❌ Compilação cancelada pelo usuário" -ForegroundColor Red
+if ($config_content -match 'TRIGGER_CLOSE\s*=\s*"([^"]+)"') {
+    $trigger_close = $matches[1]
+}
+
+# Procurar TTS rate
+if ($config_content -match 'TTS_RATE\s*=\s*(\d+)') {
+    $tts_rate = $matches[1]
+}
+
+Write-Host "🎯 CONFIGURAÇÃO DETECTADA:" -ForegroundColor Cyan
+Write-Host "   Discord Bot: $discord_url" -ForegroundColor White
+Write-Host "   Triggers: '$trigger_open' e '$trigger_close'" -ForegroundColor White
+Write-Host "   TTS Rate: $tts_rate" -ForegroundColor White
+Write-Host
+
+# Verificar se PyInstaller está instalado
+Write-Host "🔧 VERIFICANDO DEPENDÊNCIAS..." -ForegroundColor Green
+
+try {
+    $pyinstaller_check = & pyinstaller --version 2>&1
+    Write-Host "✅ PyInstaller: $pyinstaller_check" -ForegroundColor Green
+} catch {
+    Write-Host "❌ PyInstaller não encontrado!" -ForegroundColor Red
+    Write-Host "💡 INSTALAR: pip install pyinstaller" -ForegroundColor Yellow
+    exit 1
+}
+
+# Confirmar build
+Write-Host
+Write-Host "🚀 PRONTO PARA COMPILAR!" -ForegroundColor Yellow
+Write-Host "📦 Resultado: dist/tts_hotkey_premium.exe" -ForegroundColor Cyan
+Write-Host
+$confirm = Read-Host "Continuar? (s/N)"
+
+if ($confirm -ne "s" -and $confirm -ne "S") {
+    Write-Host "❌ Build cancelado." -ForegroundColor Red
     exit 0
 }
 
-Write-Host ""
-Write-Host "📦 Verificando e instalando dependências..." -ForegroundColor Yellow
-pip install -r requirements.txt
+Write-Host
+Write-Host "⚡ COMPILANDO..." -ForegroundColor Yellow
 
-Write-Host ""
-Write-Host "🔨 COMPILANDO VERSÃO PREMIUM..." -ForegroundColor Cyan
-Write-Host "   ⏳ Isso pode levar alguns minutos..."
+# Limpar builds anteriores
+if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
+if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
 
-$build_name = "tts_hotkey_premium"
-$timestamp = Get-Date -Format "yyyyMMdd_HHmm"
+# Comando PyInstaller otimizado
+$pyinstaller_args = @(
+    "--onefile",
+    "--windowed",
+    "--name=tts_hotkey_premium",
+    "--icon=icon.ico",
+    "--add-data=*.py;.",
+    "--hidden-import=pystray",
+    "--hidden-import=PIL",
+    "--hidden-import=PIL._tkinter_finder",
+    "--hidden-import=pyttsx3",
+    "--hidden-import=pyttsx3.drivers",
+    "--hidden-import=pyttsx3.drivers.sapi5",
+    "--hidden-import=requests",
+    "--hidden-import=keyboard",
+    "--collect-all=pyttsx3",
+    "tts_hotkey_configurable.py"
+)
 
-pyinstaller --onefile `
-    --hidden-import=requests `
-    --hidden-import=urllib3 `
-    --hidden-import=certifi `
-    --hidden-import=keyboard `
-    --hidden-import=pyttsx3 `
-    --hidden-import=sounddevice `
-    --hidden-import=soundfile `
-    --hidden-import=pystray `
-    --hidden-import=PIL `
-    --hidden-import=numpy `
-    --distpath=dist `
-    --workpath=build `
-    --name="$build_name" `
-    --console `
-    --icon=icon.png `
-    --clean `
-    $config_file
+try {
+    & pyinstaller @pyinstaller_args
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host ""
-    Write-Host "=" * 70
-    Write-Host "🎉 COMPILAÇÃO CONCLUÍDA COM SUCESSO!" -ForegroundColor Green
-    Write-Host "=" * 70
-    
-    $exe_path = "dist/$build_name.exe"
-    $exe_size = if (Test-Path $exe_path) { 
-        [math]::Round((Get-Item $exe_path).Length / 1MB, 1) 
-    } else { 
-        "?" 
+    if (Test-Path "dist/tts_hotkey_premium.exe") {
+        Write-Host
+        Write-Host "🎉 BUILD CONCLUÍDO COM SUCESSO!" -ForegroundColor Green
+        Write-Host "=" * 60 -ForegroundColor Cyan
+        
+        $file_size = (Get-Item "dist/tts_hotkey_premium.exe").Length
+        $size_mb = [math]::Round($file_size / 1MB, 2)
+        
+        Write-Host "📦 RESULTADO:" -ForegroundColor Cyan
+        Write-Host "   Arquivo: dist/tts_hotkey_premium.exe" -ForegroundColor White
+        Write-Host "   Tamanho: $size_mb MB" -ForegroundColor White
+        Write-Host "   Configuração: Integrada" -ForegroundColor Green
+        Write-Host
+        Write-Host "✅ RECURSOS INCLUÍDOS:" -ForegroundColor Green
+        Write-Host "   • Discord Bot: $discord_url" -ForegroundColor White
+        Write-Host "   • Triggers: '$trigger_open$trigger_close'" -ForegroundColor White
+        Write-Host "   • TTS Rate: $tts_rate" -ForegroundColor White
+        Write-Host "   • Todas as dependências" -ForegroundColor White
+        Write-Host "   • Zero arquivos externos" -ForegroundColor White
+        Write-Host
+        Write-Host "🚀 PRONTO PARA USO!" -ForegroundColor Yellow
+        Write-Host "=" * 60 -ForegroundColor Cyan
+        
+    } else {
+        throw "Arquivo executável não foi criado"
     }
     
-    Write-Host ""
-    Write-Host "📁 ARQUIVO GERADO:" -ForegroundColor Cyan
-    Write-Host "   Localização: $exe_path" -ForegroundColor White
-    Write-Host "   Tamanho: $exe_size MB" -ForegroundColor White
-    Write-Host "   Compilado: $(Get-Date -Format 'dd/MM/yyyy HH:mm')" -ForegroundColor White
-    
-    Write-Host ""
-    Write-Host "🎯 CARACTERÍSTICAS DA VERSÃO PREMIUM:" -ForegroundColor Cyan
-    Write-Host "   ✅ Configuração completamente embutida"
-    Write-Host "   ✅ Zero dependências externas"
-    Write-Host "   ✅ Triggers personalizados"
-    Write-Host "   ✅ Interface profissional"
-    Write-Host "   ✅ Logs detalhados configuráveis"
-    Write-Host "   ✅ Pronto para distribuição"
-    
-    Write-Host ""
-    Write-Host "🚀 COMO USAR:" -ForegroundColor Yellow
-    Write-Host "   1. Execute: $exe_path"
-    Write-Host "   2. Use os triggers configurados para falar"
-    Write-Host "   3. Enjoy! 🎉"
-    
-    Write-Host ""
-    Write-Host "🔧 PARA RECONFIGURAR:" -ForegroundColor Magenta
-    Write-Host "   1. Edite a classe Config em: $config_file"
-    Write-Host "   2. Execute este script novamente"
-    Write-Host "   3. Novo .exe será gerado com suas configurações"
-    
-    Write-Host ""
-    Write-Host "=" * 70
-    
-} else {
-    Write-Host ""
-    Write-Host "=" * 70
-    Write-Host "❌ ERRO NA COMPILAÇÃO!" -ForegroundColor Red
-    Write-Host "=" * 70
-    Write-Host ""
-    Write-Host "🔍 POSSÍVEIS CAUSAS:"
-    Write-Host "   - Dependências não instaladas corretamente"
-    Write-Host "   - Erro de sintaxe no arquivo de configuração"
-    Write-Host "   - PyInstaller não instalado (pip install pyinstaller)"
-    Write-Host ""
-    Write-Host "💡 SOLUÇÕES:"
-    Write-Host "   1. Verifique o arquivo: $config_file"
-    Write-Host "   2. Execute: pip install -r requirements.txt"
-    Write-Host "   3. Execute: pip install pyinstaller"
-    Write-Host "   4. Tente novamente"
+} catch {
+    Write-Host
+    Write-Host "❌ ERRO NO BUILD!" -ForegroundColor Red
+    Write-Host "Detalhes: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host
+    Write-Host "💡 SOLUÇÕES:" -ForegroundColor Yellow
+    Write-Host "   1. Instalar dependências: pip install -r requirements.txt" -ForegroundColor White
+    Write-Host "   2. Atualizar PyInstaller: pip install --upgrade pyinstaller" -ForegroundColor White
+    Write-Host "   3. Executar como Administrador" -ForegroundColor White
+    Write-Host "   4. Verificar antivírus (pode bloquear)" -ForegroundColor White
+    exit 1
 }
 
-Write-Host ""
-Read-Host "Pressione Enter para finalizar"
+Write-Host "💎 Build Premium concluído!" -ForegroundColor Magenta
