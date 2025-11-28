@@ -1,4 +1,5 @@
 """Tests for configuration repository."""
+import pytest
 from src.infrastructure.tts.config_repository import InMemoryConfigRepository
 from src.core.entities import TTSConfig
 
