@@ -48,15 +48,33 @@ jobs:
           CI: true
         run: |
           export PYTHONPATH="${PYTHONPATH}:${PWD}"
-          pytest --tb=short -v
+          pytest --tb=short -v --cov --cov-report=xml
+
+      - name: Check if coverage.xml exists
+        run: |
+          if [ -f coverage.xml ]; then
+            echo "Coverage file exists"
+            ls -la coverage.xml
+          else
+            echo "Coverage file not found"
+            exit 1
+          fi
 
       - name: Upload coverage to Codacy
         continue-on-error: true
         run: |
           if [ -n "$CODACY_PROJECT_TOKEN" ]; then
+            echo "Uploading coverage to Codacy..."
             bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
           else
             echo "CODACY_PROJECT_TOKEN not set, skipping coverage upload"
           fi
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+
+      - name: Upload coverage to Codecov (alternative)
+        uses: codecov/codecov-action@v4
+        continue-on-error: true
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
