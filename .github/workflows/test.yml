@@ -8,15 +8,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236 # v4.7.1
         with:
           python-version: "3.11"
 
       - name: Cache pip packages
-        uses: actions/cache@v3
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
@@ -73,7 +73,7 @@ jobs:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
       - name: Upload coverage to Codecov (alternative)
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@fa9a6909dc02281d24b410b6ee3dd8c5675a2e76 # v4.3.0
         continue-on-error: true
         with:
           file: ./coverage.xml
