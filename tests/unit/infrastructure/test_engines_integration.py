@@ -45,6 +45,7 @@ class TestGTTSEngineIntegration:
 
 @pytest.mark.asyncio
 @pytest.mark.slow
+@pytest.mark.skipif(os.environ.get('CI') == 'true', reason="pyttsx3 fails in headless CI environment")
 class TestPyttsx3EngineIntegration:
     """Test Pyttsx3Engine with actual pyttsx3 library (slow tests)."""
     

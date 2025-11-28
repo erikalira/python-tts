@@ -1,10 +1,12 @@
 [run]
-omit =
-    tests/*
+source = src/
+omit = 
     */tests/*
     */__pycache__/*
-    */.venv/*
     */venv/*
+    */.venv/*
+    setup.py
+    conftest.py
 
 [report]
 exclude_lines =
@@ -15,3 +17,12 @@ exclude_lines =
     if __name__ == .__main__.:
     if TYPE_CHECKING:
     @abstractmethod
+
+skip_covered = False
+show_missing = True
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml

@@ -26,7 +26,16 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y portaudio19-dev python3-pyaudio espeak espeak-data libespeak1 libespeak-dev ffmpeg
+          sudo apt-get install -y \
+            portaudio19-dev \
+            python3-pyaudio \
+            espeak \
+            espeak-data \
+            libespeak1 \
+            libespeak-dev \
+            ffmpeg \
+            alsa-utils \
+            pulseaudio
 
       - name: Install dependencies
         run: |
@@ -35,6 +44,8 @@ jobs:
           pip install -r requirements-test.txt
 
       - name: Run tests with coverage
+        env:
+          CI: true
         run: |
           export PYTHONPATH="${PYTHONPATH}:${PWD}"
           pytest --cov=src --cov-report=xml --tb=short -v
