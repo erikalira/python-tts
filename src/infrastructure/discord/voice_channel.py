@@ -53,46 +53,34 @@ class DiscordVoiceChannel(IVoiceChannel):
             except Exception as e:
                 logger.warning(f"[VOICE_CHANNEL] Error during disconnect: {e}")
         
-        # Retry connection logic with longer delays for Render
-        max_retries = 3
-        retry_delay = 1
-        
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name} (attempt {attempt + 1}/{max_retries})")
-                self._voice_client = await self._channel.connect()
-                
-                # Brief wait for connection to establish
-                await asyncio.sleep(0.5)
-                
-                # Quick verification attempts
-                for verify_attempt in range(2):
-                    if self._voice_client and self._voice_client.is_connected():
-                        logger.info("[VOICE_CHANNEL] Successfully connected and verified")
-                        return
-                    await asyncio.sleep(0.3)
-                
-                logger.warning(f"[VOICE_CHANNEL] Connection verification failed on attempt {attempt + 1} after multiple checks")
+        # Simple connection - let Discord handle retries internally
+        try:
+            logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name}")
+            self._voice_client = await self._channel.connect()
+            
+            # Brief wait and verify connection
+            await asyncio.sleep(0.5)
+            
+            if self._voice_client and self._voice_client.is_connected():
+                logger.info("[VOICE_CHANNEL] Successfully connected")
+                return
+            else:
+                logger.error("[VOICE_CHANNEL] Connection established but verification failed")
+                raise RuntimeError("Connection verification failed")
                     
-            except Exception as e:
-                logger.warning(f"[VOICE_CHANNEL] Connection attempt {attempt + 1} failed: {e}")
-                
-                # Clean up failed connection
-                if self._voice_client:
-                    try:
-                        await self._voice_client.disconnect()
-                    except (discord.errors.ClientException, Exception):
-                        pass
-                    self._voice_client = None
-                
-                # Wait before retry (except on last attempt)
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
-        
-        # All attempts failed
-        logger.error("[VOICE_CHANNEL] All connection attempts failed")
-        raise RuntimeError("Failed to establish voice connection after 3 attempts")
+        except Exception as e:
+            logger.error(f"[VOICE_CHANNEL] Connection failed: {e}")
+            
+            # Clean up failed connection
+            if self._voice_client:
+                try:
+                    await self._voice_client.disconnect()
+                except (discord.errors.ClientException, Exception):
+                    pass
+                self._voice_client = None
+            
+            # Re-raise with simpler message
+            raise RuntimeError(f"Failed to connect to voice channel: {e}")
     
     async def disconnect(self) -> None:
         """Disconnect from the voice channel."""

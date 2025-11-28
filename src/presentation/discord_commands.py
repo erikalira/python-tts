@@ -147,22 +147,14 @@ class DiscordCommands:
                 logger.error(f"[JOIN] Error joining channel: {e}", exc_info=True)
                 error_msg = str(e).lower()
                 
-                # Try to send appropriate error message
+                # Simple error handling
                 try:
                     if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
-                        success = await self._send_bot_inactive_message(interaction)
-                        # If inactive message failed, send generic error
-                        if not success:
-                            await interaction.edit_original_response(content='❌ Bot is shutting down or inactive.')
+                        await self._send_bot_inactive_message(interaction)
                     else:
-                        await interaction.edit_original_response(content=f'Could not join channel: {e}')
-                except Exception as followup_error:
-                    # If even sending error fails, try one last generic message
-                    logger.error(f"[JOIN] Failed to send error message: {followup_error}")
-                    try:
-                        await interaction.edit_original_response(content='❌ Bot encountered an error and may be shutting down.')
-                    except:
-                        logger.error(f"[JOIN] Could not edit response - interaction may be expired")
+                        await interaction.edit_original_response(content='❌ Não foi possível entrar no canal. Tente novamente.')
+                except:
+                    logger.error(f"[JOIN] Failed to send error response")
         else:
             await interaction.response.send_message(
                 'You are not connected to a voice channel.',

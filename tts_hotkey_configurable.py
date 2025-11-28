@@ -97,7 +97,6 @@ class Config:
     
     # ⏱️ Network Configuration
     REQUEST_TIMEOUT = 10         # Seconds to wait for Discord bot
-    RETRY_ATTEMPTS = 1           # Number of retries if request fails
     
     # 🔐 Advanced (usually don't need to change)
     USER_AGENT = "TTS-Hotkey/2.0"
@@ -354,7 +353,6 @@ def show_config():
     # Network Configuration
     print(f"\n🌐 REDE:")
     print(f"   Timeout: {Config.REQUEST_TIMEOUT}s")
-    print(f"   Tentativas: {Config.RETRY_ATTEMPTS}")
     
     # Status
     print(f"\n📊 STATUS:")
