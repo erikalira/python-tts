@@ -7,7 +7,7 @@ coverage:
   paths:
     - coverage.xml
   # Coverage threshold
-  threshold: 50
+  threshold: 77
 
 # Code patterns
 engines:
