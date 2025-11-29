@@ -115,7 +115,6 @@ class Config:
 # =============================================================================
 
 import os
-import tempfile
 import keyboard
 import pyttsx3
 import threading
@@ -125,7 +124,7 @@ from pathlib import Path
 # GUI imports with fallback
 try:
     import tkinter as tk
-    from tkinter import ttk, messagebox, simpledialog
+    from tkinter import ttk, messagebox
     _tkinter_available = True
 except ImportError:
     _tkinter_available = False
@@ -334,10 +333,10 @@ def show_config():
     if Config.DISCORD_MEMBER_ID:
         print(f"   👤 Member ID: {Config.DISCORD_MEMBER_ID}")
     else:
-        print(f"   ⚠️  Member ID: NÃO CONFIGURADO (recomendado para melhor funcionamento)")
+        print("   ⚠️  Member ID: NÃO CONFIGURADO (recomendado para melhor funcionamento)")
     
     # TTS Configuration
-    print(f"\n🎤 TTS:")
+    print("\n🎤 TTS:")
     print(f"   Engine: {Config.TTS_ENGINE}")
     print(f"   Idioma: {Config.TTS_LANGUAGE}")
     print(f"   Velocidade: {Config.TTS_RATE} wpm")
@@ -345,17 +344,17 @@ def show_config():
         print(f"   🔊 Device: {Config.TTS_OUTPUT_DEVICE}")
     
     # Hotkey Configuration
-    print(f"\n⌨️ HOTKEYS:")
+    print("\n⌨️ HOTKEYS:")
     print(f"   Iniciar: '{Config.TRIGGER_OPEN}'")
     print(f"   Finalizar: '{Config.TRIGGER_CLOSE}'")
     print(f"   Exemplo: {Config.TRIGGER_OPEN}olá mundo{Config.TRIGGER_CLOSE}")
     
     # Network Configuration
-    print(f"\n🌐 REDE:")
+    print("\n🌐 REDE:")
     print(f"   Timeout: {Config.REQUEST_TIMEOUT}s")
     
     # Status
-    print(f"\n📊 STATUS:")
+    print("\n📊 STATUS:")
     discord_available = Config.DISCORD_BOT_URL and _requests_available
     if discord_available:
         print("   ✅ Modo Discord: Enviará áudio para o bot")
@@ -366,7 +365,7 @@ def show_config():
         if not _requests_available:
             print("   💡 Biblioteca 'requests' não disponível")
     
-    print(f"\n🔧 RECURSOS:")
+    print("\n🔧 RECURSOS:")
     print(f"   Notificações: {'✅' if Config.SHOW_NOTIFICATIONS else '❌'}")
     print(f"   Logs detalhados: {'✅' if Config.CONSOLE_LOGS else '❌'}")
     print(f"   System Tray: {'✅' if _pystray_available else '❌'}")

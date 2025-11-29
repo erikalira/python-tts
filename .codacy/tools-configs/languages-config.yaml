@@ -12,6 +12,6 @@ tools:
       extensions: [.bash, .dockerfile, .py, .sh, .yaml, .yml]
       files: []
     - name: trivy
-      languages: [Dockerfile, Python, YAML]
-      extensions: [.dockerfile, .py, .yaml, .yml]
+      languages: [Dockerfile, JSON, Python, YAML]
+      extensions: [.dockerfile, .json, .py, .yaml, .yml]
       files: [Dockerfile, Pipfile.lock, poetry.lock, requirements.txt, uv.lock]

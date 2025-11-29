@@ -1,0 +1,37 @@
+---
+# Codacy configuration file
+
+# Enable coverage
+coverage:
+  # Coverage reports location
+  paths:
+    - coverage.xml
+  # Coverage threshold
+  threshold: 77
+
+# Code patterns
+engines:
+  # Enable specific engines
+  pylint:
+    enabled: true
+  bandit:
+    enabled: true
+  prospector:
+    enabled: true
+
+# Exclude specific paths from analysis
+exclude_paths:
+  - "tests/**"
+  - "**/__pycache__/**"
+  - "**/venv/**"
+  - "**/.venv/**"
+  - "htmlcov/**"
+  - "build/**"
+  - "dist/**"
+  - "*.egg-info/**"
+  - "docs/**"
+
+# Transform paths (if needed)
+transform_paths:
+  - source: "/"
+    target: "/"
