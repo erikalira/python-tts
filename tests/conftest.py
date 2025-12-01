@@ -45,6 +45,10 @@ class MockVoiceChannel(IVoiceChannel):
         """Check if connected."""
         return self.connected
 
+    def get_channel_id(self) -> int:
+        """Get mock channel ID."""
+        return 123456
+
 
 class MockVoiceChannelRepository(IVoiceChannelRepository):
     """Mock voice channel repository for testing."""

@@ -48,6 +48,11 @@ class IVoiceChannel(ABC):
         """Check if connected to voice channel."""
         pass
 
+    @abstractmethod
+    def get_channel_id(self) -> int:
+        """Get the channel ID."""
+        pass
+
 
 class IVoiceChannelRepository(ABC):
     """Interface for finding voice channels."""
