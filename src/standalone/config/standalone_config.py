@@ -7,7 +7,7 @@ Manages configuration for the TTS Hotkey standalone application.
 import json
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional
 from dataclasses import dataclass, asdict
 
 

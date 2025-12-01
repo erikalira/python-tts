@@ -52,7 +52,7 @@ class ConsoleConfig(ConfigInterface):
             bot_url = config.discord.bot_url
         
         # TTS Engine
-        print(f"\n🎵 Engines TTS disponíveis:")
+        print("\n🎵 Engines TTS disponíveis:")
         print("1. pyttsx3 (local)")
         print("2. discord (via bot)")
         print("3. both (ambos)")
@@ -100,7 +100,7 @@ class ConsoleConfig(ConfigInterface):
                 print("❌ Velocidade deve ser um número!")
         
         # Hotkey
-        print(f"\n⌨️ Configuração de Hotkey")
+        print("\n⌨️ Configuração de Hotkey")
         hotkey = input(f"Hotkey [{config.hotkey.keys}]: ").strip()
         if not hotkey:
             hotkey = config.hotkey.keys

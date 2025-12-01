@@ -213,7 +213,7 @@ class HotkeyService:
     
     def _log_startup_info(self) -> None:
         """Log startup information."""
-        print(f"[HOTKEY] 🎯 Triggers configurados:")
+        print("[HOTKEY] 🎯 Triggers configurados:")
         print(f"[HOTKEY]    Iniciar: '{self._config.hotkey.trigger_open}'")
         print(f"[HOTKEY]    Finalizar: '{self._config.hotkey.trigger_close}'")
         print(f"[HOTKEY] 📝 Exemplo: {self._config.hotkey.trigger_open}olá mundo{self._config.hotkey.trigger_close}")
