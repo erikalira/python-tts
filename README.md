@@ -35,12 +35,47 @@ This project is a text-to-speech hotkey application that allows users to input t
 # Edit configuration class
 code tts_hotkey_configurable.py
 
-# Build premium version
-./build_configurable.ps1
+# Build premium version (new organized location)
+make build-configurable
+# OR: ./scripts.sh build-configurable
+# OR: powershell scripts/build/build_configurable.ps1
 
 # Single file ready!
 dist/tts_hotkey_premium.exe
 ```
+
+## 📁 Organized Scripts
+
+All build and test scripts are now organized in the `scripts/` directory:
+
+```
+scripts/
+├── build/          # Build scripts (PowerShell)
+├── test/           # Test scripts
+├── utils/          # Utilities (icon creation, etc.)
+└── README.md       # Detailed scripts documentation
+```
+
+**Quick commands:**
+
+```bash
+# See all available commands
+make help
+# OR: ./scripts.sh help
+
+# Most common usage
+make install        # Install dependencies
+make test          # Run tests
+make build-exe     # Build executable
+make clean         # Clean artifacts
+
+# Alternative bash interface
+./scripts.sh install
+./scripts.sh test
+./scripts.sh build-exe
+```
+
+📋 **See [`scripts/README.md`](scripts/README.md) for complete documentation.**
 
 ## Requirements
 
@@ -156,12 +191,15 @@ O aplicativo aparecerá na **bandeja do sistema** (system tray) do Windows com u
 
 Para criar um executável standalone que não precisa do Python instalado:
 
-```powershell
-# Instalar PyInstaller
-pip install pyinstaller
+```bash
+# Opção 1: Usando Makefile (recomendado)
+make build-exe
 
-# Executar o script de build
-.\build_exe.ps1
+# Opção 2: Usando script bash
+./scripts.sh build-exe
+
+# Opção 3: PowerShell direto
+powershell scripts/build/build_exe.ps1
 ```
 
 Isso criará `tts_hotkey.exe` na pasta raiz. Você pode:
@@ -480,20 +518,26 @@ pip install pyinstaller
 
 **Option A - PowerShell script (recommended):**
 
-```powershell
-# Se encontrar erro de política de execução, execute primeiro:
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```bash
+# Opção mais simples - instalar dependências e build
+make setup && make install && make build-exe
 
-# Depois execute o script de build:
-.\build_exe.ps1
+# Ou passo a passo:
+./scripts.sh setup
+./scripts.sh install
+./scripts.sh build-exe
 ```
 
-**Nota:** O script já está configurado para usar o PyInstaller do ambiente virtual (`.venv`), então não é necessário ativar o venv manualmente.
+**Nota:** Os scripts organizados facilitam o desenvolvimento e build do projeto. Consulte `scripts/README.md` para mais detalhes.
 
-**Option B - Batch script:**
+**PowerShell direto (Windows):**
 
-```cmd
-.\build_exe.bat
+```powershell
+# Se encontrar erro de política de execução:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+# Execute o script:
+powershell scripts/build/build_exe.ps1
 ```
 
 **Option C - Manual PyInstaller:**
