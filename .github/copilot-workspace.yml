@@ -1,0 +1,47 @@
+# Copilot Workspace Configuration
+
+project_type: "python_discord_bot"
+framework: "discord.py_flask"
+architecture: "clean_architecture"
+
+context_files:
+  - "src/core/entities.py"
+  - "src/core/interfaces.py"
+  - "config/settings.py"
+  - "src/application/use_cases.py"
+  - "docs/ARCHITECTURE.md"
+  - "docs/TROUBLESHOOTING.md"
+  - "README.md"
+
+domain_concepts:
+  - "TTS with multiple engines"
+  - "Discord bot integration"
+  - "HTTP API endpoints"
+  - "Configuration management"
+
+coding_preferences:
+  - "Clean Architecture layers"
+  - "Type hints required"
+  - "Async/await for I/O"
+  - "Dependency injection"
+  - "Repository pattern"
+  - "Factory pattern"
+
+testing_strategy:
+  - "Unit tests for use cases"
+  - "Integration tests for services"
+  - "Mock external dependencies"
+  - "High test coverage"
+
+documentation_requirements:
+  - "Update docs/ for complex features"
+  - "Maintain README.md for new commands"
+  - "Google format docstrings"
+  - "Architecture docs consistency"
+  - "Troubleshooting guide updates"
+
+naming_conventions:
+  files: "snake_case"
+  functions: "snake_case"
+  classes: "PascalCase"
+  constants: "UPPER_SNAKE_CASE"
