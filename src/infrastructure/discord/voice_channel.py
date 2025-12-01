@@ -154,6 +154,10 @@ class DiscordVoiceChannel(IVoiceChannel):
     def is_connected(self) -> bool:
         """Check if connected to voice channel."""
         return self._voice_client is not None and self._voice_client.is_connected()
+
+    def get_channel_id(self) -> int:
+        """Get the channel ID."""
+        return self._channel.id
     
     @property
     def guild_id(self) -> int:

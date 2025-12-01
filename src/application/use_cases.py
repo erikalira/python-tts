@@ -77,6 +77,11 @@ class SpeakTextUseCase:
             else:
                 logger.info("[USE_CASE] Already connected to voice channel")
             
+            # FINAL SECURITY CHECK: Verify user is still in the channel before playing audio
+            if request.member_id and not await self._is_user_in_channel(request.member_id, voice_channel):
+                logger.error(f"[USE_CASE] SECURITY: User {request.member_id} left channel before audio playback - aborting")
+                return {"success": False, "message": "Você saiu do canal de voz. Entre no canal novamente para ouvir o TTS."}
+            
             # Play audio with timeout protection
             logger.info("[USE_CASE] Playing audio...")
             import asyncio
@@ -112,41 +117,86 @@ class SpeakTextUseCase:
     
     async def _find_voice_channel(self, request: TTSRequest):
         """Find appropriate voice channel based on request parameters."""
-        # PRIORITY: Try to find already connected channel first
+        
+        # SECURITY FIRST: Find where user is currently connected
+        user_current_channel = None
+        if request.member_id:
+            logger.info(f"[USE_CASE] Looking for member {request.member_id} current voice channel...")
+            user_current_channel = await self._channel_repository.find_by_member_id(request.member_id)
+            
+            if not user_current_channel:
+                logger.warning(f"[USE_CASE] SECURITY: Member {request.member_id} not in any voice channel - refusing to speak")
+                return None
+                
+            logger.info(f"[USE_CASE] Found member {request.member_id} in voice channel")
+        
+        # SECURITY CHECK: If bot is already connected, verify user is in the same channel
         connected_channel = await self._channel_repository.find_connected_channel()
         if connected_channel:
-            logger.info("[USE_CASE] Using already connected voice channel")
-            return connected_channel
+            # Check if user is in the same channel as bot
+            if (user_current_channel and request.member_id and 
+                await self._is_user_in_channel(request.member_id, connected_channel)):
+                logger.info("[USE_CASE] SECURITY: User is in bot's connected channel - using existing connection")
+                return connected_channel
+            else:
+                logger.error(f"[USE_CASE] SECURITY VIOLATION: User {request.member_id} not in bot's connected channel - REJECTING request to prevent information leakage")
+                return None  # SECURITY: Reject the request completely
         
-        # EXECUTÁVEL INDEPENDENCE: Find target channel and auto-connect
-        target_channel = None
+        # Bot not connected - connect to user's current channel if available  
+        if user_current_channel:
+            logger.info(f"[USE_CASE] INITIAL CONNECTION: Connecting to user's current voice channel")
+            await self._auto_connect_to_channel(user_current_channel)
+            return user_current_channel
         
-        # SECURITY FIRST: Only connect to channel where user is currently connected
-        if request.member_id:
-            logger.info(f"[USE_CASE] Looking for member {request.member_id} in voice channels...")
-            target_channel = await self._channel_repository.find_by_member_id(request.member_id)
-            if target_channel:
-                logger.info(f"[USE_CASE] Found member {request.member_id} in voice channel, will auto-connect there")
-                # AUTO-CONNECT: Only to user's current channel for security
+        # Only allow explicit channel ID if user is present there (for manual /join commands)
+        if request.channel_id and not request.member_id:
+            logger.warning("[USE_CASE] SECURITY: Channel ID provided but no member_id - refusing for security")
+            return None
+        
+        if request.channel_id and user_current_channel:
+            # Verify the explicit channel matches user's current channel
+            target_channel = await self._channel_repository.find_by_channel_id(request.channel_id)
+            if target_channel and request.member_id and await self._is_user_in_channel(request.member_id, target_channel):
+                logger.info("[USE_CASE] Explicit channel ID matches user's current channel")
                 await self._auto_connect_to_channel(target_channel)
                 return target_channel
             else:
-                logger.warning(f"[USE_CASE] SECURITY: Member {request.member_id} not in any voice channel - no auto-connect")
-                return None
+                logger.warning(f"[USE_CASE] SECURITY: Explicit channel {request.channel_id} doesn't match user's current location")
         
-        # Try explicit channel ID (for manual /join commands)
-        if request.channel_id:
-            logger.info(f"[USE_CASE] Trying explicit channel ID: {request.channel_id}")
-            target_channel = await self._channel_repository.find_by_channel_id(request.channel_id)
-            if target_channel:
-                logger.info("[USE_CASE] Found channel by explicit channel ID, will connect")
-                await self._auto_connect_to_channel(target_channel)
-                return target_channel
-        
-        # If no member_id or explicit channel_id, don't auto-connect for security
-        logger.warning("[USE_CASE] SECURITY: No member_id provided - refusing to auto-connect to prevent information leakage")
+        # If no member_id, refuse for security
+        logger.warning("[USE_CASE] SECURITY: No member_id provided - refusing to prevent information leakage")
         return None
     
+    async def _is_user_in_channel(self, member_id: int, channel) -> bool:
+        """Check if user is currently in the specified voice channel.
+        
+        Args:
+            member_id: Discord member ID
+            channel: Voice channel to check (DiscordVoiceChannel instance)
+            
+        Returns:
+            True if user is in channel, False otherwise
+        """
+        try:
+            # Find where user is currently connected
+            current_user_channel = await self._channel_repository.find_by_member_id(member_id)
+            if current_user_channel is None:
+                logger.info(f"[USE_CASE] SECURITY CHECK: User {member_id} not in any voice channel")
+                return False
+                
+            # Compare channel IDs using the interface method
+            channel_id = channel.get_channel_id()
+            user_channel_id = current_user_channel.get_channel_id()
+                
+            is_same = channel_id == user_channel_id
+            logger.info(f"[USE_CASE] SECURITY CHECK: User {member_id} in channel {user_channel_id}, bot in channel {channel_id}, same: {is_same}")
+            return is_same
+            
+        except Exception as e:
+            logger.error(f"[USE_CASE] SECURITY CHECK: Error checking user channel presence: {e}")
+            # On error, assume user is NOT in channel for security
+            return False
+
     async def _auto_connect_to_channel(self, channel):
         """Auto-connect bot to voice channel ONLY where user is currently connected."""
         try:

@@ -41,8 +41,9 @@ Thumbs.db
 
 # Build files
 *.spec
-build_exe.bat
-build_exe.ps1
+scripts/
+Makefile
+scripts.sh
 
 # Logs
 *.log
