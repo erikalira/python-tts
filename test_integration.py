@@ -183,7 +183,7 @@ def test_basic_functionality():
 def main():
     """Run all tests."""
     print("=" * 70)
-    print("🧪 TTS HOTKEY - TESTE DE INTEGRAÇÃO")
+    print("TTS HOTKEY - INTEGRATION TEST")
     print("=" * 70)
     
     tests = [
