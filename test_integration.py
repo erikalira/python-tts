@@ -121,7 +121,7 @@ def test_file_structure():
     import os
     
     required_files = [
-        ('tts_hotkey_configurable.py', 'Versão configurável'),
+        ('tts_hotkey_configurable.py', 'Versão única com Clean Architecture'),
         ('scripts/build/build_clean_architecture.ps1', 'Script de build Clean Architecture'),
     ]
     
@@ -160,20 +160,7 @@ def test_basic_functionality():
         print(f"⚠️ Aviso em tts_hotkey_configurable.py: {e}")
         print("💡 Sintaxe OK, erro pode ser dependência GUI (normal em Linux)")
     
-    try:
-        # Test simple version syntax
-        print("🔍 Testando sintaxe tts_hotkey_simple.py...")
-        with open('tts_hotkey_simple.py', 'r') as f:
-            code = f.read()
-        compile(code, 'tts_hotkey_simple.py', 'exec')
-        print("✅ tts_hotkey_simple.py - sintaxe OK")
-        
-    except SyntaxError as e:
-        print(f"❌ Erro de sintaxe em tts_hotkey_simple.py: {e}")
-        return False
-    except Exception as e:
-        print(f"⚠️ Aviso em tts_hotkey_simple.py: {e}")
-        print("💡 Sintaxe OK, erro pode ser dependência (normal em Linux)")
+    # Simple version removed - Clean Architecture handles all cases with embedded fallback
         
     return True
 
