@@ -21,6 +21,7 @@ help:
 	@echo ""
 	@echo "🔨 Building:"
 	@echo "  make build-windows    - Quick Windows build (recommended)"
+	@echo "  make build-clean      - Clean Architecture build (SOLID principles)"
 	@echo "  make build-simple     - Simple TTS executable (minimal deps)"  
 	@echo "  make build-hotkey     - Full TTS Hotkey executable"
 	@echo "  make build-exe        - Discord bot executable"
@@ -83,6 +84,15 @@ build-exe:
 	else \
 		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
 		echo "   powershell scripts/build/build_exe.ps1"; \
+	fi
+
+build-clean:
+	@echo "🏗️ Building TTS Hotkey with Clean Architecture for Windows..."
+	@if command -v pwsh >/dev/null 2>&1; then \
+		pwsh -File scripts/build/build_clean_architecture.ps1; \
+	else \
+		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
+		echo "   powershell scripts/build/build_clean_architecture.ps1"; \
 	fi
 
 build-hotkey:

@@ -125,13 +125,14 @@ def main() -> None:
     if _clean_architecture_available:
         print("✅ Usando arquitetura limpa (Clean Architecture)")
         
-        # Create and run the clean architecture application
-        app = SimpleApplication()
-        
-        # If we have custom defaults, we could inject them here
-        # For now, the defaults are handled in the configuration system
-        
-        app.run()
+        try:
+            # Create and run the clean architecture application
+            app = SimpleApplication()
+            app.run()
+        except Exception as e:
+            print(f"❌ Erro na arquitetura limpa: {e}")
+            print("🔄 Alternando para implementação embutida...")
+            run_embedded_standalone()
     else:
         print("💡 Usando implementação standalone embutida...")
         # Fallback implementation when clean architecture is not available

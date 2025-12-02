@@ -4,10 +4,34 @@ Standalone Module Init - Clean Architecture
 Entry point for the standalone TTS Hotkey application.
 """
 
-from .config import *
-from .gui import *
-from .services import *
-from .app import *
+# Import with error handling for optional dependencies
+try:
+    from .config import *
+    _config_available = True
+except ImportError as e:
+    print(f"[STANDALONE] ⚠️ Config import failed: {e}")
+    _config_available = False
+
+try:
+    from .gui import *
+    _gui_available = True
+except ImportError as e:
+    print(f"[STANDALONE] ⚠️ GUI import failed: {e}")
+    _gui_available = False
+
+try:
+    from .services import *
+    _services_available = True
+except ImportError as e:
+    print(f"[STANDALONE] ⚠️ Services import failed: {e}")
+    _services_available = False
+
+try:
+    from .app import *
+    _app_available = True
+except ImportError as e:
+    print(f"[STANDALONE] ⚠️ App import failed: {e}")
+    _app_available = False
 
 __all__ = [
     # Config

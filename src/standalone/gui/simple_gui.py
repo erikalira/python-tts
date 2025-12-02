@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-Simple Configuration GUI - Clean Architecture
+Simple Configuration GUI - Clean Architecture (Fixed)
 Provides simplified interfaces for configuration without complex type hints.
 """
 
 from abc import ABC, abstractmethod
 from typing import Optional
+from dataclasses import replace
 
 try:
     import tkinter as tk
@@ -53,23 +54,19 @@ class ConsoleConfig(ConfigInterface):
         
         # TTS Engine
         print("\n🎵 Engines TTS disponíveis:")
-        print("1. pyttsx3 (local)")
-        print("2. discord (via bot)")
-        print("3. both (ambos)")
+        print("1. gtts (Google TTS)")
+        print("2. pyttsx3 (local)")
         
         while True:
-            choice = input(f"Escolha [1-3, atual: {config.tts.engine}]: ").strip()
+            choice = input(f"Escolha [1-2, atual: {config.tts.engine}]: ").strip()
             if not choice:
                 engine = config.tts.engine
                 break
             elif choice == "1":
-                engine = "pyttsx3"
+                engine = "gtts"
                 break
             elif choice == "2":
-                engine = "discord"
-                break
-            elif choice == "3":
-                engine = "both"
+                engine = "pyttsx3"
                 break
             else:
                 print("❌ Opção inválida!")
@@ -99,37 +96,45 @@ class ConsoleConfig(ConfigInterface):
             except ValueError:
                 print("❌ Velocidade deve ser um número!")
         
-        # Hotkey
-        print("\n⌨️ Configuração de Hotkey")
-        hotkey = input(f"Hotkey [{config.hotkey.keys}]: ").strip()
-        if not hotkey:
-            hotkey = config.hotkey.keys
+        # Triggers
+        print("\n⌨️ Configuração de Triggers")
+        trigger_open = input(f"Trigger abrir [{config.hotkey.trigger_open}]: ").strip()
+        if not trigger_open:
+            trigger_open = config.hotkey.trigger_open
+            
+        trigger_close = input(f"Trigger fechar [{config.hotkey.trigger_close}]: ").strip()
+        if not trigger_close:
+            trigger_close = config.hotkey.trigger_close
         
-        # Create new config
+        # Create new config using dataclasses.replace
         new_config = StandaloneConfig(
-            discord=config.discord._replace(
+            discord=replace(config.discord,
                 member_id=member_id,
                 bot_url=bot_url
             ),
-            tts=config.tts._replace(
+            tts=replace(config.tts,
                 engine=engine,
                 language=language,
                 voice_id=voice_id,
                 rate=rate
             ),
-            hotkey=config.hotkey._replace(
-                keys=hotkey
+            hotkey=replace(config.hotkey,
+                trigger_open=trigger_open,
+                trigger_close=trigger_close
             ),
-            notifications=config.notifications
+            interface=config.interface,
+            network=config.network
         )
         
         # Validate
-        validator = ConfigurationValidator()
-        if validator.validate_config(new_config):
+        is_valid, errors = ConfigurationValidator.validate(new_config)
+        if is_valid:
             print("✅ Configuração salva com sucesso!")
             return new_config
         else:
-            print("❌ Erro na validação da configuração!")
+            print("❌ Erros na configuração:")
+            for error in errors:
+                print(f"   - {error}")
             return None
 
 
@@ -137,9 +142,19 @@ class GUIConfig(ConfigInterface):
     """GUI configuration interface."""
     
     def __init__(self):
-        self.root = None
-        self.config = None
-        self.result = None
+        self.root: Optional[tk.Tk] = None
+        self.config: Optional[StandaloneConfig] = None
+        self.result: Optional[StandaloneConfig] = None
+        
+        # Variables for form fields
+        self.member_id_var: Optional[tk.StringVar] = None
+        self.bot_url_var: Optional[tk.StringVar] = None
+        self.engine_var: Optional[tk.StringVar] = None
+        self.language_var: Optional[tk.StringVar] = None
+        self.voice_id_var: Optional[tk.StringVar] = None
+        self.rate_var: Optional[tk.StringVar] = None
+        self.trigger_open_var: Optional[tk.StringVar] = None
+        self.trigger_close_var: Optional[tk.StringVar] = None
         
     def show_config(self, config: StandaloneConfig) -> Optional[StandaloneConfig]:
         """Show GUI configuration."""
@@ -170,6 +185,9 @@ class GUIConfig(ConfigInterface):
     
     def _create_interface(self):
         """Create the GUI interface."""
+        if not self.root or not self.config:
+            return
+            
         # Main frame
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill="both", expand=True)
@@ -209,6 +227,9 @@ class GUIConfig(ConfigInterface):
     
     def _create_discord_tab(self, parent):
         """Create Discord configuration tab."""
+        if not self.config:
+            return
+            
         # Member ID
         ttk.Label(parent, text="Discord User ID:").pack(anchor="w", pady=(0, 5))
         self.member_id_var = tk.StringVar(value=self.config.discord.member_id or "")
@@ -227,11 +248,14 @@ class GUIConfig(ConfigInterface):
     
     def _create_tts_tab(self, parent):
         """Create TTS configuration tab."""
+        if not self.config:
+            return
+            
         # Engine
         ttk.Label(parent, text="Engine TTS:").pack(anchor="w", pady=(0, 5))
         self.engine_var = tk.StringVar(value=self.config.tts.engine)
         engine_combo = ttk.Combobox(parent, textvariable=self.engine_var, 
-                                  values=["pyttsx3", "discord", "both"], state="readonly")
+                                  values=["gtts", "pyttsx3"], state="readonly")
         engine_combo.pack(fill="x", pady=(0, 10))
         
         # Language
@@ -251,19 +275,34 @@ class GUIConfig(ConfigInterface):
     
     def _create_hotkey_tab(self, parent):
         """Create Hotkey configuration tab."""
-        # Keys
-        ttk.Label(parent, text="Combinação de teclas:").pack(anchor="w", pady=(0, 5))
-        self.keys_var = tk.StringVar(value=self.config.hotkey.keys)
-        ttk.Entry(parent, textvariable=self.keys_var, width=50).pack(fill="x", pady=(0, 10))
+        if not self.config:
+            return
+            
+        # Trigger Open
+        ttk.Label(parent, text="Trigger para iniciar:").pack(anchor="w", pady=(0, 5))
+        self.trigger_open_var = tk.StringVar(value=self.config.hotkey.trigger_open)
+        ttk.Entry(parent, textvariable=self.trigger_open_var, width=50).pack(fill="x", pady=(0, 10))
+        
+        # Trigger Close
+        ttk.Label(parent, text="Trigger para finalizar:").pack(anchor="w", pady=(0, 5))
+        self.trigger_close_var = tk.StringVar(value=self.config.hotkey.trigger_close)
+        ttk.Entry(parent, textvariable=self.trigger_close_var, width=50).pack(fill="x", pady=(0, 10))
         
         # Help
-        help_text = ("Exemplos: 'ctrl+shift+t', 'alt+space', 'f12'\n"
-                    "Use + para separar teclas modificadoras.")
+        help_text = (f"Exemplo: Digite '{self.config.hotkey.trigger_open}olá mundo{self.config.hotkey.trigger_close}' "
+                    "para falar 'olá mundo'")
         ttk.Label(parent, text=help_text, wraplength=400, 
                  font=("Arial", 8)).pack(anchor="w", pady=(10, 0))
     
     def _save_config(self):
         """Save configuration."""
+        if not self.config or not all([
+            self.member_id_var, self.bot_url_var, self.engine_var,
+            self.language_var, self.voice_id_var, self.rate_var,
+            self.trigger_open_var, self.trigger_close_var
+        ]):
+            return
+            
         try:
             # Get values
             member_id = self.member_id_var.get().strip()
@@ -272,33 +311,38 @@ class GUIConfig(ConfigInterface):
             language = self.language_var.get().strip()
             voice_id = self.voice_id_var.get().strip()
             rate = int(self.rate_var.get())
-            keys = self.keys_var.get().strip()
+            trigger_open = self.trigger_open_var.get().strip()
+            trigger_close = self.trigger_close_var.get().strip()
             
-            # Create new config
+            # Create new config using dataclasses.replace
             new_config = StandaloneConfig(
-                discord=self.config.discord._replace(
+                discord=replace(self.config.discord,
                     member_id=member_id,
                     bot_url=bot_url
                 ),
-                tts=self.config.tts._replace(
+                tts=replace(self.config.tts,
                     engine=engine,
                     language=language,
                     voice_id=voice_id,
                     rate=rate
                 ),
-                hotkey=self.config.hotkey._replace(
-                    keys=keys
+                hotkey=replace(self.config.hotkey,
+                    trigger_open=trigger_open,
+                    trigger_close=trigger_close
                 ),
-                notifications=self.config.notifications
+                interface=self.config.interface,
+                network=self.config.network
             )
             
             # Validate
-            validator = ConfigurationValidator()
-            if validator.validate_config(new_config):
+            is_valid, errors = ConfigurationValidator.validate(new_config)
+            if is_valid:
                 self.result = new_config
-                self.root.destroy()
+                if self.root:
+                    self.root.destroy()
             else:
-                messagebox.showerror("Erro", "Configuração inválida!")
+                error_msg = "\n".join(errors)
+                messagebox.showerror("Erro de Validação", f"Erros encontrados:\n\n{error_msg}")
                 
         except ValueError as e:
             messagebox.showerror("Erro", f"Valor inválido: {e}")
@@ -308,7 +352,8 @@ class GUIConfig(ConfigInterface):
     def _cancel(self):
         """Cancel configuration."""
         self.result = None
-        self.root.destroy()
+        if self.root:
+            self.root.destroy()
 
 
 class ConfigurationService:
@@ -320,8 +365,13 @@ class ConfigurationService:
     def get_configuration(self, current_config: StandaloneConfig) -> Optional[StandaloneConfig]:
         """Get configuration from user."""
         if self.prefer_gui and TKINTER_AVAILABLE:
-            interface = GUIConfig()
-        else:
-            interface = ConsoleConfig()
+            try:
+                gui = GUIConfig()
+                return gui.show_config(current_config)
+            except Exception as e:
+                print(f"[CONFIG] ❌ Erro na GUI: {e}")
+                print("[CONFIG] 🔄 Alternando para console...")
         
-        return interface.show_config(current_config)
+        # Fallback to console
+        console = ConsoleConfig()
+        return console.show_config(current_config)

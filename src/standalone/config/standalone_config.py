@@ -34,6 +34,11 @@ class HotkeyConfig:
     """Hotkey configuration."""
     trigger_open: str = "{"
     trigger_close: str = "}"
+    
+    @property
+    def keys(self) -> str:
+        """Get formatted hotkey display string."""
+        return f"{self.trigger_open}text{self.trigger_close}"
 
 
 @dataclass

@@ -22,15 +22,21 @@ from .hotkey_services import (
     HotkeyManager
 )
 
-from .notification_services import (
-    NotificationService,
-    ConsoleNotificationService,
-    SystemTrayIcon,
-    PySystemTrayIcon,
-    NullSystemTrayIcon,
-    SystemTrayService
-)
+try:
+    from .notification_services import (
+        NotificationService,
+        ConsoleNotificationService,
+        SystemTrayIcon,
+        PySystemTrayIcon,
+        NullSystemTrayIcon,
+        SystemTrayService
+    )
+    _notification_available = True
+except ImportError as e:
+    print(f"[SERVICES] ⚠️ Notification services not available: {e}")
+    _notification_available = False
 
+# Base exports (always available)
 __all__ = [
     'TTSEngine',
     'LocalPyTTSX3Engine',
@@ -44,11 +50,16 @@ __all__ = [
     'KeyboardMonitor',
     'StandardKeyboardMonitor',
     'HotkeyService',
-    'HotkeyManager',
-    'NotificationService',
-    'ConsoleNotificationService',
-    'SystemTrayIcon',
-    'PySystemTrayIcon',
-    'NullSystemTrayIcon',
-    'SystemTrayService'
+    'HotkeyManager'
 ]
+
+# Add notification services if available
+if _notification_available:
+    __all__.extend([
+        'NotificationService',
+        'ConsoleNotificationService',
+        'SystemTrayIcon',
+        'PySystemTrayIcon',
+        'NullSystemTrayIcon',
+        'SystemTrayService'
+    ])
