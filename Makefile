@@ -19,7 +19,10 @@ help:
 	@echo "  make coverage     - Generate coverage report"
 	@echo ""
 	@echo "🔨 Building:"
-	@echo "  make build-exe    - Build standard executable (Windows)"
+	@echo "  make build-windows    - Quick Windows build (TTS Hotkey)"
+	@echo "  make build-hotkey     - Build TTS Hotkey executable"
+	@echo "  make build-exe        - Build Discord bot executable"  
+	@echo "  make build-all        - Build all executables"
 	@echo "  make build-standalone - Build standalone executable"
 	@echo "  make build-configurable - Build configurable version"
 	@echo ""
@@ -70,12 +73,21 @@ coverage:
 
 # Build commands (PowerShell scripts)
 build-exe:
-	@echo "🔨 Building standard executable..."
+	@echo "🔨 Building Discord bot executable for Windows..."
 	@if command -v pwsh >/dev/null 2>&1; then \
 		pwsh -File scripts/build/build_exe.ps1; \
 	else \
 		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
 		echo "   powershell scripts/build/build_exe.ps1"; \
+	fi
+
+build-hotkey:
+	@echo "🎤 Building TTS Hotkey executable for Windows..."
+	@if command -v pwsh >/dev/null 2>&1; then \
+		pwsh -File scripts/build/build_hotkey_exe.ps1; \
+	else \
+		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
+		echo "   powershell scripts/build/build_hotkey_exe.ps1"; \
 	fi
 
 build-standalone:
@@ -95,6 +107,17 @@ build-configurable:
 		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
 		echo "   powershell scripts/build/build_configurable.ps1"; \
 	fi
+
+# Simplified Windows build commands
+build-windows:
+	@echo "🪟 Quick build for Windows (TTS Hotkey)..."
+	@echo "This will create a Windows executable for the TTS Hotkey application"
+	@$(MAKE) build-hotkey
+
+build-all:
+	@echo "🔨 Building all executables..."
+	@$(MAKE) build-exe
+	@$(MAKE) build-hotkey
 
 # Run commands
 run-bot:
