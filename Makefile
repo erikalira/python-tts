@@ -20,13 +20,7 @@ help:
 	@echo "  make coverage     - Generate coverage report"
 	@echo ""
 	@echo "🔨 Building:"
-	@echo "  make build-windows        - Quick Windows build (recommended)"
-	@echo "  make build-clean          - Clean Architecture build (SOLID principles)"
-	@echo "  make build-clean-no-icon  - Clean Architecture build without icon"
-	@echo "  make build-simple         - Simple TTS executable (minimal deps)"  
-	@echo "  make build-hotkey         - Full TTS Hotkey executable"
-	@echo "  make build-exe            - Discord bot executable"
-	@echo "  make build-all            - Build all executables"
+	@echo "  make build-clean          - Clean Architecture build for Windows (recommended)"
 	@echo ""
 	@echo "🏃 Running:"
 	@echo "  make run-bot      - Run Discord bot"
@@ -77,16 +71,7 @@ coverage:
 	@echo "📊 Generating coverage report..."
 	python -m pytest tests/ --cov=src --cov-report=html --cov-report=xml --cov-report=term
 
-# Build commands (PowerShell scripts)
-build-exe:
-	@echo "🔨 Building Discord bot executable for Windows..."
-	@if command -v pwsh >/dev/null 2>&1; then \
-		pwsh -File scripts/build/build_exe.ps1; \
-	else \
-		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
-		echo "   powershell scripts/build/build_exe.ps1"; \
-	fi
-
+# Build command (Clean Architecture with SOLID principles)
 build-clean:
 	@echo "🏗️ Building TTS Hotkey with Clean Architecture for Windows..."
 	@if command -v pwsh >/dev/null 2>&1; then \
@@ -95,63 +80,6 @@ build-clean:
 		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
 		echo "   powershell scripts/build/build_clean_architecture.ps1"; \
 	fi
-
-build-clean-no-icon:
-	@echo "🏗️ Building TTS Hotkey with Clean Architecture (No Icon) for Windows..."
-	@if command -v pwsh >/dev/null 2>&1; then \
-		pwsh -File scripts/build/build_clean_no_icon.ps1; \
-	else \
-		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
-		echo "   powershell scripts/build/build_clean_no_icon.ps1"; \
-	fi
-
-build-hotkey:
-	@echo "🎤 Building TTS Hotkey executable for Windows..."
-	@if command -v pwsh >/dev/null 2>&1; then \
-		pwsh -File scripts/build/build_hotkey_exe.ps1; \
-	else \
-		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
-		echo "   powershell scripts/build/build_hotkey_exe.ps1"; \
-	fi
-
-build-standalone:
-	@echo "🔨 Building standalone executable..."
-	@if command -v pwsh >/dev/null 2>&1; then \
-		pwsh -File scripts/build/build_standalone.ps1; \
-	else \
-		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
-		echo "   powershell scripts/build/build_standalone.ps1"; \
-	fi
-
-build-configurable:
-	@echo "🔨 Building configurable executable..."
-	@if command -v pwsh >/dev/null 2>&1; then \
-		pwsh -File scripts/build/build_configurable.ps1; \
-	else \
-		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
-		echo "   powershell scripts/build/build_configurable.ps1"; \
-	fi
-
-# Simplified Windows build commands  
-build-windows:
-	@echo "🪟 Quick build for Windows (Simple TTS Hotkey)..."
-	@echo "This will create a minimal Windows executable with maximum compatibility"
-	@$(MAKE) build-simple
-
-build-simple:
-	@echo "🎯 Building simple TTS Hotkey executable (minimal dependencies)..."
-	@if command -v pwsh >/dev/null 2>&1; then \
-		pwsh -File scripts/build/build_simple_exe.ps1; \
-	else \
-		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
-		echo "   powershell scripts/build/build_simple_exe.ps1"; \
-	fi
-
-build-all:
-	@echo "🔨 Building all executables..."
-	@$(MAKE) build-exe
-	@$(MAKE) build-hotkey
-	@$(MAKE) build-simple
 
 # Run commands
 run-bot:

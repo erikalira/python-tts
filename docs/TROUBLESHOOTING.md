@@ -79,11 +79,11 @@ class Config:
 
 ## 🔧 **Build Script Inteligente**
 
-O `build_configurable.ps1` detecta automaticamente problemas:
+O `build_clean_architecture.ps1` detecta automaticamente problemas:
 
 ```powershell
 # Execute para ver análise completa:
-./build_configurable.ps1
+./build_clean_architecture.ps1
 ```
 
 **Output esperado**:
@@ -138,7 +138,7 @@ class Config:
 code tts_hotkey_configurable.py
 
 # 2. Compile novamente
-./build_configurable.ps1
+./build_clean_architecture.ps1
 
 # 3. Teste imediatamente
 dist/tts_hotkey_premium.exe
@@ -162,7 +162,7 @@ pip install -r requirements.txt
 
 ```powershell
 Remove-Item dist, build -Recurse -Force -ErrorAction SilentlyContinue
-./build_configurable.ps1
+./build_clean_architecture.ps1
 ```
 
 **🎯 Resultado**: Um único arquivo robusto sem dependências externas!

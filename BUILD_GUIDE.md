@@ -71,7 +71,7 @@ pyinstaller --onefile `
 
 ```powershell
 # Para build sem clean architecture (compatibilidade)
-scripts\build\build_configurable.ps1
+scripts\build\build_clean_architecture.ps1
 ```
 
 ## 📁 Localização do Executável

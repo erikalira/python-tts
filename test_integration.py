@@ -122,9 +122,7 @@ def test_file_structure():
     
     required_files = [
         ('tts_hotkey_configurable.py', 'Versão configurável'),
-        ('tts_hotkey_simple.py', 'Versão simples'),
-        ('scripts/build/build_hotkey_exe.ps1', 'Script de build'),
-        ('scripts/build/build_simple_exe.ps1', 'Script de build simples'),
+        ('scripts/build/build_clean_architecture.ps1', 'Script de build Clean Architecture'),
     ]
     
     missing_files = []

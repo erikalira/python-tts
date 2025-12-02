@@ -19,10 +19,12 @@ class Config:
 ## 🔧 **Como Descobrir seu Discord ID**
 
 ### Passo 1: Ativar Modo Desenvolvedor
+
 1. Discord → **Configurações do Usuário**
 2. **Avançado** → Ativar **Modo Desenvolvedor**
 
 ### Passo 2: Copiar seu ID
+
 1. Clique direito no **seu nome** em qualquer chat
 2. **Copiar ID do Usuário**
 3. Cole na Config class
@@ -32,13 +34,14 @@ class Config:
 O bot usa esta **ordem de prioridade**:
 
 1. 🎯 **Canal já conectado** (se usou `/join` antes)
-2. 📍 **Channel ID específico** (se configurou `DISCORD_CHANNEL_ID`)  
+2. 📍 **Channel ID específico** (se configurou `DISCORD_CHANNEL_ID`)
 3. 👤 **Member ID** (encontra onde você está)
 4. ❌ **Erro** se nenhuma opção funcionar
 
 ## 🎮 **Configurações por Perfil**
 
 ### Gaming Profile (Resposta Rápida)
+
 ```python
 class Config:
     DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
@@ -48,17 +51,19 @@ class Config:
     REQUEST_TIMEOUT = 5               # Timeout baixo
 ```
 
-### Office Profile (Mais Confiável)  
+### Office Profile (Mais Confiável)
+
 ```python
 class Config:
     DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
-    DISCORD_MEMBER_ID = "seu_id_aqui" 
+    DISCORD_MEMBER_ID = "seu_id_aqui"
     TTS_RATE = 150                    # Fala clara
     SHOW_NOTIFICATIONS = True         # Feedback visual
     REQUEST_TIMEOUT = 15              # Mais tolerante
 ```
 
 ### Streaming Profile (OBS Ready)
+
 ```python
 class Config:
     DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
@@ -77,7 +82,7 @@ class Config:
     # Triggers únicos para cada cenário
     TRIGGER_OPEN = "["        # Gaming: não conflita com chat
     TRIGGER_CLOSE = "]"       # Gaming: fácil de digitar
-    
+
     # OU para Office:
     TRIGGER_OPEN = "="        # Office: tecla única
     TRIGGER_CLOSE = "+"       # Office: ao lado no teclado
@@ -91,10 +96,10 @@ class Config:
     AUDIO_DEVICE = None              # Padrão do sistema
     # AUDIO_DEVICE = "VB-Cable"     # Para streaming
     # AUDIO_DEVICE = "Headset"      # Para gaming
-    
+
     # Configurações de TTS
     TTS_RATE = 180                   # Velocidade (120-300)
-    TTS_VOLUME = 0.9                 # Volume (0.0-1.0)  
+    TTS_VOLUME = 0.9                 # Volume (0.0-1.0)
     TTS_LANGUAGE = "pt"              # Idioma
 ```
 
@@ -122,7 +127,7 @@ Quando executado, mostra status completo:
 code tts_hotkey_configurable.py
 
 # 2. Compilar
-./build_configurable.ps1
+./build_clean_architecture.ps1
 
 # 3. Usar
 dist/tts_hotkey_premium.exe
@@ -140,20 +145,23 @@ dist/tts_hotkey_premium.exe
 ## 🛠️ **Troubleshooting Premium**
 
 ### ❌ "Hotkey registration failed"
+
 ```python
 # Mude os triggers:
 TRIGGER_OPEN = "["
-TRIGGER_CLOSE = "]" 
+TRIGGER_CLOSE = "]"
 ```
 
 ### ❌ "Discord not found"
+
 ```python
 # Verifique a URL:
 DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
 ```
 
 ### ❌ "Member not found"
-```python  
+
+```python
 # Use o ID correto ou configure canal fixo:
 DISCORD_CHANNEL_ID = "987654321098765432"
 ```

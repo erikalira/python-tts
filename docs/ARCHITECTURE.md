@@ -81,9 +81,7 @@ tts-hotkey-windows/
 │           └── simple_gui.py # ConfigurationService (Tkinter)
 │
 ├── scripts/build/            # 🚀 BUILD SCRIPTS
-│   ├── build_clean_architecture.ps1  # Build para Clean Architecture
-│   ├── build_exe.ps1               # Build executável simples
-│   └── build_standalone.ps1        # Build versão standalone
+│   └── build_clean_architecture.ps1  # Build único com Clean Architecture e SOLID
 │
 ├── tts_hotkey_configurable.py      # 🎯 ENTRY POINT Principal (Clean + Fallback)
 │   │

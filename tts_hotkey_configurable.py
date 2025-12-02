@@ -51,7 +51,7 @@ DEFAULT_MAX_TEXT_LENGTH = 500        # Maximum characters to speak
 # 
 # 🔧 PARA RECOMPILAR:
 # 1. Edite as configurações padrão acima (opcional)
-# 2. Execute: build_configurable.ps1
+# 2. Execute: build_clean_architecture.ps1
 # 3. Distribua o novo .exe
 # =============================================================================
 

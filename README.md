@@ -216,14 +216,11 @@ O aplicativo aparecerá na **bandeja do sistema** (system tray) do Windows com u
 Para criar um executável standalone que não precisa do Python instalado:
 
 ```bash
-# Opção 1: Usando Makefile (recomendado)
-make build-exe
+# Opção 1: Usando Makefile (Clean Architecture)
+make build-clean
 
-# Opção 2: Usando script bash
-./scripts.sh build-exe
-
-# Opção 3: PowerShell direto
-powershell scripts/build/build_exe.ps1
+# Opção 2: PowerShell direto (Clean Architecture)
+powershell scripts/build/build_clean_architecture.ps1
 ```
 
 Isso criará `tts_hotkey.exe` na pasta raiz. Você pode:
@@ -560,8 +557,8 @@ make setup && make install && make build-exe
 # Se encontrar erro de política de execução:
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
-# Execute o script:
-powershell scripts/build/build_exe.ps1
+# Execute o script (Clean Architecture):
+powershell scripts/build/build_clean_architecture.ps1
 ```
 
 **Option C - Manual PyInstaller:**
