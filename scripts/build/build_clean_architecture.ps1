@@ -7,7 +7,7 @@ param(
     [switch]$SkipTests = $false
 )
 
-Write-Host "🏗️ Building TTS Hotkey with Clean Architecture..." -ForegroundColor Cyan
+Write-Host "Building TTS Hotkey with Clean Architecture..." -ForegroundColor Cyan
 Write-Host "=================================================="
 
 # Configuration
@@ -19,22 +19,22 @@ $SpecPath = "build\$AppName.spec"
 
 # Check if running in correct directory
 if (-not (Test-Path $MainScript)) {
-    Write-Host "❌ Erro: $MainScript não encontrado!" -ForegroundColor Red
-    Write-Host "Execute este script no diretório raiz do projeto" -ForegroundColor Yellow
+    Write-Host "Error: $MainScript not found!" -ForegroundColor Red
+    Write-Host "Run this script from the project root directory" -ForegroundColor Yellow
     exit 1
 }
 
 # Check for Python
 try {
     $PythonVersion = python --version 2>&1
-    Write-Host "✅ Python encontrado: $PythonVersion" -ForegroundColor Green
+    Write-Host "Python found: $PythonVersion" -ForegroundColor Green
 } catch {
-    Write-Host "❌ Python não encontrado no PATH!" -ForegroundColor Red
+    Write-Host "Python not found in PATH!" -ForegroundColor Red
     exit 1
 }
 
 # Install/upgrade dependencies
-Write-Host "`n🔧 Instalando dependências..." -ForegroundColor Yellow
+Write-Host "`nInstalling dependencies..." -ForegroundColor Yellow
 
 $Dependencies = @(
     "pyinstaller>=5.0",
@@ -48,64 +48,62 @@ $Dependencies = @(
 )
 
 foreach ($dep in $Dependencies) {
-    Write-Host "📦 Instalando $dep..." -ForegroundColor Gray
+    Write-Host "Installing $dep..." -ForegroundColor Gray
     try {
         python -m pip install --upgrade $dep 2>&1 | Out-Null
-        Write-Host "  ✅ $dep instalado" -ForegroundColor Green
+        Write-Host "  $dep installed" -ForegroundColor Green
     } catch {
-        Write-Host "  ⚠️ Falha ao instalar $dep" -ForegroundColor Yellow
+        Write-Host "  Failed to install $dep" -ForegroundColor Yellow
     }
 }
 
 # Run tests if not skipped
 if (-not $SkipTests) {
-    Write-Host "`n🧪 Executando testes de integração..." -ForegroundColor Yellow
+    Write-Host "`nRunning integration tests..." -ForegroundColor Yellow
     try {
         $TestResult = python test_integration.py
         Write-Host $TestResult
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "⚠️ Testes falharam, mas continuando build..." -ForegroundColor Yellow
+            Write-Host "Tests failed, but continuing build..." -ForegroundColor Yellow
         } else {
-            Write-Host "✅ Testes passaram!" -ForegroundColor Green
+            Write-Host "Tests passed!" -ForegroundColor Green
         }
     } catch {
-        Write-Host "⚠️ Não foi possível executar testes" -ForegroundColor Yellow
+        Write-Host "Could not run tests, continuing..." -ForegroundColor Yellow
     }
 }
 
 # Clean previous builds
-Write-Host "`n🧹 Limpando builds anteriores..." -ForegroundColor Yellow
-if (Test-Path $DistPath) {
-    Remove-Item -Recurse -Force $DistPath
-    Write-Host "✅ Pasta $DistPath limpa" -ForegroundColor Green
-}
-if (Test-Path $BuildPath) {
-    Remove-Item -Recurse -Force $BuildPath
-    Write-Host "✅ Pasta $BuildPath limpa" -ForegroundColor Green
-}
+Write-Host "`nCleaning previous builds..." -ForegroundColor Yellow
+if (Test-Path $DistPath) { Remove-Item -Recurse -Force $DistPath }
+if (Test-Path $BuildPath) { Remove-Item -Recurse -Force $BuildPath }
+Write-Host "Cleanup completed" -ForegroundColor Green
 
-# Build executable
-Write-Host "`n🚀 Construindo executável..." -ForegroundColor Cyan
+# Prepare PyInstaller arguments
+Write-Host "`nPreparing build configuration..." -ForegroundColor Yellow
 
 $PyInstallerArgs = @(
     "--name", $AppName,
     "--onefile",
-    "--windowed",
+    "--console",
     "--icon=icon.ico",
+    "--distpath", $DistPath,
+    "--workpath", $BuildPath,
+    "--specpath", $BuildPath,
     "--add-data", "src;src",
+    "--add-data", "config;config",
+    "--add-data", "*.json;.",
+    "--hidden-import", "src.standalone",
+    "--hidden-import", "src.standalone.config.standalone_config",
+    "--hidden-import", "src.standalone.app.simple_app",
+    "--hidden-import", "src.standalone.services",
+    "--hidden-import", "src.standalone.gui",
     "--hidden-import", "keyboard",
-    "--hidden-import", "requests",
-    "--hidden-import", "pyttsx3",
-    "--hidden-import", "pyttsx3.drivers",
-    "--hidden-import", "pyttsx3.drivers.sapi5",
-    "--hidden-import", "gtts",
-    "--hidden-import", "gtts.tts",
-    "--hidden-import", "pygame",
-    "--hidden-import", "pygame.mixer",
     "--hidden-import", "pystray",
     "--hidden-import", "PIL",
-    "--hidden-import", "PIL.Image",
-    "--hidden-import", "PIL.ImageDraw",
+    "--hidden-import", "pyttsx3",
+    "--hidden-import", "gtts",
+    "--hidden-import", "requests",
     "--hidden-import", "tkinter",
     "--hidden-import", "tkinter.ttk",
     "--hidden-import", "tkinter.messagebox",
@@ -120,76 +118,66 @@ $PyInstallerArgs = @(
 
 if ($Debug) {
     $PyInstallerArgs += "--debug", "all"
-    Write-Host "🔍 Modo debug ativado" -ForegroundColor Yellow
+    Write-Host "Debug mode activated" -ForegroundColor Yellow
 }
 
-Write-Host "📋 Comando PyInstaller:" -ForegroundColor Gray
+Write-Host "PyInstaller command:" -ForegroundColor Gray
 Write-Host "python -m PyInstaller $($PyInstallerArgs -join ' ')" -ForegroundColor Gray
 
 try {
     & python -m PyInstaller @PyInstallerArgs
     
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "`n✅ BUILD CONCLUÍDO COM SUCESSO!" -ForegroundColor Green
+        Write-Host "`nBuild successful!" -ForegroundColor Green
     } else {
-        Write-Host "`n❌ Build falhou com código: $LASTEXITCODE" -ForegroundColor Red
+        Write-Host "`nBuild failed with exit code $LASTEXITCODE" -ForegroundColor Red
         exit $LASTEXITCODE
     }
 } catch {
-    Write-Host "`n❌ Erro durante o build: $_" -ForegroundColor Red
+    Write-Host "`nBuild failed with error: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
 
 # Verify executable
 $ExePath = Join-Path $DistPath "$AppName.exe"
-if (Test-Path $ExePath) {
-    $FileSize = [math]::Round((Get-Item $ExePath).Length / 1MB, 2)
-    Write-Host "`n📊 Informações do executável:" -ForegroundColor Cyan
-    Write-Host "  📍 Local: $ExePath" -ForegroundColor White
-    Write-Host "  📏 Tamanho: $FileSize MB" -ForegroundColor White
-    Write-Host "  📅 Criado: $((Get-Item $ExePath).CreationTime)" -ForegroundColor White
-} else {
-    Write-Host "`n❌ Executável não foi criado!" -ForegroundColor Red
+if (-not (Test-Path $ExePath)) {
+    Write-Host "`nError: Executable not found at $ExePath" -ForegroundColor Red
     exit 1
 }
 
-# Create batch file
+$ExeSize = (Get-Item $ExePath).Length / 1MB
+Write-Host "`nExecutable created successfully!" -ForegroundColor Green
+Write-Host "Size: $([math]::Round($ExeSize, 2)) MB" -ForegroundColor White
+
+# Create batch file for easy execution
 $BatchContent = @"
 @echo off
-cd /d "%~dp0"
-echo.
-echo 🎤 TTS Hotkey - Clean Architecture
-echo ====================================
-echo.
-echo Iniciando aplicação...
-echo.
+echo Starting TTS Hotkey Clean Architecture...
+echo ==========================================
 "$AppName.exe"
 if errorlevel 1 (
     echo.
-    echo ❌ Erro na execução!
+    echo Error occurred. Press any key to exit...
     pause
 )
 "@
 
 $BatchPath = Join-Path $DistPath "run_$AppName.bat"
 $BatchContent | Out-File -FilePath $BatchPath -Encoding ascii
-Write-Host "  📄 Batch file: $BatchPath" -ForegroundColor White
+Write-Host "Batch file: $BatchPath" -ForegroundColor White
 
-Write-Host "`n🎉 BUILD FINALIZADO!" -ForegroundColor Green
+Write-Host "`nBUILD COMPLETED!" -ForegroundColor Green
 Write-Host "=================================================="
-Write-Host "📦 Executável: $ExePath" -ForegroundColor Cyan
-Write-Host "🚀 Para executar: $BatchPath" -ForegroundColor Cyan
-Write-Host "`n💡 RECURSOS INCLUSOS:" -ForegroundColor Yellow
-Write-Host "  ✅ Clean Architecture completa" -ForegroundColor Green
-Write-Host "  ✅ Interface gráfica (Tkinter)" -ForegroundColor Green  
-Write-Host "  ✅ System Tray" -ForegroundColor Green
-Write-Host "  ✅ Configuração persistente" -ForegroundColor Green
-Write-Host "  ✅ TTS Multi-engine (gTTS + pyttsx3)" -ForegroundColor Green
-Write-Host "  ✅ Discord Bot Integration" -ForegroundColor Green
-Write-Host "  ✅ Hotkey Global ({} triggers)" -ForegroundColor Green
-Write-Host "  ✅ Fallback automático" -ForegroundColor Green
-Write-Host "`n🔧 CONFIGURAÇÃO:" -ForegroundColor Yellow
-Write-Host "  1. Execute o .exe pela primeira vez" -ForegroundColor White
-Write-Host "  2. Configure seu Discord User ID" -ForegroundColor White
-Write-Host "  3. Use {}texto{} para falar!" -ForegroundColor White
-Write-Host "`nPara suporte: https://github.com/erikalira/python-tts" -ForegroundColor Cyan
+Write-Host "Executable: $ExePath" -ForegroundColor Cyan
+Write-Host "To run: $BatchPath" -ForegroundColor Cyan
+Write-Host "`nINCLUDED FEATURES:" -ForegroundColor Yellow
+Write-Host "  Clean Architecture complete" -ForegroundColor Green
+Write-Host "  Graphical interface (Tkinter)" -ForegroundColor Green
+Write-Host "  System Tray" -ForegroundColor Green
+Write-Host "  Persistent configuration" -ForegroundColor Green
+Write-Host "  TTS Multi-engine (gTTS + pyttsx3)" -ForegroundColor Green
+Write-Host "  Discord Bot Integration" -ForegroundColor Green
+Write-Host "  Global Hotkey (trigger-based)" -ForegroundColor Green
+Write-Host "  Automatic fallback" -ForegroundColor Green
+
+Write-Host "`nReady for Windows deployment!" -ForegroundColor Green
