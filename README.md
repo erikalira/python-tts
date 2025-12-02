@@ -6,43 +6,67 @@
 
 ## Overview
 
-This project is a text-to-speech hotkey application that allows users to input text using specific keyboard shortcuts and have it spoken aloud. It includes:
+This project is a text-to-speech hotkey application that allows users to input text using specific keyboard shortcuts and have it spoken aloud. Built with **Clean Architecture** and **SOLID principles**, it includes:
 
 - **Discord Bot**: Joins voice channels and plays TTS messages
-- **Hotkey App**: Captures text input (`{text here}`) and sends to Discord bot
+- **Standalone App**: Complete Windows application with GUI and system tray
+- **Hotkey System**: Captures text input (`{text here}`) with global shortcuts
+- **Clean Architecture**: Fully implemented with proper separation of concerns
 - **Docker Support**: Deploys on Render with espeak-ng for high-quality TTS
 
 ## Features
+
+**🏗️ Clean Architecture & SOLID Principles**
+
+- Full separation of concerns across layers
+- Dependency injection and inversion of control
+- Single responsibility principle throughout
+- Interface segregation and clean abstractions
+
+**🎯 Core Functionality**
 
 - Capture text input using keyboard shortcuts
 - Discord bot with slash commands (`/join`, `/leave`, `/speak`)
 - TTS engine with automatic fallback (pyttsx3 → gTTS)
 - Voice channel support with audio streaming
+- System tray integration with notifications
+- Persistent configuration management
+
+**🚀 Deployment Options**
+
+- Windows standalone executable (.exe)
 - Docker deployment for production
+- Cross-platform compatibility (Windows/Linux)
 - Simple and intuitive interface
 
-## 🏆 TTS Hotkey Premium (Standalone)
+## 🏆 TTS Hotkey Clean Architecture (Standalone)
 
-**For users who want a single `.exe` file without external dependencies:**
+**For users who want a single `.exe` file with Clean Architecture and SOLID principles:**
 
-- 📄 **[`README_STANDALONE.md`](docs/README_STANDALONE.md)** - Complete Premium guide
-- 🎯 **Zero hardcode** - everything configurable via class
-- 🎮 **Specialized profiles** - Gaming, Office, Streaming
-- 📊 **Professional interface** - colorful logs and dashboard
-- ⚡ **Intelligent build** - automatic configuration analysis
+- 📄 **[`README_STANDALONE.md`](docs/README_STANDALONE.md)** - Complete standalone guide
+- 🏗️ **Clean Architecture** - Full separation of concerns and SOLID principles
+- ⚙️ **Configuration Management** - Dataclass-based with GUI interface
+- 🎯 **Service Layer** - TTS, Hotkey, and Notification services
+- 💾 **Repository Pattern** - JSON-based configuration persistence
+- 🖥️ **Platform Support** - Windows (full features) + Linux (graceful degradation)
+- 📊 **System Integration** - System tray, global hotkeys, notifications
+- ⚡ **Automatic Fallback** - Embedded implementation if clean architecture fails
 
 ```powershell
-# Edit configuration class
-code tts_hotkey_configurable.py
+# Build Clean Architecture version
+make build-clean
+# OR: powershell scripts/build/build_clean_architecture.ps1
 
-# Build premium version (new organized location)
-make build-configurable
-# OR: ./scripts.sh build-configurable
-# OR: powershell scripts/build/build_configurable.ps1
-
-# Single file ready!
-dist/tts_hotkey_premium.exe
+# Clean Architecture executable ready!
+dist/tts_hotkey_clean.exe
 ```
+
+**Architecture Layers:**
+
+- **Config Layer**: `StandaloneConfig` with validation and persistence
+- **Service Layer**: `TTSProcessor`, `HotkeyManager`, `SystemTrayService`
+- **Application Layer**: `SimpleApplication` with dependency injection
+- **Interface Layer**: Tkinter GUI and console interfaces
 
 ## 📁 Organized Scripts
 
