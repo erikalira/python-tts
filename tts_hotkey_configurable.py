@@ -17,8 +17,9 @@ NOVA ARQUITETURA:
 
 # 🌐 Discord Bot Configuration
 DEFAULT_DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
-DEFAULT_DISCORD_CHANNEL_ID = None  # Ex: "123456789012345678" (opcional)
-DEFAULT_DISCORD_MEMBER_ID = None   # Ex: "987654321098765432" (IMPORTANTE: seu Discord User ID)
+# CONFIGURAÇÃO OBRIGATÓRIA: Configure seus IDs do Discord aqui
+DEFAULT_DISCORD_CHANNEL_ID = None  # Cole aqui o ID do canal de voz (botão direito > Copiar ID)
+DEFAULT_DISCORD_MEMBER_ID = None   # Cole aqui SEU Discord User ID (Configurações > Avançado > Modo Dev > botão direito no seu nome > Copiar ID)
 
 # 🎤 TTS Configuration  
 DEFAULT_TTS_ENGINE = "gtts"           # gtts, pyttsx3, edge-tts
@@ -199,6 +200,10 @@ def run_embedded_standalone():
             self.config = self.load_config()
             self.tray_icon = None
             
+            # Check if initial setup is needed
+            if not self.config['discord_member_id'] or not self.config['discord_bot_url']:
+                self.show_initial_setup()
+            
         def load_config(self):
             """Load configuration from embedded defaults."""
             return {
@@ -216,6 +221,151 @@ def run_embedded_standalone():
                 'request_timeout': DEFAULT_REQUEST_TIMEOUT,
                 'max_text_length': DEFAULT_MAX_TEXT_LENGTH
             }
+        
+        def show_initial_setup(self):
+            """Show initial setup dialog."""
+            try:
+                # Try GUI first
+                import tkinter as tk
+                from tkinter import ttk, messagebox
+                self._show_gui_setup()
+            except ImportError:
+                # Fallback to console
+                self._show_console_setup()
+        
+        def _show_gui_setup(self):
+            """Show GUI setup dialog."""
+            import tkinter as tk
+            from tkinter import ttk, messagebox
+            
+            root = tk.Tk()
+            root.title("TTS Hotkey - Configuração Inicial")
+            root.geometry("550x400")
+            root.resizable(False, False)
+            
+            # Center window
+            root.geometry("+%d+%d" % (
+                (root.winfo_screenwidth() / 2 - 275),
+                (root.winfo_screenheight() / 2 - 200)
+            ))
+            
+            main_frame = ttk.Frame(root, padding="20")
+            main_frame.pack(fill=tk.BOTH, expand=True)
+            
+            # Title
+            title_label = ttk.Label(main_frame, text="🎤 TTS Hotkey - Configuração Inicial", 
+                                   font=('Arial', 14, 'bold'))
+            title_label.pack(pady=(0, 15))
+            
+            # Instructions
+            instructions = ttk.Label(main_frame, 
+                text="Para usar o TTS no Discord, configure seu Discord User ID:",
+                justify=tk.CENTER)
+            instructions.pack(pady=(0, 15))
+            
+            # Member ID
+            ttk.Label(main_frame, text="Seu Discord User ID:").pack(anchor=tk.W)
+            member_id_var = tk.StringVar()
+            member_id_entry = ttk.Entry(main_frame, textvariable=member_id_var, width=40)
+            member_id_entry.pack(fill=tk.X, pady=(5, 10))
+            
+            # Help text
+            help_text = ttk.Label(main_frame, 
+                text="💡 Como encontrar: Discord → Configurações → Avançado → Modo Desenvolvedor (ON)\n"
+                     "   Depois: Botão direito no seu nome → Copiar ID",
+                foreground='gray', font=('Arial', 8))
+            help_text.pack(anchor=tk.W, pady=(0, 15))
+            
+            # Channel ID (opcional)
+            ttk.Label(main_frame, text="Channel ID (opcional):").pack(anchor=tk.W)
+            channel_id_var = tk.StringVar()
+            channel_id_entry = ttk.Entry(main_frame, textvariable=channel_id_var, width=40)
+            channel_id_entry.pack(fill=tk.X, pady=(5, 10))
+            
+            channel_help = ttk.Label(main_frame, 
+                text="💡 Botão direito no canal de voz → Copiar ID",
+                foreground='gray', font=('Arial', 8))
+            channel_help.pack(anchor=tk.W, pady=(0, 15))
+            
+            # Warning
+            warning = ttk.Label(main_frame, 
+                text="⚠️ Sem o Discord User ID, o TTS funcionará apenas localmente",
+                foreground='orange')
+            warning.pack(pady=(0, 20))
+            
+            def save_config():
+                member_id = member_id_var.get().strip()
+                channel_id = channel_id_var.get().strip()
+                
+                if member_id and not member_id.isdigit():
+                    messagebox.showerror("Erro", "Discord User ID deve conter apenas números!")
+                    return
+                
+                if channel_id and not channel_id.isdigit():
+                    messagebox.showerror("Erro", "Channel ID deve conter apenas números!")
+                    return
+                
+                self.config['discord_member_id'] = member_id if member_id else None
+                self.config['discord_channel_id'] = channel_id if channel_id else None
+                
+                if member_id:
+                    messagebox.showinfo("Sucesso", "Configuração salva! O TTS funcionará no Discord.")
+                else:
+                    messagebox.showinfo("Aviso", "Sem Discord User ID, o TTS funcionará apenas localmente.")
+                
+                root.destroy()
+            
+            def skip_config():
+                self.config['discord_member_id'] = None
+                self.config['discord_channel_id'] = None
+                root.destroy()
+            
+            # Buttons
+            button_frame = ttk.Frame(main_frame)
+            button_frame.pack(fill=tk.X)
+            
+            ttk.Button(button_frame, text="Continuar Sem Discord", 
+                      command=skip_config).pack(side=tk.LEFT)
+            
+            ttk.Button(button_frame, text="Salvar e Continuar", 
+                      command=save_config).pack(side=tk.RIGHT)
+            
+            root.mainloop()
+        
+        def _show_console_setup(self):
+            """Show console setup."""
+            print("\n" + "="*60)
+            print("🎤 TTS Hotkey - Configuração Inicial")
+            print("="*60)
+            print("Para usar o TTS no Discord, configure seus IDs:")
+            print("")
+            
+            # Member ID
+            print("1. Discord User ID (seu ID de usuário):")
+            print("   Como encontrar: Discord → Configurações → Avançado → Modo Desenvolvedor")
+            print("   Depois: Botão direito no seu nome → Copiar ID")
+            member_id = input("   Discord User ID (deixe vazio para pular): ").strip()
+            
+            if member_id and not member_id.isdigit():
+                print("❌ ID deve conter apenas números!")
+                member_id = ""
+            
+            # Channel ID
+            print("\n2. Channel ID (opcional):")
+            print("   Como encontrar: Botão direito no canal de voz → Copiar ID")
+            channel_id = input("   Channel ID (opcional): ").strip()
+            
+            if channel_id and not channel_id.isdigit():
+                print("❌ ID deve conter apenas números!")
+                channel_id = ""
+            
+            self.config['discord_member_id'] = member_id if member_id else None
+            self.config['discord_channel_id'] = channel_id if channel_id else None
+            
+            if member_id:
+                print(f"\n✅ Configuração salva! TTS funcionará no Discord.")
+            else:
+                print(f"\n⚠️ Sem Discord User ID, TTS funcionará apenas localmente.")
         
         def create_system_tray(self):
             """Create system tray icon."""

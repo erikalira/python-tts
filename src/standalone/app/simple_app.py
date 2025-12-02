@@ -87,9 +87,43 @@ class SimpleApplication:
                 return
         
         try:
-            # Handle initial config if needed
-            if not ConfigurationValidator.is_configured(self._config):
-                print("[APP] 🔧 Configuração inicial...")
+            # Check if Discord IDs are configured
+            needs_initial_setup = (
+                not self._config.discord.member_id or 
+                not self._config.discord.bot_url
+            )
+            
+            if needs_initial_setup:
+                print("[APP] 🔧 Configuração inicial necessária...")
+                from ..gui.simple_gui import InitialSetupGUI
+                
+                setup_gui = InitialSetupGUI()
+                setup_result = setup_gui.show_initial_setup()
+                
+                if setup_result:
+                    # Update config with new values
+                    from dataclasses import replace
+                    self._config = replace(self._config,
+                        discord=replace(self._config.discord,
+                            member_id=setup_result['member_id'],
+                            channel_id=setup_result['channel_id'] or self._config.discord.channel_id,
+                            bot_url=setup_result['bot_url']
+                        )
+                    )
+                    self._config_repository.save(self._config)
+                    self._update_services_config()
+                    
+                    if setup_result['skip_discord']:
+                        print("[APP] ⚠️ Modo apenas local ativado")
+                    else:
+                        print("[APP] ✅ Configuração Discord salva")
+                else:
+                    print("[APP] ❌ Configuração cancelada")
+                    return
+            
+            # Handle additional config if needed
+            elif not ConfigurationValidator.is_configured(self._config):
+                print("[APP] 🔧 Configuração avançada...")
                 updated_config = self._config_service.get_configuration(self._config)
                 if updated_config:
                     self._config = updated_config
