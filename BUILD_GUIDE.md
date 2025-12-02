@@ -28,6 +28,9 @@ Este guia explica como criar o executável standalone do TTS Hotkey para Windows
 # Execute no PowerShell
 scripts\build\build_clean_architecture.ps1
 
+# Versão sem ícone (se houver problemas com icon.ico)
+scripts\build\build_clean_no_icon.ps1
+
 # Ou usando Makefile (se disponível)
 make build-clean
 ```
@@ -133,6 +136,16 @@ cd dist
 4. Exemplo: `{Olá mundo}` → Fala "Olá mundo"
 
 ## 🔍 Resolução de Problemas
+
+### Problema com Ícone (icon.ico not found)
+
+```powershell
+# Usar versão sem ícone
+scripts\build\build_clean_no_icon.ps1
+
+# Ou recriar o ícone
+python scripts\utils\create_icon.py
+```
 
 ### Dependências Faltando
 

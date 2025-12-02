@@ -1,14 +1,14 @@
 #!/usr/bin/env powershell
-# Build TTS Hotkey with Clean Architecture for Windows
-# Simplified version that handles Windows paths correctly
+# Build TTS Hotkey with Clean Architecture for Windows (No Icon Version)
+# Simplified version without icon dependency
 
 param(
     [switch]$Debug = $false,
     [switch]$SkipTests = $false
 )
 
-Write-Host "Building TTS Hotkey with Clean Architecture..." -ForegroundColor Cyan
-Write-Host "=================================================="
+Write-Host "Building TTS Hotkey with Clean Architecture (No Icon)..." -ForegroundColor Cyan
+Write-Host "======================================================="
 
 # Configuration
 $AppName = "tts_hotkey_clean"
@@ -48,37 +48,39 @@ $Dependencies = @(
 foreach ($dep in $Dependencies) {
     Write-Host "Installing $dep..." -ForegroundColor Gray
     try {
-        python -m pip install --upgrade $dep 2>&1 | Out-Null
-        Write-Host "  $dep installed" -ForegroundColor Green
+        & python -m pip install --upgrade $dep --quiet
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  $dep installed" -ForegroundColor Green
+        } else {
+            Write-Host "  Failed to install $dep" -ForegroundColor Red
+        }
     } catch {
-        Write-Host "  Failed to install $dep" -ForegroundColor Yellow
+        Write-Host "  Failed to install $dep" -ForegroundColor Red
     }
 }
 
-# Skip tests for now due to encoding issues
-if (-not $SkipTests) {
-    Write-Host "`nSkipping tests (encoding issues on Windows)..." -ForegroundColor Yellow
-}
+# Skip tests on Windows due to encoding issues
+Write-Host "`nSkipping tests (encoding issues on Windows)..." -ForegroundColor Yellow
 
 # Clean previous builds
 Write-Host "`nCleaning previous builds..." -ForegroundColor Yellow
-if (Test-Path $DistPath) { Remove-Item -Recurse -Force $DistPath }
-if (Test-Path $BuildPath) { Remove-Item -Recurse -Force $BuildPath }
+if (Test-Path $BuildPath) { Remove-Item $BuildPath -Recurse -Force -ErrorAction SilentlyContinue }
+if (Test-Path $DistPath) { Remove-Item $DistPath -Recurse -Force -ErrorAction SilentlyContinue }
 Write-Host "Cleanup completed" -ForegroundColor Green
 
-# Prepare PyInstaller arguments - simplified for Windows
+# Prepare build configuration
 Write-Host "`nPreparing build configuration..." -ForegroundColor Yellow
 
 $PyInstallerArgs = @(
     "--name", $AppName,
-    "--onefile", 
+    "--onefile",
     "--console",
     "--distpath", $DistPath,
     "--workpath", $BuildPath,
     "--specpath", $BuildPath,
     "--hidden-import", "keyboard",
     "--hidden-import", "pystray",
-    "--hidden-import", "PIL", 
+    "--hidden-import", "PIL",
     "--hidden-import", "pyttsx3",
     "--hidden-import", "gtts",
     "--hidden-import", "requests",
@@ -87,16 +89,6 @@ $PyInstallerArgs = @(
     "--hidden-import", "tkinter.messagebox",
     $MainScript
 )
-
-# Add icon if available  
-$IconPath = "icon.ico"
-if (Test-Path $IconPath) {
-    $AbsoluteIconPath = (Resolve-Path $IconPath).Path
-    $PyInstallerArgs += "--icon=$AbsoluteIconPath"
-    Write-Host "Using icon: $AbsoluteIconPath" -ForegroundColor Gray
-} else {
-    Write-Host "Icon not found at $IconPath, building without icon" -ForegroundColor Yellow
-}
 
 if ($Debug) {
     $PyInstallerArgs += "--debug", "all"
@@ -116,7 +108,7 @@ try {
         exit $LASTEXITCODE
     }
 } catch {
-    Write-Host "`nBuild failed with error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "`nBuild failed: $_" -ForegroundColor Red
     exit 1
 }
 

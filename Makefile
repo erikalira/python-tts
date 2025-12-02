@@ -20,12 +20,13 @@ help:
 	@echo "  make coverage     - Generate coverage report"
 	@echo ""
 	@echo "🔨 Building:"
-	@echo "  make build-windows    - Quick Windows build (recommended)"
-	@echo "  make build-clean      - Clean Architecture build (SOLID principles)"
-	@echo "  make build-simple     - Simple TTS executable (minimal deps)"  
-	@echo "  make build-hotkey     - Full TTS Hotkey executable"
-	@echo "  make build-exe        - Discord bot executable"
-	@echo "  make build-all        - Build all executables"
+	@echo "  make build-windows        - Quick Windows build (recommended)"
+	@echo "  make build-clean          - Clean Architecture build (SOLID principles)"
+	@echo "  make build-clean-no-icon  - Clean Architecture build without icon"
+	@echo "  make build-simple         - Simple TTS executable (minimal deps)"  
+	@echo "  make build-hotkey         - Full TTS Hotkey executable"
+	@echo "  make build-exe            - Discord bot executable"
+	@echo "  make build-all            - Build all executables"
 	@echo ""
 	@echo "🏃 Running:"
 	@echo "  make run-bot      - Run Discord bot"
@@ -93,6 +94,15 @@ build-clean:
 	else \
 		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
 		echo "   powershell scripts/build/build_clean_architecture.ps1"; \
+	fi
+
+build-clean-no-icon:
+	@echo "🏗️ Building TTS Hotkey with Clean Architecture (No Icon) for Windows..."
+	@if command -v pwsh >/dev/null 2>&1; then \
+		pwsh -File scripts/build/build_clean_no_icon.ps1; \
+	else \
+		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
+		echo "   powershell scripts/build/build_clean_no_icon.ps1"; \
 	fi
 
 build-hotkey:
