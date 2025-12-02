@@ -36,7 +36,6 @@ coverage.xml
 
 # Build files
 dist/
-build/
 *.spec
 tts_hotkey.exe
 
