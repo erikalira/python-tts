@@ -255,7 +255,7 @@ def run_embedded_standalone():
                 }
                 
                 response = requests.post(
-                    f"{url}/api/tts",
+                    f"{url}/speak",
                     json=payload,
                     timeout=self.config['request_timeout'],
                     headers={'User-Agent': DEFAULT_USER_AGENT}
@@ -264,6 +264,20 @@ def run_embedded_standalone():
                 if response.status_code == 200:
                     print(f"✅ Enviado para Discord: {text}")
                     return True
+                elif response.status_code == 400:
+                    try:
+                        error_data = response.json()
+                        error_msg = error_data.get('error', response.text)
+                        print(f"⚠️ Discord: {error_msg}")
+                        
+                        # Se o bot não está conectado, tenta conectar
+                        if "não está conectado" in error_msg or "not connected" in error_msg.lower():
+                            print("🔄 Tentando conectar o bot automaticamente...")
+                            self._try_connect_bot()
+                            
+                    except:
+                        print(f"❌ Discord bot error ({response.status_code}): {response.text}")
+                    return False
                 else:
                     print(f"❌ Discord bot error: {response.status_code}")
                     return False
@@ -271,6 +285,26 @@ def run_embedded_standalone():
             except Exception as e:
                 print(f"❌ Erro Discord: {e}")
                 return False
+        
+        def _try_connect_bot(self):
+            """Try to connect the bot to a voice channel."""
+            try:
+                url = self.config['discord_bot_url']
+                if not url:
+                    return False
+                    
+                # Try to get bot status or available channels
+                response = requests.get(f"{url}/health", timeout=5)
+                if response.status_code == 200:
+                    print("💡 Bot está online. Para usar o TTS do Discord:")
+                    print("   1. Entre em um canal de voz no Discord")
+                    print("   2. Use o comando /join no chat do Discord")
+                    print("   3. Tente novamente o hotkey")
+                else:
+                    print("❌ Bot não está respondendo")
+                    
+            except Exception as e:
+                print(f"⚠️ Não foi possível verificar status do bot: {e}")
         
         def speak_local_tts(self, text):
             """Use local TTS engines."""

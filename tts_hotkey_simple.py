@@ -24,7 +24,6 @@ MAX_TEXT_LENGTH = 500      # Maximum characters to speak
 def main():
     """Main TTS Hotkey application with minimal dependencies."""
     import os
-    import sys
     import time
     import threading
     import requests
@@ -67,7 +66,7 @@ def main():
                 print(f"🌐 Enviando para Discord: {text}")
                 
                 response = requests.post(
-                    f"{DISCORD_BOT_URL}/api/tts",
+                    f"{DISCORD_BOT_URL}/speak",
                     json=payload,
                     timeout=REQUEST_TIMEOUT,
                     headers={'User-Agent': 'TTS-Hotkey-Simple/1.0'}
@@ -76,6 +75,22 @@ def main():
                 if response.status_code == 200:
                     print(f"✅ Sucesso! Texto enviado: {text}")
                     return True
+                elif response.status_code == 400:
+                    try:
+                        error_data = response.json()
+                        error_msg = error_data.get('error', response.text)
+                        print(f"⚠️ Discord: {error_msg}")
+                        
+                        # Instrução para o usuário
+                        if "não está conectado" in error_msg or "not connected" in error_msg.lower():
+                            print("💡 Para usar o Discord TTS:")
+                            print("   1. Entre em um canal de voz no Discord")
+                            print("   2. Use o comando /join no chat")
+                            print("   3. Tente o hotkey novamente")
+                            
+                    except:
+                        print(f"❌ Discord error ({response.status_code}): {response.text}")
+                    return False
                 else:
                     print(f"❌ Erro Discord ({response.status_code}): {response.text}")
                     return False
@@ -194,5 +209,6 @@ def main():
 
 
 if __name__ == '__main__':
+    import sys
     exit_code = main()
     sys.exit(exit_code)

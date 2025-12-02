@@ -15,7 +15,8 @@ help:
 	@echo "🧪 Testing:"
 	@echo "  make test         - Run all tests"
 	@echo "  make test-unit    - Run unit tests only"
-	@echo "  make test-integration - Run integration tests"
+	@echo "  make test-integration - Run integration tests"  
+	@echo "  make test-build   - Test system before Windows build"
 	@echo "  make coverage     - Generate coverage report"
 	@echo ""
 	@echo "🔨 Building:"
@@ -65,6 +66,10 @@ test-unit:
 test-integration:
 	@echo "🔗 Running integration tests..."
 	@if [ -d "tests/integration" ]; then python -m pytest tests/integration/ -v; else echo "No integration tests found"; fi
+
+test-build:
+	@echo "🧪 Testing system readiness for Windows build..."
+	python3 test_integration.py
 
 coverage:
 	@echo "📊 Generating coverage report..."
