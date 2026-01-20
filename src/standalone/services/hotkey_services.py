@@ -13,6 +13,7 @@ try:
     import keyboard
     _keyboard_available = True
 except ImportError:
+    keyboard = None
     _keyboard_available = False
 
 from ..config.standalone_config import StandaloneConfig
@@ -82,6 +83,8 @@ class StandardKeyboardMonitor(KeyboardMonitor):
             return True
         
         try:
+            if not _keyboard_available or keyboard is None:
+                return False
             keyboard.hook(self._on_key_event)
             self._monitoring = True
             print(f"[HOTKEY] ✅ Monitoramento iniciado - Use {self._config.hotkey.trigger_open}texto{self._config.hotkey.trigger_close}")
@@ -94,7 +97,8 @@ class StandardKeyboardMonitor(KeyboardMonitor):
         """Stop monitoring keyboard events."""
         if _keyboard_available and self._monitoring:
             try:
-                keyboard.unhook_all()
+                if keyboard is not None:
+                    keyboard.unhook_all()
                 self._monitoring = False
                 print("[HOTKEY] 🛑 Monitoramento parado")
             except Exception as e:
@@ -106,11 +110,13 @@ class StandardKeyboardMonitor(KeyboardMonitor):
     
     def _is_suppressed(self) -> bool:
         """Check if events should be suppressed."""
-        return (self._external_suppression_check and 
-                self._external_suppression_check())
+        return bool(self._external_suppression_check and 
+                    self._external_suppression_check())
     
     def _on_key_event(self, event) -> None:
         """Handle keyboard events."""
+        if not _keyboard_available or keyboard is None:
+            return
         if event.event_type != keyboard.KEY_DOWN:
             return
         
@@ -167,12 +173,12 @@ class StandardKeyboardMonitor(KeyboardMonitor):
     def _is_trigger_open(self, key: str) -> bool:
         """Check if key is the opening trigger."""
         trigger = self._config.hotkey.trigger_open
-        return key in (trigger, 'open_bracket', '[', 'left_bracket', 'braceleft')
+        return key in (trigger, 'open_bracket', 'left_bracket', 'braceleft')
     
     def _is_trigger_close(self, key: str) -> bool:
         """Check if key is the closing trigger."""
         trigger = self._config.hotkey.trigger_close
-        return key in (trigger, 'close_bracket', ']', 'right_bracket', 'braceright')
+        return key in (trigger, 'close_bracket', 'right_bracket', 'braceright')
 
 
 class HotkeyService:

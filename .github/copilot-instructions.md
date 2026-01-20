@@ -275,6 +275,7 @@ class ConfigRepository(ABC):
 ### When Adding New Features
 
 - Documente casos de uso complexos em `docs/`
+- Só adicione documentação no docs/ ou no readme.md
 - Atualize o README.md se adicionar novos comandos ou funcionalidades
 - Inclua exemplos de código em docstrings quando apropriado
 - Documente configurações de ambiente em `docs/TROUBLESHOOTING.md`

@@ -57,6 +57,7 @@ DEFAULT_MAX_TEXT_LENGTH = 500        # Maximum characters to speak
 
 import sys
 from pathlib import Path
+from typing import Optional, Type
 
 # Add src to path for imports
 current_dir = Path(__file__).resolve().parent
@@ -64,9 +65,20 @@ src_path = current_dir / "src"
 if src_path.exists():
     sys.path.insert(0, str(src_path))
 
+
+# Initialize module-level variables
+StandaloneConfig: Optional[Type] = None
+TTSConfig: Optional[Type] = None
+DiscordConfig: Optional[Type] = None
+HotkeyConfig: Optional[Type] = None
+InterfaceConfig: Optional[Type] = None
+NetworkConfig: Optional[Type] = None
+SimpleApplication: Optional[Type] = None
+
 try:
     # Import the clean architecture components
-    from standalone.config import (
+    # The src/ directory is already in sys.path, so imports work as-is
+    from src.standalone.config.standalone_config import (
         StandaloneConfig,
         TTSConfig,
         DiscordConfig,
@@ -74,7 +86,7 @@ try:
         InterfaceConfig,
         NetworkConfig
     )
-    from standalone.app.simple_app import SimpleApplication
+    from src.standalone.app.simple_app import SimpleApplication
     
     _clean_architecture_available = True
 except ImportError as e:
@@ -83,10 +95,21 @@ except ImportError as e:
     _clean_architecture_available = False
 
 
-def create_default_config() -> 'StandaloneConfig':
-    """Create default configuration from embedded constants."""
-    if not _clean_architecture_available:
+def create_default_config():
+    """Create default configuration from embedded constants.
+    
+    Returns:
+        StandaloneConfig: Default configuration instance or None if architecture unavailable.
+    """
+    if not _clean_architecture_available or StandaloneConfig is None:
         return None
+
+    # garante pro Pylance que não é None
+    assert TTSConfig is not None
+    assert DiscordConfig is not None
+    assert HotkeyConfig is not None
+    assert InterfaceConfig is not None
+    assert NetworkConfig is not None
         
     return StandaloneConfig(
         tts=TTSConfig(
@@ -127,6 +150,7 @@ def main() -> None:
         print("✅ Usando arquitetura limpa (Clean Architecture)")
         
         try:
+            assert SimpleApplication is not None
             # Create and run the clean architecture application
             app = SimpleApplication()
             app.run()
@@ -392,7 +416,7 @@ def run_embedded_standalone():
                 print(f"⚠️ Erro criando system tray: {e}")
                 return None
         
-        def speak_with_discord(self, text):
+        def speak_with_discord(self, text: str) -> bool:
             """Send text to Discord bot for TTS."""
             try:
                 url = self.config['discord_bot_url']
@@ -426,7 +450,7 @@ def run_embedded_standalone():
                             print("🔄 Tentando conectar o bot automaticamente...")
                             self._try_connect_bot()
                             
-                    except:
+                    except (ValueError, json.JSONDecodeError, TypeError):
                         print(f"❌ Discord bot error ({response.status_code}): {response.text}")
                     return False
                 else:
@@ -457,7 +481,7 @@ def run_embedded_standalone():
             except Exception as e:
                 print(f"⚠️ Não foi possível verificar status do bot: {e}")
         
-        def speak_local_tts(self, text):
+        def speak_local_tts(self, text: str) -> bool:
             """Use local TTS engines."""
             success = False
             
@@ -492,14 +516,19 @@ def run_embedded_standalone():
                     engine.setProperty('rate', self.config['tts_rate'])
                     
                     voices = engine.getProperty('voices')
-                    if voices and hasattr(voices, '__iter__'):
-                        # Try to find Portuguese voice
+                    if voices:
                         try:
-                            for voice in voices:
-                                if hasattr(voice, 'name') and ('portuguese' in voice.name.lower() or 'brasil' in voice.name.lower()):
-                                    engine.setProperty('voice', voice.id)
-                                    break
-                        except Exception:
+                            # Ensure voices is iterable (could be list or single object)
+                            voices_list = voices if isinstance(voices, (list, tuple)) else [voices]
+                            for voice in voices_list:
+                                if hasattr(voice, 'name') and hasattr(voice, 'id'):
+                                    voice_name = getattr(voice, 'name', '')
+                                    if isinstance(voice_name, str) and ('portuguese' in voice_name.lower() or 'brasil' in voice_name.lower()):
+                                        voice_id = getattr(voice, 'id', None)
+                                        if voice_id is not None:
+                                            engine.setProperty('voice', voice_id)
+                                        break
+                        except (TypeError, AttributeError, StopIteration):
                             pass  # Use default voice
                     
                     engine.say(text)
@@ -512,7 +541,7 @@ def run_embedded_standalone():
             
             return success
         
-        def speak_text(self, text):
+        def speak_text(self, text: str) -> None:
             """Main TTS function - tries Discord first, then local."""
             if not text.strip():
                 return
@@ -529,7 +558,7 @@ def run_embedded_standalone():
                 print("🔄 Tentando TTS local...")
                 self.speak_local_tts(text)
         
-        def on_key_event(self, event):
+        def on_key_event(self, event) -> None:
             """Handle keyboard events for hotkey functionality."""
             if event.event_type != keyboard.KEY_DOWN:
                 return
@@ -570,7 +599,7 @@ def run_embedded_standalone():
                 self.tray_icon.stop()
             print("👋 TTS Hotkey encerrado")
         
-        def run(self):
+        def run(self) -> None:
             """Main application loop."""
             print("🚀 TTS Hotkey iniciado!")
             print(f"📝 Use: {self.config['trigger_open']}seu texto{self.config['trigger_close']} para falar")
