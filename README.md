@@ -243,18 +243,24 @@ When running (`python3 main.py` or Docker container):
 ## Discord Bot Setup
 
 1. **Create bot in Discord Developer Portal:**
-
    - Go to https://discord.com/developers/applications
    - Create new application → Bot section
    - Enable "Message Content Intent" and "Server Members Intent"
    - Copy the bot token
 
 2. **Invite bot to server:**
-
    - OAuth2 → URL Generator
-   - Scopes: `bot`, `applications.commands`
-   - Permissions: `Connect`, `Speak`, `Use Voice Activity`
-   - Use generated URL to invite
+   - **Scopes**: Check `bot` and `applications.commands`
+   - **Permissions**: Check `Send Messages`, `Use Slash Commands`, `Connect`, `Speak`
+   - Copy and open the generated URL to authorize the bot in your server
+
+   **Quick invite template:**
+
+   ```
+   https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=2150631424&integration_type=0&scope=bot+applications.commands
+   ```
+
+   Replace `YOUR_CLIENT_ID` with your application's Client ID from the Developer Portal.
 
 3. **Configure token:**
    - Add to `.env` file: `DISCORD_TOKEN=your_token_here`
@@ -351,12 +357,10 @@ The `/config` command now has **user-friendly dropdown menus** with all availabl
 Simply use `/config` and select from the dropdown options:
 
 - **Voz** (Voice):
-
   - 🎭 **Mulher do Google** (Google TTS - best quality, requires internet)
   - 🤖 **R.E.P.O.** (Robotic voice - faster, works offline)
 
 - **Idioma** (Language) - for Google voice only:
-
   - Português, Inglês, Espanhol, Francês, Alemão, Italiano, Japonês, Coreano, Chinês
 
 - **Sotaque** (Accent) - for R.E.P.O. voice only:
