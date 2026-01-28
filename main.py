@@ -92,5 +92,18 @@ if __name__ == '__main__':
     flask_thread.start()
     logger.info("Flask server started")
     
-    # Run Discord bot in main thread
-    run_discord_bot()
+    # Load config to check if Discord bot is enabled
+    from config.settings import Config
+    config = Config()
+    
+    if config.discord_enabled:
+        # Run Discord bot in main thread
+        run_discord_bot()
+    else:
+        logger.info("Discord bot is disabled (DISCORD_ENABLED=false)")
+        logger.info("Flask API endpoints are available")
+        # Keep Flask running
+        try:
+            flask_thread.join()
+        except KeyboardInterrupt:
+            logger.info("Shutting down...")
