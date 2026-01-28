@@ -15,13 +15,12 @@ help:
 	@echo "🧪 Testing:"
 	@echo "  make test         - Run all tests"
 	@echo "  make test-unit    - Run unit tests only"
-	@echo "  make test-integration - Run integration tests"
+	@echo "  make test-integration - Run integration tests"  
+	@echo "  make test-build   - Test system before Windows build"
 	@echo "  make coverage     - Generate coverage report"
 	@echo ""
 	@echo "🔨 Building:"
-	@echo "  make build-exe    - Build standard executable (Windows)"
-	@echo "  make build-standalone - Build standalone executable"
-	@echo "  make build-configurable - Build configurable version"
+	@echo "  make build-clean          - Clean Architecture build for Windows (recommended)"
 	@echo ""
 	@echo "🏃 Running:"
 	@echo "  make run-bot      - Run Discord bot"
@@ -64,36 +63,22 @@ test-integration:
 	@echo "🔗 Running integration tests..."
 	@if [ -d "tests/integration" ]; then python -m pytest tests/integration/ -v; else echo "No integration tests found"; fi
 
+test-build:
+	@echo "🧪 Testing system readiness for Windows build..."
+	python3 test_integration.py
+
 coverage:
 	@echo "📊 Generating coverage report..."
 	python -m pytest tests/ --cov=src --cov-report=html --cov-report=xml --cov-report=term
 
-# Build commands (PowerShell scripts)
-build-exe:
-	@echo "🔨 Building standard executable..."
+# Build command (Clean Architecture with SOLID principles)
+build-clean:
+	@echo "🏗️ Building TTS Hotkey with Clean Architecture for Windows..."
 	@if command -v pwsh >/dev/null 2>&1; then \
-		pwsh -File scripts/build/build_exe.ps1; \
+		pwsh -File scripts/build/build_clean_architecture.ps1; \
 	else \
 		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
-		echo "   powershell scripts/build/build_exe.ps1"; \
-	fi
-
-build-standalone:
-	@echo "🔨 Building standalone executable..."
-	@if command -v pwsh >/dev/null 2>&1; then \
-		pwsh -File scripts/build/build_standalone.ps1; \
-	else \
-		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
-		echo "   powershell scripts/build/build_standalone.ps1"; \
-	fi
-
-build-configurable:
-	@echo "🔨 Building configurable executable..."
-	@if command -v pwsh >/dev/null 2>&1; then \
-		pwsh -File scripts/build/build_configurable.ps1; \
-	else \
-		echo "❌ PowerShell not found. Install PowerShell or run script manually:"; \
-		echo "   powershell scripts/build/build_configurable.ps1"; \
+		echo "   powershell scripts/build/build_clean_architecture.ps1"; \
 	fi
 
 # Run commands

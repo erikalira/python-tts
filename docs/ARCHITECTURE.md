@@ -2,18 +2,26 @@
 
 ## 📐 Visão Geral
 
-Este projeto foi refatorado seguindo **Clean Architecture** e os princípios **SOLID** para garantir:
+Este projeto implementa **duas arquiteturas complementares**:
+
+**1. Clean Architecture para Discord/Flask** - Versão completa com bot e servidor web  
+**2. Clean Architecture para Standalone** - Versão desktop com GUI e system tray
+
+Ambas seguem **Clean Architecture** e os princípios **SOLID** para garantir:
+
 - ✅ Código modular e testável
 - ✅ Baixo acoplamento entre camadas
 - ✅ Alta coesão dentro dos módulos
 - ✅ Facilidade de manutenção e extensão
 - ✅ Independência de frameworks externos
+- ✅ Separação clara de responsabilidades
+- ✅ Dependency Injection em todas as camadas
 
 ## 🏗️ Estrutura de Diretórios
 
 ```
 tts-hotkey-windows/
-├── config/                    # Configuração e Dependency Injection
+├── config/                    # 🔧 DISCORD/FLASK: Configuração e Dependency Injection
 │   ├── __init__.py
 │   ├── settings.py           # Carregamento de variáveis de ambiente
 │   └── container.py          # DI Container (Injeção de Dependências)
@@ -48,8 +56,34 @@ tts-hotkey-windows/
 │   │
 │   ├── presentation/         # 🔴 CAMADA DE APRESENTAÇÃO (Presentation Layer)
 │   │   ├── __init__.py
-│   │   ├── http_controllers.py   # SpeakController (endpoints HTTP)
-│   │   └── discord_commands.py   # DiscordCommands (slash commands)
+│   │   ├── discord_commands.py  # Comandos Discord
+│   │   └── http_controllers.py  # Controladores HTTP
+│   │
+│   └── standalone/           # 🎯 NOVA: STANDALONE CLEAN ARCHITECTURE
+│       ├── __init__.py
+│       │
+│       ├── config/           # 🔧 STANDALONE: Configuração com Dataclasses
+│       │   ├── __init__.py
+│       │   └── standalone_config.py  # StandaloneConfig, ConfigurationRepository
+│       │
+│       ├── app/              # 🟢 STANDALONE: Aplicação Principal
+│       │   ├── __init__.py
+│       │   └── simple_app.py # SimpleApplication (orchestrador principal)
+│       │
+│       ├── services/         # 🟡 STANDALONE: Camada de Serviços
+│       │   ├── __init__.py
+│       │   ├── tts_services.py        # TTSProcessor
+│       │   ├── hotkey_services.py     # HotkeyManager
+│       │   └── notification_services.py # SystemTrayService
+│       │
+│       └── gui/              # 🔴 STANDALONE: Interface Gráfica
+│           ├── __init__.py
+│           └── simple_gui.py # ConfigurationService (Tkinter)
+│
+├── scripts/build/            # 🚀 BUILD SCRIPTS
+│   └── build_clean_architecture.ps1  # Build único com Clean Architecture e SOLID
+│
+├── tts_hotkey_configurable.py      # 🎯 ENTRY POINT Principal (Clean + Fallback)
 │   │
 │   ├── __init__.py
 │   ├── __version__.py        # Informações de versão
@@ -75,36 +109,136 @@ tts-hotkey-windows/
 └── README.md                  # Documentação
 ```
 
+## 🎯 Arquitetura Standalone (Clean Architecture)
+
+A versão standalone implementa Clean Architecture completa com as seguintes camadas:
+
+### 🔧 **Config Layer** (`src/standalone/config/`)
+
+```python
+@dataclass
+class StandaloneConfig:
+    """Configuração principal com validação integrada."""
+    tts: TTSConfig
+    discord: DiscordConfig
+    hotkey: HotkeyConfig
+    interface: InterfaceConfig
+    network: NetworkConfig
+
+    @classmethod
+    def create_default(cls) -> 'StandaloneConfig':
+        """Factory method com configurações padrão."""
+
+class ConfigurationRepository:
+    """Repository pattern para persistência de configuração."""
+    def load(self) -> StandaloneConfig
+    def save(self, config: StandaloneConfig) -> None
+```
+
+### 🎯 **Service Layer** (`src/standalone/services/`)
+
+```python
+class TTSProcessor:
+    """Processamento de TTS com múltiplos engines."""
+    def __init__(self, config: StandaloneConfig)
+    def process_text(self, text: str) -> bool
+
+class HotkeyManager:
+    """Gerenciamento de hotkeys globais."""
+    def __init__(self, config: StandaloneConfig)
+    def start_listening(self) -> None
+
+class SystemTrayService:
+    """Sistema de notificações e system tray."""
+    def __init__(self, config: StandaloneConfig)
+    def run_tray(self) -> None
+```
+
+### 🟢 **Application Layer** (`src/standalone/app/`)
+
+```python
+class SimpleApplication:
+    """Orquestrador principal da aplicação."""
+    def __init__(self)
+    def initialize(self) -> None
+    def run(self) -> None
+
+    # Dependency injection para todos os serviços
+    _config_service: ConfigurationService
+    _tts_processor: TTSProcessor
+    _hotkey_manager: HotkeyManager
+    _notification_service: SystemTrayService
+```
+
+### 🔴 **Interface Layer** (`src/standalone/gui/`)
+
+```python
+class ConfigurationService:
+    """Interface de configuração (GUI + Console)."""
+    def __init__(self, prefer_gui: bool = True)
+    def configure_application(self, config: StandaloneConfig) -> StandaloneConfig
+    def show_gui_config(self) -> dict
+    def show_console_config(self) -> dict
+```
+
+### 🚀 **Entry Point** (`tts_hotkey_configurable.py`)
+
+```python
+def main():
+    """Entry point com fallback robusto."""
+    try:
+        # Tenta usar Clean Architecture
+        from src.standalone.app.simple_app import SimpleApplication
+        app = SimpleApplication()
+        app.initialize()
+        app.run()
+    except Exception as e:
+        # Fallback para implementação embutida
+        print(f"Clean architecture failed: {e}")
+        print("Falling back to embedded code...")
+        run_embedded_standalone()
+```
+
 ## 🎯 Princípios SOLID Aplicados
 
 ### 1. **S**ingle Responsibility Principle (SRP)
+
 Cada classe tem uma única responsabilidade:
+
 - `GTTSEngine`: Apenas gera áudio com gTTS
 - `SpeakTextUseCase`: Apenas orquestra a lógica de falar texto
 - `SpeakController`: Apenas trata requisições HTTP
 - `DiscordCommands`: Apenas trata comandos Discord
 
 ### 2. **O**pen/Closed Principle (OCP)
+
 Extensível sem modificar código existente:
+
 - `TTSEngineFactory`: Fácil adicionar novos engines TTS
 - `IVoiceChannel`: Pode implementar para outras plataformas além do Discord
 - Novos casos de uso podem ser adicionados sem modificar existentes
 
 ### 3. **L**iskov Substitution Principle (LSP)
+
 Implementações podem ser substituídas por suas abstrações:
+
 - Qualquer `ITTSEngine` funciona no `SpeakTextUseCase`
 - Qualquer `IVoiceChannel` pode ser usado
 - Fácil criar mocks para testes
 
 ### 4. **I**nterface Segregation Principle (ISP)
+
 Interfaces pequenas e específicas:
+
 - `ITTSEngine`: Apenas gera áudio
 - `IVoiceChannel`: Apenas operações de canal de voz
 - `IConfigRepository`: Apenas gerencia configuração
 - Nenhuma classe é forçada a implementar métodos desnecessários
 
 ### 5. **D**ependency Inversion Principle (DIP)
+
 Dependências apontam para abstrações:
+
 - `SpeakTextUseCase` depende de `ITTSEngine` (interface), não de `GTTSEngine` (implementação)
 - `Container` injeta dependências concretas
 - Fácil trocar implementações sem modificar código
@@ -149,6 +283,7 @@ Dependências apontam para abstrações:
 ## 🔧 Dependency Injection Container
 
 O `Container` em `config/container.py` é responsável por:
+
 1. **Criar todas as dependências** (repositórios, engines, use cases)
 2. **Injetar dependências** nos componentes que precisam
 3. **Configurar o Discord client** e registrar eventos
@@ -169,6 +304,7 @@ container = Container(config)
 ## 🚀 Como Executar
 
 ### Desenvolvimento Local (Python)
+
 ```bash
 # Opção 1: Novo entry point (bot completo)
 python -m src.bot
@@ -181,6 +317,7 @@ python -m src.app
 ```
 
 ### Desenvolvimento Local (Docker)
+
 ```bash
 # 0. Iniciar Docker Desktop (se não estiver rodando)
 # Windows PowerShell:
@@ -210,6 +347,7 @@ docker rmi tts-hotkey
 ```
 
 **Comandos úteis Docker:**
+
 ```bash
 # Ver containers rodando
 docker ps
@@ -231,6 +369,7 @@ docker system prune -a
 ```
 
 ### Produção (Gunicorn + Docker no Render)
+
 ```bash
 # Render/Docker usa wsgi.py automaticamente
 gunicorn --bind 0.0.0.0:$PORT wsgi:app
@@ -239,6 +378,7 @@ gunicorn --bind 0.0.0.0:$PORT wsgi:app
 ## ✅ Benefícios da Refatoração
 
 ### Antes (Código Antigo)
+
 - ❌ Tudo em um único arquivo (`discord_bot.py` com 600+ linhas)
 - ❌ Acoplamento alto (difícil testar)
 - ❌ Lógica misturada (TTS + Discord + HTTP no mesmo lugar)
@@ -246,6 +386,7 @@ gunicorn --bind 0.0.0.0:$PORT wsgi:app
 - ❌ Variáveis globais e estado compartilhado
 
 ### Depois (Código Refatorado)
+
 - ✅ Separação clara de responsabilidades
 - ✅ Fácil testar (mock de interfaces)
 - ✅ Fácil adicionar novos engines TTS
@@ -267,7 +408,7 @@ class MockTTSEngine(ITTSEngine):
 class MockVoiceChannel(IVoiceChannel):
     def __init__(self):
         self.played_audio = []
-    
+
     async def play_audio(self, audio):
         self.played_audio.append(audio.path)
 
@@ -277,10 +418,10 @@ def test_speak_use_case():
     mock_channel = MockVoiceChannel()
     mock_repo = MockChannelRepository(mock_channel)
     mock_config = MockConfigRepository()
-    
+
     use_case = SpeakTextUseCase(mock_engine, mock_repo, mock_config)
     result = await use_case.execute(TTSRequest(text="test"))
-    
+
     assert result["success"] == True
     assert len(mock_channel.played_audio) == 1
 ```
@@ -290,6 +431,7 @@ def test_speak_use_case():
 O projeto possui uma suíte completa de testes.
 
 ### Executar testes:
+
 ```powershell
 # Todos os testes
 pytest
@@ -300,6 +442,7 @@ pytest -m "not slow"
 # Com relatório HTML
 pytest --cov-report=html
 ```
+
 Veja `tests/README.md` para mais detalhes.
 
 ## 🎓 Referências

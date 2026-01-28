@@ -1,119 +1,60 @@
-# Interface Gráfica de Configuração do TTS Hotkey
+# 🚀 Interface de Configuração Implementada
 
-## 🎯 **Nova Funcionalidade Implementada**
+## ✅ O que foi adicionado:
 
-Foi adicionada uma **interface gráfica amigável** para configurar o executável TTS Hotkey do Windows, eliminando a necessidade de editar código para personalizações básicas.
+### 1. **Interface Gráfica de Configuração Inicial**
 
-## 🖼️ **Como Funciona**
+- Aparece automaticamente na primeira execução
+- Solicita Discord User ID e Channel ID
+- Instruções visuais de como encontrar os IDs
+- Validação de entrada (apenas números)
+- Opção "Continuar Sem Discord" para uso apenas local
 
-### **Primeira Execução**
+### 2. **Fallback Console**
 
-1. **Executa o .exe** → Janela de configuração abre automaticamente
-2. **Insere Discord User ID** (obrigatório)
-3. **Configura outras opções** (opcional)
-4. **Clica "Salvar e Continuar"** → Configuração salva permanentemente
-5. **Pronto!** Sistema ativo para usar `{texto}`
+- Se a GUI não funcionar, usa interface de console
+- Mesma funcionalidade, mas em modo texto
 
-### **Reconfiguração**
+### 3. **Integração na Clean Architecture**
 
-- **System Tray**: Botão direito no ícone → "⚙️ Configurações"
-- **Manual**: Delete `~/tts_hotkey_config.json` e reinicie
+- `InitialSetupGUI` em `src/standalone/gui/simple_gui.py`
+- Integrada no `SimpleApplication`
+- Salva automaticamente no repositório de configuração
 
-## 🔧 **Configurações Disponíveis**
+### 4. **Integração na Versão Embedded**
 
-### **Obrigatória**
+- Interface também na implementação embedded em `tts_hotkey_configurable.py`
+- Mesma experiência em ambas versões
 
-- **Discord User ID**: Seu ID único do Discord (números)
-  - Como obter: Discord → Configurações → Avançado → Modo Desenvolvedor
-  - Clique direito em seu nome → "Copiar ID"
+## 🎯 Como funciona:
 
-### **Opcionais**
+### **Primeira execução:**
 
-- **URL do Bot**: Endereço do bot Discord
-- **Engine TTS**: gtts, pyttsx3, edge-tts
-- **Idioma**: pt, en, es, fr
+1. ✅ Sistema detecta que IDs não estão configurados
+2. ✅ Abre interface gráfica de configuração
+3. ✅ Usuario preenche Discord User ID
+4. ✅ Opcionalmente preenche Channel ID
+5. ✅ Sistema salva e continua
 
-## 💾 **Persistência**
+### **Uso normal:**
 
-As configurações são salvas em: `~/tts_hotkey_config.json`
+- ✅ `{testando}` vai direto pro Discord (se configurado)
+- ✅ Fallback local funciona se Discord não disponível
+- ✅ Sistema reconhece usuário corretamente
 
-Exemplo do arquivo:
+## 🔧 Para testar:
 
-```json
-{
-  "discord_member_id": "123456789012345678",
-  "discord_channel_id": null,
-  "discord_bot_url": "https://python-tts-s3z8.onrender.com",
-  "tts_engine": "gtts",
-  "tts_language": "pt"
-}
+1. **Delete qualquer config existente** (para simular primeira execução)
+2. **Execute o programa**
+3. **Interface aparecerá automaticamente**
+4. **Configure seus IDs do Discord**
+5. **Teste `{texto}` - deve funcionar no Discord**
+
+## 📋 Próximo build:
+
+```powershell
+# Recompilar com nova interface
+./scripts/build/build_clean_no_icon.ps1
 ```
 
-## ✨ **Benefícios**
-
-### **Para Usuários Finais**
-
-- ✅ **Zero código** para configurar
-- ✅ **Interface intuitiva** com instruções claras
-- ✅ **Configuração permanente**
-- ✅ **Validação automática** de dados
-- ✅ **Reconfiguração fácil** via system tray
-
-### **Para Desenvolvedores**
-
-- ✅ **Menos suporte** necessário
-- ✅ **Distribuição simplificada**
-- ✅ **Configuração padrão** mantida no código
-- ✅ **Fallback console** se GUI falhar
-
-## 🎮 **Experiência do Usuário**
-
-### **Fluxo Típico**
-
-```
-1. Duplo-click no .exe
-   ↓
-2. Janela "TTS Hotkey - Configuração" abre
-   ↓
-3. Usuário vê instruções claras sobre Discord ID
-   ↓
-4. Preenche ID + configurações opcionais
-   ↓
-5. Clica "Salvar e Continuar"
-   ↓
-6. Sistema inicia automaticamente
-   ↓
-7. Usa {texto} normalmente!
-```
-
-### **Validações Incluídas**
-
-- ❌ Discord ID vazio
-- ❌ Discord ID com caracteres inválidos
-- ✅ Apenas números aceitos
-- ✅ Configurações salvas automaticamente
-
-## 🔄 **Compatibilidade**
-
-- **GUI Disponível**: Interface tkinter completa
-- **GUI Indisponível**: Fallback para configuração via console
-- **Configuração Existente**: Carregada automaticamente
-- **Primeira Vez**: Interface de configuração obrigatória
-
-## 🚀 **Implementação Técnica**
-
-### **Principais Classes**
-
-- `Config`: Gerencia configurações e persistência
-- `ConfigWindow`: Interface gráfica tkinter
-- Carregamento/salvamento automático em JSON
-
-### **Integração**
-
-- Verificação na `main()` se configuração existe
-- System tray com opção "Configurações"
-- Fallback gracioso se tkinter não disponível
-
----
-
-**Resultado**: Interface muito mais amigável para usuários finais! 🎉
+**Agora o usuário tem uma interface amigável para configurar os IDs sem editar código!** 🎉

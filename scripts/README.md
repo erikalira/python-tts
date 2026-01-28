@@ -7,10 +7,12 @@ Esta pasta contém todos os scripts organizados para facilitar o desenvolvimento
 ```
 scripts/
 ├── build/                  # Scripts de build/compilação
-│   ├── build_exe.ps1          - Build padrão do executável
-│   ├── build_exe_fixed.ps1    - Build com correções específicas
-│   ├── build_standalone.ps1   - Build standalone (sem deps externas)
-│   └── build_configurable.ps1 - Build versão configurável
+│   ├── build_clean_architecture.ps1  - Build Clean Architecture (Recomendado)
+│   ├── build_clean_no_icon.ps1      - Build Clean Architecture sem ícone
+│   ├── build_clean_architecture.ps1 - Build com Clean Architecture e SOLID
+│   ├── build_exe_fixed.ps1          - Build com correções específicas
+│   ├── build_standalone.ps1         - Build standalone (sem deps externas)
+│   └── build_configurable.ps1       - Build versão configurável
 ├── test/                   # Scripts de teste
 │   ├── test_improvements.sh   - Testa melhorias de performance
 │   ├── test_config_gui.py     - Teste da GUI de configuração
@@ -53,8 +55,14 @@ make clean         # Limpar artifacts
 #### Scripts de Build (PowerShell)
 
 ```powershell
+# Build Clean Architecture (Recomendado)
+powershell scripts/build/build_clean_architecture.ps1
+
+# Build Clean Architecture sem ícone (se houver problemas)
+powershell scripts/build/build_clean_no_icon.ps1
+
 # Build executável padrão
-powershell scripts/build/build_exe.ps1
+powershell scripts/build/build_clean_architecture.ps1
 
 # Build standalone (recomendado para distribuição)
 powershell scripts/build/build_standalone.ps1
@@ -80,7 +88,7 @@ python scripts/test/test_discord_connection.py
 
 ### 🔨 Build Scripts
 
-- **build_exe.ps1**: Build padrão com PyInstaller
+- **build_clean_architecture.ps1**: Build com Clean Architecture e SOLID principles
 - **build_standalone.ps1**: Build completo sem dependências externas
 - **build_configurable.ps1**: Build com interface de configuração
 - **build_exe_fixed.ps1**: Build com correções específicas

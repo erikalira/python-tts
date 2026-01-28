@@ -6,43 +6,67 @@
 
 ## Overview
 
-This project is a text-to-speech hotkey application that allows users to input text using specific keyboard shortcuts and have it spoken aloud. It includes:
+This project is a text-to-speech hotkey application that allows users to input text using specific keyboard shortcuts and have it spoken aloud. Built with **Clean Architecture** and **SOLID principles**, it includes:
 
 - **Discord Bot**: Joins voice channels and plays TTS messages
-- **Hotkey App**: Captures text input (`{text here}`) and sends to Discord bot
+- **Standalone App**: Complete Windows application with GUI and system tray
+- **Hotkey System**: Captures text input (`{text here}`) with global shortcuts
+- **Clean Architecture**: Fully implemented with proper separation of concerns
 - **Docker Support**: Deploys on Render with espeak-ng for high-quality TTS
 
 ## Features
+
+**🏗️ Clean Architecture & SOLID Principles**
+
+- Full separation of concerns across layers
+- Dependency injection and inversion of control
+- Single responsibility principle throughout
+- Interface segregation and clean abstractions
+
+**🎯 Core Functionality**
 
 - Capture text input using keyboard shortcuts
 - Discord bot with slash commands (`/join`, `/leave`, `/speak`)
 - TTS engine with automatic fallback (pyttsx3 → gTTS)
 - Voice channel support with audio streaming
+- System tray integration with notifications
+- Persistent configuration management
+
+**🚀 Deployment Options**
+
+- Windows standalone executable (.exe)
 - Docker deployment for production
+- Cross-platform compatibility (Windows/Linux)
 - Simple and intuitive interface
 
-## 🏆 TTS Hotkey Premium (Standalone)
+## 🏆 TTS Hotkey Clean Architecture (Standalone)
 
-**For users who want a single `.exe` file without external dependencies:**
+**For users who want a single `.exe` file with Clean Architecture and SOLID principles:**
 
-- 📄 **[`README_STANDALONE.md`](docs/README_STANDALONE.md)** - Complete Premium guide
-- 🎯 **Zero hardcode** - everything configurable via class
-- 🎮 **Specialized profiles** - Gaming, Office, Streaming
-- 📊 **Professional interface** - colorful logs and dashboard
-- ⚡ **Intelligent build** - automatic configuration analysis
+- 📄 **[`README_STANDALONE.md`](docs/README_STANDALONE.md)** - Complete standalone guide
+- 🏗️ **Clean Architecture** - Full separation of concerns and SOLID principles
+- ⚙️ **Configuration Management** - Dataclass-based with GUI interface
+- 🎯 **Service Layer** - TTS, Hotkey, and Notification services
+- 💾 **Repository Pattern** - JSON-based configuration persistence
+- 🖥️ **Platform Support** - Windows (full features) + Linux (graceful degradation)
+- 📊 **System Integration** - System tray, global hotkeys, notifications
+- ⚡ **Automatic Fallback** - Embedded implementation if clean architecture fails
 
 ```powershell
-# Edit configuration class
-code tts_hotkey_configurable.py
+# Build Clean Architecture version
+make build-clean
+# OR: powershell scripts/build/build_clean_architecture.ps1
 
-# Build premium version (new organized location)
-make build-configurable
-# OR: ./scripts.sh build-configurable
-# OR: powershell scripts/build/build_configurable.ps1
-
-# Single file ready!
-dist/tts_hotkey_premium.exe
+# Clean Architecture executable ready!
+dist/tts_hotkey_clean.exe
 ```
+
+**Architecture Layers:**
+
+- **Config Layer**: `StandaloneConfig` with validation and persistence
+- **Service Layer**: `TTSProcessor`, `HotkeyManager`, `SystemTrayService`
+- **Application Layer**: `SimpleApplication` with dependency injection
+- **Interface Layer**: Tkinter GUI and console interfaces
 
 ## 📁 Organized Scripts
 
@@ -192,14 +216,11 @@ O aplicativo aparecerá na **bandeja do sistema** (system tray) do Windows com u
 Para criar um executável standalone que não precisa do Python instalado:
 
 ```bash
-# Opção 1: Usando Makefile (recomendado)
-make build-exe
+# Opção 1: Usando Makefile (Clean Architecture)
+make build-clean
 
-# Opção 2: Usando script bash
-./scripts.sh build-exe
-
-# Opção 3: PowerShell direto
-powershell scripts/build/build_exe.ps1
+# Opção 2: PowerShell direto (Clean Architecture)
+powershell scripts/build/build_clean_architecture.ps1
 ```
 
 Isso criará `tts_hotkey.exe` na pasta raiz. Você pode:
@@ -222,18 +243,24 @@ When running (`python3 main.py` or Docker container):
 ## Discord Bot Setup
 
 1. **Create bot in Discord Developer Portal:**
-
    - Go to https://discord.com/developers/applications
    - Create new application → Bot section
    - Enable "Message Content Intent" and "Server Members Intent"
    - Copy the bot token
 
 2. **Invite bot to server:**
-
    - OAuth2 → URL Generator
-   - Scopes: `bot`, `applications.commands`
-   - Permissions: `Connect`, `Speak`, `Use Voice Activity`
-   - Use generated URL to invite
+   - **Scopes**: Check `bot` and `applications.commands`
+   - **Permissions**: Check `Send Messages`, `Use Slash Commands`, `Connect`, `Speak`
+   - Copy and open the generated URL to authorize the bot in your server
+
+   **Quick invite template:**
+
+   ```
+   https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=2150631424&integration_type=0&scope=bot+applications.commands
+   ```
+
+   Replace `YOUR_CLIENT_ID` with your application's Client ID from the Developer Portal.
 
 3. **Configure token:**
    - Add to `.env` file: `DISCORD_TOKEN=your_token_here`
@@ -330,12 +357,10 @@ The `/config` command now has **user-friendly dropdown menus** with all availabl
 Simply use `/config` and select from the dropdown options:
 
 - **Voz** (Voice):
-
   - 🎭 **Mulher do Google** (Google TTS - best quality, requires internet)
   - 🤖 **R.E.P.O.** (Robotic voice - faster, works offline)
 
 - **Idioma** (Language) - for Google voice only:
-
   - Português, Inglês, Espanhol, Francês, Alemão, Italiano, Japonês, Coreano, Chinês
 
 - **Sotaque** (Accent) - for R.E.P.O. voice only:
@@ -536,8 +561,8 @@ make setup && make install && make build-exe
 # Se encontrar erro de política de execução:
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
-# Execute o script:
-powershell scripts/build/build_exe.ps1
+# Execute o script (Clean Architecture):
+powershell scripts/build/build_clean_architecture.ps1
 ```
 
 **Option C - Manual PyInstaller:**

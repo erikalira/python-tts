@@ -2,7 +2,7 @@
 
 ## Project Context
 
-Este é um projeto Python de Text-to-Speech (TTS) que integra com Discord e Flask. O projeto segue princípios de Clean Architecture e SOLID.
+Este é um projeto Python de Text-to-Speech (TTS) que integra com Discord e Flask, com suporte completo a aplicações standalone. O projeto implementa Clean Architecture e SOLID principles tanto na versão Discord quanto na versão standalone configurável com interface gráfica.
 
 ## Architecture Overview
 
@@ -24,13 +24,29 @@ src/
 │   ├── discord/
 │   ├── tts/
 │   └── http/
-└── presentation/   # Controllers e comandos
-    ├── discord_commands.py
-    └── http_controllers.py
+├── presentation/   # Controllers e comandos
+│   ├── discord_commands.py
+│   └── http_controllers.py
+└── standalone/     # NOVA: Versão standalone com Clean Architecture
+    ├── config/     # Configuração standalone com dataclasses
+    │   └── standalone_config.py
+    ├── app/        # Aplicação principal standalone
+    │   └── simple_app.py
+    ├── services/   # Serviços específicos standalone
+    │   ├── tts_services.py
+    │   ├── hotkey_services.py
+    │   └── notification_services.py
+    └── gui/        # Interface gráfica
+        └── simple_gui.py
 
-config/             # Configuração e DI Container
+config/             # Configuração e DI Container (Discord/Flask)
 ├── settings.py     # Variáveis de ambiente e configurações
 └── container.py    # Dependency Injection Container
+
+scripts/build/      # Scripts de build para Windows
+├── build_clean_architecture.ps1  # Build Clean Architecture
+├── build_exe.ps1              # Build executável simples
+└── build_standalone.ps1       # Build versão standalone
 
 docs/               # Documentação técnica detalhada
 ├── ARCHITECTURE.md          # Arquitetura e design do sistema
@@ -259,6 +275,7 @@ class ConfigRepository(ABC):
 ### When Adding New Features
 
 - Documente casos de uso complexos em `docs/`
+- Só adicione documentação no docs/ ou no readme.md
 - Atualize o README.md se adicionar novos comandos ou funcionalidades
 - Inclua exemplos de código em docstrings quando apropriado
 - Documente configurações de ambiente em `docs/TROUBLESHOOTING.md`
@@ -288,10 +305,36 @@ def process_tts_request(text: str, engine: str = "gtts") -> AudioData:
     pass
 ```
 
+## Standalone Application Architecture
+
+### Core Components
+
+- **StandaloneConfig**: Dataclass-based configuration with validation
+- **SimpleApplication**: Main application orchestrating all services
+- **Service Layer**: TTSProcessor, HotkeyManager, SystemTrayService
+- **GUI Layer**: Tkinter-based configuration interface
+- **Repository Pattern**: Configuration persistence with JSON
+
+### Entry Points
+
+- **tts_hotkey_configurable.py**: Main entry point with clean architecture and embedded fallback
+- **Build Scripts**: PowerShell scripts for Windows executable creation
+- **Platform Compatibility**: Windows (full features) and Linux (graceful degradation)
+
+### Key Features
+
+- **Clean Architecture**: Full separation of concerns across layers
+- **SOLID Principles**: Dependency injection, single responsibility
+- **Configuration Management**: Persistent settings with GUI configuration
+- **Multi-Engine TTS**: gTTS and pyttsx3 support with fallback
+- **System Integration**: Global hotkeys, system tray, notifications
+- **Robust Error Handling**: Graceful degradation and fallback mechanisms
+
 ## When Writing New Code
 
 1. **Understand the Domain**: Leia `docs/ARCHITECTURE.md` e código existente primeiro
-2. **Follow Patterns**: Use os padrões estabelecidos na arquitetura Clean
+2. **Follow Patterns**: Use os padrões estabelecidos na arquitetura Clean (tanto Discord quanto standalone)
 3. **Test First**: Considere TDD quando apropriado
-4. **Documentation**: Documente APIs públicas e atualize `docs/` conforme necessário
-5. **Review**: Considere o impacto nas outras camadas e na documentação existente
+4. **Platform Compatibility**: Considere Windows (target) e Linux (development) environments
+5. **Documentation**: Documente APIs públicas e atualize `docs/` conforme necessário
+6. **Review**: Considere o impacto nas outras camadas e na documentação existente

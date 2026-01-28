@@ -2,7 +2,7 @@
 
 ## 🏆 Configuração Profissional Sem Hardcode
 
-**Arquivo único**: `tts_hotkey_configurable.py` + `build_configurable.ps1`
+**Arquivo único**: `tts_hotkey_configurable.py` + `build_clean_architecture.ps1`
 
 ### ✨ **A Solução Perfeita:**
 
@@ -20,7 +20,7 @@
 code tts_hotkey_configurable.py
 
 # 2. Execute o build inteligente
-./build_configurable.ps1
+./build_clean_architecture.ps1
 
 # 3. Um único arquivo pronto!
 dist/tts_hotkey_premium.exe
@@ -90,7 +90,7 @@ git clone https://github.com/seu-usuario/python-tts
 code tts_hotkey_configurable.py
 
 # 3. Compile versão premium
-./build_configurable.ps1
+./build_clean_architecture.ps1
 
 # 4. Use o resultado
 dist/tts_hotkey_premium.exe
