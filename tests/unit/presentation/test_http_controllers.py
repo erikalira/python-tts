@@ -28,7 +28,8 @@ class TestSpeakController:
         request = Mock(spec=web.Request)
         request.json = AsyncMock(return_value={
             'text': 'Hello world',
-            'channel_id': 123
+            'channel_id': 123,
+            'member_id': 123123
         })
         
         response = await controller.handle(request)

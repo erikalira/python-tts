@@ -84,7 +84,7 @@ class TestSpeakTextUseCase:
             config_repository=mock_config_repository
         )
         
-        request = TTSRequest(text="test", channel_id=123)
+        request = TTSRequest(text="test", channel_id=123, member_id=1231231)
         result = await use_case.execute(request)
         
         assert result["success"] is True
