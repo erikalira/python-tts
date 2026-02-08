@@ -5,6 +5,7 @@ Runs the Discord bot and the Flask app defined in `src.app`.
 import threading
 import asyncio
 import logging
+import time
 from src.app import run_flask, set_container
 
 # Configure logging
@@ -52,11 +53,12 @@ async def start_discord_bot_with_retry(client, token, max_retries: int = 5):
 
 
 def run_discord_bot():
-    """Run the Discord bot."""
+    """Run the Discord bot with exponential backoff retry strategy."""
     logger.info("Initializing Discord bot...")
     
     from config.settings import Config
     from config.container import Container
+    from discord.errors import HTTPException
     
     config = Config()
     is_valid, error_msg = config.validate()
@@ -70,20 +72,44 @@ def run_discord_bot():
     # Make container available to Flask endpoints (e.g., /speak)
     set_container(container)
     
-    # Start Discord bot with retry logic
-    try:
-        if config.discord_token is None:
-            logger.error("Discord token is not set")
+    if config.discord_token is None:
+        logger.error("Discord token is not set")
+        return
+    
+    # Retry configuration with exponential backoff
+    max_retries = 2
+    base_wait_time = 30  # Start with 30 seconds
+    
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"Discord bot connection attempt {attempt + 1}/{max_retries}")
+            asyncio.run(container.discord_client.start(config.discord_token))
+            break  # Success
+        except HTTPException as e:
+            if e.status == 429:  # Rate limit error
+                if attempt < max_retries - 1:
+                    wait_time = base_wait_time * (2 ** attempt)  # Exponential backoff
+                    logger.warning(
+                        f"Rate limited (429) by Discord. "
+                        f"Waiting {wait_time} seconds before retry... "
+                        f"(Attempt {attempt + 1}/{max_retries})"
+                    )
+                    time.sleep(wait_time)
+                else:
+                    logger.error(
+                        f"Max retries reached. Discord is still rate limiting. "
+                        f"Please check your token and try again later."
+                    )
+                    return
+            else:
+                logger.error(f"HTTP error {e.status}: {e}", exc_info=True)
+                return
+        except KeyboardInterrupt:
+            logger.info('Bot shutting down...')
+            break
+        except Exception as e:
+            logger.error(f'Unexpected bot error: {e}', exc_info=True)
             return
-        asyncio.run(start_discord_bot_with_retry(
-            container.discord_client,
-            config.discord_token,
-            max_retries=5
-        ))
-    except KeyboardInterrupt:
-        logger.info('Bot shutting down...')
-    except Exception as e:
-        logger.error(f'Fatal bot error: {e}', exc_info=True)
 
 
 if __name__ == '__main__':
