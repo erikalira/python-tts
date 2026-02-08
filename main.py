@@ -5,7 +5,6 @@ Runs the Discord bot and the Flask app defined in `src.app`.
 import threading
 import asyncio
 import logging
-import time
 from src.app import run_flask, set_container
 
 # Configure logging
@@ -34,12 +33,11 @@ async def start_discord_bot_with_retry(client, token):
 
 
 def run_discord_bot():
-    """Run the Discord bot with exponential backoff retry strategy."""
+    """Run the Discord bot."""
     logger.info("Initializing Discord bot...")
     
     from config.settings import Config
     from config.container import Container
-    from discord.errors import HTTPException
     
     config = Config()
     is_valid, error_msg = config.validate()
@@ -57,7 +55,7 @@ def run_discord_bot():
         logger.error("Discord token is not set")
         return
     
-    # Use async retry logic within single event loop
+    # Use async function within single event loop
     try:
         asyncio.run(start_discord_bot_with_retry(container.discord_client, config.discord_token))
     except KeyboardInterrupt:
