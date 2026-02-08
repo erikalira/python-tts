@@ -5,6 +5,7 @@ Runs the Discord bot and the Flask app defined in `src.app`.
 import threading
 import asyncio
 import logging
+import time
 from src.app import run_flask, set_container
 
 # Configure logging
@@ -38,6 +39,7 @@ def run_discord_bot():
     
     from config.settings import Config
     from config.container import Container
+    from discord.errors import HTTPException
     
     config = Config()
     is_valid, error_msg = config.validate()
