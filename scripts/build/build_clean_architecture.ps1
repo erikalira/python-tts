@@ -69,13 +69,29 @@ Write-Host "Cleanup completed" -ForegroundColor Green
 # Prepare PyInstaller arguments - simplified for Windows
 Write-Host "`nPreparing build configuration..." -ForegroundColor Yellow
 
+# Get absolute path to .env file
+$EnvFilePath = Resolve-Path ".env" -ErrorAction SilentlyContinue
+if (-not $EnvFilePath) {
+    Write-Host "Warning: .env file not found, skipping data addition" -ForegroundColor Yellow
+    $AddDataArg = $null
+} else {
+    $AddDataArg = "--add-data", "$EnvFilePath;."
+}
+
 $PyInstallerArgs = @(
     "--name", $AppName,
     "--onefile", 
     "--console",
     "--distpath", $DistPath,
     "--workpath", $BuildPath,
-    "--specpath", $BuildPath,
+    "--specpath", $BuildPath
+)
+
+if ($AddDataArg) {
+    $PyInstallerArgs += $AddDataArg
+}
+
+$PyInstallerArgs += @(
     "--hidden-import", "keyboard",
     "--hidden-import", "pystray",
     "--hidden-import", "PIL", 

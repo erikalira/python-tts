@@ -86,10 +86,7 @@ tts-hotkey-windows/
 ├── tts_hotkey_configurable.py      # 🎯 ENTRY POINT Principal (Clean + Fallback)
 │   │
 │   ├── __init__.py
-│   ├── __version__.py        # Informações de versão
-│   ├── bot.py                # Entry point do bot (novo)
-│   ├── app.py                # Flask app (compatibilidade)
-│   └── tts_hotkey.py         # 🎹 Windows hotkey listener (opcional)
+│   └── __version__.py        # Informações de versão
 │
 ├── tests/
 │   ├── unit/                 # Testes unitários (77% coverage)
@@ -104,7 +101,6 @@ tts-hotkey-windows/
 ├── requirements.txt           # Dependências Python
 ├── requirements-test.txt      # Dependências de teste
 ├── pytest.ini                 # Configuração de testes
-├── wsgi.py                    # Entry point para Gunicorn
 ├── Dockerfile                 # Container Docker
 └── README.md                  # Documentação
 ```
@@ -362,17 +358,17 @@ docker images
 docker run -it -p 10000:10000 --env-file .env tts-hotkey
 
 # Executar em background (detached)
+### Docker (Desenvolvimento e Testes)
+
+```bash
+# Build image
+docker build -t tts-hotkey .
+
+# Rodar container
 docker run -d -p 10000:10000 --env-file .env tts-hotkey
 
 # Limpar tudo
 docker system prune -a
-```
-
-### Produção (Gunicorn + Docker no Render)
-
-```bash
-# Render/Docker usa wsgi.py automaticamente
-gunicorn --bind 0.0.0.0:$PORT wsgi:app
 ```
 
 ## ✅ Benefícios da Refatoração

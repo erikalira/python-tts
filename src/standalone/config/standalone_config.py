@@ -9,24 +9,46 @@ import os
 from pathlib import Path
 from typing import Optional
 from dataclasses import dataclass, asdict
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv(Path(__file__).resolve().parents[3] / ".env", override=True)
+
+
+def get_config_directory() -> Path:
+    """Get configuration directory following OS best practices.
+    
+    Windows: C:\\Users\\<user>\\AppData\\Local\\TTS-Hotkey\\
+    Linux/macOS: ~/.config/tts-hotkey/
+    
+    Returns:
+        Path to configuration directory (created if doesn't exist)
+    """
+    if os.name == 'nt':  # Windows
+        config_dir = Path(os.getenv('LOCALAPPDATA', Path.home() / 'AppData' / 'Local')) / "TTS-Hotkey"
+    else:  # Linux/macOS
+        config_dir = Path.home() / ".config" / "tts-hotkey"
+    
+    config_dir.mkdir(parents=True, exist_ok=True)
+    return config_dir
 
 
 @dataclass
 class TTSConfig:
     """TTS Engine configuration."""
-    engine: str = "gtts"
-    language: str = "pt"
-    voice_id: str = "roa/pt-br"
-    rate: int = 180
-    output_device: Optional[str] = None
+    engine: str = os.getenv('TTS_ENGINE', 'gtts')
+    language: str = os.getenv('TTS_LANGUAGE', 'pt')
+    voice_id: str = os.getenv('TTS_VOICE_ID', 'roa/pt-br')
+    rate: int = int(os.getenv('TTS_RATE', '180'))
+    output_device: Optional[str] = os.getenv('TTS_OUTPUT_DEVICE')
 
 
 @dataclass
 class DiscordConfig:
     """Discord bot configuration."""
-    bot_url: str = "https://python-tts-s3z8.onrender.com"
-    channel_id: Optional[str] = None
-    member_id: Optional[str] = None
+    bot_url: str = os.getenv('DISCORD_BOT_URL')
+    channel_id: Optional[str] = os.getenv('DISCORD_CHANNEL_ID')
+    member_id: Optional[str] = os.getenv('DISCORD_MEMBER_ID')
 
 
 @dataclass
@@ -81,8 +103,17 @@ class ConfigurationRepository:
     """Repository for configuration persistence."""
     
     def __init__(self, config_file_path: Optional[Path] = None):
-        """Initialize with optional custom config file path."""
-        self._config_file = config_file_path or Path.home() / "tts_hotkey_config.json"
+        """Initialize with optional custom config file path.
+        
+        If no path provided, uses platform-specific config directory:
+        - Windows: %LOCALAPPDATA%/TTS-Hotkey/config.json
+        - Linux/macOS: ~/.config/tts-hotkey/config.json
+        """
+        if config_file_path:
+            self._config_file = config_file_path
+        else:
+            config_dir = get_config_directory()
+            self._config_file = config_dir / "config.json"
     
     def load(self) -> StandaloneConfig:
         """Load configuration from file or create default."""
@@ -95,16 +126,16 @@ class ConfigurationRepository:
             
             return StandaloneConfig(
                 tts=TTSConfig(
-                    engine=data.get('tts_engine', 'gtts'),
-                    language=data.get('tts_language', 'pt'),
-                    voice_id=data.get('tts_voice_id', 'roa/pt-br'),
-                    rate=data.get('tts_rate', 180),
-                    output_device=data.get('tts_output_device')
+                    engine=os.getenv('TTS_ENGINE') or data.get('tts_engine', 'gtts'),
+                    language=os.getenv('TTS_LANGUAGE') or data.get('tts_language', 'pt'),
+                    voice_id=os.getenv('TTS_VOICE_ID') or data.get('tts_voice_id', 'roa/pt-br'),
+                    rate=int(os.getenv('TTS_RATE') or data.get('tts_rate', 180)),
+                    output_device=os.getenv('TTS_OUTPUT_DEVICE') or data.get('tts_output_device')
                 ),
                 discord=DiscordConfig(
-                    bot_url=data.get('discord_bot_url', 'https://python-tts-s3z8.onrender.com'),
-                    channel_id=data.get('discord_channel_id'),
-                    member_id=data.get('discord_member_id')
+                    bot_url=os.getenv('DISCORD_BOT_URL') or data.get('discord_bot_url'),
+                    channel_id=os.getenv('DISCORD_CHANNEL_ID') or data.get('discord_channel_id'),
+                    member_id=os.getenv('DISCORD_MEMBER_ID') or data.get('discord_member_id')
                 ),
                 hotkey=HotkeyConfig(
                     trigger_open=data.get('trigger_open', '{'),

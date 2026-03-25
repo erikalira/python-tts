@@ -7,6 +7,7 @@ Provides simplified interfaces for configuration without complex type hints.
 from abc import ABC, abstractmethod
 from typing import Optional
 from dataclasses import replace
+import os
 
 try:
     import tkinter as tk
@@ -230,7 +231,7 @@ class InitialSetupGUI:
         
         # Bot URL
         ttk.Label(discord_frame, text="Bot URL:").pack(anchor=tk.W)
-        self.bot_url_var = tk.StringVar(value="https://python-tts-s3z8.onrender.com")
+        self.bot_url_var = tk.StringVar(value=os.getenv('DISCORD_BOT_URL'))
         bot_url_entry = ttk.Entry(discord_frame, textvariable=self.bot_url_var, width=50)
         bot_url_entry.pack(fill=tk.X, pady=(5, 10))
         
@@ -258,7 +259,7 @@ class InitialSetupGUI:
         self.result = {
             'member_id': None,
             'channel_id': None,
-            'bot_url': "https://python-tts-s3z8.onrender.com",
+            'bot_url': os.getenv('DISCORD_BOT_URL'),
             'skip_discord': True
         }
         self.root.destroy()
@@ -327,9 +328,10 @@ class InitialSetupGUI:
         
         # Bot URL
         print("\n3. Bot URL:")
-        bot_url = input("   Bot URL [https://python-tts-s3z8.onrender.com]: ").strip()
+        default_url = os.getenv('DISCORD_BOT_URL')
+        bot_url = input(f"   Bot URL [{default_url}]: ").strip()
         if not bot_url:
-            bot_url = "https://python-tts-s3z8.onrender.com"
+            bot_url = default_url
         
         if member_id:
             print(f"\n✅ Configuração salva! TTS funcionará no Discord.")

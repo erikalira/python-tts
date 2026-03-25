@@ -44,9 +44,7 @@ config/             # Configuração e DI Container (Discord/Flask)
 └── container.py    # Dependency Injection Container
 
 scripts/build/      # Scripts de build para Windows
-├── build_clean_architecture.ps1  # Build Clean Architecture
-├── build_exe.ps1              # Build executável simples
-└── build_standalone.ps1       # Build versão standalone
+├── build_clean_architecture.ps1  # Build Clean Architecture (recomendado)
 
 docs/               # Documentação técnica detalhada
 ├── ARCHITECTURE.md          # Arquitetura e design do sistema

@@ -1,103 +1,25 @@
 # Scripts Directory
 
-Esta pasta contém todos os scripts organizados para facilitar o desenvolvimento e build do projeto Python TTS.
+Esta pasta contém scripts de build para o TTS Hotkey.
 
-## Estrutura
-
-```
-scripts/
-├── build/                  # Scripts de build/compilação
-│   ├── build_clean_architecture.ps1  - Build Clean Architecture (Recomendado)
-│   ├── build_clean_no_icon.ps1      - Build Clean Architecture sem ícone
-│   ├── build_clean_architecture.ps1 - Build com Clean Architecture e SOLID
-│   ├── build_exe_fixed.ps1          - Build com correções específicas
-│   ├── build_standalone.ps1         - Build standalone (sem deps externas)
-│   └── build_configurable.ps1       - Build versão configurável
-├── test/                   # Scripts de teste
-│   ├── test_improvements.sh   - Testa melhorias de performance
-│   ├── test_config_gui.py     - Teste da GUI de configuração
-│   └── test_discord_connection.py - Teste conexão Discord
-├── utils/                  # Utilitários diversos
-│   └── create_icon.py         - Criação de ícones
-└── README.md              # Esta documentação
-```
-
-## Como Usar
-
-### Opção 1: Makefile (Recomendado)
-
-```bash
-# Ver todos os comandos disponíveis
-make help
-
-# Exemplos comuns
-make install        # Instalar dependências
-make test          # Executar testes
-make build-exe     # Build executável
-make clean         # Limpar artifacts
-```
-
-### Opção 2: Script Bash
-
-```bash
-# Ver todos os comandos disponíveis
-./scripts.sh help
-
-# Exemplos comuns
-./scripts.sh install        # Instalar dependências
-./scripts.sh test          # Executar testes
-./scripts.sh build-exe     # Build executável
-./scripts.sh clean         # Limpar artifacts
-```
-
-### Opção 3: Scripts Diretos
-
-#### Scripts de Build (PowerShell)
+## Compilação para Windows
 
 ```powershell
-# Build Clean Architecture (Recomendado)
+# Build recomendado (Clean Architecture + SOLID principles)
 powershell scripts/build/build_clean_architecture.ps1
-
-# Build Clean Architecture sem ícone (se houver problemas)
-powershell scripts/build/build_clean_no_icon.ps1
-
-# Build executável padrão
-powershell scripts/build/build_clean_architecture.ps1
-
-# Build standalone (recomendado para distribuição)
-powershell scripts/build/build_standalone.ps1
-
-# Build configurável (com GUI)
-powershell scripts/build/build_configurable.ps1
 ```
 
-#### Scripts de Teste
+O executável será criado em `dist/tts_hotkey_clean.exe`
 
-```bash
-# Teste de melhorias
-bash scripts/test/test_improvements.sh
+## Características Incluídas
 
-# Teste GUI configuração
-python scripts/test/test_config_gui.py
-
-# Teste conexão Discord
-python scripts/test/test_discord_connection.py
-```
-
-## Funcionalidades Principais
-
-### 🔨 Build Scripts
-
-- **build_clean_architecture.ps1**: Build com Clean Architecture e SOLID principles
-- **build_standalone.ps1**: Build completo sem dependências externas
-- **build_configurable.ps1**: Build com interface de configuração
-- **build_exe_fixed.ps1**: Build com correções específicas
-
-### 🧪 Test Scripts
-
-- **test_improvements.sh**: Analisa e testa melhorias de performance
-- **test_config_gui.py**: Testa interface gráfica de configuração
-- **test_discord_connection.py**: Valida conectividade Discord
+- ✅ Clean Architecture completa
+- ✅ Interface gráfica Tkinter
+- ✅ System tray e notificações
+- ✅ Multi-engine TTS (gTTS + pyttsx3)
+- ✅ Configuração persistente em AppData/Local/TTS-Hotkey/
+- ✅ Hotkeys globais
+- ✅ Fallback automático
 
 ### 🛠️ Utils
 
