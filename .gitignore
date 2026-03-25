@@ -38,6 +38,7 @@ coverage.xml
 dist/
 *.spec
 tts_hotkey.exe
+build/
 
 # Log Files
 *.log

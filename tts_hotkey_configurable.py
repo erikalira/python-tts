@@ -11,21 +11,23 @@ NOVA ARQUITETURA:
 - Dependency Injection
 """
 
+import os
+
 # =============================================================================
 # 🔧 CONFIGURAÇÕES PADRÃO - EDITE AQUI ANTES DE COMPILAR
 # =============================================================================
 
 # 🌐 Discord Bot Configuration
-DEFAULT_DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
+DEFAULT_DISCORD_BOT_URL = os.getenv('DISCORD_BOT_URL')
 # CONFIGURAÇÃO OBRIGATÓRIA: Configure seus IDs do Discord aqui
-DEFAULT_DISCORD_CHANNEL_ID = None  # Cole aqui o ID do canal de voz (botão direito > Copiar ID)
-DEFAULT_DISCORD_MEMBER_ID = None   # Cole aqui SEU Discord User ID (Configurações > Avançado > Modo Dev > botão direito no seu nome > Copiar ID)
+DEFAULT_DISCORD_CHANNEL_ID = os.getenv('DISCORD_CHANNEL_ID')  # Cole aqui o ID do canal de voz (botão direito > Copiar ID)
+DEFAULT_DISCORD_MEMBER_ID = os.getenv('DISCORD_MEMBER_ID')   # Cole aqui SEU Discord User ID (Configurações > Avançado > Modo Dev > botão direito no seu nome > Copiar ID)
 
 # 🎤 TTS Configuration  
-DEFAULT_TTS_ENGINE = "gtts"           # gtts, pyttsx3, edge-tts
-DEFAULT_TTS_LANGUAGE = "pt"           # pt, en, es, fr, etc.
-DEFAULT_TTS_VOICE_ID = "roa/pt-br"   # Voice for specific engines
-DEFAULT_TTS_RATE = 180               # Speech rate (words per minute)
+DEFAULT_TTS_ENGINE = os.getenv('TTS_ENGINE', "gtts")           # gtts, pyttsx3, edge-tts
+DEFAULT_TTS_LANGUAGE = os.getenv('TTS_LANGUAGE', "pt")           # pt, en, es, fr, etc.
+DEFAULT_TTS_VOICE_ID = os.getenv('TTS_VOICE_ID', "roa/pt-br")   # Voice for specific engines
+DEFAULT_TTS_RATE = int(os.getenv('TTS_RATE', '180'))               # Speech rate (words per minute)
 
 # 🔊 Audio Output
 DEFAULT_TTS_OUTPUT_DEVICE = None     # Ex: "CABLE Input (VB-Audio Virtual Cable)"
