@@ -145,7 +145,7 @@ def create_default_config():
 def main() -> None:
     """Main entry point for the configurable standalone application."""
     print("=" * 70)
-    print("🎤 TTS Hotkey - Versão Standalone Configurável")
+    print("🎤 TTS Hotkey - Versão App Windows Configurável")
     print("=" * 70)
     
     if _clean_architecture_available:
