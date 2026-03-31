@@ -209,15 +209,20 @@ class DiscordCommands:
             result = await self._speak_use_case.execute(tts_request)
             logger.info(f"[SPEAK] Use case result: {result}")
             
-            # Try to delete the "thinking..." message to avoid clutter
-            # If it fails (e.g., Cloudflare rate limit), just ignore silently
+            # Handle response based on queue status
             try:
-                if result["success"]:
-                    # Delete the thinking message on success
+                if result.get("queued"):
+                    # Show queue position with formatted message
+                    await interaction.edit_original_response(
+                        content=result["message"]
+                    )
+                elif result["success"]:
+                    # Delete the thinking message on success (audio played)
                     await interaction.delete_original_response()
                 else:
-                    # On error, try to edit with error message
-                    await interaction.edit_original_response(content=f'❌ Error: {result["message"]}')
+                    # Show error message
+                    await interaction.edit_original_response(content=result["message"])
+                    
             except Exception as msg_error:
                 # Ignore message update errors - audio already played or failed
                 logger.debug(f"[SPEAK] Could not update interaction message: {msg_error}")

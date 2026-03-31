@@ -1,7 +1,7 @@
 """Interfaces (abstract base classes) following Dependency Inversion Principle."""
 from abc import ABC, abstractmethod
 from typing import Optional
-from .entities import TTSRequest, TTSConfig, AudioFile
+from .entities import TTSRequest, TTSConfig, AudioFile, AudioQueueItem
 
 
 class ITTSEngine(ABC):
@@ -103,4 +103,82 @@ class IInputListener(ABC):
     @abstractmethod
     def stop(self) -> None:
         """Stop listening for input."""
+        pass
+
+
+class IAudioQueue(ABC):
+    """Interface for managing audio queue per guild.
+    
+    Supports multiple users per server with FIFO queue processing.
+    Separate queues per guild for multi-server support.
+    """
+    
+    @abstractmethod
+    async def enqueue(self, item: AudioQueueItem) -> str:
+        """Add item to queue for its guild.
+        
+        Args:
+            item: AudioQueueItem to enqueue
+            
+        Returns:
+            item_id: Unique identifier for the queued item
+        """
+        pass
+    
+    @abstractmethod
+    async def dequeue(self, guild_id: Optional[int]) -> Optional[AudioQueueItem]:
+        """Remove and return next item from guild's queue.
+        
+        Args:
+            guild_id: Guild identifier
+            
+        Returns:
+            Next AudioQueueItem or None if queue empty
+        """
+        pass
+    
+    @abstractmethod
+    async def peek_next(self, guild_id: Optional[int]) -> Optional[AudioQueueItem]:
+        """Look at next item without removing it.
+        
+        Args:
+            guild_id: Guild identifier
+            
+        Returns:
+            Next AudioQueueItem or None if queue empty
+        """
+        pass
+    
+    @abstractmethod
+    async def get_queue_status(self, guild_id: Optional[int]) -> dict:
+        """Get current queue status for a guild.
+        
+        Args:
+            guild_id: Guild identifier
+            
+        Returns:
+            dict with 'size' (int) and 'items' (list of dicts)
+        """
+        pass
+    
+    @abstractmethod
+    async def get_item_position(self, item_id: str) -> int:
+        """Get position of specific item in any queue.
+        
+        Args:
+            item_id: Item identifier to search for
+            
+        Returns:
+            Position (0-indexed) or -1 if not found
+        """
+        pass
+    
+    @abstractmethod
+    async def clear_completed(self, guild_id: Optional[int], older_than_seconds: int = 3600):
+        """Remove completed/failed items older than threshold.
+        
+        Args:
+            guild_id: Guild identifier
+            older_than_seconds: Remove items older than this duration
+        """
         pass
