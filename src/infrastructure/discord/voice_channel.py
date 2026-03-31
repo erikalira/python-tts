@@ -117,26 +117,55 @@ class DiscordVoiceChannel(IVoiceChannel):
             self._voice_client.stop()
             await asyncio.sleep(0.1)  # Wait for stop to complete
         
-        # Play audio with timeout protection
+        # Play audio with event-based completion detection (reliable synchronization)
         try:
             logger.info("[VOICE_CHANNEL] Starting audio playback")
-            source = discord.FFmpegPCMAudio(audio.path)
-            self._voice_client.play(source)
             
-            # Wait for playbook to finish with timeout protection
-            logger.info("[VOICE_CHANNEL] Waiting for playback to complete...")
-            max_wait_time = 300  # 5 minutes max wait
-            wait_time = 0
+            # Create event to signal when playback completes
+            playback_done = asyncio.Event()
+            playback_error = None
             
-            while self._voice_client.is_playing() and wait_time < max_wait_time:
-                await asyncio.sleep(0.05)
-                wait_time += 0.1
-            
-            if wait_time >= max_wait_time:
-                logger.warning("[VOICE_CHANNEL] Playback timeout, stopping...")
-                self._voice_client.stop()
+            def audio_finished_callback(error):
+                """Callback triggered by discord.py when audio finishes playing.
                 
-            logger.info("[VOICE_CHANNEL] Playback completed")
+                This is called by discord.py's internal audio player when:
+                - Audio finishes naturally
+                - An error occurs  
+                - Player is stopped
+                
+                This method ensures reliable synchronization - the queue processor
+                won't continue until this callback is invoked by discord.py.
+                """
+                nonlocal playback_error
+                playback_error = error
+                
+                if error:
+                    logger.error(f"[VOICE_CHANNEL] Audio player error: {error}")
+                else:
+                    logger.info("[VOICE_CHANNEL] Audio playback finished (callback triggered)")
+                
+                # Signal that playback is complete (success or error)
+                playback_done.set()
+            
+            # Start audio playback with callback
+            source = discord.FFmpegPCMAudio(audio.path)
+            self._voice_client.play(source, after=audio_finished_callback)
+            logger.info("[VOICE_CHANNEL] Audio queued for playback, waiting for discord.py callback...")
+            
+            # WAIT FOR PLAYBACK TO COMPLETE (event-driven, not polling)
+            # This is much more reliable than checking is_playing() repeatedly
+            try:
+                await asyncio.wait_for(playback_done.wait(), timeout=60)
+                logger.info("[VOICE_CHANNEL] Playback completed successfully")
+                
+                # If there was an error in the callback, raise it
+                if playback_error:
+                    raise RuntimeError(f"Audio playback error: {playback_error}")
+                    
+            except asyncio.TimeoutError:
+                logger.warning("[VOICE_CHANNEL] Playback timeout (60s), stopping player...")
+                self._voice_client.stop()
+                raise TimeoutError("Audio playback exceeded 60 second timeout")
             
         except Exception as e:
             logger.error(f"[VOICE_CHANNEL] Error during playback: {e}")
@@ -148,8 +177,9 @@ class DiscordVoiceChannel(IVoiceChannel):
                 pass
             raise
         
-        # Schedule auto-disconnect after idle timeout
-        self._schedule_disconnect()
+        finally:
+            # Schedule auto-disconnect after idle timeout
+            self._schedule_disconnect()
     
     def is_connected(self) -> bool:
         """Check if connected to voice channel."""
