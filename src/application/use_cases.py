@@ -287,7 +287,7 @@ class SpeakTextUseCase:
         
         # Bot not connected - connect to user's current channel if available  
         if user_current_channel:
-            logger.info(f"[USE_CASE] INITIAL CONNECTION: Connecting to user's current voice channel")
+            logger.info("[USE_CASE] INITIAL CONNECTION: Connecting to user's current voice channel")
             await self._auto_connect_to_channel(user_current_channel)
             return {"channel": user_current_channel, "channel_changed": False}
         
