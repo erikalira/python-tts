@@ -23,9 +23,11 @@ class MockTTSEngine(ITTSEngine):
 class MockVoiceChannel(IVoiceChannel):
     """Mock voice channel for testing."""
     
-    def __init__(self):
+    def __init__(self, channel_id: int = 123456, guild_id: int = 789012):
         self.connected = False
         self.played_audio = []
+        self._channel_id = channel_id
+        self._guild_id = guild_id
     
     async def connect(self) -> None:
         """Mock connect."""
@@ -47,7 +49,12 @@ class MockVoiceChannel(IVoiceChannel):
 
     def get_channel_id(self) -> int:
         """Get mock channel ID."""
-        return 123456
+        return self._channel_id
+    
+    @property
+    def guild_id(self) -> int:
+        """Get mock guild ID."""
+        return self._guild_id
 
 
 class MockVoiceChannelRepository(IVoiceChannelRepository):
@@ -86,15 +93,39 @@ class MockConfigRepository(IConfigRepository):
             rate=180
         )
     
-    def get_config(self, user_id: int = None) -> TTSConfig:
-        """Get config."""
-        if user_id and user_id in self.configs:
-            return self.configs[user_id]
-        return self.default_config
+    def get_config(self, guild_id: int = None) -> TTSConfig:
+        """Get config by guild ID."""
+        if guild_id and guild_id in self.configs:
+            return self.configs[guild_id]
+        return TTSConfig(
+            engine=self.default_config.engine,
+            language=self.default_config.language,
+            voice_id=self.default_config.voice_id,
+            rate=self.default_config.rate
+        )
     
-    def set_config(self, user_id: int, config: TTSConfig) -> None:
-        """Set config."""
-        self.configs[user_id] = config
+    def set_config(self, guild_id: int, config: TTSConfig) -> None:
+        """Set config by guild ID."""
+        self.configs[guild_id] = TTSConfig(
+            engine=config.engine,
+            language=config.language,
+            voice_id=config.voice_id,
+            rate=config.rate
+        )
+    
+    async def load_from_storage(self, guild_id: int) -> TTSConfig:
+        """Load config from storage mock."""
+        return self.get_config(guild_id)
+    
+    async def save_config_async(self, guild_id: int, config: TTSConfig) -> bool:
+        """Save config async mock."""
+        self.set_config(guild_id, config)
+        return True
+    
+    async def delete_config_async(self, guild_id: int) -> bool:
+        """Delete config async mock."""
+        self.configs.pop(guild_id, None)
+        return True
 
 
 class MockAudioQueue(IAudioQueue):

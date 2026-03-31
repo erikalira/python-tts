@@ -170,12 +170,19 @@ class SpeakTextUseCase:
             dict with success status and message
         """
         item.mark_processing()
-        logger.info(f"[USE_CASE] Processing item {item.item_id} from user {item.request.member_id}")
+        logger.info(f"[USE_CASE] Processing item {item.item_id} from user {item.request.member_id} in guild {item.request.guild_id}")
         
         request = item.request
         audio = None
         
         try:
+            # VALIDATION: Verify guild_id is set (critical for multi-server isolation)
+            if not request.guild_id:
+                error = "Guild ID não foi fornecido - isolamento de servidor falhou"
+                item.mark_failed(error)
+                logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} has no guild_id!")
+                return {"success": False, "message": f"❌ {error}", "queued": True}
+            
             # Find voice channel
             channel_result = await self._find_voice_channel(request)
             if not channel_result:
@@ -186,8 +193,19 @@ class SpeakTextUseCase:
             
             voice_channel = channel_result["channel"]
             
-            # Get TTS config
-            config = self._config_repository.get_config(request.member_id)
+            # VALIDATION: Verify voice channel belongs to same guild
+            if voice_channel.guild_id != request.guild_id:
+                error = "Canal de voz pertence a servidor diferente"
+                item.mark_failed(error)
+                logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} voice channel guild {voice_channel.guild_id} != request guild {request.guild_id}")
+                return {"success": False, "message": f"❌ {error}", "queued": True}
+            
+            # Get TTS config for this guild (load from storage if available)
+            from src.infrastructure.persistence.config_storage import GuildConfigRepository
+            if isinstance(self._config_repository, GuildConfigRepository):
+                config = await self._config_repository.load_from_storage(request.guild_id)
+            else:
+                config = self._config_repository.get_config(request.guild_id)
             logger.info(f"[USE_CASE] Item {item.item_id}: generating audio with engine={config.engine}")
             
             # Generate audio
@@ -242,10 +260,14 @@ class SpeakTextUseCase:
             return {"success": False, "message": message, "queued": True}
         
         finally:
-            # Clean up audio file
+            # Clean up audio file (critical for preventing memory leaks)
             if audio:
-                logger.debug(f"[USE_CASE] Item {item.item_id}: cleaning up audio file")
-                audio.cleanup()
+                try:
+                    logger.debug(f"[USE_CASE] Item {item.item_id}: cleaning up audio file {audio.path}")
+                    audio.cleanup()
+                    logger.debug(f"[USE_CASE] Item {item.item_id}: audio file cleaned up successfully")
+                except Exception as cleanup_error:
+                    logger.warning(f"[USE_CASE] Item {item.item_id}: error during audio cleanup: {cleanup_error}")
     
     async def _find_voice_channel(self, request: TTSRequest):
         """Find appropriate voice channel based on request parameters.
@@ -355,41 +377,139 @@ class SpeakTextUseCase:
 
 
 class ConfigureTTSUseCase:
-    """Use case for configuring TTS settings."""
+    """Use case for configuring TTS settings per guild.
+    
+    Manages guild-specific TTS configuration with persistence.
+    """
     
     def __init__(self, config_repository: IConfigRepository):
         """Initialize use case with dependencies.
         
         Args:
-            config_repository: Configuration repository
+            config_repository: Configuration repository (must be GuildConfigRepository)
         """
         self._config_repository = config_repository
     
-    def execute(self, user_id: int, engine: Optional[str] = None, 
-                language: Optional[str] = None, voice_id: Optional[str] = None) -> dict:
-        """Execute TTS configuration.
+    def get_config(self, guild_id: int) -> dict:
+        """Get current TTS configuration for a guild.
         
         Args:
-            user_id: User to configure
-            engine: TTS engine ('gtts' or 'pyttsx3')
-            language: Language code
-            voice_id: Voice ID for pyttsx3
+            guild_id: Guild identifier
             
         Returns:
             dict with current configuration
         """
-        current_config = self._config_repository.get_config(user_id)
+        if guild_id is None:
+            return {"success": False, "message": "Guild ID is required"}
+        
+        config = self._config_repository.get_config(guild_id)
+        
+        return {
+            "success": True,
+            "guild_id": guild_id,
+            "config": {
+                "engine": config.engine,
+                "language": config.language,
+                "voice_id": config.voice_id,
+                "rate": config.rate
+            }
+        }
+    
+    async def update_config_async(
+        self,
+        guild_id: int,
+        engine: Optional[str] = None,
+        language: Optional[str] = None,
+        voice_id: Optional[str] = None,
+        rate: Optional[int] = None
+    ) -> dict:
+        """Update TTS configuration for a guild asynchronously.
+        
+        Changes are persisted to storage.
+        
+        Args:
+            guild_id: Guild identifier
+            engine: TTS engine ('gtts' or 'pyttsx3')
+            language: Language code
+            voice_id: Voice ID for pyttsx3
+            rate: Speech rate
+            
+        Returns:
+            dict with updated configuration and success status
+        """
+        if guild_id is None:
+            return {"success": False, "message": "Guild ID is required"}
+        
+        logger.info(f"[CONFIG_USE_CASE] Updating config for guild {guild_id}")
+        
+        # Get current config
+        current_config = self._config_repository.get_config(guild_id)
+        
+        # Validate and update
+        if engine is not None:
+            if engine.lower() not in ['gtts', 'pyttsx3']:
+                return {"success": False, "message": "Invalid engine. Use 'gtts' or 'pyttsx3'"}
+            current_config.engine = engine.lower()
+        
+        if language is not None:
+            current_config.language = language.lower()
+        
+        if voice_id is not None:
+            current_config.voice_id = voice_id
+        
+        if rate is not None:
+            if not (50 <= rate <= 300):
+                return {"success": False, "message": "Rate must be between 50 and 300"}
+            current_config.rate = rate
+        
+        # Save configuration to persistent storage
+        from src.infrastructure.persistence.config_storage import GuildConfigRepository
+        if isinstance(self._config_repository, GuildConfigRepository):
+            saved = await self._config_repository.save_config_async(guild_id, current_config)
+            if not saved:
+                logger.error(f"[CONFIG_USE_CASE] Failed to persist config for guild {guild_id}")
+                return {"success": False, "message": "Failed to save configuration"}
+        else:
+            # Fallback for tests or old repositories
+            self._config_repository.set_config(guild_id, current_config)
+        
+        logger.info(f"[CONFIG_USE_CASE] Updated config for guild {guild_id}: {current_config}")
+        
+        return {
+            "success": True,
+            "guild_id": guild_id,
+            "config": {
+                "engine": current_config.engine,
+                "language": current_config.language,
+                "voice_id": current_config.voice_id,
+                "rate": current_config.rate
+            }
+        }
+    
+    # Backwards-compatible synchronous wrapper (for old HTTP endpoints)
+    def execute(self, user_id: int, engine: Optional[str] = None,
+                language: Optional[str] = None, voice_id: Optional[str] = None) -> dict:
+        """Deprecated: Use update_config_async() instead.
+        
+        Kept for backwards compatibility with old HTTP endpoints.
+        
+        Args:
+            user_id: Old parameter (treated as guild_id now)
+            engine: TTS engine
+            language: Language
+            voice_id: Voice ID
+            
+        Returns:
+            dict with configuration
+        """
+        logger.warning("[CONFIG_USE_CASE] Using deprecated execute() method, use update_config_async() instead")
+        
+        guild_id = user_id  # Treat old user_id as guild_id
+        current_config = self._config_repository.get_config(guild_id)
         
         # If no parameters, return current config
         if engine is None and language is None and voice_id is None:
-            return {
-                "success": True,
-                "config": {
-                    "engine": current_config.engine,
-                    "language": current_config.language,
-                    "voice_id": current_config.voice_id
-                }
-            }
+            return self.get_config(guild_id)
         
         # Validate and update
         if engine is not None:
@@ -403,8 +523,8 @@ class ConfigureTTSUseCase:
         if voice_id is not None:
             current_config.voice_id = voice_id
         
-        # Save configuration
-        self._config_repository.set_config(user_id, current_config)
+        # Save configuration (sync version for backwards compatibility)
+        self._config_repository.set_config(guild_id, current_config)
         
         return {
             "success": True,

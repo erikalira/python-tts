@@ -110,6 +110,9 @@ class TestDiscordCommands:
         interaction.user = Mock()
         interaction.user.id = 67890
         interaction.user.mention = "<@67890>"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
         interaction.response = AsyncMock()
         
         await commands_instance._handle_config(interaction, None, None, None)
@@ -128,11 +131,17 @@ class TestDiscordCommands:
         interaction = Mock()
         interaction.user = Mock()
         interaction.user.id = 67890
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
         interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
         
         await commands_instance._handle_config(interaction, "pyttsx3", None, None)
         
-        interaction.response.send_message.assert_called_once()
+        # Should call defer and then edit_original_response
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
         
         config = mock_config_repository.get_config(67890)
         assert config.engine == "pyttsx3"
@@ -140,18 +149,24 @@ class TestDiscordCommands:
     @pytest.mark.asyncio
     async def test_handle_config_failure(self, commands_instance):
         """Test /config command failure."""
-        commands_instance._config_use_case.execute = Mock(
-            return_value={"success": False, "message": "Config error"}
-        )
-        
         interaction = Mock()
         interaction.user = Mock()
         interaction.user.id = 67890
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
         interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+        
+        # Mock update to fail
+        commands_instance._config_use_case.update_config_async = AsyncMock(
+            return_value={"success": False, "message": "Config error"}
+        )
         
         await commands_instance._handle_config(interaction, "invalid", None, None)
         
-        interaction.response.send_message.assert_called_once()
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_handle_join_no_voice_channel(self, commands_instance):

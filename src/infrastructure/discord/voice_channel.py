@@ -234,6 +234,12 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
     """Repository for finding Discord voice channels.
     
     Follows Single Responsibility: only handles channel lookup logic.
+    
+    Features:
+    - Per-channel instance caching to preserve disconnect timers
+    - Guild-isolated lookups
+    - Automatic cleanup of stale connection instances
+    - Prevents memory leaks from long-lived connections
     """
     
     def __init__(self, client: discord.Client):
@@ -246,30 +252,44 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
         self._member_cache: Dict[int, DiscordVoiceChannel] = {}
         # Cache to reuse same instance per channel (critical for timer management)
         self._channel_instances: Dict[int, DiscordVoiceChannel] = {}
+        # Track when instances were last used for cleanup
+        self._instance_last_used: Dict[int, float] = {}
+        logger.info("[VOICE_REPO] Initialized DiscordVoiceChannelRepository")
     
     async def find_connected_channel(self) -> Optional[IVoiceChannel]:
         """Find any voice channel where bot is already connected.
+        
+        VALIDATION: Returns only channels from guilds where bot is active.
         
         Returns:
             IVoiceChannel if bot is connected, None otherwise
         """
         try:
+            import time
+            now = time.time()
+            
             for guild in self._client.guilds:
                 if guild.voice_client and guild.voice_client.is_connected():
                     channel = guild.voice_client.channel
                     if channel:
-                        logger.info(f"Found connected channel: {channel.name} in guild {guild.name}")
+                        logger.info(f"[VOICE_REPO] Found connected channel: {channel.name} in guild {guild.name} (id={guild.id})")
                         # Reuse existing instance if available
                         if channel.id not in self._channel_instances:
                             self._channel_instances[channel.id] = DiscordVoiceChannel(channel)
+                        # Update last used timestamp
+                        self._instance_last_used[channel.id] = now
+                        # Clean up stale instances periodically
+                        self._cleanup_stale_instances(now)
                         return self._channel_instances[channel.id]
         except Exception as e:
-            logger.error(f"Error finding connected channel: {e}")
+            logger.error(f"[VOICE_REPO] Error finding connected channel: {e}", exc_info=True)
         
         return None
     
     async def find_by_member_id(self, member_id: int) -> Optional[IVoiceChannel]:
         """Find voice channel where member is connected.
+        
+        VALIDATION: Ensures member exists in Discord cache before returning.
         
         Args:
             member_id: Member ID to search for
@@ -277,15 +297,26 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
         Returns:
             IVoiceChannel if found, None otherwise
         """
-        # Search all guilds
-        for guild in self._client.guilds:
-            for vc in guild.voice_channels:
-                for member in vc.members:
-                    if member.id == member_id:
-                        # Reuse existing instance if available to preserve timer state
-                        if vc.id not in self._channel_instances:
-                            self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
-                        return self._channel_instances[vc.id]
+        import time
+        now = time.time()
+        
+        try:
+            # Search all guilds
+            for guild in self._client.guilds:
+                for vc in guild.voice_channels:
+                    for member in vc.members:
+                        if member.id == member_id:
+                            logger.debug(f"[VOICE_REPO] Found member {member_id} in channel {vc.name} (guild={guild.id})")
+                            # Reuse existing instance if available to preserve timer state
+                            if vc.id not in self._channel_instances:
+                                self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
+                            # Update last used timestamp
+                            self._instance_last_used[vc.id] = now
+                            # Clean up stale instances
+                            self._cleanup_stale_instances(now)
+                            return self._channel_instances[vc.id]
+        except Exception as e:
+            logger.error(f"[VOICE_REPO] Error finding member {member_id}: {e}", exc_info=True)
         
         return None
     
@@ -371,3 +402,73 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
             return any(m.id == member_id for m in channel._channel.members)
         except Exception:
             return False
+    
+    def _cleanup_stale_instances(self, now: float, max_idle_time: int = 3600) -> None:
+        """Clean up voice channel instances that haven't been used recently.
+        
+        Removes instances that are idle for more than max_idle_time seconds.
+        Prevents memory leaks from server connections that are no longer active.
+        
+        Args:
+            now: Current timestamp (from time.time())
+            max_idle_time: Maximum idle time in seconds (default: 1 hour)
+        """
+        stale_channels = []
+        
+        for channel_id, last_used in self._instance_last_used.items():
+            if now - last_used > max_idle_time:
+                stale_channels.append(channel_id)
+        
+        for channel_id in stale_channels:
+            try:
+                # Get channel info for logging before removing
+                channel_instance = self._channel_instances.get(channel_id)
+                guild_id = channel_instance.guild_id if channel_instance else "unknown"
+                
+                # Disconnect if still connected
+                if channel_instance and channel_instance.is_connected():
+                    logger.info(f"[VOICE_REPO] Auto-disconnecting stale channel {channel_id} (guild {guild_id})")
+                    # Run disconnect in background without waiting
+                    import asyncio
+                    asyncio.create_task(channel_instance.disconnect())
+                
+                # Remove from cache
+                del self._channel_instances[channel_id]
+                del self._instance_last_used[channel_id]
+                logger.info(f"[VOICE_REPO] Cleaned up stale instance for channel {channel_id}")
+                
+            except Exception as e:
+                logger.warning(f"[VOICE_REPO] Error cleaning up stale instance {channel_id}: {e}")
+    
+    def get_cache_stats(self) -> dict:
+        """Get statistics about the channel instance cache.
+        
+        Returns:
+            dict with cache statistics
+        """
+        return {
+            "cached_channels": len(self._channel_instances),
+            "cached_members": len(self._member_cache),
+            "total_tracked": len(self._instance_last_used)
+        }
+    
+    async def cleanup_all(self) -> None:
+        """Clean up all cached voice channel instances.
+        
+        Useful for graceful shutdown or memory reclamation.
+        """
+        logger.info(f"[VOICE_REPO] Cleaning up all {len(self._channel_instances)} cached channels")
+        
+        for channel_id, channel_instance in list(self._channel_instances.items()):
+            try:
+                if channel_instance.is_connected():
+                    await channel_instance.disconnect()
+                    logger.debug(f"[VOICE_REPO] Disconnected channel {channel_id}")
+            except Exception as e:
+                logger.warning(f"[VOICE_REPO] Error disconnecting channel {channel_id}: {e}")
+        
+        self._channel_instances.clear()
+        self._instance_last_used.clear()
+        self._member_cache.clear()
+        
+        logger.info("[VOICE_REPO] Cleanup complete")

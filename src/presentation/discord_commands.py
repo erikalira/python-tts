@@ -176,38 +176,43 @@ class DiscordCommands:
             )
     
     async def _handle_speak(self, interaction: discord.Interaction, text: str):
-        """Handle /speak command."""
-        logger.info(f"[SPEAK] Command received from user {interaction.user.id} ({interaction.user.name}) with text: {text[:50]}...")
+        """Handle /speak command.
+        
+        CRITICAL: Validates guild_id and member info for security isolation.
+        """
+        logger.info(f"[SPEAK] Command from user {interaction.user.id} ({interaction.user.name}) in guild {interaction.guild.id if interaction.guild else 'None'}")
         await interaction.response.defer(ephemeral=True, thinking=True)
         
         if not HAS_PYNACL or not HAS_FFMPEG:
             logger.warning("[SPEAK] Missing PyNaCl or FFmpeg dependencies")
             await interaction.edit_original_response(
-                content='PyNaCl and FFmpeg are required for voice support.'
+                content='PyNaCl and FFmpeg são necessários para suporte a voz.'
             )
             return
         
         try:
-            # Determine channel and member info
-            member = interaction.user
-            if not isinstance(member, discord.Member) and interaction.guild:
-                member = interaction.guild.get_member(member.id)
+            # VALIDATION: Ensure guild is set (critical for multi-server isolation)
+            if not interaction.guild or not interaction.guild.id:
+                logger.error("[SPEAK] SECURITY: No guild ID available")
+                await interaction.edit_original_response(
+                    content='❌ Erro: Não foi possível determinar o servidor.'
+                )
+                return
             
-            # Always use interaction.user.id to ensure we have the user ID
-            user_id = interaction.user.id
-            logger.info(f"[SPEAK] User ID: {user_id}, Member ID: {member.id if member else 'None'}, Guild ID: {interaction.guild.id if interaction.guild else 'None'}")
+            guild_id = interaction.guild.id
+            member_id = interaction.user.id
             
-            # Create request (use user_id for member_id to ensure config lookup works)
+            logger.info(f"[SPEAK] Guild: {guild_id}, Member: {member_id}, Text: {text[:50]}...")
+            
+            # Create request with BOTH guild_id and member_id
             tts_request = TTSRequest(
                 text=text,
-                guild_id=interaction.guild.id if interaction.guild else None,
-                member_id=user_id
+                guild_id=guild_id,  # CRITICAL: Server isolation
+                member_id=member_id
             )
             
             # Execute use case
-            logger.info(f"[SPEAK] Executing TTS use case...")
             result = await self._speak_use_case.execute(tts_request)
-            logger.info(f"[SPEAK] Use case result: {result}")
             
             # Handle response based on queue status
             try:
@@ -228,18 +233,18 @@ class DiscordCommands:
                 logger.debug(f"[SPEAK] Could not update interaction message: {msg_error}")
                 
         except Exception as e:
-            logger.error(f"[SPEAK] Unexpected error in _handle_speak: {e}", exc_info=True)
+            logger.error(f"[SPEAK] Unexpected error: {e}", exc_info=True)
             
             # Try to send error message, but don't fail if we can't
             try:
                 error_msg = str(e).lower()
                 if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
-                    await interaction.edit_original_response(content='❌ Bot is shutting down or inactive.')
+                    await interaction.edit_original_response(content='❌ Bot está inativo ou desligando.')
                 else:
-                    await interaction.edit_original_response(content=f'❌ Unexpected error: {str(e)}')
+                    await interaction.edit_original_response(content=f'❌ Erro inesperado')
             except:
                 # If we can't send error message, just log it
-                logger.debug(f"[SPEAK] Could not send error message to user")
+                logger.debug(f"[SPEAK] Could not send error message")
     
     async def _handle_config(
         self,
@@ -248,55 +253,84 @@ class DiscordCommands:
         idioma: str | None,
         sotaque: str | None
     ):
-        """Handle /config command."""
-        result = self._config_use_case.execute(
-            user_id=interaction.user.id,
-            engine=voz,
-            language=idioma,
-            voice_id=sotaque
-        )
+        """Handle /config command.
         
-        if not result["success"]:
+        CRITICAL: Uses guild_id for server-specific configuration.
+        """
+        # VALIDATION: Ensure guild is set
+        if not interaction.guild or not interaction.guild.id:
             await interaction.response.send_message(
-                f'❌ {result["message"]}',
+                '❌ Este comando só pode ser usado em um servidor.',
                 ephemeral=True
             )
             return
         
-        config = result["config"]
+        guild_id = interaction.guild.id
+        user_id = interaction.user.id
         
-        # If no parameters, show current config
+        logger.info(f"[CONFIG] User {user_id} in guild {guild_id} updating config: voz={voz}, idioma={idioma}, sotaque={sotaque}")
+        
+        # If no changes, get current config
         if voz is None and idioma is None and sotaque is None:
-            # Map engine values to friendly names
+            result = self._config_use_case.get_config(guild_id)
+            
+            if not result["success"]:
+                await interaction.response.send_message(
+                    f'❌ {result["message"]}',
+                    ephemeral=True
+                )
+                return
+            
+            config = result["config"]
             voz_nome = "Mulher do Google" if config['engine'] == 'gtts' else "R.E.P.O. (robótico)"
             
             embed = discord.Embed(
-                title="🎤 Sua Configuração de Voz",
-                description=f"Configurações pessoais de {interaction.user.mention}",
+                title="🎤 Configuração de Voz do Servidor",
+                description=f"Configurações de {interaction.guild.name}",
                 color=discord.Color.blue()
             )
             embed.add_field(name="Voz", value=voz_nome, inline=True)
             embed.add_field(name="Idioma", value=config['language'].upper(), inline=True)
             embed.add_field(name="Sotaque", value=config['voice_id'], inline=True)
-            embed.add_field(
-                name="Como alterar",
-                value="Use `/config` e escolha as opções no menu dropdown",
-                inline=False
+            embed.add_field(name="Taxa de Fala", value=str(config['rate']), inline=True)
+            embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
+            
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        # Update configuration asynchronously with persistence
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        
+        try:
+            result = await self._config_use_case.update_config_async(
+                guild_id=guild_id,
+                engine=voz,
+                language=idioma,
+                voice_id=sotaque
             )
-        else:
-            # Show success message
+            
+            if not result["success"]:
+                await interaction.edit_original_response(content=f'❌ {result["message"]}')
+                return
+            
+            config = result["config"]
             voz_nome = "Mulher do Google" if config['engine'] == 'gtts' else "R.E.P.O. (robótico)"
             
             embed = discord.Embed(
-                title="✅ Configuração de Voz Atualizada",
-                description=f"Suas configurações pessoais foram atualizadas",
+                title="✅ Configuração Atualizada",
+                description=f"Configurações do servidor {interaction.guild.name} atualizadas",
                 color=discord.Color.green()
             )
             embed.add_field(name="Voz", value=voz_nome, inline=True)
             embed.add_field(name="Idioma", value=config['language'].upper(), inline=True)
             embed.add_field(name="Sotaque", value=config['voice_id'], inline=True)
-        
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+            embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
+            
+            await interaction.edit_original_response(embed=embed)
+            
+        except Exception as e:
+            logger.error(f"[CONFIG] Error updating config for guild {guild_id}: {e}", exc_info=True)
+            await interaction.edit_original_response(content='❌ Erro ao atualizar configuração')
     
     async def _handle_about(self, interaction: discord.Interaction):
         """Handle /about command."""
