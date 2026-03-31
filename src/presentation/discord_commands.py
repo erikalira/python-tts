@@ -216,8 +216,8 @@ class DiscordCommands:
                     # Delete the thinking message on success
                     await interaction.delete_original_response()
                 else:
-                    # On error, try to edit with error message
-                    await interaction.edit_original_response(content=f'❌ Error: {result["message"]}')
+                    # On error, show error message with emoji
+                    await interaction.edit_original_response(content=result["message"])
             except Exception as msg_error:
                 # Ignore message update errors - audio already played or failed
                 logger.debug(f"[SPEAK] Could not update interaction message: {msg_error}")

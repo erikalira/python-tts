@@ -38,20 +38,23 @@ class SpeakTextUseCase:
             request: TTSRequest with text and optional channel/guild/member info
             
         Returns:
-            dict with success status and message
+            dict with success status, message, and channel_changed flag
         """
         logger.info(f"[USE_CASE] SpeakUseCase.execute called with text: '{request.text[:50]}...', guild_id: {request.guild_id}, member_id: {request.member_id}")
         
         if not request.text:
             logger.warning("[USE_CASE] Missing text in request")
-            return {"success": False, "message": "missing text"}
+            return {"success": False, "message": "missing text", "channel_changed": False}
         
         # Find voice channel
         logger.info("[USE_CASE] Finding voice channel...")
-        voice_channel = await self._find_voice_channel(request)
-        if not voice_channel:
+        result = await self._find_voice_channel(request)
+        if not result:
             logger.warning("[USE_CASE] No voice channel found for request")
-            return {"success": False, "message": "Bot não está conectado a nenhuma sala de voz. Use o comando /join primeiro ou certifique-se de que o bot tenha acesso ao canal."}
+            return {"success": False, "message": "❌ Você não está em nenhuma sala de voz. Entre em uma sala e tente novamente.", "channel_changed": False}
+        
+        voice_channel = result["channel"]
+        channel_changed = result.get("channel_changed", False)
         
         logger.info("[USE_CASE] Voice channel found, getting config...")
         # Get TTS config for user
@@ -90,11 +93,17 @@ class SpeakTextUseCase:
                 # Wrap play_audio in timeout to prevent hanging
                 await asyncio.wait_for(voice_channel.play_audio(audio), timeout=60)
                 logger.info("[USE_CASE] Audio playback completed")
-                return {"success": True, "message": "Áudio reproduzido com sucesso"}
+                
+                # Provide feedback about channel change if applicable
+                if channel_changed:
+                    logger.info("[USE_CASE] Success with channel change - bot moved to user's channel")
+                    return {"success": True, "message": "✅ Áudio reproduzido! (Bot mudou para sua sala)", "channel_changed": True}
+                else:
+                    return {"success": True, "message": "✅ Áudio reproduzido com sucesso", "channel_changed": False}
                 
             except asyncio.TimeoutError:
                 logger.error("[USE_CASE] Audio playback timed out after 60 seconds")
-                return {"success": False, "message": "Tempo limite excedido durante reprodução de áudio. Tente novamente."}
+                return {"success": False, "message": "⏱️ Tempo limite excedido durante reprodução. Tente novamente.", "channel_changed": False}
                 
         except Exception as e:
             logger.error(f"[USE_CASE] Error during audio playback: {e}", exc_info=True)
@@ -102,13 +111,13 @@ class SpeakTextUseCase:
             
             # Simple, direct error messages
             if "not connected" in error_msg or "connection" in error_msg:
-                return {"success": False, "message": "Bot não conectado ao canal de voz. Use o comando /join no Discord."}
+                return {"success": False, "message": "🔌 Bot não conseguiu se conectar ao canal. Tente novamente ou use /join.", "channel_changed": False}
             elif "permission" in error_msg:
-                return {"success": False, "message": "Bot não tem permissão para falar no canal."}
+                return {"success": False, "message": "⛔ Bot não tem permissão para falar neste canal.", "channel_changed": False}
             elif "timeout" in error_msg:
-                return {"success": False, "message": "Tempo limite excedido. Tente novamente."}
+                return {"success": False, "message": "⏱️ Tempo limite excedido. Tente novamente.", "channel_changed": False}
             else:
-                return {"success": False, "message": "Erro ao reproduzir áudio. Tente novamente."}
+                return {"success": False, "message": "❌ Erro ao reproduzir áudio. Tente novamente.", "channel_changed": False}
                 
         finally:
             # Clean up audio file
@@ -116,7 +125,11 @@ class SpeakTextUseCase:
             audio.cleanup()
     
     async def _find_voice_channel(self, request: TTSRequest):
-        """Find appropriate voice channel based on request parameters."""
+        """Find appropriate voice channel based on request parameters.
+        
+        Returns:
+            dict with 'channel', 'channel_changed' flag, or None if no valid channel
+        """
         
         # SECURITY FIRST: Find where user is currently connected
         user_current_channel = None
@@ -128,25 +141,32 @@ class SpeakTextUseCase:
                 logger.warning(f"[USE_CASE] SECURITY: Member {request.member_id} not in any voice channel - refusing to speak")
                 return None
                 
-            logger.info(f"[USE_CASE] Found member {request.member_id} in voice channel")
+            logger.info(f"[USE_CASE] Found member {request.member_id} in voice channel (id={user_current_channel.get_channel_id()})")
         
-        # SECURITY CHECK: If bot is already connected, verify user is in the same channel
+        # Check if bot is already connected to a channel
         connected_channel = await self._channel_repository.find_connected_channel()
         if connected_channel:
             # Check if user is in the same channel as bot
             if (user_current_channel and request.member_id and 
                 await self._is_user_in_channel(request.member_id, connected_channel)):
-                logger.info("[USE_CASE] SECURITY: User is in bot's connected channel - using existing connection")
-                return connected_channel
+                # User and bot are in the same channel - reuse connection
+                logger.info("[USE_CASE] User is in bot's connected channel - using existing connection")
+                return {"channel": connected_channel, "channel_changed": False}
             else:
-                logger.error(f"[USE_CASE] SECURITY VIOLATION: User {request.member_id} not in bot's connected channel - REJECTING request to prevent information leakage")
-                return None  # SECURITY: Reject the request completely
+                # User is in a DIFFERENT channel than bot
+                # AUTO-JOIN: Allow bot to move to user's channel (instead of rejecting)
+                if user_current_channel:
+                    logger.info(f"[USE_CASE] AUTO-JOIN: User in different channel (id={user_current_channel.get_channel_id()}) than bot (id={connected_channel.get_channel_id()}) - bot will move to user's channel")
+                    return {"channel": user_current_channel, "channel_changed": True}
+                else:
+                    logger.error(f"[USE_CASE] User not in any channel - cannot auto-join")
+                    return None
         
         # Bot not connected - connect to user's current channel if available  
         if user_current_channel:
             logger.info(f"[USE_CASE] INITIAL CONNECTION: Connecting to user's current voice channel")
             await self._auto_connect_to_channel(user_current_channel)
-            return user_current_channel
+            return {"channel": user_current_channel, "channel_changed": False}
         
         # Only allow explicit channel ID if user is present there (for manual /join commands)
         if request.channel_id and not request.member_id:
@@ -159,7 +179,7 @@ class SpeakTextUseCase:
             if target_channel and request.member_id and await self._is_user_in_channel(request.member_id, target_channel):
                 logger.info("[USE_CASE] Explicit channel ID matches user's current channel")
                 await self._auto_connect_to_channel(target_channel)
-                return target_channel
+                return {"channel": target_channel, "channel_changed": False}
             else:
                 logger.warning(f"[USE_CASE] SECURITY: Explicit channel {request.channel_id} doesn't match user's current location")
         
