@@ -13,20 +13,22 @@ class TestSpeakTextUseCase:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
+        mock_audio_queue,
         sample_tts_request
     ):
         """Test successful execution of speak use case."""
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository
+            config_repository=mock_config_repository,
+            audio_queue=mock_audio_queue
         )
         
         result = await use_case.execute(sample_tts_request)
         
         assert result["success"] is True
         assert "Áudio reproduzido" in result["message"]  # Check for emoji and message
-        assert "channel_changed" in result
+        assert "queued" in result
         assert len(mock_tts_engine.calls) == 1
         assert len(mock_channel_repository.channel.played_audio) == 1
     
@@ -34,13 +36,15 @@ class TestSpeakTextUseCase:
         self,
         mock_tts_engine,
         mock_channel_repository,
-        mock_config_repository
+        mock_config_repository,
+        mock_audio_queue
     ):
         """Test execution with missing text."""
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository
+            config_repository=mock_config_repository,
+            audio_queue=mock_audio_queue
         )
         
         request = TTSRequest(text="")
@@ -53,6 +57,7 @@ class TestSpeakTextUseCase:
         self,
         mock_tts_engine,
         mock_config_repository,
+        mock_audio_queue,
         sample_tts_request
     ):
         """Test execution when no voice channel is found."""
@@ -64,26 +69,29 @@ class TestSpeakTextUseCase:
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=repo,
-            config_repository=mock_config_repository
+            config_repository=mock_config_repository,
+            audio_queue=mock_audio_queue
         )
         
         result = await use_case.execute(sample_tts_request)
         
         assert result["success"] is False
         assert "não está em nenhuma sala" in result["message"]  # Check for new error message
-        assert result["channel_changed"] is False
+        assert result["queued"] is False
     
     async def test_execute_finds_by_channel_id(
         self,
         mock_tts_engine,
         mock_channel_repository,
-        mock_config_repository
+        mock_config_repository,
+        mock_audio_queue
     ):
         """Test that use case finds channel by channel_id first."""
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository
+            config_repository=mock_config_repository,
+            audio_queue=mock_audio_queue
         )
         
         request = TTSRequest(text="test", channel_id=123, member_id=1231231)

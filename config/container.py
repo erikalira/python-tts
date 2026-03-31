@@ -10,6 +10,7 @@ from src.application.use_cases import SpeakTextUseCase, ConfigureTTSUseCase
 from src.infrastructure.tts.engines import TTSEngineFactory
 from src.infrastructure.tts.config_repository import InMemoryConfigRepository
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
+from src.infrastructure.audio_queue import InMemoryAudioQueue
 from src.presentation.http_controllers import SpeakController
 from src.presentation.discord_commands import DiscordCommands
 
@@ -38,6 +39,9 @@ class Container:
         self.config_repository = InMemoryConfigRepository(config.tts_config)
         self.voice_channel_repository = DiscordVoiceChannelRepository(self.discord_client)
         
+        # Audio queue for multi-user support
+        self.audio_queue = InMemoryAudioQueue()
+        
         # TTS Engine - create default engine based on config
         self.tts_engine_factory = TTSEngineFactory()
         self.tts_engine = self.tts_engine_factory.create(config.tts_config)
@@ -46,7 +50,8 @@ class Container:
         self.speak_use_case = SpeakTextUseCase(
             tts_engine=self.tts_engine,
             channel_repository=self.voice_channel_repository,
-            config_repository=self.config_repository
+            config_repository=self.config_repository,
+            audio_queue=self.audio_queue
         )
         
         self.config_use_case = ConfigureTTSUseCase(
