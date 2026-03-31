@@ -26,31 +26,25 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            portaudio19-dev \
-            python3-pyaudio \
-            espeak \
-            espeak-data \
-            libespeak1 \
-            libespeak-dev \
-            ffmpeg \
-            alsa-utils \
-            pulseaudio
+          sudo apt-get install -y --no-install-recommends \
+            espeak-ng \
+            ffmpeg
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-test.txt
 
       - name: Run tests with coverage
         env:
           CI: true
+          PYTHONPATH: ${{ github.workspace }}
         run: |
-          export PYTHONPATH="${PYTHONPATH}:${PWD}"
-          pytest --tb=short -v --cov --cov-report=xml
+          python -m pytest --tb=short -v --cov --cov-report=xml
 
-      - name: Check if coverage.xml exists
+      - name: Check coverage output
+        if: always()
         run: |
           if [ -f coverage.xml ]; then
             echo "Coverage file exists"
@@ -61,7 +55,10 @@ jobs:
           fi
 
       - name: Upload coverage to Codacy
+        if: always()
         continue-on-error: true
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
           if [ -n "$CODACY_PROJECT_TOKEN" ]; then
             echo "Uploading coverage to Codacy..."
@@ -69,10 +66,9 @@ jobs:
           else
             echo "CODACY_PROJECT_TOKEN not set, skipping coverage upload"
           fi
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
       - name: Upload coverage to Codecov (alternative)
+        if: always()
         uses: codecov/codecov-action@v4
         continue-on-error: true
         with:
