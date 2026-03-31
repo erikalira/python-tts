@@ -46,7 +46,7 @@ class TTSConfig:
 @dataclass
 class DiscordConfig:
     """Discord bot configuration."""
-    bot_url: str = os.getenv('DISCORD_BOT_URL')
+    bot_url: str = os.getenv('DISCORD_BOT_URL', 'localhost:10000')
     channel_id: Optional[str] = os.getenv('DISCORD_CHANNEL_ID')
     member_id: Optional[str] = os.getenv('DISCORD_MEMBER_ID')
 
