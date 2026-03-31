@@ -282,7 +282,7 @@ class SpeakTextUseCase:
                     logger.info(f"[USE_CASE] AUTO-JOIN: User in different channel (id={user_current_channel.get_channel_id()}) than bot (id={connected_channel.get_channel_id()}) - bot will move to user's channel")
                     return {"channel": user_current_channel, "channel_changed": True}
                 else:
-                    logger.error(f"[USE_CASE] User not in any channel - cannot auto-join")
+                    logger.error("[USE_CASE] User not in any channel - cannot auto-join")
                     return None
         
         # Bot not connected - connect to user's current channel if available  

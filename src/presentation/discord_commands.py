@@ -213,8 +213,6 @@ class DiscordCommands:
             try:
                 if result.get("queued"):
                     # Show queue position with formatted message
-                    position = result.get("position", 0)
-                    queue_size = result.get("queue_size", 1)
                     await interaction.edit_original_response(
                         content=result["message"]
                     )
