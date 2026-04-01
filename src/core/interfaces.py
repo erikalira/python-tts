@@ -1,7 +1,7 @@
 """Interfaces (abstract base classes) following Dependency Inversion Principle."""
 from abc import ABC, abstractmethod
 from typing import Optional
-from .entities import TTSRequest, TTSConfig, AudioFile, AudioQueueItem
+from .entities import TTSConfig, AudioFile, AudioQueueItem
 
 
 class ITTSEngine(ABC):
