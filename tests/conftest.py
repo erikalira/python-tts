@@ -166,6 +166,44 @@ class MockAudioQueue(IAudioQueue):
         self.completed.clear()
 
 
+class MockAudioQueue(IAudioQueue):
+    """Mock audio queue for testing."""
+    
+    def __init__(self):
+        self.items = []
+        self.completed = []
+    
+    async def enqueue(self, item: AudioQueueItem) -> str:
+        """Add item to queue."""
+        self.items.append(item)
+        return item.item_id
+    
+    async def dequeue(self, guild_id):
+        """Remove and return next item."""
+        if self.items:
+            return self.items.pop(0)
+        return None
+    
+    async def peek_next(self, guild_id):
+        """Look at next item."""
+        return self.items[0] if self.items else None
+    
+    async def get_queue_status(self, guild_id):
+        """Get queue status."""
+        return {"size": len(self.items), "items": []}
+    
+    async def get_item_position(self, item_id: str) -> int:
+        """Get item position."""
+        for i, item in enumerate(self.items):
+            if item.item_id == item_id:
+                return i
+        return -1
+    
+    async def clear_completed(self, guild_id, older_than_seconds: int = 3600):
+        """Clear completed items."""
+        self.completed.clear()
+
+
 # Pytest fixtures
 @pytest.fixture
 def mock_tts_engine():
