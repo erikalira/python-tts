@@ -250,7 +250,9 @@ class SpeakTextUseCase:
             
             # Provide helpful error message
             error_lower = error_msg.lower()
-            if "not connected" in error_lower or "connection" in error_lower:
+            if "4017" in error_lower or "dave" in error_lower:
+                message = "❌ Discord recusou a conexao de voz (codigo 4017). A biblioteca atual do bot nao suporta esse handshake de voz."
+            elif "not connected" in error_lower or "connection" in error_lower:
                 message = "🔌 Bot não conseguiu se conectar ao canal"
             elif "permission" in error_lower:
                 message = "⛔ Bot não tem permissão neste canal"
@@ -307,10 +309,9 @@ class SpeakTextUseCase:
                     logger.error("[USE_CASE] User not in any channel - cannot auto-join")
                     return None
         
-        # Bot not connected - connect to user's current channel if available  
+        # Bot not connected - use the user's current channel
         if user_current_channel:
-            logger.info("[USE_CASE] INITIAL CONNECTION: Connecting to user's current voice channel")
-            await self._auto_connect_to_channel(user_current_channel)
+            logger.info("[USE_CASE] INITIAL CONNECTION: Using user's current voice channel")
             return {"channel": user_current_channel, "channel_changed": False}
         
         # Only allow explicit channel ID if user is present there (for manual /join commands)
@@ -323,7 +324,6 @@ class SpeakTextUseCase:
             target_channel = await self._channel_repository.find_by_channel_id(request.channel_id)
             if target_channel and request.member_id and await self._is_user_in_channel(request.member_id, target_channel):
                 logger.info("[USE_CASE] Explicit channel ID matches user's current channel")
-                await self._auto_connect_to_channel(target_channel)
                 return {"channel": target_channel, "channel_changed": False}
             else:
                 logger.warning(f"[USE_CASE] SECURITY: Explicit channel {request.channel_id} doesn't match user's current location")
@@ -361,20 +361,6 @@ class SpeakTextUseCase:
             logger.error(f"[USE_CASE] SECURITY CHECK: Error checking user channel presence: {e}")
             # On error, assume user is NOT in channel for security
             return False
-
-    async def _auto_connect_to_channel(self, channel):
-        """Auto-connect bot to voice channel ONLY where user is currently connected."""
-        try:
-            logger.info("[USE_CASE] AUTO-CONNECT: Connecting to user's current voice channel")
-            if not channel.is_connected():
-                await channel.connect()
-                logger.info("[USE_CASE] AUTO-CONNECT: Successfully connected bot to user's voice channel")
-            else:
-                logger.info("[USE_CASE] AUTO-CONNECT: Bot already connected to user's voice channel")
-        except Exception as e:
-            logger.warning(f"[USE_CASE] AUTO-CONNECT: Failed to auto-connect: {e}")
-            # Continue anyway, the regular connection logic will handle retries
-
 
 class ConfigureTTSUseCase:
     """Use case for configuring TTS settings per guild.

@@ -5,6 +5,7 @@ and injecting them into components.
 """
 import discord
 from discord import app_commands
+import importlib.util
 from config.settings import Config
 from src.application.use_cases import SpeakTextUseCase, ConfigureTTSUseCase
 from src.infrastructure.tts.engines import TTSEngineFactory
@@ -72,9 +73,17 @@ class Container:
             config_use_case=self.config_use_case,
             channel_repository=self.voice_channel_repository
         )
+
+        self._log_voice_runtime_status()
         
         # Register event handlers
         self._register_events()
+
+    def _log_voice_runtime_status(self) -> None:
+        """Log voice runtime compatibility for Discord voice features."""
+        has_davey = importlib.util.find_spec("davey") is not None
+        if not has_davey:
+            print("⚠️ Voice support requires the `davey` package with newer discord.py versions.")
     
     def _register_events(self):
         """Register Discord event handlers."""

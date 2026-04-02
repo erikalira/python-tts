@@ -83,7 +83,7 @@ tts-hotkey-windows/
 ├── scripts/build/            # 🚀 BUILD SCRIPTS
 │   └── build_clean_architecture.ps1  # Build único com Clean Architecture e SOLID
 │
-├── tts_hotkey_configurable.py      # 🎯 ENTRY POINT Principal (Clean + Fallback)
+├── app.py                      # 🎯 ENTRY POINT Principal do app standalone
 │   │
 │   ├── __init__.py
 │   └── __version__.py        # Informações de versão
@@ -177,22 +177,14 @@ class ConfigurationService:
     def show_console_config(self) -> dict
 ```
 
-### 🚀 **Entry Point** (`tts_hotkey_configurable.py`)
+### 🚀 **Entry Point** (`app.py`)
 
 ```python
-def main():
-    """Entry point com fallback robusto."""
-    try:
-        # Tenta usar Clean Architecture
-        from src.standalone.app.simple_app import SimpleApplication
-        app = SimpleApplication()
-        app.initialize()
-        app.run()
-    except Exception as e:
-        # Fallback para implementação embutida
-        print(f"Clean architecture failed: {e}")
-        print("Falling back to embedded code...")
-        run_embedded_standalone()
+from src.standalone.app.standalone_app import main
+
+
+if __name__ == "__main__":
+    main()
 ```
 
 ## 🎯 Princípios SOLID Aplicados
@@ -360,7 +352,6 @@ docker run -it -p 10000:10000 --env-file .env tts-hotkey
 # Executar em background (detached)
 ### Docker (Desenvolvimento e Testes)
 
-```bash
 # Build image
 docker build -t tts-hotkey .
 
@@ -370,25 +361,6 @@ docker run -d -p 10000:10000 --env-file .env tts-hotkey
 # Limpar tudo
 docker system prune -a
 ```
-
-## ✅ Benefícios da Refatoração
-
-### Antes (Código Antigo)
-
-- ❌ Tudo em um único arquivo (`discord_bot.py` com 600+ linhas)
-- ❌ Acoplamento alto (difícil testar)
-- ❌ Lógica misturada (TTS + Discord + HTTP no mesmo lugar)
-- ❌ Difícil adicionar novos engines ou plataformas
-- ❌ Variáveis globais e estado compartilhado
-
-### Depois (Código Refatorado)
-
-- ✅ Separação clara de responsabilidades
-- ✅ Fácil testar (mock de interfaces)
-- ✅ Fácil adicionar novos engines TTS
-- ✅ Fácil trocar Discord por outra plataforma
-- ✅ Código auto-documentado e manutenível
-- ✅ Dependency Injection facilita extensão
 
 ## 🧪 Testabilidade
 

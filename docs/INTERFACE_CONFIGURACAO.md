@@ -21,10 +21,10 @@
 - Integrada no `SimpleApplication`
 - Salva automaticamente no repositório de configuração
 
-### 4. **Integração na Versão Embedded**
+### 4. **Integração no Runtime Atual**
 
-- Interface também na implementação embedded em `tts_hotkey_configurable.py`
-- Mesma experiência em ambas versões
+- Interface integrada ao runtime standalone em `src/standalone`
+- Um único caminho de execução para configuração e startup
 
 ## 🎯 Como funciona:
 
@@ -54,7 +54,7 @@
 
 ```powershell
 # Recompilar com nova interface
-./scripts/build/build_clean_no_icon.ps1
+./scripts/build/build_clean_architecture.ps1
 ```
 
 **Agora o usuário tem uma interface amigável para configurar os IDs sem editar código!** 🎉

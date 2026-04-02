@@ -16,6 +16,37 @@ try:
 except ImportError:
     HAS_PYNACL = False
 
+try:
+    import davey  # noqa: F401
+    HAS_DAVEY = True
+except ImportError:
+    HAS_DAVEY = False
+
+
+def _has_voice_runtime_support() -> bool:
+    """Return whether the current environment has the dependencies for Discord voice."""
+    return HAS_PYNACL and HAS_DAVEY and HAS_FFMPEG
+
+
+def _get_voice_dependency_message() -> str:
+    """Build a user-facing message describing missing voice dependencies."""
+    missing = []
+    if not HAS_PYNACL:
+        missing.append("PyNaCl")
+    if not HAS_DAVEY:
+        missing.append("davey")
+    if not HAS_FFMPEG:
+        missing.append("FFmpeg")
+
+    if not missing:
+        return ""
+
+    missing_text = ", ".join(missing)
+    return (
+        f"{missing_text} são necessários para suporte a voz nesta versão do Discord. "
+        "Instale as dependências e tente novamente."
+    )
+
 
 class DiscordCommands:
     """Discord slash commands handler.
@@ -123,9 +154,9 @@ class DiscordCommands:
     
     async def _handle_join(self, interaction: discord.Interaction):
         """Handle /join command."""
-        if not HAS_PYNACL:
+        if not _has_voice_runtime_support():
             await interaction.response.send_message(
-                'PyNaCl is required for voice support. Install it with `pip install pynacl`.',
+                _get_voice_dependency_message(),
                 ephemeral=True
             )
             return
@@ -183,10 +214,10 @@ class DiscordCommands:
         logger.info(f"[SPEAK] Command from user {interaction.user.id} ({interaction.user.name}) in guild {interaction.guild.id if interaction.guild else 'None'}")
         await interaction.response.defer(ephemeral=True, thinking=True)
         
-        if not HAS_PYNACL or not HAS_FFMPEG:
-            logger.warning("[SPEAK] Missing PyNaCl or FFmpeg dependencies")
+        if not _has_voice_runtime_support():
+            logger.warning("[SPEAK] Missing PyNaCl, davey or FFmpeg dependencies")
             await interaction.edit_original_response(
-                content='PyNaCl and FFmpeg são necessários para suporte a voz.'
+                content=_get_voice_dependency_message()
             )
             return
         
@@ -346,6 +377,7 @@ class DiscordCommands:
         embed.add_field(name="Author", value=__author__, inline=True)
         embed.add_field(name="FFmpeg", value="✅ Available" if HAS_FFMPEG else "❌ Not found", inline=True)
         embed.add_field(name="PyNaCl", value="✅ Installed" if HAS_PYNACL else "❌ Not installed", inline=True)
+        embed.add_field(name="davey", value="✅ Installed" if HAS_DAVEY else "❌ Not installed", inline=True)
         embed.add_field(
             name="Commands",
             value="• `/join` - Join your voice channel\n• `/leave` - Leave voice channel\n"

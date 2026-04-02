@@ -1,29 +1,14 @@
-# 🎯 TTS Hotkey Premium - Guia de Resolução
+# 🎯 TTS Hotkey - Guia de Resolução
 
-## ✅ Versão Premium: Zero Problemas de Configuração!
+## ✅ App Standalone Atual
 
-**Arquivo**: `tts_hotkey_premium.exe` (gerado de `tts_hotkey_configurable.py`)
+**Entry point**: `app.py`  
+**Executável de build**: `dist/tts_hotkey_clean.exe`
 
-### 🚀 **Por que a versão Premium não tem estes problemas?**
+### 🔍 Diagnóstico Rápido
 
-- 🎯 **Sem arquivos externos** - tudo embutido no executável
-- 🔧 **Configuração centralizada** - editável antes da compilação
-- 💎 **Build inteligente** - detecta problemas automaticamente
-- 📊 **Logs avançados** - mostra exatamente o que está acontecendo
-
-### 🔍 **Diagnóstico Rápido**
-
-Execute `tts_hotkey_premium.exe` e observe a **tela colorida de status**:
-
-```
-🎯 TTS Hotkey Premium v2.0 - Configuração Centralizada
-================================================================
-✅ Discord URL: https://python-tts-s3z8.onrender.com
-✅ TTS Engine: Configurado (Rate: 180)
-✅ Triggers: { para iniciar, } para falar
-✅ Hotkeys: Registrados com sucesso
-================================================================
-```
+Execute `python app.py` durante o desenvolvimento ou `dist/tts_hotkey_clean.exe` após o build
+e observe os logs de inicialização do standalone.
 
 ## 🛠️ **Problemas Raros e Soluções**
 
@@ -33,12 +18,7 @@ Execute `tts_hotkey_premium.exe` e observe a **tela colorida de status**:
 
 **Solução**:
 
-```python
-# Em tts_hotkey_configurable.py, mude os triggers:
-class Config:
-    TRIGGER_OPEN = "["     # Em vez de "{"
-    TRIGGER_CLOSE = "]"    # Em vez de "}"
-```
+Abra a configuração do standalone e troque as hotkeys para outra combinação sem conflito.
 
 ### 2. ❌ "Discord connection failed"
 
@@ -46,11 +26,7 @@ class Config:
 
 **Solução**:
 
-```python
-# Verifique a URL em tts_hotkey_configurable.py:
-class Config:
-    DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"  # URL correta?
-```
+Verifique `DISCORD_BOT_URL` no `.env` ou na configuração persistida do standalone.
 
 ### 3. ❌ "TTS engine failed"
 
@@ -58,12 +34,7 @@ class Config:
 
 **Solução**:
 
-```python
-# Ajuste as configurações de TTS:
-class Config:
-    TTS_RATE = 150         # Reduza a velocidade
-    TTS_LANGUAGE = "pt"    # Confirme o idioma
-```
+Abra a interface de configuração do app e ajuste engine, idioma ou taxa de fala.
 
 ### 4. ⚠️ "Network timeout"
 
@@ -71,98 +42,49 @@ class Config:
 
 **Solução**:
 
-```python
-# Aumente o timeout:
-class Config:
-    REQUEST_TIMEOUT = 30   # 30 segundos em vez de 10
-```
+Se necessário, aumente o timeout na configuração persistida do standalone.
 
 ## 🔧 **Build Script Inteligente**
 
-O `build_clean_architecture.ps1` detecta automaticamente problemas:
+O `scripts/build/build_clean_architecture.ps1` empacota o runtime atual:
 
 ```powershell
-# Execute para ver análise completa:
-./build_clean_architecture.ps1
-```
-
-**Output esperado**:
-
-```
-🔍 Analisando configuração...
-✅ Discord URL: Valid
-✅ Triggers: Sem conflitos
-✅ TTS Config: OK
-✅ Dependencies: All found
-🚀 Building premium version...
-```
-
-## 📊 **Dashboard de Status**
-
-A versão premium inclui dashboard visual quando executada:
-
-```
-================================================================
-🎯 TTS Hotkey Premium - Status Dashboard
-================================================================
-🌐 Discord: ✅ Connected (python-tts-s3z8.onrender.com)
-🎤 TTS: ✅ Ready (Portuguese, Rate: 180)
-⌨️ Hotkeys: ✅ { } registered successfully
-🔊 Audio: ✅ Default output device detected
-💾 Config: ✅ All settings validated
-================================================================
-```
-
-## 🎮 **Perfis Especializados**
-
-Se tiver problemas, teste outros perfis incluídos:
-
-```python
-# Gaming Profile (menos recursos, mais estável)
-class Config:
-    TTS_RATE = 200
-    SHOW_NOTIFICATIONS = False
-    CONSOLE_LOGS = False
-
-# Office Profile (mais tolerante a erros)
-class Config:
-    REQUEST_TIMEOUT = 30
-    TTS_RATE = 150
-    CONSOLE_LOGS = True
+# Execute para gerar o .exe:
+./scripts/build/build_clean_architecture.ps1
 ```
 
 ## ⚡ **Recompilar Rapidamente**
 
 ```powershell
-# 1. Ajuste a classe Config
-code tts_hotkey_configurable.py
+# 1. Ajuste dependências/configuração se necessário
+code app.py
 
 # 2. Compile novamente
-./build_clean_architecture.ps1
+./scripts/build/build_clean_architecture.ps1
 
 # 3. Teste imediatamente
-dist/tts_hotkey_premium.exe
+dist/tts_hotkey_clean.exe
 ```
 
 ## 🆘 **Se Nada Funcionar**
 
-1. **Teste a configuração** antes de compilar:
-
-```python
-python3 -c "from tts_hotkey_configurable import Config; print('Config OK!')"
-```
-
-2. **Verifique dependências**:
+1. **Verifique dependências**:
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-3. **Build limpo**:
+2. **Build limpo**:
 
 ```powershell
 Remove-Item dist, build -Recurse -Force -ErrorAction SilentlyContinue
-./build_clean_architecture.ps1
+./scripts/build/build_clean_architecture.ps1
 ```
 
-**🎯 Resultado**: Um único arquivo robusto sem dependências externas!
+3. **Teste o entrypoint atual**:
+
+```powershell
+python app.py
+```
+
+**🎯 Resultado**: um único runtime standalone com Clean Architecture, sem wrapper legado.

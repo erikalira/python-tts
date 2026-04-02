@@ -2,7 +2,7 @@
 
 ## 🏆 Configuração Profissional Sem Hardcode
 
-**Arquivo único**: `tts_hotkey_configurable.py` + `build_clean_architecture.ps1`
+**Entry point**: `app.py` + `scripts/build/build_clean_architecture.ps1`
 
 ### ✨ **A Solução Perfeita:**
 
@@ -16,37 +16,20 @@
 ### 🚀 Como usar:
 
 ```powershell
-# 1. Personalize a classe Config
-code tts_hotkey_configurable.py
+# 1. Ajuste a configuração do app se necessário
+code app.py
 
 # 2. Execute o build inteligente
-./build_clean_architecture.ps1
+./scripts/build/build_clean_architecture.ps1
 
 # 3. Um único arquivo pronto!
-dist/tts_hotkey_premium.exe
+dist/tts_hotkey_clean.exe
 ```
 
 ### 🎨 Configuração elegante:
 
-```python
-class Config:
-    # 🌐 Discord
-    DISCORD_BOT_URL = "https://python-tts-s3z8.onrender.com"
-    DISCORD_CHANNEL_ID = None  # Opcional
-
-    # 🎤 TTS Personalizado
-    TTS_RATE = 180             # Velocidade
-    TTS_LANGUAGE = "pt"        # Idioma
-
-    # ⌨️ Triggers Personalizados
-    TRIGGER_OPEN = "{"         # Inicia
-    TRIGGER_CLOSE = "}"        # Fala
-
-    # ⚡ Performance
-    REQUEST_TIMEOUT = 10       # Rede
-    CONSOLE_LOGS = True        # Debug
-    SHOW_NOTIFICATIONS = True  # UI
-```
+Use a configuração persistida do standalone em `src/standalone/config/standalone_config.py`
+e a interface gráfica do próprio app para ajustar Discord, TTS e hotkeys.
 
 ### 🎮 **Perfis Especializados Incluídos:**
 
@@ -56,7 +39,7 @@ class Config:
 
 ### 🛠️ **Recursos Premium:**
 
-- ⚙️ **Build script inteligente** que analisa sua configuração
+- ⚙️ **Build script inteligente** para empacotar o runtime standalone
 - 📊 **Dashboard de configuração** visual no console
 - 🎯 **Triggers personalizáveis** para evitar conflitos
 - ⏱️ **Timeouts configuráveis** para diferentes cenários
@@ -74,7 +57,7 @@ class Config:
 
 ## ✅ **Resultado Final:**
 
-- 🎯 **Um único arquivo**: `tts_hotkey_premium.exe`
+- 🎯 **Um único arquivo**: `tts_hotkey_clean.exe`
 - 🚀 **Zero dependências externas**
 - 🎨 **Totalmente personalizado** para suas necessidades
 - 💎 **Qualidade profissional**
@@ -86,16 +69,12 @@ class Config:
 # 1. Clone o projeto
 git clone https://github.com/seu-usuario/python-tts
 
-# 2. Personalize (edite a classe Config)
-code tts_hotkey_configurable.py
+# 2. Execute o app standalone
+python app.py
 
 # 3. Compile versão premium
-./build_clean_architecture.ps1
+./scripts/build/build_clean_architecture.ps1
 
 # 4. Use o resultado
-dist/tts_hotkey_premium.exe
+dist/tts_hotkey_clean.exe
 ```
-
-## 💡 **Dica Pro:**
-
-A versão premium permite criar diferentes builds para diferentes cenários (gaming, trabalho, streaming) apenas mudando a classe Config e recompilando!

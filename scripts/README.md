@@ -19,7 +19,7 @@ O executável será criado em `dist/tts_hotkey_clean.exe`
 - ✅ Multi-engine TTS (gTTS + pyttsx3)
 - ✅ Configuração persistente em AppData/Local/TTS-Hotkey/
 - ✅ Hotkeys globais
-- ✅ Fallback automático
+- ✅ Entry point standalone único
 
 ### 🛠️ Utils
 

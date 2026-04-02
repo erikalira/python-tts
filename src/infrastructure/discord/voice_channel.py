@@ -30,66 +30,77 @@ class DiscordVoiceChannel(IVoiceChannel):
         self._voice_client: Optional[discord.VoiceClient] = None
         self._disconnect_task: Optional[asyncio.Task] = None
         self._last_activity: float = 0
+        self._connection_lock = asyncio.Lock()
+
+    def _sync_voice_client(self) -> Optional[discord.VoiceClient]:
+        """Synchronize cached voice client with Discord's guild state."""
+        guild_voice_client = self._channel.guild.voice_client
+        if guild_voice_client and guild_voice_client.channel and guild_voice_client.channel.guild.id == self.guild_id:
+            self._voice_client = guild_voice_client
+        elif self._voice_client and not self._voice_client.is_connected():
+            self._voice_client = None
+        return self._voice_client
     
     async def connect(self) -> None:
         """Connect to the voice channel with retry logic."""
-        # Check if already connected to this guild
-        guild = self._channel.guild
-        existing_client = guild.voice_client
-        
-        if existing_client:
-            # If connected to the same channel and working, reuse
-            if (existing_client.channel.id == self._channel.id and 
-                existing_client.is_connected()):
-                self._voice_client = existing_client
-                logger.info("[VOICE_CHANNEL] Already connected to this channel, reusing connection")
-                return
-            
-            # If connected but broken or to different channel, disconnect first
-            logger.info("[VOICE_CHANNEL] Existing connection needs to be reset, disconnecting first")
+        async with self._connection_lock:
+            guild = self._channel.guild
+            existing_client = self._sync_voice_client()
+
+            if existing_client and existing_client.channel and existing_client.channel.id == self._channel.id:
+                if existing_client.is_connected():
+                    logger.info("[VOICE_CHANNEL] Already connected to this channel, reusing connection")
+                    return
+
+                logger.info("[VOICE_CHANNEL] Found stale connection for target channel, resetting it")
+                try:
+                    await existing_client.disconnect(force=True)
+                    await asyncio.sleep(0.5)
+                except Exception as e:
+                    logger.warning(f"[VOICE_CHANNEL] Error resetting stale connection: {e}")
+                self._voice_client = None
+                existing_client = guild.voice_client
+
             try:
-                await existing_client.disconnect()
-                await asyncio.sleep(0.3)  # Wait for disconnect to complete
-            except Exception as e:
-                logger.warning(f"[VOICE_CHANNEL] Error during disconnect: {e}")
-        
-        # Simple connection - let Discord handle retries internally
-        try:
-            logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name}")
-            self._voice_client = await self._channel.connect()
-            
-            # Brief wait and verify connection
-            await asyncio.sleep(0.5)
-            
-            if self._voice_client and self._voice_client.is_connected():
-                logger.info("[VOICE_CHANNEL] Successfully connected")
-                return
-            else:
+                if existing_client and existing_client.channel:
+                    logger.info(f"[VOICE_CHANNEL] Moving existing voice connection to channel: {self._channel.name}")
+                    await existing_client.move_to(self._channel, timeout=30.0)
+                    self._voice_client = existing_client
+                else:
+                    logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name}")
+                    # Avoid discord.py's internal reconnect loop when the voice gateway
+                    # rejects the session with a fatal close code (e.g. 4017).
+                    self._voice_client = await self._channel.connect(timeout=30.0, reconnect=False, self_deaf=True)
+
+                await asyncio.sleep(0.5)
+                active_client = self._sync_voice_client()
+                if active_client and active_client.is_connected() and active_client.channel and active_client.channel.id == self._channel.id:
+                    logger.info("[VOICE_CHANNEL] Successfully connected")
+                    return
+
                 logger.error("[VOICE_CHANNEL] Connection established but verification failed")
                 raise RuntimeError("Connection verification failed")
-                    
-        except Exception as e:
-            logger.error(f"[VOICE_CHANNEL] Connection failed: {e}")
-            
-            # Clean up failed connection
-            if self._voice_client:
-                try:
-                    await self._voice_client.disconnect()
-                except (discord.errors.ClientException, Exception):
-                    pass
+
+            except Exception as e:
+                logger.error(f"[VOICE_CHANNEL] Connection failed: {e}")
+                active_client = self._sync_voice_client()
+                if active_client:
+                    try:
+                        await active_client.disconnect(force=True)
+                    except (discord.errors.ClientException, Exception):
+                        pass
                 self._voice_client = None
-            
-            # Re-raise with simpler message
-            raise RuntimeError(f"Failed to connect to voice channel: {e}")
+                raise RuntimeError(f"Failed to connect to voice channel: {e}")
     
     async def disconnect(self) -> None:
         """Disconnect from the voice channel."""
         # Cancel any pending disconnect timer
         self._cancel_disconnect_timer()
-        
-        if self._voice_client and self._voice_client.is_connected():
-            await self._voice_client.disconnect()
-            self._voice_client = None
+
+        voice_client = self._sync_voice_client()
+        if voice_client and voice_client.is_connected():
+            await voice_client.disconnect(force=False)
+        self._voice_client = None
     
     async def play_audio(self, audio: AudioFile) -> None:
         """Play audio in the voice channel with resilient connection handling.
@@ -98,13 +109,15 @@ class DiscordVoiceChannel(IVoiceChannel):
             audio: AudioFile to play
         """
         # Check and fix connection if needed
-        if not self._voice_client or not self._voice_client.is_connected():
+        voice_client = self._sync_voice_client()
+        if not voice_client or not voice_client.is_connected():
             logger.warning("[VOICE_CHANNEL] Connection lost, attempting to reconnect...")
             try:
                 await self.connect()
             except Exception as e:
                 logger.error(f"[VOICE_CHANNEL] Failed to reconnect: {e}")
                 raise RuntimeError("Failed to reconnect to voice channel")
+            voice_client = self._sync_voice_client()
         
         logger.info(f"[VOICE_CHANNEL] Voice client is connected, preparing to play audio: {audio.path}")
         
@@ -112,9 +125,9 @@ class DiscordVoiceChannel(IVoiceChannel):
         self._cancel_disconnect_timer()
         
         # Stop current playback if any
-        if self._voice_client.is_playing():
+        if voice_client and voice_client.is_playing():
             logger.info("[VOICE_CHANNEL] Stopping current playback")
-            self._voice_client.stop()
+            voice_client.stop()
             await asyncio.sleep(0.1)  # Wait for stop to complete
         
         # Play audio with event-based completion detection (reliable synchronization)
@@ -149,7 +162,10 @@ class DiscordVoiceChannel(IVoiceChannel):
             
             # Start audio playback with callback
             source = discord.FFmpegPCMAudio(audio.path)
-            self._voice_client.play(source, after=audio_finished_callback)
+            if not voice_client:
+                raise RuntimeError("Voice client unavailable after connection")
+
+            voice_client.play(source, after=audio_finished_callback)
             logger.info("[VOICE_CHANNEL] Audio queued for playback, waiting for discord.py callback...")
             
             # WAIT FOR PLAYBACK TO COMPLETE (event-driven, not polling)
@@ -164,15 +180,16 @@ class DiscordVoiceChannel(IVoiceChannel):
                     
             except asyncio.TimeoutError:
                 logger.warning("[VOICE_CHANNEL] Playback timeout (60s), stopping player...")
-                self._voice_client.stop()
+                if voice_client:
+                    voice_client.stop()
                 raise TimeoutError("Audio playback exceeded 60 second timeout")
             
         except Exception as e:
             logger.error(f"[VOICE_CHANNEL] Error during playback: {e}")
             # Try to stop playback on error
             try:
-                if self._voice_client and self._voice_client.is_playing():
-                    self._voice_client.stop()
+                if voice_client and voice_client.is_playing():
+                    voice_client.stop()
             except (discord.errors.ClientException, Exception):
                 pass
             raise
@@ -183,7 +200,13 @@ class DiscordVoiceChannel(IVoiceChannel):
     
     def is_connected(self) -> bool:
         """Check if connected to voice channel."""
-        return self._voice_client is not None and self._voice_client.is_connected()
+        voice_client = self._sync_voice_client()
+        return (
+            voice_client is not None and
+            voice_client.is_connected() and
+            voice_client.channel is not None and
+            voice_client.channel.id == self._channel.id
+        )
 
     def get_channel_id(self) -> int:
         """Get the channel ID."""

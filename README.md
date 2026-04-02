@@ -4,6 +4,27 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/7ed90fe1cc6f4090a7386df4681df463)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
+## Summary
+
+- [Overview](#overview)
+- [Features](#features)
+- [Standalone Build](#-tts-hotkey-clean-architecture-standalone)
+- [Scripts](#-organized-scripts)
+- [Requirements](#requirements)
+- [Running the Application](#running-the-application)
+- [Discord Bot Setup](#discord-bot-setup)
+- [TTS Engine Configuration](#tts-engine-configuration)
+- [Discord Bot Commands](#discord-bot-commands)
+- [Architecture](#architecture)
+- [Deployment (Render)](#deployment-render)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Notes / Security](#notes--security)
+- [Building Windows Executable](#building-windows-executable)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Overview
 
 This project is a text-to-speech hotkey application that allows users to input text using specific keyboard shortcuts and have it spoken aloud. Built with **Clean Architecture** and **SOLID principles**, it includes:
@@ -50,7 +71,7 @@ This project is a text-to-speech hotkey application that allows users to input t
 - 💾 **Repository Pattern** - JSON-based configuration persistence
 - 🖥️ **Platform Support** - Windows (full features) + Linux (graceful degradation)
 - 📊 **System Integration** - System tray, global hotkeys, notifications
-- ⚡ **Automatic Fallback** - Embedded implementation if clean architecture fails
+- ⚡ **Single modern entrypoint** - standalone app starts directly from clean architecture runtime
 
 ```powershell
 # Build Clean Architecture version
@@ -85,18 +106,12 @@ scripts/
 ```bash
 # See all available commands
 make help
-# OR: ./scripts.sh help
 
 # Most common usage
 make install        # Install dependencies
 make test          # Run tests
-make build-exe     # Build executable
+make build-clean   # Build Windows executable
 make clean         # Clean artifacts
-
-# Alternative bash interface
-./scripts.sh install
-./scripts.sh test
-./scripts.sh build-exe
 ```
 
 📋 **See [`scripts/README.md`](scripts/README.md) for complete documentation.**
@@ -107,6 +122,13 @@ make clean         # Clean artifacts
 
 - Python 3.11+
 - FFmpeg (for Discord voice support)
+- Virtual environment (recommended)
+
+### Local Development (Linux)
+
+- Python 3.11+
+- `ffmpeg`
+- Tkinter package for your distro
 - Virtual environment (recommended)
 
 ### Production (Render with Docker)
@@ -141,10 +163,6 @@ docker build -t tts-hotkey .
 # Run locally (requires .env file with DISCORD_TOKEN)
 docker run -p 10000:10000 --env-file .env tts-hotkey
 ```
-
-### 💻 Local Development (Windows - No Docker)
-
-Best for development and testing on Windows:
 
 ### 💻 Local Development (Windows - No Docker)
 
@@ -199,7 +217,7 @@ O bot iniciará automaticamente o servidor HTTP na porta configurada.
 
 ```powershell
 # Em outro terminal
-python src\tts_hotkey.py
+python app.py
 ```
 
 O aplicativo aparecerá na **bandeja do sistema** (system tray) do Windows com um ícone de microfone! 🎤
@@ -210,6 +228,67 @@ O aplicativo aparecerá na **bandeja do sistema** (system tray) do Windows com u
 - **Clique com botão direito** no ícone da bandeja para ver opções
 - Escolha **Exit** para fechar o aplicativo
 - Não precisa mais usar `del` para sair - use o menu da bandeja!
+
+### 🐧 Local Development (Linux - No Docker)
+
+Best for local development and bot testing on Linux. The standalone app may run with graceful degradation depending on GUI/system tray availability.
+
+**1. Install system packages:**
+
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv python3-tk ffmpeg
+```
+
+If your distro is not Debian/Ubuntu, install the equivalents for:
+
+- `python3`
+- `python3-venv`
+- `tkinter`
+- `ffmpeg`
+
+**2. Create and activate virtual environment:**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+**3. Install Python dependencies:**
+
+```bash
+python3 -m pip install -r requirements.txt
+python3 -m pip install pynacl
+```
+
+**4. Configure environment variables:**
+
+Create `.env`:
+
+```env
+DISCORD_TOKEN=your_token_here
+DISCORD_BOT_URL=http://127.0.0.1:5000
+```
+
+**5. Run the Discord bot:**
+
+```bash
+python3 main.py
+```
+
+**6. Run the standalone app in another terminal:**
+
+```bash
+source .venv/bin/activate
+python3 app.py
+```
+
+**Linux notes:**
+
+- In headless environments, system tray integrations may be unavailable.
+- The standalone app should degrade gracefully and continue without tray features.
+- Global hotkey behavior can vary depending on desktop environment and permissions.
+- For server-only development, running just `main.py` is usually enough.
 
 ### 🎯 Criando Executável (.exe) para Windows
 
@@ -223,7 +302,7 @@ make build-clean
 powershell scripts/build/build_clean_architecture.ps1
 ```
 
-Isso criará `tts_hotkey.exe` na pasta raiz. Você pode:
+Isso criará `dist/tts_hotkey_clean.exe`. Você pode:
 
 - ✅ Executar direto (duplo clique) - abre na bandeja do sistema
 - ✅ Adicionar ao **Iniciar com o Windows** (pasta `shell:startup`)
@@ -378,7 +457,7 @@ Simply use `/config` and select from the dropdown options:
 ```
 ┌─────────────────┐
 │  Hotkey App     │  (Windows local)
-│  tts_hotkey.py  │  Captures {text} input
+│  app.py         │  Captures {text} input
 └────────┬────────┘
          │ POST /speak
          ▼
@@ -455,11 +534,9 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:5000/speak -Body $body -Con
 
 ### Test Hotkey App:
 
-1. Run `python src\tts_hotkey.py`
+1. Run `python app.py`
 2. Type `{hello world}` in any text editor
 3. Bot should speak in Discord voice channel
-
-## Troubleshooting
 
 ## Troubleshooting
 
@@ -482,6 +559,12 @@ pip install pynacl
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
+```
+
+On Linux:
+
+```bash
+source .venv/bin/activate
 ```
 
 **Hotkey not triggering bot:**
@@ -545,12 +628,7 @@ pip install pyinstaller
 
 ```bash
 # Opção mais simples - instalar dependências e build
-make setup && make install && make build-exe
-
-# Ou passo a passo:
-./scripts.sh setup
-./scripts.sh install
-./scripts.sh build-exe
+make setup && make install && make build-clean
 ```
 
 **Nota:** Os scripts organizados facilitam o desenvolvimento e build do projeto. Consulte `scripts/README.md` para mais detalhes.
@@ -565,15 +643,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 powershell scripts/build/build_clean_architecture.ps1
 ```
 
-**Option C - Manual PyInstaller:**
-
-```powershell
-cd src
-pyinstaller --onefile --noconsole tts_hotkey.py
-# Executable: src\dist\tts_hotkey.exe
-```
-
-**Result:** `tts_hotkey.exe` in project root
+**Result:** `dist/tts_hotkey_clean.exe`
 
 ### Build Troubleshooting:
 
@@ -586,30 +656,32 @@ pyinstaller --onefile --noconsole tts_hotkey.py
 
 ```
 tts-hotkey-windows/
+├── app.py               # Standalone Windows/Linux entry point
+├── main.py              # Discord bot + Flask entry point
 ├── src/
-│   ├── core/               # Domain entities & interfaces
-│   ├── application/        # Use cases (business logic)
-│   ├── infrastructure/     # TTS engines, Discord, HTTP
-│   ├── presentation/       # Controllers & commands
-│   ├── bot.py             # Main entry point
-│   └── app.py             # Application factory
+│   ├── core/            # Domain entities & interfaces
+│   ├── application/     # Use cases (business logic)
+│   ├── infrastructure/  # TTS engines, Discord, HTTP
+│   ├── presentation/    # Controllers & commands
+│   ├── standalone/      # Standalone app runtime
+│   ├── bot.py           # Discord bot module
+│   └── app.py           # Flask application
 ├── config/
-│   ├── settings.py        # Configuration
-│   └── container.py       # Dependency injection
+│   ├── settings.py      # Configuration
+│   └── container.py     # Dependency injection
 ├── tests/
-│   ├── unit/              # Unit tests (77% coverage)
-│   └── conftest.py        # Test fixtures
-├── Dockerfile             # Docker image with espeak-ng
-├── .dockerignore         # Docker build exclusions
-├── render.yaml           # Render deployment config
-├── wsgi.py              # Gunicorn entry point
+│   ├── unit/            # Unit tests
+│   └── conftest.py      # Test fixtures
+├── Dockerfile           # Docker image with espeak-ng
+├── .dockerignore        # Docker build exclusions
+├── render.yaml          # Render deployment config
 ├── requirements.txt     # Python dependencies
 ├── requirements-test.txt # Test dependencies
-├── pytest.ini          # Test configuration
-├── .env.example       # Environment template
-├── README.md         # This file
+├── pytest.ini           # Test configuration
+├── .env.example         # Environment template
+├── README.md            # This file
 └── docs/
-    └── ARCHITECTURE.md   # Architecture documentation (moved to docs)
+    └── ARCHITECTURE.md  # Architecture documentation
 ```
 
 ## Contributing
