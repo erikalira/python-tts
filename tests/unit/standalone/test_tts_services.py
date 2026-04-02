@@ -123,9 +123,11 @@ def test_local_pyttsx3_engine_initializes_and_speaks(monkeypatch):
     engine.say = Mock()
     engine.runAndWait = Mock()
 
-    monkeypatch.setattr("src.standalone.services.tts_services.pyttsx3.init", Mock(return_value=engine))
+    adapter = Mock()
+    adapter.is_available.return_value = True
+    adapter.create_engine.return_value = engine
 
-    local_engine = LocalPyTTSX3Engine(config)
+    local_engine = LocalPyTTSX3Engine(config, adapter=adapter)
 
     assert local_engine.speak("hello") is True
     engine.setProperty.assert_any_call("rate", config.tts.rate)
@@ -134,13 +136,14 @@ def test_local_pyttsx3_engine_initializes_and_speaks(monkeypatch):
 
 
 def test_keyboard_cleanup_service_reports_suppression(monkeypatch):
-    cleanup = KeyboardCleanupService()
-    fake_keyboard = Mock()
-    monkeypatch.setattr("sys.modules", {**__import__("sys").modules, "keyboard": fake_keyboard})
+    backend = Mock()
+    backend.is_available.return_value = True
+    cleanup = KeyboardCleanupService(keyboard_backend=backend)
 
     cleanup.cleanup_typed_text(2)
 
     assert cleanup.is_suppressing_events() is False
+    assert backend.send_backspace.call_count == 2
 
 
 def test_tts_processor_runs_cleanup_after_success(monkeypatch):

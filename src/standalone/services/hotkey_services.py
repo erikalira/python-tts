@@ -9,14 +9,8 @@ from abc import ABC, abstractmethod
 from typing import Callable, Optional, Protocol
 from dataclasses import dataclass
 
-try:
-    import keyboard
-    _keyboard_available = True
-except ImportError:
-    keyboard = None
-    _keyboard_available = False
-
 from ..config.standalone_config import StandaloneConfig
+from ..adapters.keyboard_backend import KeyboardHookBackend, is_keyboard_backend_available
 
 
 @dataclass
@@ -58,9 +52,10 @@ class KeyboardMonitor(ABC):
 class StandardKeyboardMonitor(KeyboardMonitor):
     """Keyboard monitor using the keyboard library."""
     
-    def __init__(self, config: StandaloneConfig, handler: HotkeyHandler):
+    def __init__(self, config: StandaloneConfig, handler: HotkeyHandler, backend: Optional[KeyboardHookBackend] = None):
         self._config = config
         self._handler = handler
+        self._backend = backend or KeyboardHookBackend()
         self._recording = False
         self._buffer: list[str] = []
         self._monitoring = False
@@ -75,7 +70,7 @@ class StandardKeyboardMonitor(KeyboardMonitor):
     
     def start_monitoring(self) -> bool:
         """Start monitoring keyboard events."""
-        if not _keyboard_available:
+        if not self._backend.is_available():
             print("[HOTKEY] ❌ Biblioteca 'keyboard' não disponível")
             return False
         
@@ -83,9 +78,9 @@ class StandardKeyboardMonitor(KeyboardMonitor):
             return True
         
         try:
-            if not _keyboard_available or keyboard is None:
+            if not self._backend.is_available():
                 return False
-            keyboard.hook(self._on_key_event)
+            self._backend.hook(self._on_key_event)
             self._monitoring = True
             print(f"[HOTKEY] ✅ Monitoramento iniciado - Use {self._config.hotkey.trigger_open}texto{self._config.hotkey.trigger_close}")
             return True
@@ -95,10 +90,9 @@ class StandardKeyboardMonitor(KeyboardMonitor):
     
     def stop_monitoring(self) -> None:
         """Stop monitoring keyboard events."""
-        if _keyboard_available and self._monitoring:
+        if self._backend.is_available() and self._monitoring:
             try:
-                if keyboard is not None:
-                    keyboard.unhook_all()
+                self._backend.unhook_all()
                 self._monitoring = False
                 print("[HOTKEY] 🛑 Monitoramento parado")
             except Exception as e:
@@ -115,9 +109,9 @@ class StandardKeyboardMonitor(KeyboardMonitor):
     
     def _on_key_event(self, event) -> None:
         """Handle keyboard events."""
-        if not _keyboard_available or keyboard is None:
+        if not self._backend.is_available():
             return
-        if event.event_type != keyboard.KEY_DOWN:
+        if event.event_type != self._backend.key_down_event:
             return
         
         if self._is_suppressed():
@@ -229,7 +223,7 @@ class HotkeyService:
         return {
             'active': self._active,
             'monitoring': self._monitor.is_monitoring(),
-            'keyboard_available': _keyboard_available,
+            'keyboard_available': is_keyboard_backend_available(),
             'trigger_open': self._config.hotkey.trigger_open,
             'trigger_close': self._config.hotkey.trigger_close
         }
@@ -293,7 +287,7 @@ class HotkeyManager:
             return {
                 'initialized': False,
                 'active': False,
-                'keyboard_available': _keyboard_available
+                'keyboard_available': is_keyboard_backend_available()
             }
         
         status = self._service.get_status()

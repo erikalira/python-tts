@@ -9,13 +9,9 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Optional, Protocol
 
-try:
-    import pyttsx3
-    _pyttsx3_available = True
-except ImportError:
-    _pyttsx3_available = False
-
 from ..config.standalone_config import StandaloneConfig
+from ..adapters.keyboard_backend import KeyboardHookBackend
+from ..adapters.local_tts import Pyttsx3Adapter, is_pyttsx3_available
 from .discord_bot_client import DiscordBotClient, HttpDiscordBotClient
 
 logger = logging.getLogger(__name__)
@@ -46,19 +42,20 @@ class TTSEngine(ABC):
 class LocalPyTTSX3Engine(TTSEngine):
     """Local TTS engine using pyttsx3."""
     
-    def __init__(self, config: StandaloneConfig):
+    def __init__(self, config: StandaloneConfig, adapter: Optional[Pyttsx3Adapter] = None):
         self._config = config
+        self._adapter = adapter or Pyttsx3Adapter()
         self._engine: Optional[object] = None
         self._lock = threading.Lock()
     
     def _initialize_engine(self) -> bool:
         """Initialize the pyttsx3 engine."""
-        if not _pyttsx3_available:
+        if not self._adapter.is_available():
             return False
         
         try:
             if self._engine is None:
-                self._engine = pyttsx3.init()
+                self._engine = self._adapter.create_engine()
                 self._engine.setProperty('rate', self._config.tts.rate)
                 
                 # Set voice if specified
@@ -90,7 +87,7 @@ class LocalPyTTSX3Engine(TTSEngine):
     
     def is_available(self) -> bool:
         """Check if pyttsx3 is available."""
-        return _pyttsx3_available
+        return self._adapter.is_available()
 
 
 class DiscordTTSService(TTSEngine):
@@ -186,7 +183,7 @@ class TTSService:
         return {
             'discord_available': self._bot_client.is_available(),
             'local_available': LocalPyTTSX3Engine(self._config).is_available(),
-            'pyttsx3_installed': _pyttsx3_available,
+            'pyttsx3_installed': is_pyttsx3_available(),
             'requests_installed': requests_installed,
             'bot_url_configured': bool(self._config.discord.bot_url)
         }
@@ -195,18 +192,19 @@ class TTSService:
 class KeyboardCleanupService:
     """Service for handling keyboard cleanup after TTS."""
     
-    def __init__(self):
+    def __init__(self, keyboard_backend: Optional[KeyboardHookBackend] = None):
+        self._keyboard_backend = keyboard_backend or KeyboardHookBackend()
         self._suppress_events = threading.Event()
     
     def cleanup_typed_text(self, backspace_count: int) -> None:
         """Remove typed characters from the active window."""
         try:
-            import keyboard
-            
+            if not self._keyboard_backend.is_available():
+                raise ImportError
             self._suppress_events.set()
             
             for _ in range(backspace_count):
-                keyboard.send('backspace')
+                self._keyboard_backend.send_backspace()
                 
         except ImportError:
             logger.warning("[TTS] Keyboard library not available for cleanup")

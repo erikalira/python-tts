@@ -42,8 +42,7 @@ def test_standard_keyboard_monitor_ignores_non_keydown(monkeypatch):
     handler = Mock()
     monitor = StandardKeyboardMonitor(config, handler)
 
-    fake_keyboard = SimpleNamespace(KEY_DOWN="down")
-    monkeypatch.setattr("src.standalone.services.hotkey_services.keyboard", fake_keyboard)
+    monitor._backend = SimpleNamespace(is_available=lambda: True, key_down_event="down")
 
     monitor._on_key_event(SimpleNamespace(event_type="up", name="{"))
 
@@ -56,8 +55,7 @@ def test_standard_keyboard_monitor_respects_suppression(monkeypatch):
     monitor = StandardKeyboardMonitor(config, handler)
     monitor.set_external_suppression_check(lambda: True)
 
-    fake_keyboard = SimpleNamespace(KEY_DOWN="down")
-    monkeypatch.setattr("src.standalone.services.hotkey_services.keyboard", fake_keyboard)
+    monitor._backend = SimpleNamespace(is_available=lambda: True, key_down_event="down")
 
     monitor._on_key_event(SimpleNamespace(event_type="down", name="{"))
 
