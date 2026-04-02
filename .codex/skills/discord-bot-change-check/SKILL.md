@@ -39,3 +39,4 @@ Use when modifying:
 - potential break points
 - affected commands/events
 - validation steps to test bot manually
+- if the change adds feature documentation, place it in `docs/features/`

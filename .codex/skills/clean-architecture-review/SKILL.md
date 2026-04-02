@@ -119,3 +119,4 @@ List what should be tested after the change, especially for:
 - Do not suggest abstractions that add complexity without reducing coupling
 - Favor reuse, clarity, and testability
 - Preserve current functionality while improving structure
+- If the change adds documentation for a new feature, place it under `docs/features/` and keep top-level `docs/` focused on architecture and guides

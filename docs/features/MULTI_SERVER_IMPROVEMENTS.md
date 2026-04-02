@@ -38,7 +38,7 @@ self.config_repository = GuildConfigRepository(
 **Métodos principais:**
 
 - `get_config(guild_id)` - Obtém config (cache ou default)
-- `load_from_storage(guild_id)` - Carrega do armazenamento assincronamente
+- `load_config_async(guild_id)` - Carrega config pelo contrato assíncrono do repositório
 - `save_config_async(guild_id, config)` - Persiste alterações
 - `delete_config_async(guild_id)` - Remove config de um servidor
 
@@ -59,10 +59,10 @@ if not request.guild_id:
     return {"success": False, "message": f"❌ {error}", "queued": True}
 
 # VALIDATION: Verify voice channel belongs to same guild
-if voice_channel.guild_id != request.guild_id:
+if voice_channel.get_guild_id() != request.guild_id:
     error = "Canal de voz pertence a servidor diferente"
     item.mark_failed(error)
-    logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} voice channel guild {voice_channel.guild_id} != request guild {request.guild_id}")
+    logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} voice channel guild {voice_channel.get_guild_id()} != request guild {request.guild_id}")
     return {"success": False, "message": f"❌ {error}", "queued": True}
 ```
 
@@ -202,12 +202,7 @@ async def update_config_async(guild_id, engine, language, voice_id, rate):
     # Retorna resultado
 ```
 
-**Antigo (backwards compatible):**
-
-```python
-def execute(user_id, engine, language, voice_id):
-    """Mantido apenas para compatibilidade com endpoints HTTP antigos"""
-```
+O wrapper síncrono legado foi removido depois da migração completa para `update_config_async()`.
 
 ---
 
@@ -216,7 +211,7 @@ def execute(user_id, engine, language, voice_id):
 | Problema                              | Solução                            | Validação                                    |
 | ------------------------------------- | ---------------------------------- | -------------------------------------------- |
 | Config compartilhada entre servidores | Per-guild storage com persistência | `request.guild_id` em todos os fluxos        |
-| Áudio enviado para canal errado       | Validação de guild_id              | `voice_channel.guild_id == request.guild_id` |
+| Áudio enviado para canal errado       | Validação de guild_id              | `voice_channel.get_guild_id() == request.guild_id` |
 | Memory leaks de áudio                 | `audio.cleanup()` em finally       | Try/except com logging                       |
 | Conexões obsoletas não desconectam    | Cleanup automático de idle         | `_cleanup_stale_instances()` com timestamp   |
 | Perda de config em restart            | Persistência JSON                  | Carregamento automático em startup           |
@@ -257,8 +252,8 @@ config_repository = GuildConfigRepository(
 # Síncrono (cache)
 config = config_repository.get_config(guild_id)
 
-# Assíncrono (carrega do storage se não estiver em cache)
-config = await config_repository.load_from_storage(guild_id)
+# Assíncrono (contrato de repositório)
+config = await config_repository.load_config_async(guild_id)
 ```
 
 ### 3. Atualizar configuração (com persistência)
@@ -291,7 +286,7 @@ await voice_channel_repository.cleanup_all()
 - [x] Cleanup de áudio files
 - [x] Cleanup de conexões obsoletas
 - [x] Logging detalhado para debug
-- [x] Backwards compatibility para endpoints antigos
+- [x] Migração completa para configuração assíncrona por servidor
 - [x] Imports funcionando sem erros
 - [x] Sem memory leaks óbvios
 - [x] Isolamento total entre servidores
@@ -315,8 +310,8 @@ Para monitorar limpeza automática, veja logs com `[VOICE_REPO] Cleaned up stale
 
 ## 📚 Documentação Relacionada
 
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Visão geral da arquitetura
-- [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Diagnóstico de problemas
+- [ARCHITECTURE.md](../ARCHITECTURE.md) - Visão geral da arquitetura
+- [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) - Diagnóstico de problemas
 - Código comentado com `[SECURITY]` marca seções críticas
 
 ---

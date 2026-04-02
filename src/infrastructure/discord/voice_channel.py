@@ -35,7 +35,7 @@ class DiscordVoiceChannel(IVoiceChannel):
     def _sync_voice_client(self) -> Optional[discord.VoiceClient]:
         """Synchronize cached voice client with Discord's guild state."""
         guild_voice_client = self._channel.guild.voice_client
-        if guild_voice_client and guild_voice_client.channel and guild_voice_client.channel.guild.id == self.guild_id:
+        if guild_voice_client and guild_voice_client.channel and guild_voice_client.channel.guild.id == self.get_guild_id():
             self._voice_client = guild_voice_client
         elif self._voice_client and not self._voice_client.is_connected():
             self._voice_client = None
@@ -211,9 +211,8 @@ class DiscordVoiceChannel(IVoiceChannel):
     def get_channel_id(self) -> int:
         """Get the channel ID."""
         return self._channel.id
-    
-    @property
-    def guild_id(self) -> int:
+
+    def get_guild_id(self) -> int:
         """Get guild ID."""
         return self._channel.guild.id
     
@@ -446,7 +445,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
             try:
                 # Get channel info for logging before removing
                 channel_instance = self._channel_instances.get(channel_id)
-                guild_id = channel_instance.guild_id if channel_instance else "unknown"
+                guild_id = channel_instance.get_guild_id() if channel_instance else "unknown"
                 
                 # Disconnect if still connected
                 if channel_instance and channel_instance.is_connected():

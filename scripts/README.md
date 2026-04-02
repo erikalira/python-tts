@@ -1,6 +1,6 @@
 # Scripts Directory
 
-Esta pasta contém scripts de build para o TTS Hotkey.
+Esta pasta contem scripts de build, teste manual e utilitarios para o TTS Hotkey.
 
 ## Compilação para Windows
 
@@ -25,13 +25,18 @@ O executável será criado em `dist/tts_hotkey_clean.exe`
 
 - **create_icon.py**: Gera ícones para os executáveis
 
+### 🧪 Testes manuais
+
+- **scripts/test/manual_integration_check.py**: smoke check manual de integracao e dependencias
+- **scripts/test/manual_security_check.py**: validacao manual do cenario de seguranca do bot
+
 ## Requisitos
 
 ### Para Scripts de Build
 
 - **PowerShell** (pwsh ou powershell)
 - **PyInstaller**: `pip install pyinstaller`
-- **Dependências**: Execute `make install` primeiro
+- **Dependências**: Execute `pip install -r requirements.txt`
 
 ### Para Scripts de Teste
 
@@ -42,27 +47,25 @@ O executável será criado em `dist/tts_hotkey_clean.exe`
 ## Comandos Rápidos
 
 ```bash
-# Setup completo
-make setup && make dev
+# Instalar dependências
+pip install -r requirements.txt
+pip install -r requirements-test.txt
 
 # Desenvolvimento diário
-make test && make lint
+python -m pytest tests
 
-# Build para produção
-make build-standalone
-
-# Limpeza geral
-make clean
+# Build do executável no Windows
+pwsh -File scripts/build/build_clean_architecture.ps1
 ```
 
 ## Integração com CI/CD
 
 Os scripts foram projetados para funcionar tanto localmente quanto em ambientes de CI/CD:
 
-- **GitHub Actions**: Use os comandos make
-- **Local Development**: Use ./scripts.sh ou make
+- **GitHub Actions**: Use `scripts/build/build_clean_architecture.ps1`
+- **Local Development**: Use comandos diretos de Python e PowerShell
 - **Windows**: Use PowerShell para builds
-- **Linux/macOS**: Use make ou bash scripts
+- **Linux/macOS**: Use Python para desenvolvimento e o workflow Windows para gerar o `.exe`
 
 ## Troubleshooting
 
@@ -74,9 +77,6 @@ sudo apt install powershell
 
 # macOS
 brew install powershell
-
-# Ou use scripts alternativos sem PS
-./scripts.sh build-standalone  # Tentará usar python diretamente
 ```
 
 ### Permissões no Linux
@@ -91,8 +91,8 @@ chmod +x scripts/test/*.sh
 
 ```bash
 # Reinstalar dependências
-make clean
-make install
+pip install -r requirements.txt
+pip install -r requirements-test.txt
 
 # Ou verificar ambiente virtual
 source .venv/bin/activate
@@ -106,7 +106,7 @@ Para adicionar novos scripts:
 1. **Build scripts**: Adicione em `scripts/build/`
 2. **Test scripts**: Adicione em `scripts/test/`
 3. **Utils**: Adicione em `scripts/utils/`
-4. **Atualize**: Modifique `Makefile` e `scripts.sh`
+4. **Atualize**: Modifique este README e a documentação relacionada
 5. **Documente**: Atualize este README
 
 ## Links Úteis

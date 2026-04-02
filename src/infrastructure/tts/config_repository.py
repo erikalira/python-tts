@@ -38,6 +38,10 @@ class InMemoryConfigRepository(IConfigRepository):
             voice_id=self._default_config.voice_id,
             rate=self._default_config.rate
         )
+
+    async def load_config_async(self, user_id: Optional[int] = None) -> TTSConfig:
+        """Load configuration asynchronously using the in-memory state."""
+        return self.get_config(user_id)
     
     def set_config(self, user_id: int, config: TTSConfig) -> None:
         """Set TTS configuration for a specific user.
@@ -52,3 +56,8 @@ class InMemoryConfigRepository(IConfigRepository):
             voice_id=config.voice_id,
             rate=config.rate
         )
+
+    async def save_config_async(self, user_id: int, config: TTSConfig) -> bool:
+        """Persist configuration asynchronously using the in-memory state."""
+        self.set_config(user_id, config)
+        return True

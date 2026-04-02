@@ -1,7 +1,7 @@
 # Copilot Workspace Configuration
 
 project_type: "python_discord_bot"
-framework: "discord.py_flask"
+framework: "discord.py_aiohttp"
 architecture: "clean_architecture"
 
 context_files:

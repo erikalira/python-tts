@@ -21,6 +21,7 @@ class TTSConfig:
     language: str = 'pt'
     voice_id: str = 'roa/pt-br'
     rate: int = 180
+    output_device: Optional[str] = None
 
 
 @dataclass

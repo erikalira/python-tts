@@ -28,7 +28,7 @@ echo "   ❌ CancelledError e TimeoutError frequentes"
 echo ""
 
 echo "4. Para testar localmente:"
-echo "   python main.py"
+echo "   python -m src.bot"
 echo ""
 echo "5. Para deploy no Render:"
 echo "   git add ."

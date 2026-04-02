@@ -12,11 +12,11 @@ O repositório segue Clean Architecture e busca reutilizar lógica entre os dois
 
 ## Estrutura rápida
 
-- `main.py`: sobe o bot do Discord e o servidor HTTP
+- `src/bot.py`: sobe o bot do Discord e o servidor HTTP
 - `app.py`: inicia o app standalone/hotkey
 - `src/`: camadas principais da aplicação
 - `docs/`: documentação complementar
-- `BUILD_GUIDE.md`: guia de build do executável Windows
+- `docs/BUILD_GUIDE.md`: guia de build do executável Windows
 
 ## Requisitos
 
@@ -42,13 +42,14 @@ Configure um arquivo `.env` com pelo menos:
 
 ```env
 DISCORD_TOKEN=seu_token_aqui
-DISCORD_BOT_URL=http://127.0.0.1:5000
+DISCORD_BOT_URL=http://127.0.0.1:10000
+DISCORD_BOT_PORT=10000
 ```
 
 Suba o bot:
 
 ```bash
-python main.py
+python -m src.bot
 ```
 
 Em outro terminal, rode o app standalone:
@@ -63,12 +64,21 @@ python app.py
 pytest
 ```
 
+## Build do executavel Windows
+
+No Windows, use o script oficial:
+
+```powershell
+./scripts/build/build_clean_architecture.ps1
+```
+No Linux, gere o `.exe` pelo workflow de CI que roda em ambiente Windows.
+
 ## Documentação
 
-Use o README principal como ponto de entrada e deixe os detalhes nos guias específicos:
+Use o README principal como ponto de entrada e deixe os detalhes nos guias específicos. A pasta `docs/` fica reservada para estrutura principal e guides; documentação de novas features deve ir em `docs/features/`.
 
 - [Índice da documentação](docs/README.md)
-- [Guia de build do executável Windows](BUILD_GUIDE.md)
+- [Guia de build do executável Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
 - [Guia do app standalone](docs/README_STANDALONE.md)
 - [Configuração de hotkeys](docs/HOTKEY_SETUP.md)

@@ -235,6 +235,10 @@ class GuildConfigRepository(IConfigRepository):
 
         return self._get_default_config()
 
+    async def load_config_async(self, guild_id: Optional[int] = None) -> TTSConfig:
+        """Load configuration asynchronously through the repository contract."""
+        return await self.load_from_storage(guild_id)
+
     async def load_from_storage(self, guild_id: int) -> TTSConfig:
         """Load configuration from storage asynchronously.
         

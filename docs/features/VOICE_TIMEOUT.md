@@ -9,15 +9,15 @@ Resolver o erro `WebSocket closed with 4006` mantendo o bot conectado para múlt
 1. **Primeiro comando `/speak`**:
    - Bot conecta ao canal de voz
    - Reproduz o áudio
-   - **Agenda desconexão automática em 3 minutos**
+   - **Agenda desconexão automática em 30 minutos**
 
-2. **Comando seguinte dentro de 3 minutos**:
+2. **Comando seguinte dentro de 30 minutos**:
    - Bot já está conectado (não precisa reconectar)
    - **Cancela** a desconexão agendada
    - Reproduz o áudio
-   - **Reagenda** nova desconexão para +3 minutos
+   - **Reagenda** nova desconexão para +30 minutos
 
-3. **Sem atividade por 3 minutos**:
+3. **Sem atividade por 30 minutos**:
    - Bot desconecta automaticamente
    - Libera recursos do servidor
    - Evita erro 4006
@@ -33,22 +33,22 @@ Resolver o erro `WebSocket closed with 4006` mantendo o bot conectado para múlt
 O timeout está configurado em `src/infrastructure/discord/voice_channel.py`:
 
 ```python
-IDLE_DISCONNECT_TIMEOUT = 180  # 3 minutos em segundos
+IDLE_DISCONNECT_TIMEOUT = 30 * 60  # 30 minutos em segundos
 ```
 
 ### Ajustar o Timeout:
-- **Uso frequente** (servidor ativo): aumentar para 300s (5 min) ou 600s (10 min)
-- **Economia máxima** (baixo uso): reduzir para 60s (1 min) ou 120s (2 min)
-- **Recomendado**: manter em 180s (3 min) - equilíbrio perfeito
+- **Uso frequente** (servidor ativo): manter em 1800s (30 min)
+- **Economia máxima** (baixo uso): reduzir para 300s (5 min) ou 600s (10 min)
+- **Recomendado hoje**: manter em 1800s (30 min), alinhado com o runtime atual
 
 ## 📊 Logs
 
 O sistema adiciona logs informativos:
 
 ```
-INFO:src.infrastructure.discord.voice_channel:[VOICE_CHANNEL] Scheduling auto-disconnect in 180s
+INFO:src.infrastructure.discord.voice_channel:[VOICE_CHANNEL] Scheduling auto-disconnect in 1800s
 INFO:src.infrastructure.discord.voice_channel:[VOICE_CHANNEL] Cancelling scheduled disconnect (new activity)
-INFO:src.infrastructure.discord.voice_channel:[VOICE_CHANNEL] Auto-disconnecting after 180s of inactivity
+INFO:src.infrastructure.discord.voice_channel:[VOICE_CHANNEL] Auto-disconnecting after 1800s of inactivity
 INFO:src.infrastructure.discord.voice_channel:[VOICE_CHANNEL] Auto-disconnect completed
 ```
 
@@ -64,7 +64,7 @@ INFO:src.infrastructure.discord.voice_channel:[VOICE_CHANNEL] Auto-disconnect co
 2. **Teste de timeout**:
    ```
    /speak Teste
-   # Espere 3 minutos
+   # Espere 30 minutos
    # Bot deve desconectar automaticamente
    # Logs devem mostrar "Auto-disconnect completed"
    ```
@@ -72,14 +72,14 @@ INFO:src.infrastructure.discord.voice_channel:[VOICE_CHANNEL] Auto-disconnect co
 3. **Teste de cancelamento**:
    ```
    /speak Teste 1
-   # Espere 2 minutos (quase timeout)
+   # Espere alguns minutos
    /speak Teste 2  ← Timer é resetado, bot continua conectado
    ```
 
 ## 🐛 Troubleshooting
 
 **Bot desconecta muito rápido?**
-- Aumentar `IDLE_DISCONNECT_TIMEOUT` para 300 ou 600 segundos
+- Aumentar `IDLE_DISCONNECT_TIMEOUT` acima do valor atual só se houver necessidade real
 
 **Ainda recebendo erro 4006?**
 - Verificar logs: o timeout está sendo executado?
@@ -96,7 +96,7 @@ A implementação usa `asyncio.Task` para agendar desconexões assíncronas:
 
 ```python
 # Após reproduzir áudio
-self._schedule_disconnect()  # Cria Task com sleep(180)
+self._schedule_disconnect()  # Cria Task com sleep(1800)
 
 # Se novo comando chegar
 self._cancel_disconnect_timer()  # Cancela Task anterior

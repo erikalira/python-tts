@@ -38,3 +38,4 @@ Use when refactoring code that affects multiple modules, especially shared logic
 - step-by-step plan
 - affected files
 - validation checklist per step
+- documentation placement note when relevant: feature docs go in `docs/features/`, while top-level `docs/` stays for core guides

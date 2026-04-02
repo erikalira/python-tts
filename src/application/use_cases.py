@@ -4,8 +4,94 @@ import logging
 from typing import Optional
 from src.core.interfaces import ITTSEngine, IVoiceChannelRepository, IConfigRepository, IAudioQueue
 from src.core.entities import TTSRequest, AudioQueueItem
+from src.application.tts_text import prepare_tts_text
 
 logger = logging.getLogger(__name__)
+
+SPEAK_RESULT_OK = "ok"
+SPEAK_RESULT_QUEUED = "queued"
+SPEAK_RESULT_MISSING_TEXT = "missing_text"
+SPEAK_RESULT_USER_NOT_IN_CHANNEL = "user_not_in_channel"
+SPEAK_RESULT_QUEUE_FULL = "queue_full"
+SPEAK_RESULT_MISSING_GUILD_ID = "missing_guild_id"
+SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND = "voice_channel_not_found"
+SPEAK_RESULT_CROSS_GUILD_CHANNEL = "cross_guild_channel"
+SPEAK_RESULT_USER_LEFT_CHANNEL = "user_left_channel"
+SPEAK_RESULT_PLAYBACK_TIMEOUT = "playback_timeout"
+SPEAK_RESULT_VOICE_CONNECTION_FAILED = "voice_connection_failed"
+SPEAK_RESULT_VOICE_PERMISSION_DENIED = "voice_permission_denied"
+SPEAK_RESULT_UNKNOWN_ERROR = "unknown_error"
+JOIN_RESULT_OK = "ok"
+JOIN_RESULT_MISSING_GUILD_ID = "missing_guild_id"
+JOIN_RESULT_USER_NOT_IN_CHANNEL = "user_not_in_channel"
+JOIN_RESULT_VOICE_CHANNEL_NOT_FOUND = "voice_channel_not_found"
+JOIN_RESULT_VOICE_CONNECTION_FAILED = "voice_connection_failed"
+LEAVE_RESULT_OK = "ok"
+LEAVE_RESULT_MISSING_GUILD_ID = "missing_guild_id"
+LEAVE_RESULT_NOT_CONNECTED = "not_connected"
+LEAVE_RESULT_VOICE_CONNECTION_FAILED = "voice_connection_failed"
+
+
+class JoinVoiceChannelUseCase:
+    """Use case for connecting the bot to a member's current voice channel."""
+
+    def __init__(self, channel_repository: IVoiceChannelRepository):
+        self._channel_repository = channel_repository
+
+    async def execute(self, guild_id: Optional[int], member_id: Optional[int]) -> dict:
+        """Connect the bot to the member's current voice channel."""
+        if guild_id is None:
+            return {"success": False, "code": JOIN_RESULT_MISSING_GUILD_ID}
+
+        if member_id is None:
+            return {"success": False, "code": JOIN_RESULT_USER_NOT_IN_CHANNEL}
+
+        channel = await self._channel_repository.find_by_member_id(member_id)
+        if not channel:
+            return {"success": False, "code": JOIN_RESULT_USER_NOT_IN_CHANNEL}
+
+        if channel.get_guild_id() != guild_id:
+            return {"success": False, "code": JOIN_RESULT_VOICE_CHANNEL_NOT_FOUND}
+
+        try:
+            await channel.connect()
+        except Exception as exc:
+            logger.error(f"[JOIN_USE_CASE] Failed to connect to voice channel: {exc}", exc_info=True)
+            return {
+                "success": False,
+                "code": JOIN_RESULT_VOICE_CONNECTION_FAILED,
+                "error_detail": str(exc),
+            }
+
+        return {"success": True, "code": JOIN_RESULT_OK}
+
+
+class LeaveVoiceChannelUseCase:
+    """Use case for disconnecting the bot from a guild voice channel."""
+
+    def __init__(self, channel_repository: IVoiceChannelRepository):
+        self._channel_repository = channel_repository
+
+    async def execute(self, guild_id: Optional[int]) -> dict:
+        """Disconnect the bot from the current guild voice channel."""
+        if guild_id is None:
+            return {"success": False, "code": LEAVE_RESULT_MISSING_GUILD_ID}
+
+        channel = await self._channel_repository.find_by_guild_id(guild_id)
+        if not channel or not channel.is_connected():
+            return {"success": False, "code": LEAVE_RESULT_NOT_CONNECTED}
+
+        try:
+            await channel.disconnect()
+        except Exception as exc:
+            logger.error(f"[LEAVE_USE_CASE] Failed to disconnect from voice channel: {exc}", exc_info=True)
+            return {
+                "success": False,
+                "code": LEAVE_RESULT_VOICE_CONNECTION_FAILED,
+                "error_detail": str(exc),
+            }
+
+        return {"success": True, "code": LEAVE_RESULT_OK}
 
 
 class SpeakTextUseCase:
@@ -21,7 +107,8 @@ class SpeakTextUseCase:
         tts_engine: ITTSEngine,
         channel_repository: IVoiceChannelRepository,
         config_repository: IConfigRepository,
-        audio_queue: IAudioQueue
+        audio_queue: IAudioQueue,
+        max_text_length: Optional[int] = None,
     ):
         """Initialize use case with dependencies (Dependency Injection).
         
@@ -35,9 +122,37 @@ class SpeakTextUseCase:
         self._channel_repository = channel_repository
         self._config_repository = config_repository
         self._audio_queue = audio_queue
+        self._max_text_length = max_text_length
         self._guild_processors: dict = {}  # Track active queue processor tasks per guild
         self._guild_locks: dict = {}  # Asyncio locks per guild to prevent concurrent processing
         self._processing_guilds: set = set()  # Guilds currently draining queue playback
+
+    def _build_result(
+        self,
+        *,
+        success: bool,
+        code: str,
+        queued: bool,
+        position: Optional[int] = None,
+        queue_size: Optional[int] = None,
+        item_id: Optional[str] = None,
+        error_detail: Optional[str] = None
+    ) -> dict:
+        """Build a neutral result payload for presentation layers."""
+        result = {
+            "success": success,
+            "code": code,
+            "queued": queued,
+        }
+        if position is not None:
+            result["position"] = position
+        if queue_size is not None:
+            result["queue_size"] = queue_size
+        if item_id is not None:
+            result["item_id"] = item_id
+        if error_detail is not None:
+            result["error_detail"] = error_detail
+        return result
     
     async def execute(self, request: TTSRequest) -> dict:
         """Execute the speak text use case WITH QUEUE SUPPORT.
@@ -57,32 +172,45 @@ class SpeakTextUseCase:
             - position: Position in queue (if queued)
             - queue_size: Total items in queue (if queued)
         """
+        prepared_text = prepare_tts_text(request.text, self._max_text_length)
+        request = TTSRequest(
+            text=prepared_text,
+            channel_id=request.channel_id,
+            guild_id=request.guild_id,
+            member_id=request.member_id,
+        )
+
         logger.info(f"[USE_CASE] Speak request from user {request.member_id}: text='{request.text[:50]}...', guild_id={request.guild_id}")
-        
+
         if not request.text:
             logger.warning("[USE_CASE] Missing text in request")
-            return {"success": False, "message": "missing text", "queued": False}
+            return self._build_result(
+                success=False,
+                code=SPEAK_RESULT_MISSING_TEXT,
+                queued=False
+            )
         
         # Verify user is in a voice channel
         user_channel = await self._channel_repository.find_by_member_id(request.member_id)
         if not user_channel:
             logger.warning(f"[USE_CASE] User {request.member_id} not in any voice channel")
-            return {
-                "success": False,
-                "message": "❌ Você não está em nenhuma sala de voz. Entre em uma sala e tente novamente.",
-                "queued": False
-            }
+            return self._build_result(
+                success=False,
+                code=SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+                queued=False
+            )
         
         # Create and enqueue audio item
         item = AudioQueueItem(request=request)
         item_id = await self._audio_queue.enqueue(item)
         if item_id is None:
             logger.warning(f"[USE_CASE] Queue rejected item for guild {request.guild_id}: {item.error_message}")
-            return {
-                "success": False,
-                "message": f"❌ {item.error_message or 'Fila de áudio cheia. Tente novamente mais tarde.'}",
-                "queued": False
-            }
+            return self._build_result(
+                success=False,
+                code=SPEAK_RESULT_QUEUE_FULL,
+                queued=False,
+                error_detail=item.error_message
+            )
 
         position = await self._audio_queue.get_item_position(item_id)
         
@@ -118,17 +246,15 @@ class SpeakTextUseCase:
                 logger.info(f"[USE_CASE] Item {item_id} queued at position {position}")
             
             status = await self._audio_queue.get_queue_status(guild_id)
-            message = f"⏳ Sua mensagem está na **fila** (posição **{position + 1}**/{status['size']}). Será reproduzida em breve!"
-            
             logger.info(f"[USE_CASE] Item {item_id} queued at position {position}")
-            return {
-                "success": True,
-                "queued": True,
-                "position": position,
-                "queue_size": status['size'],
-                "message": message,
-                "item_id": item_id
-            }
+            return self._build_result(
+                success=True,
+                code=SPEAK_RESULT_QUEUED,
+                queued=True,
+                position=position,
+                queue_size=status["size"],
+                item_id=item_id
+            )
     
     async def _process_queue_items(self, guild_id: Optional[int]):
         """Process remaining queue items after first item.
@@ -172,14 +298,6 @@ class SpeakTextUseCase:
         self._processing_guilds.discard(guild_id)
         self._guild_processors.pop(guild_id, None)
     
-    async def _process_queue(self, guild_id: Optional[int]):
-        """Deprecated: Use _process_first_and_queue() instead.
-        
-        Kept for backwards compatibility but not used anymore.
-        """
-        logger.warning(f"[USE_CASE] _process_queue() called but should use _process_first_and_queue() for guild {guild_id}")
-        pass
-    
     async def _process_audio(self, item: AudioQueueItem) -> dict:
         """Process a single audio item (generate and play).
         
@@ -204,7 +322,13 @@ class SpeakTextUseCase:
                 error = "Guild ID não foi fornecido - isolamento de servidor falhou"
                 item.mark_failed(error)
                 logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} has no guild_id!")
-                return {"success": False, "message": f"❌ {error}", "queued": True}
+                return self._build_result(
+                    success=False,
+                    code=SPEAK_RESULT_MISSING_GUILD_ID,
+                    queued=True,
+                    item_id=item.item_id,
+                    error_detail=error
+                )
             
             # Find voice channel
             channel_result = await self._find_voice_channel(request)
@@ -212,23 +336,32 @@ class SpeakTextUseCase:
                 error = "Bot não conseguiu encontrar sua sala de voz"
                 item.mark_failed(error)
                 logger.error(f"[USE_CASE] Failed to find voice channel for item {item.item_id}")
-                return {"success": False, "message": f"❌ {error}", "queued": True}
+                return self._build_result(
+                    success=False,
+                    code=SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
+                    queued=True,
+                    item_id=item.item_id,
+                    error_detail=error
+                )
             
             voice_channel = channel_result["channel"]
             
             # VALIDATION: Verify voice channel belongs to same guild
-            if voice_channel.guild_id != request.guild_id:
+            channel_guild_id = voice_channel.get_guild_id()
+            if channel_guild_id != request.guild_id:
                 error = "Canal de voz pertence a servidor diferente"
                 item.mark_failed(error)
-                logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} voice channel guild {voice_channel.guild_id} != request guild {request.guild_id}")
-                return {"success": False, "message": f"❌ {error}", "queued": True}
+                logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} voice channel guild {channel_guild_id} != request guild {request.guild_id}")
+                return self._build_result(
+                    success=False,
+                    code=SPEAK_RESULT_CROSS_GUILD_CHANNEL,
+                    queued=True,
+                    item_id=item.item_id,
+                    error_detail=error
+                )
             
-            # Get TTS config for this guild (load from storage if available)
-            from src.infrastructure.persistence.config_storage import GuildConfigRepository
-            if isinstance(self._config_repository, GuildConfigRepository):
-                config = await self._config_repository.load_from_storage(request.guild_id)
-            else:
-                config = self._config_repository.get_config(request.guild_id)
+            # Load guild-specific config through the repository contract.
+            config = await self._config_repository.load_config_async(request.guild_id)
             logger.info(f"[USE_CASE] Item {item.item_id}: generating audio with engine={config.engine}")
             
             # Generate audio
@@ -245,7 +378,13 @@ class SpeakTextUseCase:
                 error = "Você saiu do canal de voz"
                 item.mark_failed(error)
                 logger.warning(f"[USE_CASE] Item {item.item_id}: user left channel, aborting playback")
-                return {"success": False, "message": f"❌ {error}", "queued": True}
+                return self._build_result(
+                    success=False,
+                    code=SPEAK_RESULT_USER_LEFT_CHANNEL,
+                    queued=True,
+                    item_id=item.item_id,
+                    error_detail=error
+                )
             
             # Play audio
             logger.info(f"[USE_CASE] Item {item.item_id}: playing audio")
@@ -253,18 +392,24 @@ class SpeakTextUseCase:
                 await asyncio.wait_for(voice_channel.play_audio(audio), timeout=60)
                 item.mark_completed()
                 logger.info(f"[USE_CASE] Item {item.item_id}: playback completed successfully")
-                return {
-                    "success": True,
-                    "message": "✅ Áudio reproduzido",
-                    "queued": False,
-                    "item_id": item.item_id
-                }
+                return self._build_result(
+                    success=True,
+                    code=SPEAK_RESULT_OK,
+                    queued=False,
+                    item_id=item.item_id
+                )
                 
             except asyncio.TimeoutError:
                 error = "Tempo limite excedido durante reprodução"
                 item.mark_failed(error)
                 logger.error(f"[USE_CASE] Item {item.item_id}: playback timeout")
-                return {"success": False, "message": f"⏱️ {error}", "queued": True}
+                return self._build_result(
+                    success=False,
+                    code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
+                    queued=True,
+                    item_id=item.item_id,
+                    error_detail=error
+                )
         
         except Exception as e:
             error_msg = str(e)
@@ -274,15 +419,21 @@ class SpeakTextUseCase:
             # Provide helpful error message
             error_lower = error_msg.lower()
             if "4017" in error_lower or "dave" in error_lower:
-                message = "❌ Discord recusou a conexao de voz (codigo 4017). A biblioteca atual do bot nao suporta esse handshake de voz."
+                code = SPEAK_RESULT_VOICE_CONNECTION_FAILED
             elif "not connected" in error_lower or "connection" in error_lower:
-                message = "🔌 Bot não conseguiu se conectar ao canal"
+                code = SPEAK_RESULT_VOICE_CONNECTION_FAILED
             elif "permission" in error_lower:
-                message = "⛔ Bot não tem permissão neste canal"
+                code = SPEAK_RESULT_VOICE_PERMISSION_DENIED
             else:
-                message = "❌ Erro ao reproduzir áudio"
-            
-            return {"success": False, "message": message, "queued": True}
+                code = SPEAK_RESULT_UNKNOWN_ERROR
+
+            return self._build_result(
+                success=False,
+                code=code,
+                queued=True,
+                item_id=item.item_id,
+                error_detail=error_msg
+            )
         
         finally:
             # Clean up audio file (critical for preventing memory leaks)
@@ -471,16 +622,10 @@ class ConfigureTTSUseCase:
                 return {"success": False, "message": "Rate must be between 50 and 300"}
             current_config.rate = rate
         
-        # Save configuration to persistent storage
-        from src.infrastructure.persistence.config_storage import GuildConfigRepository
-        if isinstance(self._config_repository, GuildConfigRepository):
-            saved = await self._config_repository.save_config_async(guild_id, current_config)
-            if not saved:
-                logger.error(f"[CONFIG_USE_CASE] Failed to persist config for guild {guild_id}")
-                return {"success": False, "message": "Failed to save configuration"}
-        else:
-            # Fallback for tests or old repositories
-            self._config_repository.set_config(guild_id, current_config)
+        saved = await self._config_repository.save_config_async(guild_id, current_config)
+        if not saved:
+            logger.error(f"[CONFIG_USE_CASE] Failed to persist config for guild {guild_id}")
+            return {"success": False, "message": "Failed to save configuration"}
         
         logger.info(f"[CONFIG_USE_CASE] Updated config for guild {guild_id}: {current_config}")
         
@@ -495,51 +640,3 @@ class ConfigureTTSUseCase:
             }
         }
     
-    # Backwards-compatible synchronous wrapper (for old HTTP endpoints)
-    def execute(self, user_id: int, engine: Optional[str] = None,
-                language: Optional[str] = None, voice_id: Optional[str] = None) -> dict:
-        """Deprecated: Use update_config_async() instead.
-        
-        Kept for backwards compatibility with old HTTP endpoints.
-        
-        Args:
-            user_id: Old parameter (treated as guild_id now)
-            engine: TTS engine
-            language: Language
-            voice_id: Voice ID
-            
-        Returns:
-            dict with configuration
-        """
-        logger.warning("[CONFIG_USE_CASE] Using deprecated execute() method, use update_config_async() instead")
-        
-        guild_id = user_id  # Treat old user_id as guild_id
-        current_config = self._config_repository.get_config(guild_id)
-        
-        # If no parameters, return current config
-        if engine is None and language is None and voice_id is None:
-            return self.get_config(guild_id)
-        
-        # Validate and update
-        if engine is not None:
-            if engine.lower() not in ['gtts', 'pyttsx3']:
-                return {"success": False, "message": "Invalid engine"}
-            current_config.engine = engine.lower()
-        
-        if language is not None:
-            current_config.language = language.lower()
-        
-        if voice_id is not None:
-            current_config.voice_id = voice_id
-        
-        # Save configuration (sync version for backwards compatibility)
-        self._config_repository.set_config(guild_id, current_config)
-        
-        return {
-            "success": True,
-            "config": {
-                "engine": current_config.engine,
-                "language": current_config.language,
-                "voice_id": current_config.voice_id
-            }
-        }

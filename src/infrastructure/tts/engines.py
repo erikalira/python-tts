@@ -7,6 +7,7 @@ import pyttsx3
 from gtts import gTTS
 from src.core.interfaces import ITTSEngine
 from src.core.entities import TTSConfig, AudioFile
+from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
 
 logger = logging.getLogger(__name__)
 
@@ -69,35 +70,11 @@ class Pyttsx3Engine(ITTSEngine):
                 self._engine = pyttsx3.init()
             
             if self._engine:
-                self._engine.setProperty('rate', config.rate)
-                self._configure_voice(config)
+                configure_pyttsx3_engine(self._engine, config, logger)
                 self._initialized = True
         except Exception as e:
             logger.error(f"Failed to initialize pyttsx3: {e}")
             raise
-    
-    def _configure_voice(self, config: TTSConfig):
-        """Configure voice based on settings."""
-        if not self._engine:
-            return
-        
-        try:
-            voices = self._engine.getProperty('voices')
-            target_voice = None
-            
-            for voice in voices:
-                if config.voice_id.lower() in voice.id.lower():
-                    target_voice = voice.id
-                    logger.info(f"✅ Found configured voice: {voice.name}")
-                    break
-            
-            if target_voice:
-                self._engine.setProperty('voice', target_voice)
-            elif voices:
-                self._engine.setProperty('voice', voices[0].id)
-                logger.warning(f"⚠️ Voice '{config.voice_id}' not found, using default")
-        except Exception as e:
-            logger.warning(f"Could not configure voices: {e}")
     
     async def generate_audio(self, text: str, config: TTSConfig) -> AudioFile:
         """Generate audio using pyttsx3.

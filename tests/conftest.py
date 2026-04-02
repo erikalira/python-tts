@@ -50,9 +50,8 @@ class MockVoiceChannel(IVoiceChannel):
     def get_channel_id(self) -> int:
         """Get mock channel ID."""
         return self._channel_id
-    
-    @property
-    def guild_id(self) -> int:
+
+    def get_guild_id(self) -> int:
         """Get mock guild ID."""
         return self._guild_id
 
@@ -103,6 +102,10 @@ class MockConfigRepository(IConfigRepository):
             voice_id=self.default_config.voice_id,
             rate=self.default_config.rate
         )
+
+    async def load_config_async(self, guild_id: int = None) -> TTSConfig:
+        """Load config through the async repository contract."""
+        return self.get_config(guild_id)
     
     def set_config(self, guild_id: int, config: TTSConfig) -> None:
         """Set config by guild ID."""

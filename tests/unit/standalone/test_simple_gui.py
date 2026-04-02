@@ -102,12 +102,13 @@ def build_fake_ttk_module():
 def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch):
     config = StandaloneConfig.create_default()
     config.discord.member_id = "123"
+    config.discord.guild_id = "456"
     config.discord.bot_url = "http://bot"
     config.tts.engine = "gtts"
     config.tts.language = "pt"
     config.tts.voice_id = "voice"
     config.tts.rate = 180
-    responses = iter(["", "", "", "", "", "", "", ""])
+    responses = iter(["", "", "", "", "", "", "", "", ""])
 
     monkeypatch.setattr("builtins.input", lambda _prompt: next(responses))
 
@@ -115,6 +116,7 @@ def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch)
 
     assert result is not None
     assert result.discord.member_id == "123"
+    assert result.discord.guild_id == "456"
     assert result.discord.bot_url == "http://bot"
     assert result.tts.engine == "gtts"
     assert result.tts.rate == 180
@@ -125,6 +127,8 @@ def test_console_config_retries_invalid_choices_and_returns_none_on_validation_e
     responses = iter([
         "abc",
         "123",
+        "xyz",
+        "789",
         "",
         "3",
         "2",
@@ -204,6 +208,7 @@ def test_initial_setup_gui_create_widgets_populates_variables(monkeypatch):
     gui._create_initial_setup_widgets()
 
     assert gui.member_id_var.get() == ""
+    assert gui.guild_id_var.get() == ""
     assert gui.channel_id_var.get() == ""
     assert gui.bot_url_var.get() == "http://env-bot"
 
@@ -218,6 +223,7 @@ def test_initial_setup_gui_skip_discord_sets_result_and_destroys_root(monkeypatc
 
     assert gui.result == {
         "member_id": None,
+        "guild_id": None,
         "channel_id": None,
         "bot_url": "http://bot",
         "skip_discord": True,
@@ -229,6 +235,7 @@ def test_initial_setup_gui_save_and_continue_validates_member_id(monkeypatch):
     gui = simple_gui.InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("abc")
+    gui.guild_id_var = DummyVar("")
     gui.channel_id_var = DummyVar("")
     gui.bot_url_var = DummyVar("http://bot")
     errors = []
@@ -245,6 +252,7 @@ def test_initial_setup_gui_save_and_continue_validates_channel_id(monkeypatch):
     gui = simple_gui.InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("")
     gui.channel_id_var = DummyVar("abc")
     gui.bot_url_var = DummyVar("http://bot")
     errors = []
@@ -257,10 +265,28 @@ def test_initial_setup_gui_save_and_continue_validates_channel_id(monkeypatch):
     assert errors == [("Erro", "Channel ID deve conter apenas números!")]
 
 
+def test_initial_setup_gui_save_and_continue_validates_guild_id(monkeypatch):
+    gui = simple_gui.InitialSetupGUI()
+    gui.root = DummyRoot()
+    gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("abc")
+    gui.channel_id_var = DummyVar("")
+    gui.bot_url_var = DummyVar("http://bot")
+    errors = []
+
+    monkeypatch.setattr(simple_gui.messagebox, "showerror", lambda title, message: errors.append((title, message)))
+
+    gui._save_and_continue()
+
+    assert gui.result is None
+    assert errors == [("Erro", "Guild ID deve conter apenas números!")]
+
+
 def test_initial_setup_gui_save_and_continue_requires_bot_url(monkeypatch):
     gui = simple_gui.InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("789")
     gui.channel_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("   ")
     errors = []
@@ -273,10 +299,28 @@ def test_initial_setup_gui_save_and_continue_requires_bot_url(monkeypatch):
     assert errors == [("Erro", "Bot URL é obrigatória!")]
 
 
+def test_initial_setup_gui_save_and_continue_requires_guild_id_for_discord(monkeypatch):
+    gui = simple_gui.InitialSetupGUI()
+    gui.root = DummyRoot()
+    gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("   ")
+    gui.channel_id_var = DummyVar("456")
+    gui.bot_url_var = DummyVar("http://bot")
+    errors = []
+
+    monkeypatch.setattr(simple_gui.messagebox, "showerror", lambda title, message: errors.append((title, message)))
+
+    gui._save_and_continue()
+
+    assert gui.result is None
+    assert errors == [("Erro", "Guild ID é obrigatória para usar o bot do Discord!")]
+
+
 def test_initial_setup_gui_save_and_continue_with_member_id(monkeypatch):
     gui = simple_gui.InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("789")
     gui.channel_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
     infos = []
@@ -287,6 +331,7 @@ def test_initial_setup_gui_save_and_continue_with_member_id(monkeypatch):
 
     assert gui.result == {
         "member_id": "123",
+        "guild_id": "789",
         "channel_id": "456",
         "bot_url": "http://bot",
         "skip_discord": False,
@@ -299,6 +344,7 @@ def test_initial_setup_gui_save_and_continue_without_member_id(monkeypatch):
     gui = simple_gui.InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("   ")
+    gui.guild_id_var = DummyVar("   ")
     gui.channel_id_var = DummyVar("")
     gui.bot_url_var = DummyVar("http://bot")
     infos = []
@@ -309,6 +355,7 @@ def test_initial_setup_gui_save_and_continue_without_member_id(monkeypatch):
 
     assert gui.result == {
         "member_id": None,
+        "guild_id": None,
         "channel_id": None,
         "bot_url": "http://bot",
         "skip_discord": False,
@@ -318,7 +365,7 @@ def test_initial_setup_gui_save_and_continue_without_member_id(monkeypatch):
 
 def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, capsys):
     gui = simple_gui.InitialSetupGUI()
-    responses = iter(["abc", "xyz", ""])
+    responses = iter(["abc", "xyz", "qwe", ""])
 
     monkeypatch.setenv("DISCORD_BOT_URL", "http://default-bot")
     monkeypatch.setattr("builtins.input", lambda _prompt: next(responses))
@@ -327,6 +374,7 @@ def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, cap
 
     assert result == {
         "member_id": None,
+        "guild_id": None,
         "channel_id": None,
         "bot_url": "http://default-bot",
         "skip_discord": True,
@@ -371,6 +419,7 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
     gui.root = DummyRoot()
     gui.config = StandaloneConfig.create_default()
     gui.config.discord.member_id = "123"
+    gui.config.discord.guild_id = "456"
     gui.config.discord.bot_url = "http://bot"
     gui.config.tts.engine = "pyttsx3"
     gui.config.tts.language = "en"
@@ -385,6 +434,7 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
     gui._create_interface()
 
     assert gui.member_id_var.get() == "123"
+    assert gui.guild_id_var.get() == "456"
     assert gui.bot_url_var.get() == "http://bot"
     assert gui.engine_var.get() == "pyttsx3"
     assert gui.language_var.get() == "en"
@@ -398,6 +448,7 @@ def test_gui_config_save_config_returns_early_when_fields_missing():
     gui = simple_gui.GUIConfig()
     gui.config = StandaloneConfig.create_default()
     gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("456")
 
     gui._save_config()
 
@@ -409,6 +460,7 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
     gui.root = DummyRoot()
     gui.config = StandaloneConfig.create_default()
     gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
     gui.engine_var = DummyVar("pyttsx3")
     gui.language_var = DummyVar("en")
@@ -423,6 +475,7 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
 
     assert gui.result is not None
     assert gui.result.discord.member_id == "123"
+    assert gui.result.discord.guild_id == "456"
     assert gui.result.tts.engine == "pyttsx3"
     assert gui.result.tts.rate == 210
     assert gui.result.hotkey.trigger_open == "["
@@ -433,6 +486,7 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch):
     gui = simple_gui.GUIConfig()
     gui.config = StandaloneConfig.create_default()
     gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
     gui.engine_var = DummyVar("gtts")
     gui.language_var = DummyVar("pt")
@@ -455,6 +509,7 @@ def test_gui_config_save_config_handles_value_error(monkeypatch):
     gui = simple_gui.GUIConfig()
     gui.config = StandaloneConfig.create_default()
     gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
     gui.engine_var = DummyVar("gtts")
     gui.language_var = DummyVar("pt")
@@ -477,6 +532,7 @@ def test_gui_config_save_config_handles_unexpected_error(monkeypatch):
     gui = simple_gui.GUIConfig()
     gui.config = StandaloneConfig.create_default()
     gui.member_id_var = DummyVar("123")
+    gui.guild_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
     gui.engine_var = DummyVar("gtts")
     gui.language_var = DummyVar("pt")
@@ -486,7 +542,7 @@ def test_gui_config_save_config_handles_unexpected_error(monkeypatch):
     gui.trigger_close_var = DummyVar("}")
     errors = []
 
-    monkeypatch.setattr(simple_gui, "replace", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(simple_gui, "build_updated_config", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
     monkeypatch.setattr(simple_gui.messagebox, "showerror", lambda title, message: errors.append((title, message)))
 
     gui._save_config()

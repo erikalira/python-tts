@@ -20,16 +20,16 @@
 
 ### Files Updated:
 
-1. **Makefile**: Simplified to use only Clean Architecture build
+1. **Makefile**: Removed after consolidating build commands in the PowerShell script
 2. **app.py**: Defined as the standalone entry point
 3. **docs/README_STANDALONE.md**: Updated build script references
 4. **docs/TROUBLESHOOTING.md**: Updated all build commands
 5. **docs/HOTKEY_SETUP.md**: Updated build instructions
-6. **BUILD_GUIDE.md**: Updated script path
+6. **docs/BUILD_GUIDE.md**: Updated script path
 7. **README.md**: Updated build commands
 8. **scripts/README.md**: Updated documentation
 9. **docs/ARCHITECTURE.md**: Updated project structure
-10. **test_integration.py**: Updated required files list
+10. **scripts/test/manual_integration_check.py**: Updated required files list
 
 ### Removed Documentation:
 
@@ -58,11 +58,10 @@
 ## 🚀 Usage
 
 ```bash
-# Build for Windows (from Linux or Windows)
-make build-clean
+# Build for Windows
+pwsh -File scripts/build/build_clean_architecture.ps1
 
-# Or directly
-powershell scripts/build/build_clean_architecture.ps1
+# On Linux, generate the .exe via Docker using the CI flow
 ```
 
 ## 📦 Result

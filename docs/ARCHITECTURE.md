@@ -1,108 +1,119 @@
 # Arquitetura do Projeto - TTS Hotkey Windows
 
-## 📐 Visão Geral
+## Visão Geral
 
-Este projeto implementa **duas arquiteturas complementares**:
+Este projeto contém dois aplicativos independentes:
 
-**1. Clean Architecture para Discord/Flask** - Versão completa com bot e servidor web  
-**2. Clean Architecture para Standalone** - Versão desktop com GUI e system tray
+1. Bot do Discord com endpoint HTTP para TTS
+2. App standalone Windows com hotkeys, GUI e system tray
 
-Ambas seguem **Clean Architecture** e os princípios **SOLID** para garantir:
+Ambos seguem Clean Architecture e os princípios SOLID para garantir:
 
-- ✅ Código modular e testável
-- ✅ Baixo acoplamento entre camadas
-- ✅ Alta coesão dentro dos módulos
-- ✅ Facilidade de manutenção e extensão
-- ✅ Independência de frameworks externos
-- ✅ Separação clara de responsabilidades
-- ✅ Dependency Injection em todas as camadas
+- código modular e testável
+- baixo acoplamento entre camadas
+- alta coesão dentro dos módulos
+- facilidade de manutenção e extensão
+- independência de frameworks externos
+- separação clara de responsabilidades
+- dependency injection nas bordas do sistema
 
-## 🏗️ Estrutura de Diretórios
+## Estado atual dos entry points
+
+### Standalone
+
+- Entry point oficial: `app.py`
+- Implementação principal: `src/standalone/`
+
+### Bot Discord
+
+- Entry point oficial: `src/bot.py`
+- Servidor HTTP operacional: `src/infrastructure/http/server.py`
+
+O bot agora usa um único runtime operacional baseado em `src/bot.py` com `aiohttp`.
+
+## Estrutura de Diretórios
 
 ```
 tts-hotkey-windows/
-├── config/                    # 🔧 DISCORD/FLASK: Configuração e Dependency Injection
+├── config/                    # Configuração e dependency injection do bot
 │   ├── __init__.py
-│   ├── settings.py           # Carregamento de variáveis de ambiente
-│   └── container.py          # DI Container (Injeção de Dependências)
+│   ├── settings.py            # Carregamento de variáveis de ambiente
+│   └── container.py           # DI container
 │
 ├── src/
-│   ├── core/                 # 🔵 CAMADA DE DOMÍNIO (Domain Layer)
+│   ├── core/                  # Camada de domínio
 │   │   ├── __init__.py
-│   │   ├── entities.py       # Entidades de negócio (TTSRequest, TTSConfig, AudioFile)
-│   │   └── interfaces.py     # Interfaces/Contratos (ITTSEngine, IVoiceChannel, etc)
+│   │   ├── entities.py        # Entidades de negócio
+│   │   └── interfaces.py      # Interfaces e contratos
 │   │
-│   ├── application/          # 🟢 CAMADA DE APLICAÇÃO (Application Layer)
+│   ├── application/           # Camada de aplicação
 │   │   ├── __init__.py
-│   │   └── use_cases.py      # Casos de uso (SpeakTextUseCase, ConfigureTTSUseCase)
+│   │   └── use_cases.py       # Casos de uso
 │   │
-│   ├── infrastructure/       # 🟡 CAMADA DE INFRAESTRUTURA (Infrastructure Layer)
+│   ├── infrastructure/        # Camada de infraestrutura
 │   │   ├── __init__.py
-│   │   ├── tts/              # Implementações de TTS
+│   │   ├── tts/               # Implementações de TTS
 │   │   │   ├── __init__.py
-│   │   │   ├── engines.py    # GTTSEngine, Pyttsx3Engine, TTSEngineFactory
-│   │   │   └── config_repository.py  # InMemoryConfigRepository
+│   │   │   ├── engines.py
+│   │   │   └── config_repository.py
 │   │   │
-│   │   ├── discord/          # Implementações Discord
+│   │   ├── discord/           # Implementações Discord
 │   │   │   ├── __init__.py
-│   │   │   └── voice_channel.py  # DiscordVoiceChannel, DiscordVoiceChannelRepository
+│   │   │   └── voice_channel.py
 │   │   │
-│   │   ├── http/             # Servidor HTTP
+│   │   ├── http/              # Servidor HTTP modular atual
 │   │   │   ├── __init__.py
-│   │   │   └── server.py     # HTTPServer (aiohttp)
-│   │   │
-│   │   └── input/            # Input listeners (keyboard, etc)
-│   │       └── __init__.py
+│   │   │   └── server.py      # HTTPServer (aiohttp)
 │   │
-│   ├── presentation/         # 🔴 CAMADA DE APRESENTAÇÃO (Presentation Layer)
+│   ├── presentation/          # Camada de apresentação
 │   │   ├── __init__.py
-│   │   ├── discord_commands.py  # Comandos Discord
-│   │   └── http_controllers.py  # Controladores HTTP
+│   │   ├── discord_commands.py
+│   │   └── http_controllers.py
 │   │
-│   └── standalone/           # 🎯 NOVA: STANDALONE CLEAN ARCHITECTURE
+│   ├── bot.py                 # Entry point do bot
+│   │
+│   └── standalone/            # Runtime standalone
 │       ├── __init__.py
 │       │
-│       ├── config/           # 🔧 STANDALONE: Configuração com Dataclasses
+│       ├── config/            # Configuração com dataclasses
 │       │   ├── __init__.py
-│       │   └── standalone_config.py  # StandaloneConfig, ConfigurationRepository
+│       │   └── standalone_config.py
 │       │
-│       ├── app/              # 🟢 STANDALONE: Aplicação Principal
+│       ├── app/               # Aplicação principal
 │       │   ├── __init__.py
-│       │   └── simple_app.py # SimpleApplication (orchestrador principal)
+│       │   └── standalone_app.py
 │       │
-│       ├── services/         # 🟡 STANDALONE: Camada de Serviços
+│       ├── services/          # Serviços do standalone
 │       │   ├── __init__.py
-│       │   ├── tts_services.py        # TTSProcessor
-│       │   ├── hotkey_services.py     # HotkeyManager
-│       │   └── notification_services.py # SystemTrayService
+│       │   ├── tts_services.py
+│       │   ├── hotkey_services.py
+│       │   └── notification_services.py
 │       │
-│       └── gui/              # 🔴 STANDALONE: Interface Gráfica
+│       └── gui/               # Interface gráfica
 │           ├── __init__.py
-│           └── simple_gui.py # ConfigurationService (Tkinter)
+│           ├── simple_gui.py
+│           └── configuration_gui.py
 │
-├── scripts/build/            # 🚀 BUILD SCRIPTS
-│   └── build_clean_architecture.ps1  # Build único com Clean Architecture e SOLID
-│
-├── app.py                      # 🎯 ENTRY POINT Principal do app standalone
-│   │
-│   ├── __init__.py
-│   └── __version__.py        # Informações de versão
+├── app.py                     # Entry point do standalone
+├── scripts/build/
+│   └── build_clean_architecture.ps1
 │
 ├── tests/
-│   ├── unit/                 # Testes unitários (77% coverage)
+│   ├── unit/
 │   │   ├── core/
 │   │   ├── application/
 │   │   ├── infrastructure/
-│   │   └── presentation/
-│   ├── conftest.py          # Fixtures e mocks
-│   └── README.md            # Documentação de testes
+│   │   ├── presentation/
+│   │   └── standalone/
+│   ├── conftest.py
+│   └── README.md
 │
-├── .env                       # Variáveis de ambiente
-├── requirements.txt           # Dependências Python
-├── requirements-test.txt      # Dependências de teste
-├── pytest.ini                 # Configuração de testes
-├── Dockerfile                 # Container Docker
-└── README.md                  # Documentação
+├── .env
+├── requirements.txt
+├── requirements-test.txt
+├── pytest.ini
+├── Dockerfile
+└── README.md
 ```
 
 ## 🎯 Arquitetura Standalone (Clean Architecture)
@@ -153,13 +164,14 @@ class SystemTrayService:
 ### 🟢 **Application Layer** (`src/standalone/app/`)
 
 ```python
-class SimpleApplication:
+class StandaloneApplication:
     """Orquestrador principal da aplicação."""
     def __init__(self)
-    def initialize(self) -> None
+    def initialize(self) -> bool
     def run(self) -> None
 
-    # Dependency injection para todos os serviços
+    # Coordena configuração, TTS, hotkeys e tray
+    _config_repository: ConfigurationRepository
     _config_service: ConfigurationService
     _tts_processor: TTSProcessor
     _hotkey_manager: HotkeyManager
@@ -170,11 +182,16 @@ class SimpleApplication:
 
 ```python
 class ConfigurationService:
-    """Interface de configuração (GUI + Console)."""
+    """Orquestra a configuração inicial e a reconfiguração do app."""
     def __init__(self, prefer_gui: bool = True)
-    def configure_application(self, config: StandaloneConfig) -> StandaloneConfig
-    def show_gui_config(self) -> dict
-    def show_console_config(self) -> dict
+    def get_configuration(self, config: StandaloneConfig) -> StandaloneConfig | None
+
+class GUIConfigurationInterface:
+    """Interface gráfica para editar a configuração."""
+    def show_configuration_dialog(
+        self,
+        current_config: StandaloneConfig
+    ) -> StandaloneConfig | None
 ```
 
 ### 🚀 **Entry Point** (`app.py`)
@@ -289,19 +306,16 @@ container = Container(config)
 # - container.speak_controller
 ```
 
-## 🚀 Como Executar
+## Como Executar
 
-### Desenvolvimento Local (Python)
+### Desenvolvimento Local
 
 ```bash
-# Opção 1: Novo entry point (bot completo)
+# Bot do Discord com runtime atual
 python -m src.bot
 
-# Opção 2: Servidor de teste (sem Discord)
-python -m src.test_server
-
-# Opção 3: Com Flask (compatibilidade)
-python -m src.app
+# Standalone Windows / hotkey
+python app.py
 ```
 
 ### Desenvolvimento Local (Docker)
@@ -386,8 +400,14 @@ def test_speak_use_case():
     mock_channel = MockVoiceChannel()
     mock_repo = MockChannelRepository(mock_channel)
     mock_config = MockConfigRepository()
+    audio_queue = InMemoryAudioQueue()
 
-    use_case = SpeakTextUseCase(mock_engine, mock_repo, mock_config)
+    use_case = SpeakTextUseCase(
+        mock_engine,
+        mock_repo,
+        mock_config,
+        audio_queue,
+    )
     result = await use_case.execute(TTSRequest(text="test"))
 
     assert result["success"] == True

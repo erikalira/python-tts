@@ -4,8 +4,14 @@ Standalone Application - Clean Architecture
 Main application that orchestrates all services following SOLID principles.
 """
 
-from typing import Optional
+import logging
+from typing import Callable, Optional
 
+from src.application.tts_execution import (
+    TTS_EXECUTION_RESULT_FAILED,
+    TTS_EXECUTION_RESULT_MISSING_TEXT,
+    TTS_EXECUTION_RESULT_OK,
+)
 from ..config.standalone_config import (
     StandaloneConfig, 
     ConfigurationRepository, 
@@ -20,42 +26,83 @@ from ..services.hotkey_services import (
     HotkeyHandler
 )
 from ..services.notification_services import SystemTrayService
+from ..adapters.keyboard_backend import KeyboardHookBackend
+
+logger = logging.getLogger(__name__)
+
+
+class StandaloneTTSResultPresenter:
+    """Translate structured TTS execution results into standalone notifications."""
+
+    def __init__(self, notification_service: SystemTrayService):
+        self._notification_service = notification_service
+
+    def show_processing(self, text: str) -> None:
+        """Show a processing notification for captured text."""
+        self._notification_service.notify_info(
+            "TTS Hotkey",
+            f"Processando: '{text[:50]}{'...' if len(text) > 50 else ''}'"
+        )
+
+    def present(self, result: dict) -> None:
+        """Show user-facing feedback after TTS execution completes."""
+        code = result.get("code")
+        if code == TTS_EXECUTION_RESULT_OK:
+            self._notification_service.notify_success("TTS Hotkey", "Texto reproduzido com sucesso")
+            return
+
+        if code == TTS_EXECUTION_RESULT_MISSING_TEXT:
+            self._notification_service.notify_error("TTS Hotkey", "Nenhum texto valido foi capturado")
+            return
+
+        if code == TTS_EXECUTION_RESULT_FAILED:
+            self._notification_service.notify_error("TTS Hotkey", "Falha ao reproduzir o texto")
+            return
+
+        self._notification_service.notify_error("TTS Hotkey", "Falha inesperada ao processar TTS")
 
 
 class StandaloneHotkeyHandler:
-    """Hotkey handler that integrates TTS processing with notifications."""
+    """Hotkey handler that integrates captured text with TTS processing."""
     
-    def __init__(self, 
-                 tts_processor: TTSProcessor,
-                 notification_service: SystemTrayService):
+    def __init__(
+        self,
+        tts_processor: TTSProcessor,
+        result_presenter: StandaloneTTSResultPresenter,
+    ):
         self._tts_processor = tts_processor
-        self._notification_service = notification_service
+        self._result_presenter = result_presenter
     
     def handle_text_captured(self, event: HotkeyEvent) -> None:
         """Handle when text is captured between hotkey triggers."""
         if not event.text:
             return
         
-        # Log the capture
-        print(f"[APP] 📝 Texto capturado: '{event.text}'")
+        logger.info("[APP] Texto capturado pelo hotkey handler")
+        self._result_presenter.show_processing(event.text)
         
-        # Notify start of processing
-        self._notification_service.notify_info(
-            "TTS Hotkey", 
-            f"Processando: '{event.text[:50]}{'...' if len(event.text) > 50 else ''}'"
+        self._tts_processor.process_text(
+            event.text,
+            event.character_count,
+            on_complete=self._result_presenter.present,
         )
-        
-        # Process the text
-        self._tts_processor.process_text(event.text, event.character_count)
 
 
 class StandaloneApplication:
     """Main standalone application class following Clean Architecture."""
     
-    def __init__(self):
+    def __init__(
+        self,
+        config_repository: Optional[ConfigurationRepository] = None,
+        config_service: Optional[ConfigurationService] = None,
+        tts_processor_factory: Callable[[StandaloneConfig], TTSProcessor] = TTSProcessor,
+        hotkey_manager_factory: Callable[[StandaloneConfig], HotkeyManager] = HotkeyManager,
+        notification_service_factory: Callable[[StandaloneConfig], SystemTrayService] = SystemTrayService,
+        console_wait_factory: Optional[Callable[[], object]] = None
+    ):
         # Core components
         self._config: Optional[StandaloneConfig] = None
-        self._config_repository: Optional[ConfigurationRepository] = None
+        self._config_repository: Optional[ConfigurationRepository] = config_repository
         
         # Services
         self._tts_processor: Optional[TTSProcessor] = None
@@ -63,7 +110,11 @@ class StandaloneApplication:
         self._notification_service: Optional[SystemTrayService] = None
         
         # UI Services
-        self._config_service: Optional[ConfigurationService] = None
+        self._config_service: Optional[ConfigurationService] = config_service
+        self._tts_processor_factory = tts_processor_factory
+        self._hotkey_manager_factory = hotkey_manager_factory
+        self._notification_service_factory = notification_service_factory
+        self._console_wait_factory = console_wait_factory or KeyboardHookBackend
         
         # Application state
         self._initialized = False
@@ -76,34 +127,37 @@ class StandaloneApplication:
         
         try:
             # Initialize configuration
-            self._config_repository = ConfigurationRepository()
+            if self._config_repository is None:
+                self._config_repository = ConfigurationRepository()
             self._config = self._config_repository.load()
             
             # Initialize UI services
-            self._config_service = ConfigurationService(prefer_gui=True)
+            if self._config_service is None:
+                self._config_service = ConfigurationService(prefer_gui=True)
             
             # Initialize core services
-            self._tts_processor = TTSProcessor(self._config)
-            self._hotkey_manager = HotkeyManager(self._config)
-            self._notification_service = SystemTrayService(self._config)
+            self._tts_processor = self._tts_processor_factory(self._config)
+            self._hotkey_manager = self._hotkey_manager_factory(self._config)
+            self._notification_service = self._notification_service_factory(self._config)
             
             # Set up integrations
             self._setup_integrations()
             
             self._initialized = True
-            print("[APP] ✅ Aplicação inicializada com sucesso")
+            logger.info("[APP] Aplicação inicializada com sucesso")
             return True
             
         except Exception as e:
-            print(f"[APP] ❌ Erro durante inicialização: {e}")
+            logger.error(f"[APP] Erro durante inicialização: {e}")
             return False
     
     def _setup_integrations(self) -> None:
         """Set up integrations between services."""
         # Create hotkey handler that bridges hotkey events to TTS
+        result_presenter = StandaloneTTSResultPresenter(self._notification_service)
         hotkey_handler = StandaloneHotkeyHandler(
             self._tts_processor,
-            self._notification_service
+            result_presenter,
         )
         
         # Initialize hotkey manager with handler
@@ -125,7 +179,7 @@ class StandaloneApplication:
         """Run the standalone application."""
         if not self._initialized:
             if not self.initialize():
-                print("[APP] ❌ Falha na inicialização. Encerrando.")
+                logger.error("[APP] Falha na inicialização. Encerrando.")
                 return
         
         try:
@@ -149,16 +203,16 @@ class StandaloneApplication:
             self._run_main_loop()
             
         except KeyboardInterrupt:
-            print("\n[APP] 🛑 Interrompido pelo usuário")
+            logger.info("[APP] Interrompido pelo usuário")
         except Exception as e:
-            print(f"[APP] ❌ Erro durante execução: {e}")
+            logger.error(f"[APP] Erro durante execução: {e}")
         finally:
             self._shutdown()
     
     def _handle_initial_configuration(self) -> bool:
         """Handle initial configuration if needed."""
         if not ConfigurationValidator.is_configured(self._config):
-            print("[APP] 🔧 Primeira execução detectada! Configurando...")
+            logger.info("[APP] Primeira execução detectada! Configurando...")
             
             updated_config = self._config_service.get_configuration(self._config)
             
@@ -168,7 +222,7 @@ class StandaloneApplication:
             # Save updated configuration
             self._config = updated_config
             if not self._config_repository.save(self._config):
-                print("[APP] ⚠️ Falha ao salvar configuração, continuando com configuração temporária")
+                logger.warning("[APP] Falha ao salvar configuração, continuando com configuração temporária")
             
             # Update services with new configuration
             self._update_services_config()
@@ -177,20 +231,20 @@ class StandaloneApplication:
     
     def _start_services(self) -> bool:
         """Start all application services."""
-        print("[APP] 🚀 Iniciando serviços...")
+        logger.info("[APP] Iniciando serviços...")
         
         # Start hotkey monitoring
         if not self._hotkey_manager.start():
-            print("[APP] ❌ Falha ao iniciar monitoramento de hotkey")
+            logger.error("[APP] Falha ao iniciar monitoramento de hotkey")
             return False
         
         # Start system tray (optional)
         tray_started = self._notification_service.start()
         if not tray_started:
-            print("[APP] ⚠️ System tray não disponível, executando em modo console")
+            logger.warning("[APP] System tray não disponível, executando em modo console")
         
         self._running = True
-        print("[APP] ✅ Todos os serviços iniciados")
+        logger.info("[APP] Todos os serviços iniciados")
         return True
     
     def _run_main_loop(self) -> None:
@@ -199,33 +253,50 @@ class StandaloneApplication:
         
         if tray_available:
             # System tray handles the main loop
-            print("[APP] 🎯 Executando com system tray...")
+            logger.info("[APP] Executando com system tray...")
             # The tray.run() call is blocking and handles the main loop
         else:
             # Console mode - wait for keyboard interrupt
-            print("[APP] ⌨️ Modo console ativo! Pressione Ctrl+C para sair...")
-            try:
-                import keyboard
-                keyboard.wait()
-            except ImportError:
-                # Fallback if keyboard library is not available
-                input("Pressione Enter para sair...")
+            logger.info("[APP] Modo console ativo! Pressione Ctrl+C para sair...")
+            wait_backend = self._console_wait_factory()
+            if hasattr(wait_backend, "is_available") and wait_backend.is_available():
+                try:
+                    import keyboard
+                    keyboard.wait()
+                    return
+                except ImportError:
+                    pass
+            input("Pressione Enter para sair...")
+
+    def _show_current_configuration(self) -> None:
+        """Log the current standalone configuration summary."""
+        if not self._config:
+            return
+
+        logger.info(
+            "[APP] Config atual: bot_url=%s, guild_id=%s, member_id=%s, engine=%s, hotkey=%s",
+            self._config.discord.bot_url,
+            self._config.discord.guild_id,
+            self._config.discord.member_id,
+            self._config.tts.engine,
+            self._config.hotkey.keys,
+        )
     
     def _update_services_config(self) -> None:
         """Update all services with new configuration."""
         if self._tts_processor:
-            self._tts_processor = TTSProcessor(self._config)
+            self._tts_processor = self._tts_processor_factory(self._config)
         
         if self._hotkey_manager:
             self._hotkey_manager.update_config(self._config)
         
         if self._notification_service:
-            self._notification_service = SystemTrayService(self._config)
+            self._notification_service = self._notification_service_factory(self._config)
             self._setup_integrations()
     
     def _shutdown(self) -> None:
         """Gracefully shutdown all services."""
-        print("[APP] 🛑 Encerrando aplicação...")
+        logger.info("[APP] Encerrando aplicação...")
         
         if self._running:
             if self._hotkey_manager:
@@ -236,7 +307,7 @@ class StandaloneApplication:
             
             self._running = False
         
-        print("[APP] ✅ Aplicação encerrada")
+        logger.info("[APP] Aplicação encerrada")
     
     # System tray callback handlers
     
@@ -250,6 +321,7 @@ class StandaloneApplication:
         
         if status['discord_configured']:
             print(f"✅ Discord: {self._config.discord.bot_url}")
+            print(f"🏠 Guild ID: {self._config.discord.guild_id}")
             print(f"👤 User ID: {self._config.discord.member_id}")
         else:
             print("⚠️ Discord não configurado completamente")
@@ -261,16 +333,17 @@ class StandaloneApplication:
     
     def _handle_configure(self) -> None:
         """Handle system tray configure action."""
-        print("[APP] 🔧 Abrindo configurações...")
-        
-        config_interface = self._config_ui_factory.create_interface()
-        updated_config = config_interface.show_configuration_dialog(self._config)
+        logger.info("[APP] Abrindo configurações...")
+
+        updated_config = self._config_service.get_configuration(self._config)
         
         if updated_config:
             # Validate new configuration
             is_valid, errors = ConfigurationValidator.validate(updated_config)
             if not is_valid:
-                print(f"[APP] ❌ Configuração inválida: {'; '.join(errors)}")
+                logger.error(f"[APP] Configuração inválida: {'; '.join(errors)}")
+                if self._notification_service:
+                    self._notification_service.notify_error("TTS Hotkey", "Configuração inválida")
                 return
             
             # Save and apply new configuration
@@ -283,13 +356,15 @@ class StandaloneApplication:
             # Update services
             self._update_services_config()
             
-            print("[APP] ✅ Configuração atualizada com sucesso!")
+            logger.info("[APP] Configuração atualizada com sucesso!")
+            if self._notification_service:
+                self._notification_service.notify_success("TTS Hotkey", "Configuração atualizada")
         else:
-            print("[APP] ℹ️ Configuração cancelada")
+            logger.info("[APP] Configuração cancelada")
     
     def _handle_quit(self) -> None:
         """Handle system tray quit action."""
-        print("[APP] 🛑 Encerrando via system tray...")
+        logger.info("[APP] Encerrando via system tray...")
         self._shutdown()
         import os
         os._exit(0)
@@ -302,6 +377,7 @@ class StandaloneApplication:
             'discord_configured': (
                 self._config and 
                 self._config.discord.bot_url and 
+                self._config.discord.guild_id and
                 self._config.discord.member_id
             ),
             'hotkey_active': (
@@ -321,7 +397,8 @@ class StandaloneApplication:
 
 def create_standalone_application() -> StandaloneApplication:
     """Factory function to create a standalone application instance."""
-    return StandaloneApplication()
+    from .bootstrap import create_standalone_application as build_application
+    return build_application()
 
 
 def main() -> None:

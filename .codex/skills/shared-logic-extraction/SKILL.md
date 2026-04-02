@@ -30,3 +30,4 @@ Use when similar logic exists in multiple flows (Discord bot and Windows app).
 - duplicated areas
 - extraction plan
 - target location (core/application/infrastructure)
+- if documentation is added for the extracted feature or refactor outcome, use `docs/features/`
