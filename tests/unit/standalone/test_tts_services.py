@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+from src.application.tts_routing import build_tts_engine_chain
 from src.standalone.config.standalone_config import StandaloneConfig
 from src.standalone.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
 from src.standalone.services.tts_services import (
@@ -94,6 +95,31 @@ def test_fallback_tts_engine_tries_next_available_engine():
     assert engine.speak("hello") is True
     assert first.calls == ["hello"]
     assert second.calls == ["hello"]
+
+
+def test_build_tts_engine_chain_prefers_local_engine_when_configured():
+    local = FakeEngine()
+    discord = FakeEngine()
+
+    chain = build_tts_engine_chain("pyttsx3", discord_engine=discord, local_engine=local)
+
+    assert chain == [local, discord]
+
+
+def test_tts_service_prefers_local_engine_when_configured():
+    config = StandaloneConfig.create_default()
+    config.tts.engine = "pyttsx3"
+    bot_client = FakeDiscordBotClient(available=True, result=True)
+    local_engine = FakeEngine(available=True, result=True)
+    service = TTSService(
+        config,
+        bot_client=bot_client,
+        local_engine_factory=lambda cfg: local_engine,
+    )
+
+    assert service.speak_text("hello") is True
+    assert local_engine.calls == ["hello"]
+    assert bot_client.requests == []
 
 
 def test_tts_service_truncates_long_text(monkeypatch):

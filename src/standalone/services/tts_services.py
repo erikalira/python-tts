@@ -9,6 +9,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Optional, Protocol
 
+from src.application.tts_routing import TTSFallbackChain, build_tts_engine_chain
 from src.application.tts_text import prepare_tts_text
 from ..config.standalone_config import StandaloneConfig
 from ..adapters.keyboard_backend import KeyboardHookBackend
@@ -105,27 +106,7 @@ class DiscordTTSService(TTSEngine):
         return self._bot_client.is_available()
 
 
-class FallbackTTSEngine(TTSEngine):
-    """TTS engine that tries multiple engines in sequence."""
-    
-    def __init__(self, engines: list[TTSEngine]):
-        self._engines = engines
-    
-    def speak(self, text: str) -> bool:
-        """Try engines in order until one succeeds."""
-        for engine in self._engines:
-            if engine.is_available():
-                if engine.speak(text):
-                    return True
-                else:
-                    logger.warning(f"[TTS] Engine {engine.__class__.__name__} falhou, tentando próximo...")
-        
-        logger.error("[TTS] Todos os engines falharam")
-        return False
-    
-    def is_available(self) -> bool:
-        """Check if any engine is available."""
-        return any(engine.is_available() for engine in self._engines)
+FallbackTTSEngine = TTSFallbackChain
 
 
 class TTSService:
@@ -144,18 +125,18 @@ class TTSService:
     
     def _create_engine(self) -> TTSEngine:
         """Create the appropriate TTS engine based on configuration."""
-        engines = []
-        
-        # Add Discord engine if configured
+        discord_engine = None
         if self._config.discord.bot_url:
             discord_engine = DiscordTTSService(self._config, bot_client=self._bot_client)
-            engines.append(discord_engine)
-        
-        # Add local engine as fallback
+
         local_engine = self._local_engine_factory(self._config)
-        engines.append(local_engine)
-        
-        return FallbackTTSEngine(engines)
+        engines = build_tts_engine_chain(
+            self._config.tts.engine,
+            discord_engine=discord_engine,
+            local_engine=local_engine,
+        )
+
+        return FallbackTTSEngine(engines, logger=logger)
     
     def speak_text(self, text: str) -> bool:
         """Speak the given text using available engines."""
