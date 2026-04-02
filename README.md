@@ -71,8 +71,7 @@ No Windows, use o script oficial:
 ```powershell
 ./scripts/build/build_clean_architecture.ps1
 ```
-
-No Linux, o build do `.exe` pode ser feito via Docker, seguindo o mesmo fluxo automatizado usado em CI.
+No Linux, gere o `.exe` pelo workflow de CI que roda em ambiente Windows.
 
 ## Documentação
 

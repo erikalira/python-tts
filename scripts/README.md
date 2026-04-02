@@ -60,7 +60,7 @@ Os scripts foram projetados para funcionar tanto localmente quanto em ambientes 
 - **GitHub Actions**: Use `scripts/build/build_clean_architecture.ps1`
 - **Local Development**: Use comandos diretos de Python e PowerShell
 - **Windows**: Use PowerShell para builds
-- **Linux/macOS**: Use Python para desenvolvimento e Docker para gerar o `.exe`
+- **Linux/macOS**: Use Python para desenvolvimento e o workflow Windows para gerar o `.exe`
 
 ## Troubleshooting
 
