@@ -351,7 +351,9 @@ class ConfigurationDisplayService:
         print("\n🔧 PARA RECONFIGURAR:")
         if _pystray_available:
             print("   • Clique com botão direito no ícone da bandeja → Configurações")
-        print("   • Ou delete o arquivo: ~/tts_hotkey_config.json e reinicie")
+        print("   • Ou delete o arquivo de config e reinicie:")
+        print("     Linux/macOS: ~/.config/tts-hotkey/config.json")
+        print("     Windows: %LOCALAPPDATA%/TTS-Hotkey/config.json")
         
         print("\n💡 DICAS IMPORTANTES:")
         print("   • Configure DISCORD_MEMBER_ID para melhor detecção do canal")
