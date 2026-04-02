@@ -110,3 +110,42 @@ def test_standalone_application_handle_configure_rejects_invalid_config():
     app._config_repository.save.assert_not_called()
     app._update_services_config.assert_not_called()
     app._notification_service.notify_error.assert_called_once()
+
+
+def test_standalone_application_handle_configure_pauses_hotkeys_while_gui_is_open():
+    app = StandaloneApplication()
+    app._config = StandaloneConfig.create_default()
+    app._config_service = Mock()
+    updated_config = StandaloneConfig.create_default()
+    updated_config.discord.member_id = "123"
+    updated_config.discord.guild_id = "456"
+    app._config_service.get_configuration.return_value = updated_config
+    app._config_repository = Mock()
+    app._notification_service = Mock()
+    app._update_services_config = Mock()
+    app._hotkey_manager = Mock()
+    app._hotkey_manager.is_active.side_effect = [True, False]
+
+    app._handle_configure()
+
+    app._hotkey_manager.stop.assert_called_once()
+    assert app._hotkey_manager.start.call_count == 1
+
+
+def test_standalone_application_update_services_config_rebuilds_hotkey_manager():
+    app = StandaloneApplication(
+        tts_processor_factory=Mock(return_value=Mock()),
+        hotkey_manager_factory=Mock(side_effect=[Mock(), Mock()]),
+        notification_service_factory=Mock(side_effect=[Mock(), Mock()]),
+    )
+    app._config = StandaloneConfig.create_default()
+    app._tts_processor = Mock()
+    app._hotkey_manager = Mock()
+    app._hotkey_manager.is_active.return_value = False
+    app._notification_service = Mock()
+    app._notification_service.is_available.return_value = False
+
+    app._update_services_config()
+
+    assert app._hotkey_manager is not None
+    app._hotkey_manager.initialize.assert_called_once()

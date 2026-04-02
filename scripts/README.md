@@ -51,8 +51,11 @@ O executável será criado em `dist/tts_hotkey_clean.exe`
 pip install -r requirements.txt
 pip install -r requirements-test.txt
 
-# Desenvolvimento diário
-python -m pytest tests
+# Desenvolvimento diário com o ambiente virtual do projeto
+./.venv/bin/python -m pytest tests
+
+# Foco no standalone
+./.venv/bin/python -m pytest tests/unit/standalone
 
 # Build do executável no Windows
 pwsh -File scripts/build/build_clean_architecture.ps1

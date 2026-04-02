@@ -43,8 +43,8 @@ Após a compilação:
 
 ```
 dist/
-├── tts_hotkey_clean.exe          # Executável principal
-└── run_tts_hotkey_clean.bat      # Script de inicialização
+├── tts_hotkey_clean.exe                # Executável principal para usuário final
+└── run_tts_hotkey_clean_debug.bat      # Launcher auxiliar para troubleshooting
 ```
 
 ## 📦 Dependências Incluídas (Clean Architecture)
@@ -67,7 +67,7 @@ Após compilação, execute:
 
 ```powershell
 cd dist
-.\run_tts_hotkey_clean.bat
+.\tts_hotkey_clean.exe
 ```
 
 **Na primeira execução:**
@@ -95,3 +95,4 @@ O executável é **standalone e portável**:
 - Funciona em qualquer Windows 10/11
 - Configure na primeira execução via interface gráfica
 - Salva config automaticamente em `AppData/Local/TTS-Hotkey/`
+- Abre como aplicativo de janela, sem console para o usuário final

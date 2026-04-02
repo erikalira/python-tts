@@ -22,6 +22,8 @@ class DummyRoot:
         self.transient_called = False
         self.grab_set_called = False
         self.update_idletasks_called = False
+        self.protocol_calls = []
+        self.after_calls = []
 
     def title(self, value):
         self.title_value = value
@@ -43,6 +45,13 @@ class DummyRoot:
 
     def destroy(self):
         self.destroy_called = True
+
+    def protocol(self, name, callback):
+        self.protocol_calls.append((name, callback))
+
+    def after(self, delay_ms, callback):
+        self.after_calls.append((delay_ms, callback))
+        callback()
 
     def winfo_screenwidth(self):
         return 1200
@@ -410,6 +419,7 @@ def test_gui_config_show_config_creates_window_and_returns_result(monkeypatch):
     assert result is config
     assert gui.root.title_value == "🎤 TTS Hotkey - Configuração"
     assert gui.root.resizable_args == (True, True)
+    assert gui.root.protocol_calls
     assert gui.root.update_idletasks_called is True
     assert gui.root.mainloop_called is True
 

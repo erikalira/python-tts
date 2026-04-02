@@ -406,6 +406,7 @@ class GUIConfig(ConfigInterface):
         self.root.title("🎤 TTS Hotkey - Configuração")
         self.root.geometry("600x500")
         self.root.resizable(True, True)
+        self.root.protocol("WM_DELETE_WINDOW", self._cancel)
         
         # Create interface
         self._create_interface()
@@ -469,7 +470,10 @@ class GUIConfig(ConfigInterface):
         # Member ID
         ttk.Label(parent, text="Discord User ID:").pack(anchor="w", pady=(0, 5))
         self.member_id_var = tk.StringVar(value=self.config.discord.member_id or "")
-        ttk.Entry(parent, textvariable=self.member_id_var, width=50).pack(fill="x", pady=(0, 10))
+        member_id_entry = ttk.Entry(parent, textvariable=self.member_id_var, width=50)
+        member_id_entry.pack(fill="x", pady=(0, 10))
+        if hasattr(member_id_entry, "focus_set"):
+            self.root.after(0, member_id_entry.focus_set)
 
         # Guild ID
         ttk.Label(parent, text="Discord Guild ID:").pack(anchor="w", pady=(0, 5))

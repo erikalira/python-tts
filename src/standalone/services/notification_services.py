@@ -5,6 +5,7 @@ Provides system tray icon and notification services.
 """
 
 from abc import ABC, abstractmethod
+import threading
 from typing import Callable, Optional
 
 from ..config.standalone_config import StandaloneConfig
@@ -97,6 +98,7 @@ class SystemTrayService:
         self._config = config
         self._tray_icon = tray_icon or self._create_tray_icon()
         self._notification_service = notification_service or ConsoleNotificationService()
+        self._tray_thread: Optional[threading.Thread] = None
     
     def _create_tray_icon(self) -> SystemTrayIcon:
         """Create appropriate system tray icon based on availability."""
@@ -115,8 +117,16 @@ class SystemTrayService:
         if not self._tray_icon.is_available():
             print("[TRAY] ⚠️ System tray não disponível, executando em modo console")
             return False
-        
-        self._tray_icon.show()
+
+        if self._tray_thread and self._tray_thread.is_alive():
+            return True
+
+        self._tray_thread = threading.Thread(
+            target=self._tray_icon.show,
+            name="standalone-system-tray",
+            daemon=True,
+        )
+        self._tray_thread.start()
         return True
     
     def run_tray(self) -> None:
@@ -136,6 +146,9 @@ class SystemTrayService:
     def stop(self) -> None:
         """Stop system tray service."""
         self._tray_icon.hide()
+        if self._tray_thread and self._tray_thread.is_alive():
+            self._tray_thread.join(timeout=1.0)
+        self._tray_thread = None
     
     def notify_info(self, title: str, message: str) -> None:
         """Send informational notification."""
