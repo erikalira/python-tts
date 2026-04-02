@@ -9,7 +9,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Optional, Protocol
 
-from src.application.tts_execution import TTSExecutionService
+from src.application.tts_execution import SpeakTextExecutionUseCase
 from src.application.tts_routing import TTSFallbackChain, build_tts_engine_chain
 from src.application.tts_text import prepare_tts_text
 from ..config.standalone_config import StandaloneConfig
@@ -207,23 +207,23 @@ class TTSProcessor:
         config: StandaloneConfig,
         tts_service: Optional[TTSService] = None,
         cleanup_service: Optional[KeyboardCleanupService] = None,
-        execution_service: Optional[TTSExecutionService] = None,
+        execution_service: Optional[SpeakTextExecutionUseCase] = None,
     ):
         if cleanup_service is None:
             raise ValueError("TTSProcessor requires explicit tts_service and cleanup_service")
         if execution_service is None:
             if tts_service is None:
                 raise ValueError("TTSProcessor requires explicit tts_service and cleanup_service")
-            execution_service = TTSExecutionService(tts_service)
+            execution_service = SpeakTextExecutionUseCase(tts_service)
         self._execution_service = execution_service
         self._cleanup_service = cleanup_service
     
     def process_text(self, text: str, cleanup_count: int = 0) -> None:
         """Process text for TTS and perform cleanup in a separate thread."""
         def _process():
-            success = self._execution_service.execute(text)
+            result = self._execution_service.execute(text)
             
-            if success and cleanup_count > 0:
+            if result.get("success") and cleanup_count > 0:
                 self._cleanup_service.cleanup_typed_text(cleanup_count)
         
         # Run in separate thread to avoid blocking

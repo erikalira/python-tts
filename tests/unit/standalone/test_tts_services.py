@@ -1,7 +1,12 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from src.application.tts_execution import TTSExecutionService
+from src.application.tts_execution import (
+    SpeakTextExecutionUseCase,
+    TTS_EXECUTION_RESULT_FAILED,
+    TTS_EXECUTION_RESULT_MISSING_TEXT,
+    TTS_EXECUTION_RESULT_OK,
+)
 from src.application.tts_routing import build_tts_engine_chain
 from src.standalone.config.standalone_config import StandaloneConfig
 from src.standalone.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
@@ -184,23 +189,45 @@ def test_keyboard_cleanup_service_reports_suppression(monkeypatch):
     assert backend.send_backspace.call_count == 2
 
 
-def test_tts_execution_service_delegates_to_tts_service():
+def test_speak_text_execution_use_case_delegates_to_tts_service():
     tts_service = Mock()
     tts_service.speak_text.return_value = True
     tts_service.is_available.return_value = True
     tts_service.get_status_info.return_value = {"local_available": True}
 
-    execution = TTSExecutionService(tts_service)
+    execution = SpeakTextExecutionUseCase(tts_service)
 
-    assert execution.execute("hello") is True
+    result = execution.execute("hello")
+
+    assert result == {"success": True, "code": TTS_EXECUTION_RESULT_OK}
     assert execution.is_available() is True
     assert execution.get_status_info() == {"local_available": True}
     tts_service.speak_text.assert_called_once_with("hello")
 
 
+def test_speak_text_execution_use_case_returns_missing_text_without_calling_service():
+    tts_service = Mock()
+    execution = SpeakTextExecutionUseCase(tts_service)
+
+    result = execution.execute("   ")
+
+    assert result == {"success": False, "code": TTS_EXECUTION_RESULT_MISSING_TEXT}
+    tts_service.speak_text.assert_not_called()
+
+
+def test_speak_text_execution_use_case_returns_failure_when_tts_service_fails():
+    tts_service = Mock()
+    tts_service.speak_text.return_value = False
+    execution = SpeakTextExecutionUseCase(tts_service)
+
+    result = execution.execute("hello")
+
+    assert result == {"success": False, "code": TTS_EXECUTION_RESULT_FAILED}
+
+
 def test_tts_processor_runs_cleanup_after_success(monkeypatch):
     execution_service = Mock()
-    execution_service.execute.return_value = True
+    execution_service.execute.return_value = {"success": True, "code": TTS_EXECUTION_RESULT_OK}
     cleanup_service = Mock()
     processor = TTSProcessor(
         StandaloneConfig.create_default(),
@@ -221,3 +248,28 @@ def test_tts_processor_runs_cleanup_after_success(monkeypatch):
 
     execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_called_once_with(3)
+
+
+def test_tts_processor_skips_cleanup_when_execution_fails(monkeypatch):
+    execution_service = Mock()
+    execution_service.execute.return_value = {"success": False, "code": TTS_EXECUTION_RESULT_FAILED}
+    cleanup_service = Mock()
+    processor = TTSProcessor(
+        StandaloneConfig.create_default(),
+        execution_service=execution_service,
+        cleanup_service=cleanup_service,
+    )
+
+    class ImmediateThread:
+        def __init__(self, target, daemon):
+            self._target = target
+
+        def start(self):
+            self._target()
+
+    monkeypatch.setattr("src.standalone.services.tts_services.threading.Thread", ImmediateThread)
+
+    processor.process_text("hello", cleanup_count=3)
+
+    execution_service.execute.assert_called_once_with("hello")
+    cleanup_service.cleanup_typed_text.assert_not_called()
