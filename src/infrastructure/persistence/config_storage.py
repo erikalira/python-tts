@@ -85,15 +85,17 @@ class JSONConfigStorage(IConfigStorage):
         """
         return self.storage_dir / f"guild_{guild_id}.json"
 
-    async def load(self, guild_id: int) -> Optional[TTSConfig]:
-        """Load configuration for a guild from JSON file.
-        
-        Args:
-            guild_id: Guild identifier
-            
-        Returns:
-            TTSConfig if found and valid, None otherwise
-        """
+    def _parse_config_data(self, data: dict) -> TTSConfig:
+        """Build TTSConfig from persisted JSON payload."""
+        return TTSConfig(
+            engine=data.get("engine", "gtts"),
+            language=data.get("language", "pt"),
+            voice_id=data.get("voice_id", "roa/pt-br"),
+            rate=data.get("rate", 180),
+        )
+
+    def load_sync(self, guild_id: int) -> Optional[TTSConfig]:
+        """Load configuration synchronously for cache-miss recovery paths."""
         config_path = self._get_config_path(guild_id)
 
         if not config_path.exists():
@@ -104,19 +106,24 @@ class JSONConfigStorage(IConfigStorage):
             with open(config_path, "r") as f:
                 data = json.load(f)
 
-            config = TTSConfig(
-                engine=data.get("engine", "gtts"),
-                language=data.get("language", "pt"),
-                voice_id=data.get("voice_id", "roa/pt-br"),
-                rate=data.get("rate", 180),
-            )
-
-            logger.info(f"[CONFIG_STORAGE] Loaded config for guild {guild_id}: {config.engine}")
+            config = self._parse_config_data(data)
+            logger.info(f"[CONFIG_STORAGE] Loaded config synchronously for guild {guild_id}: {config.engine}")
             return config
 
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"[CONFIG_STORAGE] Failed to load config for guild {guild_id}: {e}")
             return None
+
+    async def load(self, guild_id: int) -> Optional[TTSConfig]:
+        """Load configuration for a guild from JSON file.
+
+        Args:
+            guild_id: Guild identifier
+
+        Returns:
+            TTSConfig if found and valid, None otherwise
+        """
+        return self.load_sync(guild_id)
 
     async def save(self, guild_id: int, config: TTSConfig) -> bool:
         """Save configuration for a guild to JSON file.
@@ -219,6 +226,13 @@ class GuildConfigRepository(IConfigRepository):
             return self._cache[guild_id]
 
         logger.debug(f"[CONFIG_REPO] Cache miss for guild {guild_id}, loading from storage")
+        load_sync = getattr(self._storage, "load_sync", None)
+        if callable(load_sync):
+            config = load_sync(guild_id)
+            if config:
+                self._cache[guild_id] = config
+                return config
+
         return self._get_default_config()
 
     async def load_from_storage(self, guild_id: int) -> TTSConfig:
