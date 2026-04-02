@@ -58,6 +58,7 @@ class TestTTSConfig:
         assert config.language == 'pt'
         assert config.voice_id == 'roa/pt-br'
         assert config.rate == 180
+        assert config.output_device is None
     
     def test_custom_config(self):
         """Test custom TTSConfig values."""
@@ -65,13 +66,15 @@ class TestTTSConfig:
             engine='pyttsx3',
             language='en',
             voice_id='en-us',
-            rate=200
+            rate=200,
+            output_device='Speaker'
         )
         
         assert config.engine == 'pyttsx3'
         assert config.language == 'en'
         assert config.voice_id == 'en-us'
         assert config.rate == 200
+        assert config.output_device == 'Speaker'
     
     def test_equality(self):
         """Test TTSConfig equality comparison."""

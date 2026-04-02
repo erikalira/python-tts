@@ -7,20 +7,10 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
+from src.core.entities import TTSConfig
 
 # Load environment variables from .env file once for standalone defaults.
 load_dotenv(Path(__file__).resolve().parents[3] / ".env", override=True)
-
-
-@dataclass
-class TTSConfig:
-    """TTS Engine configuration."""
-
-    engine: str = os.getenv("TTS_ENGINE", "gtts")
-    language: str = os.getenv("TTS_LANGUAGE", "pt")
-    voice_id: str = os.getenv("TTS_VOICE_ID", "roa/pt-br")
-    rate: int = int(os.getenv("TTS_RATE", "180"))
-    output_device: Optional[str] = os.getenv("TTS_OUTPUT_DEVICE")
 
 
 @dataclass
@@ -77,7 +67,13 @@ class StandaloneConfig:
     def create_default(cls) -> "StandaloneConfig":
         """Create configuration with default values."""
         return cls(
-            tts=TTSConfig(),
+            tts=TTSConfig(
+                engine=os.getenv("TTS_ENGINE", "gtts"),
+                language=os.getenv("TTS_LANGUAGE", "pt"),
+                voice_id=os.getenv("TTS_VOICE_ID", "roa/pt-br"),
+                rate=int(os.getenv("TTS_RATE", "180")),
+                output_device=os.getenv("TTS_OUTPUT_DEVICE"),
+            ),
             discord=DiscordConfig(),
             hotkey=HotkeyConfig(),
             interface=InterfaceConfig(),

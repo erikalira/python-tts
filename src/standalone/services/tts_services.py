@@ -13,6 +13,7 @@ from ..config.standalone_config import StandaloneConfig
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter, is_pyttsx3_available
 from .discord_bot_client import DiscordBotClient, HttpDiscordBotClient
+from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
 
 logger = logging.getLogger(__name__)
 
@@ -56,15 +57,7 @@ class LocalPyTTSX3Engine(TTSEngine):
         try:
             if self._engine is None:
                 self._engine = self._adapter.create_engine()
-                self._engine.setProperty('rate', self._config.tts.rate)
-                
-                # Set voice if specified
-                if self._config.tts.voice_id:
-                    voices = self._engine.getProperty('voices')
-                    for voice in voices:
-                        if self._config.tts.voice_id.lower() in voice.id.lower():
-                            self._engine.setProperty('voice', voice.id)
-                            break
+                configure_pyttsx3_engine(self._engine, self._config.tts, logger)
             
             return True
         except Exception as e:
