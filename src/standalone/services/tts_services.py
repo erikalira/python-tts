@@ -9,6 +9,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Optional, Protocol
 
+from src.application.tts_execution import TTSExecutionService
 from src.application.tts_routing import TTSFallbackChain, build_tts_engine_chain
 from src.application.tts_text import prepare_tts_text
 from ..config.standalone_config import StandaloneConfig
@@ -199,23 +200,28 @@ class KeyboardCleanupService:
 
 
 class TTSProcessor:
-    """High-level processor that coordinates TTS and cleanup."""
+    """Standalone runtime wrapper that coordinates execution threading and cleanup."""
     
     def __init__(
         self,
         config: StandaloneConfig,
         tts_service: Optional[TTSService] = None,
-        cleanup_service: Optional[KeyboardCleanupService] = None
+        cleanup_service: Optional[KeyboardCleanupService] = None,
+        execution_service: Optional[TTSExecutionService] = None,
     ):
-        if tts_service is None or cleanup_service is None:
+        if cleanup_service is None:
             raise ValueError("TTSProcessor requires explicit tts_service and cleanup_service")
-        self._tts_service = tts_service
+        if execution_service is None:
+            if tts_service is None:
+                raise ValueError("TTSProcessor requires explicit tts_service and cleanup_service")
+            execution_service = TTSExecutionService(tts_service)
+        self._execution_service = execution_service
         self._cleanup_service = cleanup_service
     
     def process_text(self, text: str, cleanup_count: int = 0) -> None:
         """Process text for TTS and perform cleanup in a separate thread."""
         def _process():
-            success = self._tts_service.speak_text(text)
+            success = self._execution_service.execute(text)
             
             if success and cleanup_count > 0:
                 self._cleanup_service.cleanup_typed_text(cleanup_count)
@@ -231,6 +237,6 @@ class TTSProcessor:
     def get_service_status(self) -> dict:
         """Get status of all services."""
         return {
-            'tts_available': self._tts_service.is_available(),
-            'engines_info': self._tts_service.get_status_info()
+            'tts_available': self._execution_service.is_available(),
+            'engines_info': self._execution_service.get_status_info()
         }

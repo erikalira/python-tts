@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+from src.application.tts_execution import TTSExecutionService
 from src.application.tts_routing import build_tts_engine_chain
 from src.standalone.config.standalone_config import StandaloneConfig
 from src.standalone.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
@@ -183,13 +184,27 @@ def test_keyboard_cleanup_service_reports_suppression(monkeypatch):
     assert backend.send_backspace.call_count == 2
 
 
-def test_tts_processor_runs_cleanup_after_success(monkeypatch):
+def test_tts_execution_service_delegates_to_tts_service():
     tts_service = Mock()
     tts_service.speak_text.return_value = True
+    tts_service.is_available.return_value = True
+    tts_service.get_status_info.return_value = {"local_available": True}
+
+    execution = TTSExecutionService(tts_service)
+
+    assert execution.execute("hello") is True
+    assert execution.is_available() is True
+    assert execution.get_status_info() == {"local_available": True}
+    tts_service.speak_text.assert_called_once_with("hello")
+
+
+def test_tts_processor_runs_cleanup_after_success(monkeypatch):
+    execution_service = Mock()
+    execution_service.execute.return_value = True
     cleanup_service = Mock()
     processor = TTSProcessor(
         StandaloneConfig.create_default(),
-        tts_service=tts_service,
+        execution_service=execution_service,
         cleanup_service=cleanup_service,
     )
 
@@ -204,5 +219,5 @@ def test_tts_processor_runs_cleanup_after_success(monkeypatch):
 
     processor.process_text("hello", cleanup_count=3)
 
-    tts_service.speak_text.assert_called_once_with("hello")
+    execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_called_once_with(3)
