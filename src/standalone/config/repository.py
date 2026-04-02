@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Configuration persistence for the standalone application."""
+"""Configuration persistence for the Desktop App."""
 
 import json
 import os

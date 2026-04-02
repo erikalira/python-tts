@@ -1,4 +1,4 @@
-"""Composition root for the standalone application."""
+"""Composition root for the Desktop App."""
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter
@@ -13,7 +13,7 @@ from .standalone_app import StandaloneApplication
 
 
 def create_standalone_application() -> StandaloneApplication:
-    """Build the standalone application with its concrete adapters."""
+    """Build the Desktop App with its concrete adapters."""
     def build_tts_processor(config):
         keyboard_backend = KeyboardHookBackend()
         bot_client = HttpDiscordBotClient(config)

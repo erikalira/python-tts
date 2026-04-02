@@ -1,13 +1,13 @@
 # 🎤 TTS Hotkey - Configuração Avançada
 
-## 🏆 App Standalone Atual
+## 🏆 Desktop App Atual
 
 **Entry point**: `app.py`  
 **Executável**: `dist/tts_hotkey_clean.exe`
 
 ### ✨ Discord ID Automático
 
-O app standalone usa a configuração persistida para descobrir em qual canal você está.
+O Desktop App usa a configuração persistida para descobrir em qual canal você está.
 
 ## 🔧 **Como Descobrir seu Discord ID**
 
@@ -47,11 +47,11 @@ Escolha uma combinação de abertura/fechamento que não conflite com outros pro
 
 ## 🔊 **Configuração de Áudio Avançada**
 
-Configure engine, idioma, taxa e dispositivo de áudio pela interface do standalone.
+Configure engine, idioma, taxa e dispositivo de áudio pela interface do Desktop App.
 
 ## 📊 Status
 
-Quando executado, o app mostra logs de inicialização e status dos serviços do standalone.
+Quando executado, o app mostra logs de inicialização e status dos serviços do Desktop App.
 
 ## 🚀 **Compilar e Usar**
 
@@ -91,7 +91,7 @@ Use o ID correto do usuário ou configure um canal fixo na interface do app.
 
 ## 💎 Vantagens da Versão Atual
 
-- 🎯 Um único runtime standalone
+- 🎯 Um único runtime do Desktop App
 - 📊 Configuração persistida
 - ⚡ Build dedicado para Windows
 - 🔧 Menos caminhos paralelos de execução

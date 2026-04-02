@@ -200,7 +200,7 @@ class KeyboardCleanupService:
 
 
 class TTSProcessor:
-    """Standalone runtime wrapper that coordinates execution threading and cleanup."""
+    """Desktop App runtime wrapper that coordinates execution threading and cleanup."""
     
     def __init__(
         self,

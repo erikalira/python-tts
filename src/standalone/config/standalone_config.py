@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compatibility facade for standalone configuration modules."""
+"""Compatibility facade for Desktop App configuration modules."""
 
 import os
 

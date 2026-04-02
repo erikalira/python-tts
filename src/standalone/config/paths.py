@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Filesystem paths for standalone configuration."""
+"""Filesystem paths for Desktop App configuration."""
 
 import os
 from pathlib import Path

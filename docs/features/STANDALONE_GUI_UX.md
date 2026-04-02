@@ -1,19 +1,19 @@
-# UX da GUI Standalone
+# UX da GUI do Desktop App
 
-Este documento registra requisitos e critérios de qualidade para a GUI do aplicativo standalone. O objetivo é garantir uma experiência estável para usuário final sem enfraquecer a arquitetura do projeto.
+Este documento registra requisitos e critérios de qualidade para a GUI do Desktop App. O objetivo é garantir uma experiência estável para usuário final sem enfraquecer a arquitetura do projeto.
 
 ## Objetivos
 
 - manter a interface responsiva durante toda a interação
 - garantir edição confiável dos campos e controles da GUI
 - evitar experiência confusa ao distribuir o programa para outro usuário
-- preservar a independência do app standalone em relação ao bot
+- preservar a independência do Desktop App em relação ao bot
 - manter regras de negócio fora da camada de interface
 
 ## Problemas que motivam esta diretriz
 
 - a interface apresenta travamentos intermitentes e cliques inconsistentes
-- a GUI do standalone não permite edição confiável
+- a GUI do Desktop App não permite edição confiável
 - a distribuição atual abre terminal e deixa o app na bandeja de forma pouco amigável
 
 ## Requisitos de UX
@@ -58,29 +58,29 @@ Este documento registra requisitos e critérios de qualidade para a GUI do aplic
 
 - lógica de negócio não deve ser implementada na GUI
 - a camada de interface deve apenas capturar eventos, apresentar estado e delegar para casos de uso ou serviços
-- lógica compartilhável entre standalone e bot deve ficar em `src/`, não duplicada em `standalone/`
-- integrações específicas de runtime, janela, tray e toolkit devem permanecer em adapters ou bootstrap do standalone
+- lógica compartilhável entre o Desktop App e o bot deve ficar em `src/`, não duplicada em `src/standalone/`
+- integrações específicas de runtime, janela, tray e toolkit devem permanecer em adapters ou bootstrap do Desktop App
 - melhorias de UX devem preferir refactors pequenos e seguros
 
-## Checklist para mudanças na GUI standalone
+## Checklist para mudanças na GUI do Desktop App
 
-Antes de concluir uma alteração na GUI do standalone, validar:
+Antes de concluir uma alteração na GUI do Desktop App, validar:
 
 - a interface continua clicável e responsiva
 - campos editáveis continuam realmente editáveis
 - não há operação bloqueante rodando diretamente na thread principal da GUI
 - o fluxo de abrir, minimizar, restaurar e sair está claro
 - a execução para usuário final não expõe terminal desnecessário
-- a mudança não duplicou lógica entre `standalone/` e `src/`
+- a mudança não duplicou lógica entre `src/standalone/` e o restante de `src/`
 - a mudança não moveu regra de negócio para interface ou infraestrutura
 
 ## Validação recomendada
 
-- iniciar o standalone em ambiente local e interagir manualmente com os principais controles
+- iniciar o Desktop App em ambiente local e interagir manualmente com os principais controles
 - testar foco, clique, digitação, seleção e colagem nos campos editáveis
 - validar inicialização, minimização para bandeja, restauração e encerramento
 - validar comportamento do pacote final voltado a usuário final, especialmente ausência de terminal desnecessário
-- confirmar que bot e standalone continuam executando de forma independente
+- confirmar que bot e Desktop App continuam executando de forma independente
 
 ## Quando criar documentação adicional
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared helpers for standalone configuration UIs."""
+"""Shared helpers for Desktop App configuration UIs."""
 
 from dataclasses import replace
 

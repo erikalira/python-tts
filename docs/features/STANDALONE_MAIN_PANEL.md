@@ -1,6 +1,6 @@
-# Painel Principal do Standalone
+# Painel Principal do Desktop App
 
-Esta feature transforma a GUI do standalone em um painel principal persistente, em vez de uma janela usada apenas para configuração inicial.
+Esta feature transforma a GUI do Desktop App em um painel principal persistente, em vez de uma janela usada apenas para configuração inicial.
 
 ## Objetivo
 
@@ -33,9 +33,9 @@ Dar ao usuário final uma experiência clara ao abrir o executável:
 ## Integração arquitetural
 
 - a GUI apenas coleta dados, mostra estado e delega ações
-- a checagem de conexão usa o adapter HTTP do standalone
+- a checagem de conexão usa o adapter HTTP do Desktop App
 - o envio de teste reutiliza o fluxo HTTP já existente para o bot
-- o runtime standalone continua separado do bot, preservando execução independente
+- o runtime do Desktop App continua separado do bot, preservando execução independente
 
 ## UX implementada
 

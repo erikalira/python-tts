@@ -22,7 +22,7 @@ Ambos seguem Clean Architecture e os princípios SOLID para garantir:
 ### Desktop app
 
 - Entry point oficial: `app.py`
-- Implementação principal: `src/standalone/`
+- Implementação principal: `src/standalone/` como runtime interno do Desktop App
 
 ### Bot Discord
 
@@ -72,7 +72,7 @@ tts-hotkey-windows/
 │   │
 │   ├── bot.py                 # Entry point do bot
 │   │
-│   └── standalone/            # Runtime standalone
+│   └── standalone/            # Runtime interno do Desktop App
 │       ├── __init__.py
 │       │
 │       ├── config/            # Configuração com dataclasses
@@ -83,7 +83,7 @@ tts-hotkey-windows/
 │       │   ├── __init__.py
 │       │   └── standalone_app.py
 │       │
-│       ├── services/          # Serviços do standalone
+│       ├── services/          # Serviços do Desktop App
 │       │   ├── __init__.py
 │       │   ├── tts_services.py
 │       │   ├── hotkey_services.py
@@ -94,7 +94,7 @@ tts-hotkey-windows/
 │           ├── simple_gui.py
 │           └── configuration_gui.py
 │
-├── app.py                     # Entry point do standalone
+├── app.py                     # Entry point do Desktop App
 ├── scripts/build/
 │   └── build_clean_architecture.ps1
 │
@@ -116,9 +116,9 @@ tts-hotkey-windows/
 └── README.md
 ```
 
-## 🎯 Arquitetura Standalone (Clean Architecture)
+## 🎯 Arquitetura do Desktop App (Clean Architecture)
 
-A versão standalone implementa Clean Architecture completa com as seguintes camadas:
+A versão Desktop App implementa Clean Architecture completa com as seguintes camadas:
 
 ### 🔧 **Config Layer** (`src/standalone/config/`)
 
@@ -314,7 +314,7 @@ container = Container(config)
 # Bot do Discord com runtime atual
 python -m src.bot
 
-# Standalone Windows / hotkey
+# Desktop App Windows / hotkey
 python app.py
 ```
 

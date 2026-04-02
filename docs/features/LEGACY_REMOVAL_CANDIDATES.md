@@ -10,7 +10,7 @@ Este documento registra o legado remanescente após a migração para a estrutur
 
 Hoje o repositório mantém dois fluxos independentes:
 
-- Standalone Windows: entry point em `app.py`, implementação em `src/standalone/`
+- Desktop App Windows: entry point em `app.py`, implementação em `src/standalone/`
 - Bot Discord: entry point oficial em `src/bot.py`
 
 O runtime modular do bot usa `src/bot.py` com servidor HTTP em `src/infrastructure/http/server.py`.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""System tray adapters for standalone services."""
+"""System tray adapters for Desktop App services."""
 
 import os
 from pathlib import Path

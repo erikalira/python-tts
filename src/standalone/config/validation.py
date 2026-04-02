@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validation for standalone configuration."""
+"""Validation for Desktop App configuration."""
 
 from .models import StandaloneConfig
 

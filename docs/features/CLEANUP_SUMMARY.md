@@ -21,7 +21,7 @@
 ### Files Updated:
 
 1. **Makefile**: Removed after consolidating build commands in the PowerShell script
-2. **app.py**: Defined as the standalone entry point
+2. **app.py**: Defined as the Desktop App entry point
 3. **docs/README_STANDALONE.md**: Updated build script references
 4. **docs/TROUBLESHOOTING.md**: Updated all build commands
 5. **docs/HOTKEY_SETUP.md**: Updated build instructions
@@ -53,7 +53,7 @@
 - Multi-engine TTS support (gTTS, pyttsx3)
 - Global hotkey management
 - Persistent configuration with JSON
-- Comprehensive error handling in the standalone runtime
+- Comprehensive error handling in the Desktop App runtime
 
 ## 🚀 Usage
 

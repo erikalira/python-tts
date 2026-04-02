@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Environment synchronization for standalone configuration."""
+"""Environment synchronization for Desktop App configuration."""
 
 import os
 

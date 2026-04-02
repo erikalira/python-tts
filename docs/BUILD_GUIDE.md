@@ -1,6 +1,6 @@
 # 🚀 Como Criar Executável do TTS Hotkey para Windows
 
-Este guia explica como criar o executável standalone do TTS Hotkey para Windows com **Clean Architecture** e **SOLID principles**.
+Este guia explica como criar o executável do Desktop App TTS Hotkey para Windows com **Clean Architecture** e **SOLID principles**.
 
 ## 📋 Pré-requisitos
 
@@ -90,7 +90,7 @@ cd dist
 
 ## 🚀 Distribuição
 
-O executável é **standalone e portável**:
+O executável do Desktop App é **portável**:
 - Cópie apenas `dist/tts_hotkey_clean.exe`
 - Funciona em qualquer Windows 10/11
 - Configure na primeira execução via interface gráfica

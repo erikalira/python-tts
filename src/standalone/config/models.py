@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Configuration models for the standalone application."""
+"""Configuration models for the Desktop App."""
 
 import os
 from dataclasses import dataclass
@@ -9,7 +9,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from src.core.entities import TTSConfig
 
-# Load environment variables from .env file once for standalone defaults.
+# Load environment variables from .env file once for Desktop App defaults.
 load_dotenv(Path(__file__).resolve().parents[3] / ".env", override=True)
 
 
@@ -55,7 +55,7 @@ class NetworkConfig:
 
 @dataclass
 class StandaloneConfig:
-    """Main configuration container for standalone application."""
+    """Main configuration container for the Desktop App."""
 
     tts: TTSConfig
     discord: DiscordConfig

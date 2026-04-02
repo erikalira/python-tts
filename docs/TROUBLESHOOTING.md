@@ -1,6 +1,6 @@
 # 🎯 TTS Hotkey - Guia de Resolução
 
-## ✅ App Standalone Atual
+## ✅ Desktop App Atual
 
 **Entry point**: `app.py`  
 **Executável de build**: `dist/tts_hotkey_clean.exe`
@@ -8,7 +8,7 @@
 ### 🔍 Diagnóstico Rápido
 
 Execute `python app.py` durante o desenvolvimento ou `dist/tts_hotkey_clean.exe` após o build
-e observe os logs de inicialização do standalone.
+e observe os logs de inicialização do Desktop App.
 
 ## 🛠️ **Problemas Raros e Soluções**
 
@@ -18,7 +18,7 @@ e observe os logs de inicialização do standalone.
 
 **Solução**:
 
-Abra a configuração do standalone e troque as hotkeys para outra combinação sem conflito.
+Abra a configuração do Desktop App e troque as hotkeys para outra combinação sem conflito.
 
 ### 2. ❌ "Discord connection failed"
 
@@ -26,7 +26,7 @@ Abra a configuração do standalone e troque as hotkeys para outra combinação 
 
 **Solução**:
 
-Verifique `DISCORD_BOT_URL` no `.env` ou na configuração persistida do standalone.
+Verifique `DISCORD_BOT_URL` no `.env` ou na configuração persistida do Desktop App.
 
 ### 3. ❌ "TTS engine failed"
 
@@ -42,7 +42,7 @@ Abra a interface de configuração do app e ajuste engine, idioma ou taxa de fal
 
 **Solução**:
 
-Se necessário, aumente o timeout na configuração persistida do standalone.
+Se necessário, aumente o timeout na configuração persistida do Desktop App.
 
 ## 🔧 **Build Script Inteligente**
 
@@ -87,4 +87,4 @@ Remove-Item dist, build -Recurse -Force -ErrorAction SilentlyContinue
 python app.py
 ```
 
-**🎯 Resultado**: um único runtime standalone com Clean Architecture, sem wrapper legado.
+**🎯 Resultado**: um único runtime do Desktop App com Clean Architecture, sem wrapper legado.

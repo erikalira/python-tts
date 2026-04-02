@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Standalone App Module Init
+Desktop App Module Init
 """
 
 from .standalone_app import (

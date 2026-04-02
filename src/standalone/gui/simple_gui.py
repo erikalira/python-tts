@@ -663,7 +663,7 @@ class UILogHandler(logging.Handler):
 
 
 class StandaloneMainWindow(GUIConfig):
-    """Main standalone window that keeps configuration, actions, and logs visible."""
+    """Main Desktop App window that keeps configuration, actions, and logs visible."""
 
     def __init__(
         self,
@@ -688,7 +688,7 @@ class StandaloneMainWindow(GUIConfig):
         self._connection_label = None
 
     def show(self) -> None:
-        """Display the standalone main window."""
+        """Display the Desktop App main window."""
         if not TKINTER_AVAILABLE:
             raise RuntimeError("Tkinter não disponível para a janela principal")
 
@@ -735,7 +735,7 @@ class StandaloneMainWindow(GUIConfig):
         ttk.Label(
             main_frame,
             text=(
-                "Use esta janela como painel principal do app. Aqui você configura o standalone, "
+                "Use esta janela como painel principal do app. Aqui você configura o Desktop App, "
                 "valida a conexão com o bot e acompanha a atividade sem depender do terminal."
             ),
             wraplength=900,

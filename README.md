@@ -8,7 +8,7 @@ Projeto com dois aplicativos independentes:
 - Bot do Discord para entrar em canal de voz e reproduzir TTS
 - Desktop app Windows com hotkeys para capturar texto e enviar ao bot
 
-O repositório segue Clean Architecture e busca reutilizar lógica entre os dois fluxos, sem duplicação entre `standalone` e `src`.
+O repositório segue Clean Architecture e busca reutilizar lógica entre os dois fluxos, sem duplicação entre o runtime interno do Desktop App em `src/standalone` e o restante de `src`.
 
 ## Estrutura rápida
 

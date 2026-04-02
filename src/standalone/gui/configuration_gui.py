@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compatibility wrappers for the consolidated standalone configuration UI."""
+"""Compatibility wrappers for the consolidated Desktop App configuration UI."""
 
 from typing import Optional
 

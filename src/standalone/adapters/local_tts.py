@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local text-to-speech adapters for standalone services."""
+"""Local text-to-speech adapters for Desktop App services."""
 
 try:
     import pyttsx3

@@ -68,7 +68,7 @@ class HttpDiscordBotClient:
         return _requests_available
 
     def build_request(self, text: str) -> DiscordSpeakRequest:
-        """Build a speak request from standalone configuration."""
+        """Build a speak request from Desktop App configuration."""
         return DiscordSpeakRequest(
             text=text,
             guild_id=self._config.discord.guild_id,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Standalone GUI Module Init
+Desktop App GUI Module Init
 """
 
 try:

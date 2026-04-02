@@ -18,12 +18,12 @@
 ### 3. **Integração na Clean Architecture**
 
 - `InitialSetupGUI` em `src/standalone/gui/simple_gui.py`
-- Integrada ao runtime atual do standalone
+- Integrada ao runtime atual do Desktop App
 - Salva automaticamente no repositório de configuração
 
 ### 4. **Integração no Runtime Atual**
 
-- Interface integrada ao runtime standalone em `src/standalone`
+- Interface integrada ao runtime do Desktop App em `src/standalone`
 - Um único caminho de execução para configuração e startup
 
 ## 🎯 Como funciona:

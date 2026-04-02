@@ -26,7 +26,7 @@ code app.py
 dist/tts_hotkey_clean.exe
 ```
 
-### 🎨 Painel principal do standalone
+### 🎨 Painel principal do Desktop App
 
 Ao abrir o executável, o usuário vê um painel principal que:
 
@@ -36,7 +36,7 @@ Ao abrir o executável, o usuário vê um painel principal que:
 - oferece `Enviar teste de voz` manual com mensagem curta
 - exibe atividade e logs úteis sem depender do terminal
 
-Use a configuração persistida do standalone em `src/standalone/config/standalone_config.py`
+Use a configuração persistida do Desktop App em `src/standalone/config/standalone_config.py`
 e a interface gráfica do próprio app para ajustar Discord, TTS e hotkeys.
 
 ### 🎮 **Perfis Especializados Incluídos:**
@@ -47,7 +47,7 @@ e a interface gráfica do próprio app para ajustar Discord, TTS e hotkeys.
 
 ### 🛠️ **Recursos Premium:**
 
-- ⚙️ **Build script inteligente** para empacotar o runtime standalone
+- ⚙️ **Build script inteligente** para empacotar o runtime do Desktop App
 - 📊 **Dashboard de configuração** visual no console
 - 🎯 **Triggers personalizáveis** para evitar conflitos
 - ⏱️ **Timeouts configuráveis** para diferentes cenários
@@ -77,7 +77,7 @@ e a interface gráfica do próprio app para ajustar Discord, TTS e hotkeys.
 # 1. Clone o projeto
 git clone https://github.com/seu-usuario/python-tts
 
-# 2. Execute o app standalone
+# 2. Execute o Desktop App
 python app.py
 
 # 3. Compile versão premium

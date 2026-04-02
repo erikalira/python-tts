@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Standalone Config Module Init
+Desktop App Config Module Init
 """
 
 from .standalone_config import (
