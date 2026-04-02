@@ -15,6 +15,12 @@ except ImportError:
     _tkinter_available = False
 
 from ..config.standalone_config import StandaloneConfig, ConfigurationValidator
+from .config_helpers import (
+    build_updated_config,
+    prompt_numeric_input,
+    resolve_text_value,
+    validate_numeric_field,
+)
 
 
 class ConfigurationInterface(ABC):
@@ -37,35 +43,24 @@ class ConsoleConfigurationInterface(ConfigurationInterface):
         
         # Discord Member ID
         current_id = current_config.discord.member_id or ""
-        while True:
-            member_id = input(f"Discord User ID [{current_id}]: ").strip()
-            if not member_id and current_id:
-                member_id = current_id
-                break
-            if member_id and member_id.isdigit():
-                break
-            print("❌ Discord User ID deve conter apenas números!")
+        member_id = prompt_numeric_input(
+            f"Discord User ID [{current_id}]: ",
+            current_id,
+            "❌ Discord User ID deve conter apenas números!",
+        )
 
         current_guild_id = current_config.discord.guild_id or ""
-        while True:
-            guild_id = input(f"Discord Guild ID [{current_guild_id}]: ").strip()
-            if not guild_id and current_guild_id:
-                guild_id = current_guild_id
-                break
-            if guild_id and guild_id.isdigit():
-                break
-            print("❌ Discord Guild ID deve conter apenas números!")
-        
-        # Update configuration
-        updated_config = StandaloneConfig(
-            tts=current_config.tts,
-            discord=current_config.discord,
-            hotkey=current_config.hotkey,
-            interface=current_config.interface,
-            network=current_config.network
+        guild_id = prompt_numeric_input(
+            f"Discord Guild ID [{current_guild_id}]: ",
+            current_guild_id,
+            "❌ Discord Guild ID deve conter apenas números!",
         )
-        updated_config.discord.member_id = member_id
-        updated_config.discord.guild_id = guild_id
+        
+        updated_config = build_updated_config(
+            current_config,
+            member_id=member_id,
+            guild_id=guild_id,
+        )
         
         print("✅ Configuração atualizada!")
         return updated_config
@@ -245,38 +240,35 @@ class GUIConfigurationInterface(ConfigurationInterface):
         """Save configuration and close."""
         member_id = self.member_id_var.get().strip()
         guild_id = self.guild_id_var.get().strip()
-        
-        if not member_id:
-            messagebox.showerror("Erro", "Discord User ID é obrigatório!")
-            return
-        
-        if not member_id.isdigit():
-            messagebox.showerror("Erro", "Discord User ID deve conter apenas números!")
-            return
 
-        if not guild_id:
-            messagebox.showerror("Erro", "Discord Guild ID é obrigatório!")
-            return
-
-        if not guild_id.isdigit():
-            messagebox.showerror("Erro", "Discord Guild ID deve conter apenas números!")
-            return
-        
-        # Create updated configuration
-        updated_config = StandaloneConfig(
-            tts=self._current_config.tts,
-            discord=self._current_config.discord,
-            hotkey=self._current_config.hotkey,
-            interface=self._current_config.interface,
-            network=self._current_config.network
+        member_error = validate_numeric_field(
+            member_id,
+            required=True,
+            required_message="Discord User ID é obrigatório!",
+            numeric_message="Discord User ID deve conter apenas números!",
         )
-        
-        # Update values
-        updated_config.discord.member_id = member_id
-        updated_config.discord.guild_id = guild_id
-        updated_config.discord.bot_url = self.bot_url_var.get().strip() or self._current_config.discord.bot_url
-        updated_config.tts.engine = self.engine_var.get()
-        updated_config.tts.language = self.language_var.get()
+        if member_error:
+            messagebox.showerror("Erro", member_error)
+            return
+
+        guild_error = validate_numeric_field(
+            guild_id,
+            required=True,
+            required_message="Discord Guild ID é obrigatório!",
+            numeric_message="Discord Guild ID deve conter apenas números!",
+        )
+        if guild_error:
+            messagebox.showerror("Erro", guild_error)
+            return
+
+        updated_config = build_updated_config(
+            self._current_config,
+            member_id=member_id,
+            guild_id=guild_id,
+            bot_url=resolve_text_value(self.bot_url_var.get(), self._current_config.discord.bot_url),
+            engine=self.engine_var.get(),
+            language=self.language_var.get(),
+        )
         
         # Validate configuration
         is_valid, errors = ConfigurationValidator.validate(updated_config)

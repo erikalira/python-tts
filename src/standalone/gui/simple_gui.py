@@ -6,7 +6,6 @@ Provides simplified interfaces for configuration without complex type hints.
 
 from abc import ABC, abstractmethod
 from typing import Optional
-from dataclasses import replace
 import os
 
 try:
@@ -17,6 +16,12 @@ except ImportError:
     TKINTER_AVAILABLE = False
 
 from ..config.standalone_config import StandaloneConfig, ConfigurationValidator
+from .config_helpers import (
+    build_updated_config,
+    normalize_optional_text,
+    prompt_numeric_input,
+    resolve_text_value,
+)
 
 
 class ConfigInterface(ABC):
@@ -39,29 +44,21 @@ class ConsoleConfig(ConfigInterface):
         
         # Discord ID
         current_id = config.discord.member_id or ""
-        while True:
-            member_id = input(f"Discord User ID [{current_id}]: ").strip()
-            if not member_id and current_id:
-                member_id = current_id
-                break
-            if member_id and member_id.isdigit():
-                break
-            print("❌ Discord User ID deve conter apenas números!")
+        member_id = prompt_numeric_input(
+            f"Discord User ID [{current_id}]: ",
+            current_id,
+            "❌ Discord User ID deve conter apenas números!",
+        )
 
         current_guild_id = config.discord.guild_id or ""
-        while True:
-            guild_id = input(f"Discord Guild ID [{current_guild_id}]: ").strip()
-            if not guild_id and current_guild_id:
-                guild_id = current_guild_id
-                break
-            if guild_id and guild_id.isdigit():
-                break
-            print("❌ Discord Guild ID deve conter apenas números!")
+        guild_id = prompt_numeric_input(
+            f"Discord Guild ID [{current_guild_id}]: ",
+            current_guild_id,
+            "❌ Discord Guild ID deve conter apenas números!",
+        )
         
         # Bot URL
-        bot_url = input(f"Bot URL [{config.discord.bot_url}]: ").strip()
-        if not bot_url:
-            bot_url = config.discord.bot_url
+        bot_url = resolve_text_value(input(f"Bot URL [{config.discord.bot_url}]: "), config.discord.bot_url)
         
         # TTS Engine
         print("\n🎵 Engines TTS disponíveis:")
@@ -83,14 +80,10 @@ class ConsoleConfig(ConfigInterface):
                 print("❌ Opção inválida!")
         
         # Language
-        language = input(f"Idioma [{config.tts.language}]: ").strip()
-        if not language:
-            language = config.tts.language
+        language = resolve_text_value(input(f"Idioma [{config.tts.language}]: "), config.tts.language)
         
         # Voice ID
-        voice_id = input(f"Voice ID [{config.tts.voice_id}]: ").strip()
-        if not voice_id:
-            voice_id = config.tts.voice_id
+        voice_id = resolve_text_value(input(f"Voice ID [{config.tts.voice_id}]: "), config.tts.voice_id)
         
         # Rate
         while True:
@@ -109,33 +102,20 @@ class ConsoleConfig(ConfigInterface):
         
         # Triggers
         print("\n⌨️ Configuração de Triggers")
-        trigger_open = input(f"Trigger abrir [{config.hotkey.trigger_open}]: ").strip()
-        if not trigger_open:
-            trigger_open = config.hotkey.trigger_open
-            
-        trigger_close = input(f"Trigger fechar [{config.hotkey.trigger_close}]: ").strip()
-        if not trigger_close:
-            trigger_close = config.hotkey.trigger_close
+        trigger_open = resolve_text_value(input(f"Trigger abrir [{config.hotkey.trigger_open}]: "), config.hotkey.trigger_open)
+        trigger_close = resolve_text_value(input(f"Trigger fechar [{config.hotkey.trigger_close}]: "), config.hotkey.trigger_close)
         
-        # Create new config using dataclasses.replace
-        new_config = StandaloneConfig(
-            discord=replace(config.discord,
-                member_id=member_id,
-                guild_id=guild_id,
-                bot_url=bot_url
-            ),
-            tts=replace(config.tts,
-                engine=engine,
-                language=language,
-                voice_id=voice_id,
-                rate=rate
-            ),
-            hotkey=replace(config.hotkey,
-                trigger_open=trigger_open,
-                trigger_close=trigger_close
-            ),
-            interface=config.interface,
-            network=config.network
+        new_config = build_updated_config(
+            config,
+            member_id=member_id,
+            guild_id=guild_id,
+            bot_url=bot_url,
+            engine=engine,
+            language=language,
+            voice_id=voice_id,
+            rate=rate,
+            trigger_open=trigger_open,
+            trigger_close=trigger_close,
         )
         
         # Validate
@@ -322,9 +302,9 @@ class InitialSetupGUI:
             return
         
         self.result = {
-            'member_id': member_id if member_id else None,
-            'guild_id': guild_id if guild_id else None,
-            'channel_id': channel_id if channel_id else None,
+            'member_id': normalize_optional_text(member_id),
+            'guild_id': normalize_optional_text(guild_id),
+            'channel_id': normalize_optional_text(channel_id),
             'bot_url': bot_url,
             'skip_discord': False
         }
@@ -385,9 +365,9 @@ class InitialSetupGUI:
             print(f"\n⚠️ Sem Discord User ID, TTS funcionará apenas localmente.")
         
         return {
-            'member_id': member_id if member_id else None,
-            'guild_id': guild_id if guild_id else None,
-            'channel_id': channel_id if channel_id else None,
+            'member_id': normalize_optional_text(member_id),
+            'guild_id': normalize_optional_text(guild_id),
+            'channel_id': normalize_optional_text(channel_id),
             'bot_url': bot_url,
             'skip_discord': not bool(member_id and guild_id)
         }
@@ -578,25 +558,17 @@ class GUIConfig(ConfigInterface):
             trigger_open = self.trigger_open_var.get().strip()
             trigger_close = self.trigger_close_var.get().strip()
             
-            # Create new config using dataclasses.replace
-            new_config = StandaloneConfig(
-                discord=replace(self.config.discord,
-                    member_id=member_id,
-                    guild_id=guild_id,
-                    bot_url=bot_url
-                ),
-                tts=replace(self.config.tts,
-                    engine=engine,
-                    language=language,
-                    voice_id=voice_id,
-                    rate=rate
-                ),
-                hotkey=replace(self.config.hotkey,
-                    trigger_open=trigger_open,
-                    trigger_close=trigger_close
-                ),
-                interface=self.config.interface,
-                network=self.config.network
+            new_config = build_updated_config(
+                self.config,
+                member_id=member_id,
+                guild_id=guild_id,
+                bot_url=bot_url,
+                engine=engine,
+                language=language,
+                voice_id=voice_id,
+                rate=rate,
+                trigger_open=trigger_open,
+                trigger_close=trigger_close,
             )
             
             # Validate

@@ -542,7 +542,7 @@ def test_gui_config_save_config_handles_unexpected_error(monkeypatch):
     gui.trigger_close_var = DummyVar("}")
     errors = []
 
-    monkeypatch.setattr(simple_gui, "replace", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(simple_gui, "build_updated_config", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
     monkeypatch.setattr(simple_gui.messagebox, "showerror", lambda title, message: errors.append((title, message)))
 
     gui._save_config()
