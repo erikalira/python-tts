@@ -35,9 +35,9 @@ class SpeakTextUseCase:
         self._channel_repository = channel_repository
         self._config_repository = config_repository
         self._audio_queue = audio_queue
-        self._guild_processors: dict = {}  # Track active queue processors per guild
+        self._guild_processors: dict = {}  # Track active queue processor tasks per guild
         self._guild_locks: dict = {}  # Asyncio locks per guild to prevent concurrent processing
-        self._processing_guilds: set = set()  # Guilds currently processing first item
+        self._processing_guilds: set = set()  # Guilds currently draining queue playback
     
     async def execute(self, request: TTSRequest) -> dict:
         """Execute the speak text use case WITH QUEUE SUPPORT.
@@ -88,21 +88,20 @@ class SpeakTextUseCase:
             # First item AND no processing in progress - Process it
             logger.info(f"[USE_CASE] Item {item_id} is first in queue and no processing in progress - processing immediately")
             
-            # Mark guild as processing to prevent other items from being position 0
+            # Mark guild as processing until the queue-drain task finishes.
             self._processing_guilds.add(guild_id)
             
             try:
                 item = await self._audio_queue.dequeue(guild_id)
                 result = await self._process_audio(item)
                 
-                # Start background processor for remaining items
-                asyncio.create_task(self._process_queue_items(guild_id))
+                # Start or reuse background processor for remaining items.
+                self._ensure_guild_processor(guild_id)
                 
                 return result
-            
-            finally:
-                # Unmark processing
-                self._processing_guilds.discard(guild_id)
+            except Exception:
+                self._clear_guild_processing(guild_id)
+                raise
         else:
             # Item in queue - return position
             if is_already_processing:
@@ -148,6 +147,22 @@ class SpeakTextUseCase:
         
         except Exception as e:
             logger.error(f"[USE_CASE] Error in _process_queue_items for guild {guild_id}: {e}", exc_info=True)
+        finally:
+            self._clear_guild_processing(guild_id)
+
+    def _ensure_guild_processor(self, guild_id: Optional[int]) -> None:
+        """Ensure there is a single background queue processor for the guild."""
+        existing_task = self._guild_processors.get(guild_id)
+        if existing_task and not existing_task.done():
+            return
+
+        task = asyncio.create_task(self._process_queue_items(guild_id))
+        self._guild_processors[guild_id] = task
+
+    def _clear_guild_processing(self, guild_id: Optional[int]) -> None:
+        """Clear tracking state once queue playback is fully drained."""
+        self._processing_guilds.discard(guild_id)
+        self._guild_processors.pop(guild_id, None)
     
     async def _process_queue(self, guild_id: Optional[int]):
         """Deprecated: Use _process_first_and_queue() instead.

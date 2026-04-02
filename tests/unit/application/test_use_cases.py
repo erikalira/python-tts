@@ -1,7 +1,10 @@
 """Tests for application use cases."""
+import asyncio
+
 import pytest
 from src.application.use_cases import SpeakTextUseCase, ConfigureTTSUseCase
 from src.core.entities import TTSRequest, TTSConfig
+from src.infrastructure.audio_queue import InMemoryAudioQueue
 
 
 @pytest.mark.asyncio
@@ -99,6 +102,74 @@ class TestSpeakTextUseCase:
         
         assert result["success"] is True
         assert mock_channel_repository.channel.is_connected()
+
+    async def test_execute_keeps_processing_flag_while_background_queue_is_draining(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        sample_tts_request
+    ):
+        """A new request must stay queued while a background item is still playing."""
+        audio_queue = InMemoryAudioQueue()
+        use_case = SpeakTextUseCase(
+            tts_engine=mock_tts_engine,
+            channel_repository=mock_channel_repository,
+            config_repository=mock_config_repository,
+            audio_queue=audio_queue
+        )
+
+        first_started = asyncio.Event()
+        first_release = asyncio.Event()
+        second_started = asyncio.Event()
+        second_release = asyncio.Event()
+        process_order = []
+
+        async def fake_process_audio(item):
+            process_order.append(item.request.text)
+            if item.request.text == "first":
+                first_started.set()
+                await first_release.wait()
+            elif item.request.text == "second":
+                second_started.set()
+                await second_release.wait()
+
+            return {
+                "success": True,
+                "message": "✅ Áudio reproduzido",
+                "queued": False,
+                "item_id": item.item_id,
+            }
+
+        use_case._process_audio = fake_process_audio
+
+        first_request = TTSRequest(text="first", channel_id=123456, guild_id=789012, member_id=345678)
+        second_request = TTSRequest(text="second", channel_id=123456, guild_id=789012, member_id=345678)
+        third_request = TTSRequest(text="third", channel_id=123456, guild_id=789012, member_id=345678)
+
+        first_task = asyncio.create_task(use_case.execute(first_request))
+        await asyncio.wait_for(first_started.wait(), timeout=1)
+
+        second_result = await use_case.execute(second_request)
+        assert second_result["queued"] is True
+        assert second_result["position"] == 0
+
+        first_release.set()
+        first_result = await asyncio.wait_for(first_task, timeout=1)
+        assert first_result["success"] is True
+
+        await asyncio.wait_for(second_started.wait(), timeout=1)
+
+        third_result = await use_case.execute(third_request)
+        assert third_result["success"] is True
+        assert third_result["queued"] is True
+        assert third_result["position"] == 0
+        assert process_order == ["first", "second"]
+
+        second_release.set()
+        await asyncio.sleep(0.6)
+
+        assert process_order == ["first", "second", "third"]
 
 
 class TestConfigureTTSUseCase:
