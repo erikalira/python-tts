@@ -76,6 +76,14 @@ class SpeakTextUseCase:
         # Create and enqueue audio item
         item = AudioQueueItem(request=request)
         item_id = await self._audio_queue.enqueue(item)
+        if item_id is None:
+            logger.warning(f"[USE_CASE] Queue rejected item for guild {request.guild_id}: {item.error_message}")
+            return {
+                "success": False,
+                "message": f"❌ {item.error_message or 'Fila de áudio cheia. Tente novamente mais tarde.'}",
+                "queued": False
+            }
+
         position = await self._audio_queue.get_item_position(item_id)
         
         logger.info(f"[USE_CASE] Item {item_id} enqueued at position {position}, guild {request.guild_id}")

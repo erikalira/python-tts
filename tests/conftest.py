@@ -135,7 +135,7 @@ class MockAudioQueue(IAudioQueue):
         self.items = []
         self.completed = []
     
-    async def enqueue(self, item: AudioQueueItem) -> str:
+    async def enqueue(self, item: AudioQueueItem) -> str | None:
         """Add item to queue."""
         self.items.append(item)
         return item.item_id
@@ -173,7 +173,7 @@ class MockAudioQueue(IAudioQueue):
         self.items = []
         self.completed = []
     
-    async def enqueue(self, item: AudioQueueItem) -> str:
+    async def enqueue(self, item: AudioQueueItem) -> str | None:
         """Add item to queue."""
         self.items.append(item)
         return item.item_id

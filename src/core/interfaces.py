@@ -114,14 +114,14 @@ class IAudioQueue(ABC):
     """
     
     @abstractmethod
-    async def enqueue(self, item: AudioQueueItem) -> str:
+    async def enqueue(self, item: AudioQueueItem) -> Optional[str]:
         """Add item to queue for its guild.
         
         Args:
             item: AudioQueueItem to enqueue
             
         Returns:
-            item_id: Unique identifier for the queued item
+            item_id: Unique identifier for the queued item, or None if rejected
         """
         pass
     

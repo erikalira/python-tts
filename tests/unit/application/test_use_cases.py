@@ -171,6 +171,28 @@ class TestSpeakTextUseCase:
 
         assert process_order == ["first", "second", "third"]
 
+    async def test_execute_returns_failure_when_queue_is_full(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        sample_tts_request
+    ):
+        """Queue overflow should reject the request instead of faking a queued success."""
+        audio_queue = InMemoryAudioQueue(max_queue_size=0)
+        use_case = SpeakTextUseCase(
+            tts_engine=mock_tts_engine,
+            channel_repository=mock_channel_repository,
+            config_repository=mock_config_repository,
+            audio_queue=audio_queue
+        )
+
+        result = await use_case.execute(sample_tts_request)
+
+        assert result["success"] is False
+        assert result["queued"] is False
+        assert "Fila de áudio cheia" in result["message"]
+
 
 class TestConfigureTTSUseCase:
     """Test ConfigureTTSUseCase."""
