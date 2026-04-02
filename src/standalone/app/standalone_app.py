@@ -31,36 +31,20 @@ from ..adapters.keyboard_backend import KeyboardHookBackend
 logger = logging.getLogger(__name__)
 
 
-class StandaloneHotkeyHandler:
-    """Hotkey handler that integrates TTS processing with notifications."""
-    
-    def __init__(self, 
-                 tts_processor: TTSProcessor,
-                 notification_service: SystemTrayService):
-        self._tts_processor = tts_processor
+class StandaloneTTSResultPresenter:
+    """Translate structured TTS execution results into standalone notifications."""
+
+    def __init__(self, notification_service: SystemTrayService):
         self._notification_service = notification_service
-    
-    def handle_text_captured(self, event: HotkeyEvent) -> None:
-        """Handle when text is captured between hotkey triggers."""
-        if not event.text:
-            return
-        
-        logger.info("[APP] Texto capturado pelo hotkey handler")
-        
-        # Notify start of processing
+
+    def show_processing(self, text: str) -> None:
+        """Show a processing notification for captured text."""
         self._notification_service.notify_info(
-            "TTS Hotkey", 
-            f"Processando: '{event.text[:50]}{'...' if len(event.text) > 50 else ''}'"
-        )
-        
-        # Process the text
-        self._tts_processor.process_text(
-            event.text,
-            event.character_count,
-            on_complete=self._handle_tts_result,
+            "TTS Hotkey",
+            f"Processando: '{text[:50]}{'...' if len(text) > 50 else ''}'"
         )
 
-    def _handle_tts_result(self, result: dict) -> None:
+    def present(self, result: dict) -> None:
         """Show user-facing feedback after TTS execution completes."""
         code = result.get("code")
         if code == TTS_EXECUTION_RESULT_OK:
@@ -76,6 +60,32 @@ class StandaloneHotkeyHandler:
             return
 
         self._notification_service.notify_error("TTS Hotkey", "Falha inesperada ao processar TTS")
+
+
+class StandaloneHotkeyHandler:
+    """Hotkey handler that integrates captured text with TTS processing."""
+    
+    def __init__(
+        self,
+        tts_processor: TTSProcessor,
+        result_presenter: StandaloneTTSResultPresenter,
+    ):
+        self._tts_processor = tts_processor
+        self._result_presenter = result_presenter
+    
+    def handle_text_captured(self, event: HotkeyEvent) -> None:
+        """Handle when text is captured between hotkey triggers."""
+        if not event.text:
+            return
+        
+        logger.info("[APP] Texto capturado pelo hotkey handler")
+        self._result_presenter.show_processing(event.text)
+        
+        self._tts_processor.process_text(
+            event.text,
+            event.character_count,
+            on_complete=self._result_presenter.present,
+        )
 
 
 class StandaloneApplication:
@@ -144,9 +154,10 @@ class StandaloneApplication:
     def _setup_integrations(self) -> None:
         """Set up integrations between services."""
         # Create hotkey handler that bridges hotkey events to TTS
+        result_presenter = StandaloneTTSResultPresenter(self._notification_service)
         hotkey_handler = StandaloneHotkeyHandler(
             self._tts_processor,
-            self._notification_service
+            result_presenter,
         )
         
         # Initialize hotkey manager with handler

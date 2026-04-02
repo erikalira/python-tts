@@ -5,65 +5,75 @@ from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_MISSING_TEXT,
     TTS_EXECUTION_RESULT_OK,
 )
-from src.standalone.app.standalone_app import StandaloneApplication, StandaloneHotkeyHandler
+from src.standalone.app.standalone_app import (
+    StandaloneApplication,
+    StandaloneHotkeyHandler,
+    StandaloneTTSResultPresenter,
+)
 from src.standalone.config.standalone_config import StandaloneConfig
 from src.standalone.services.hotkey_services import HotkeyEvent
 
 
 def test_standalone_hotkey_handler_processes_captured_text():
     processor = Mock()
-    notifier = Mock()
-    handler = StandaloneHotkeyHandler(processor, notifier)
+    presenter = Mock()
+    handler = StandaloneHotkeyHandler(processor, presenter)
     event = HotkeyEvent(text="hello", character_count=7, trigger_open="{", trigger_close="}")
 
     handler.handle_text_captured(event)
 
-    notifier.notify_info.assert_called_once()
+    presenter.show_processing.assert_called_once_with("hello")
     processor.process_text.assert_called_once()
     assert processor.process_text.call_args.args == ("hello", 7)
-    assert callable(processor.process_text.call_args.kwargs["on_complete"])
+    assert processor.process_text.call_args.kwargs["on_complete"] == presenter.present
 
 
 def test_standalone_hotkey_handler_ignores_empty_text():
     processor = Mock()
-    notifier = Mock()
-    handler = StandaloneHotkeyHandler(processor, notifier)
+    presenter = Mock()
+    handler = StandaloneHotkeyHandler(processor, presenter)
     event = HotkeyEvent(text="", character_count=2, trigger_open="{", trigger_close="}")
 
     handler.handle_text_captured(event)
 
-    notifier.notify_info.assert_not_called()
+    presenter.show_processing.assert_not_called()
     processor.process_text.assert_not_called()
 
 
-def test_standalone_hotkey_handler_notifies_success_after_tts():
-    processor = Mock()
+def test_standalone_tts_result_presenter_notifies_success_after_tts():
     notifier = Mock()
-    handler = StandaloneHotkeyHandler(processor, notifier)
+    presenter = StandaloneTTSResultPresenter(notifier)
 
-    handler._handle_tts_result({"success": True, "code": TTS_EXECUTION_RESULT_OK})
+    presenter.present({"success": True, "code": TTS_EXECUTION_RESULT_OK})
 
     notifier.notify_success.assert_called_once_with("TTS Hotkey", "Texto reproduzido com sucesso")
 
 
-def test_standalone_hotkey_handler_notifies_missing_text_error():
-    processor = Mock()
+def test_standalone_tts_result_presenter_notifies_missing_text_error():
     notifier = Mock()
-    handler = StandaloneHotkeyHandler(processor, notifier)
+    presenter = StandaloneTTSResultPresenter(notifier)
 
-    handler._handle_tts_result({"success": False, "code": TTS_EXECUTION_RESULT_MISSING_TEXT})
+    presenter.present({"success": False, "code": TTS_EXECUTION_RESULT_MISSING_TEXT})
 
     notifier.notify_error.assert_called_once_with("TTS Hotkey", "Nenhum texto valido foi capturado")
 
 
-def test_standalone_hotkey_handler_notifies_failure():
-    processor = Mock()
+def test_standalone_tts_result_presenter_notifies_failure():
     notifier = Mock()
-    handler = StandaloneHotkeyHandler(processor, notifier)
+    presenter = StandaloneTTSResultPresenter(notifier)
 
-    handler._handle_tts_result({"success": False, "code": TTS_EXECUTION_RESULT_FAILED})
+    presenter.present({"success": False, "code": TTS_EXECUTION_RESULT_FAILED})
 
     notifier.notify_error.assert_called_once_with("TTS Hotkey", "Falha ao reproduzir o texto")
+
+
+def test_standalone_tts_result_presenter_shows_processing_message():
+    notifier = Mock()
+    presenter = StandaloneTTSResultPresenter(notifier)
+
+    presenter.show_processing("hello world")
+
+    notifier.notify_info.assert_called_once()
 
 
 def test_standalone_application_handle_configure_updates_services():
