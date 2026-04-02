@@ -137,9 +137,15 @@ class FallbackTTSEngine(TTSEngine):
 class TTSService:
     """Main TTS service that coordinates different engines."""
     
-    def __init__(self, config: StandaloneConfig, bot_client: Optional[DiscordBotClient] = None):
+    def __init__(
+        self,
+        config: StandaloneConfig,
+        bot_client: Optional[DiscordBotClient] = None,
+        local_engine_factory: Optional[callable] = None
+    ):
         self._config = config
         self._bot_client = bot_client or HttpDiscordBotClient(config)
+        self._local_engine_factory = local_engine_factory or (lambda cfg: LocalPyTTSX3Engine(cfg))
         self._engine = self._create_engine()
     
     def _create_engine(self) -> TTSEngine:
@@ -152,7 +158,7 @@ class TTSService:
             engines.append(discord_engine)
         
         # Add local engine as fallback
-        local_engine = LocalPyTTSX3Engine(self._config)
+        local_engine = self._local_engine_factory(self._config)
         engines.append(local_engine)
         
         return FallbackTTSEngine(engines)
@@ -227,8 +233,10 @@ class TTSProcessor:
         tts_service: Optional[TTSService] = None,
         cleanup_service: Optional[KeyboardCleanupService] = None
     ):
-        self._tts_service = tts_service or TTSService(config)
-        self._cleanup_service = cleanup_service or KeyboardCleanupService()
+        if tts_service is None or cleanup_service is None:
+            raise ValueError("TTSProcessor requires explicit tts_service and cleanup_service")
+        self._tts_service = tts_service
+        self._cleanup_service = cleanup_service
     
     def process_text(self, text: str, cleanup_count: int = 0) -> None:
         """Process text for TTS and perform cleanup in a separate thread."""

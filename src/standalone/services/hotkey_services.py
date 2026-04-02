@@ -178,10 +178,16 @@ class StandardKeyboardMonitor(KeyboardMonitor):
 class HotkeyService:
     """Main hotkey service that coordinates monitoring and handling."""
     
-    def __init__(self, config: StandaloneConfig, handler: HotkeyHandler):
+    def __init__(
+        self,
+        config: StandaloneConfig,
+        handler: HotkeyHandler,
+        monitor_factory: Callable[[StandaloneConfig, HotkeyHandler], KeyboardMonitor] | None = None
+    ):
         self._config = config
         self._handler = handler
-        self._monitor: KeyboardMonitor = StandardKeyboardMonitor(config, handler)
+        self._monitor_factory = monitor_factory or (lambda cfg, hnd: StandardKeyboardMonitor(cfg, hnd))
+        self._monitor: KeyboardMonitor = self._monitor_factory(config, handler)
         self._active = False
     
     def start(self) -> bool:
@@ -232,8 +238,13 @@ class HotkeyService:
 class HotkeyManager:
     """High-level manager for hotkey functionality."""
     
-    def __init__(self, config: StandaloneConfig):
+    def __init__(
+        self,
+        config: StandaloneConfig,
+        service_factory: Callable[[StandaloneConfig, HotkeyHandler], HotkeyService] | None = None
+    ):
         self._config = config
+        self._service_factory = service_factory or (lambda cfg, handler: HotkeyService(cfg, handler))
         self._service: Optional[HotkeyService] = None
         self._handler: Optional[HotkeyHandler] = None
     
@@ -243,7 +254,7 @@ class HotkeyManager:
             return True
         
         self._handler = handler
-        self._service = HotkeyService(self._config, handler)
+        self._service = self._service_factory(self._config, handler)
         return True
     
     def start(self) -> bool:
@@ -278,7 +289,7 @@ class HotkeyManager:
         self._config = new_config
         
         if was_active and self._handler:
-            self._service = HotkeyService(new_config, self._handler)
+            self._service = self._service_factory(new_config, self._handler)
             self.start()
     
     def get_status(self) -> dict:

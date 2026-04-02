@@ -88,10 +88,15 @@ class SystemTrayIcon(ABC):
 class SystemTrayService:
     """Service for managing system tray functionality."""
     
-    def __init__(self, config: StandaloneConfig, tray_icon: Optional[object] = None):
+    def __init__(
+        self,
+        config: StandaloneConfig,
+        tray_icon: Optional[object] = None,
+        notification_service: Optional[NotificationService] = None
+    ):
         self._config = config
         self._tray_icon = tray_icon or self._create_tray_icon()
-        self._notification_service = ConsoleNotificationService()
+        self._notification_service = notification_service or ConsoleNotificationService()
     
     def _create_tray_icon(self) -> SystemTrayIcon:
         """Create appropriate system tray icon based on availability."""

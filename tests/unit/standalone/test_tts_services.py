@@ -147,10 +147,14 @@ def test_keyboard_cleanup_service_reports_suppression(monkeypatch):
 
 
 def test_tts_processor_runs_cleanup_after_success(monkeypatch):
-    processor = TTSProcessor(StandaloneConfig.create_default())
-    processor._tts_service = Mock()
-    processor._tts_service.speak_text.return_value = True
-    processor._cleanup_service = Mock()
+    tts_service = Mock()
+    tts_service.speak_text.return_value = True
+    cleanup_service = Mock()
+    processor = TTSProcessor(
+        StandaloneConfig.create_default(),
+        tts_service=tts_service,
+        cleanup_service=cleanup_service,
+    )
 
     class ImmediateThread:
         def __init__(self, target, daemon):
@@ -163,5 +167,5 @@ def test_tts_processor_runs_cleanup_after_success(monkeypatch):
 
     processor.process_text("hello", cleanup_count=3)
 
-    processor._tts_service.speak_text.assert_called_once_with("hello")
-    processor._cleanup_service.cleanup_typed_text.assert_called_once_with(3)
+    tts_service.speak_text.assert_called_once_with("hello")
+    cleanup_service.cleanup_typed_text.assert_called_once_with(3)

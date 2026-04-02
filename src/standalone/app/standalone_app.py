@@ -21,6 +21,7 @@ from ..services.hotkey_services import (
     HotkeyHandler
 )
 from ..services.notification_services import SystemTrayService
+from ..adapters.keyboard_backend import KeyboardHookBackend
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,8 @@ class StandaloneApplication:
         config_service: Optional[ConfigurationService] = None,
         tts_processor_factory: Callable[[StandaloneConfig], TTSProcessor] = TTSProcessor,
         hotkey_manager_factory: Callable[[StandaloneConfig], HotkeyManager] = HotkeyManager,
-        notification_service_factory: Callable[[StandaloneConfig], SystemTrayService] = SystemTrayService
+        notification_service_factory: Callable[[StandaloneConfig], SystemTrayService] = SystemTrayService,
+        console_wait_factory: Optional[Callable[[], object]] = None
     ):
         # Core components
         self._config: Optional[StandaloneConfig] = None
@@ -76,6 +78,7 @@ class StandaloneApplication:
         self._tts_processor_factory = tts_processor_factory
         self._hotkey_manager_factory = hotkey_manager_factory
         self._notification_service_factory = notification_service_factory
+        self._console_wait_factory = console_wait_factory or KeyboardHookBackend
         
         # Application state
         self._initialized = False
@@ -218,12 +221,15 @@ class StandaloneApplication:
         else:
             # Console mode - wait for keyboard interrupt
             logger.info("[APP] Modo console ativo! Pressione Ctrl+C para sair...")
-            try:
-                import keyboard
-                keyboard.wait()
-            except ImportError:
-                # Fallback if keyboard library is not available
-                input("Pressione Enter para sair...")
+            wait_backend = self._console_wait_factory()
+            if hasattr(wait_backend, "is_available") and wait_backend.is_available():
+                try:
+                    import keyboard
+                    keyboard.wait()
+                    return
+                except ImportError:
+                    pass
+            input("Pressione Enter para sair...")
 
     def _show_current_configuration(self) -> None:
         """Log the current standalone configuration summary."""
