@@ -18,6 +18,7 @@ Este diretório reúne a documentação complementar do projeto. O `README.md` d
 ## Features
 
 - [features/README.md](features/README.md): convenção e índice das documentações de feature
+- [features/STANDALONE_GUI_UX.md](features/STANDALONE_GUI_UX.md): requisitos de UX, responsividade e distribuição da GUI standalone
 - [features/INTERFACE_CONFIGURACAO.md](features/INTERFACE_CONFIGURACAO.md): detalhes da interface de configuração
 - [features/VOICE_TIMEOUT.md](features/VOICE_TIMEOUT.md): comportamento e ajustes de timeout
 - [features/ICON_TROUBLESHOOTING.md](features/ICON_TROUBLESHOOTING.md): problemas com ícones
