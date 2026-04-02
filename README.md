@@ -6,14 +6,14 @@
 Projeto com dois aplicativos independentes:
 
 - Bot do Discord para entrar em canal de voz e reproduzir TTS
-- App standalone com hotkeys para capturar texto e enviar ao bot
+- Desktop app Windows com hotkeys para capturar texto e enviar ao bot
 
 O repositório segue Clean Architecture e busca reutilizar lógica entre os dois fluxos, sem duplicação entre `standalone` e `src`.
 
 ## Estrutura rápida
 
 - `src/bot.py`: sobe o bot do Discord e o servidor HTTP
-- `app.py`: inicia o app standalone/hotkey
+- `app.py`: inicia o desktop app Windows
 - `src/`: camadas principais da aplicação
 - `docs/`: documentação complementar
 - `docs/BUILD_GUIDE.md`: guia de build do executável Windows
@@ -52,7 +52,7 @@ Suba o bot:
 python -m src.bot
 ```
 
-Em outro terminal, rode o app standalone:
+Em outro terminal, rode o desktop app:
 
 ```bash
 python app.py
@@ -80,12 +80,12 @@ Use o README principal como ponto de entrada e deixe os detalhes nos guias espec
 - [Índice da documentação](docs/README.md)
 - [Guia de build do executável Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
-- [Guia do app standalone](docs/README_STANDALONE.md)
+- [Guia do desktop app](docs/README_STANDALONE.md)
 - [Configuração de hotkeys](docs/HOTKEY_SETUP.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 ## Observações
 
 - Não versione o `DISCORD_TOKEN`
-- O bot e o app standalone devem continuar funcionando de forma independente
+- O bot e o desktop app devem continuar funcionando de forma independente
 - Prefira consultar `docs/` para detalhes de arquitetura, setup e troubleshooting

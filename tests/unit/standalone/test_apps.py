@@ -175,7 +175,7 @@ def test_standalone_application_test_bot_connection_uses_http_client(monkeypatch
 
     fake_client = Mock()
     fake_client.check_connection.return_value = {"success": True, "message": "ok"}
-    monkeypatch.setattr("src.standalone.app.standalone_app.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr("src.standalone.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
 
     result = app._test_bot_connection(config)
 
@@ -207,7 +207,7 @@ def test_standalone_application_send_test_message_uses_http_client(monkeypatch):
     fake_client = Mock()
     fake_client.build_request.return_value = fake_request
     fake_client.send_speak_request.return_value = True
-    monkeypatch.setattr("src.standalone.app.standalone_app.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr("src.standalone.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
 
     result = app._send_test_message(config)
 

@@ -1,0 +1,155 @@
+"""Action coordinators for the Windows desktop app runtime."""
+
+from __future__ import annotations
+
+import logging
+from typing import Callable, Optional
+
+from ..config.standalone_config import (
+    ConfigurationRepository,
+    ConfigurationValidator,
+    EnvironmentUpdater,
+    StandaloneConfig,
+)
+from ..gui.simple_gui import ConfigurationService
+from ..services.discord_bot_client import HttpDiscordBotClient
+
+logger = logging.getLogger(__name__)
+
+
+class DesktopBotActions:
+    """Handle desktop-panel actions that talk to the Discord bot runtime."""
+
+    def test_bot_connection(self, config: StandaloneConfig) -> dict:
+        """Test connectivity against the bot health endpoint."""
+        client = HttpDiscordBotClient(config)
+        result = client.check_connection()
+        if result.get("success"):
+            logger.info("[DESKTOP_APP] Teste de conexao com o bot concluido com sucesso")
+        else:
+            logger.warning(
+                "[DESKTOP_APP] Teste de conexao com o bot falhou: %s",
+                result.get("message"),
+            )
+        return result
+
+    def send_test_message(self, config: StandaloneConfig) -> dict:
+        """Send a short manual test message to validate the speak flow."""
+        if not config.discord.bot_url:
+            return {"success": False, "message": "Bot URL nao configurada para envio de teste"}
+        if not config.discord.guild_id or not config.discord.member_id:
+            return {
+                "success": False,
+                "message": "Guild ID e User ID sao necessarios para enviar o teste",
+            }
+
+        client = HttpDiscordBotClient(config)
+        request = client.build_request("Teste rápido do TTS Hotkey.")
+        success = client.send_speak_request(request)
+        if success:
+            logger.info("[DESKTOP_APP] Mensagem curta de teste enviada ao bot")
+            return {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
+
+        logger.warning("[DESKTOP_APP] Falha ao enviar mensagem curta de teste ao bot")
+        return {"success": False, "message": "Nao foi possivel enviar a mensagem de teste ao bot"}
+
+
+class DesktopConfigurationCoordinator:
+    """Coordinate configuration edits and their side effects for the desktop app."""
+
+    def __init__(
+        self,
+        config_repository: ConfigurationRepository,
+        config_service: ConfigurationService,
+        update_services: Callable[[], None],
+    ):
+        self._config_repository = config_repository
+        self._config_service = config_service
+        self._update_services = update_services
+
+    def handle_initial_configuration(
+        self,
+        current_config: StandaloneConfig,
+    ) -> tuple[bool, StandaloneConfig]:
+        """Run first-time configuration when required."""
+        if ConfigurationValidator.is_configured(current_config):
+            return True, current_config
+
+        logger.info("[DESKTOP_APP] Primeira execucao detectada, abrindo configuracao inicial")
+        updated_config = self._config_service.get_configuration(current_config)
+        if not updated_config:
+            return False, current_config
+
+        self._persist_and_apply(updated_config)
+        return True, updated_config
+
+    def save_from_ui(self, updated_config: StandaloneConfig) -> dict:
+        """Validate, persist, and apply configuration changes from the main window."""
+        is_valid, errors = ConfigurationValidator.validate(updated_config)
+        if not is_valid:
+            message = "; ".join(errors)
+            logger.error("[DESKTOP_APP] Configuracao invalida recebida da interface: %s", message)
+            return {"success": False, "message": message}
+
+        save_success = self._persist_and_apply(updated_config)
+        logger.info("[DESKTOP_APP] Configuracao salva pelo painel principal")
+        return {
+            "success": True,
+            "message": (
+                "Configuracao aplicada com sucesso"
+                if save_success
+                else "Configuracao aplicada, mas nao foi possivel persistir o arquivo"
+            ),
+        }
+
+    def reconfigure(
+        self,
+        current_config: StandaloneConfig,
+        hotkeys_were_active: bool,
+        pause_hotkeys: Callable[[], None],
+        resume_hotkeys: Callable[[], None],
+        notify_error: Optional[Callable[[str, str], None]] = None,
+        notify_success: Optional[Callable[[str, str], None]] = None,
+        are_hotkeys_active: Optional[Callable[[], bool]] = None,
+    ) -> tuple[Optional[StandaloneConfig], bool]:
+        """Open configuration UI and apply changes from the tray flow."""
+        updated_config = None
+        try:
+            updated_config = self._config_service.get_configuration(current_config)
+        finally:
+            if hotkeys_were_active and not updated_config:
+                resume_hotkeys()
+
+        if not updated_config:
+            logger.info("[DESKTOP_APP] Configuracao cancelada")
+            return None, False
+
+        is_valid, errors = ConfigurationValidator.validate(updated_config)
+        if not is_valid:
+            logger.error("[DESKTOP_APP] Configuracao invalida: %s", "; ".join(errors))
+            if notify_error:
+                notify_error("TTS Hotkey", "Configuracao invalida")
+            if hotkeys_were_active:
+                resume_hotkeys()
+            return None, False
+
+        self._persist_and_apply(updated_config)
+        if hotkeys_were_active and are_hotkeys_active and not are_hotkeys_active():
+            resume_hotkeys()
+
+        logger.info("[DESKTOP_APP] Configuracao atualizada com sucesso")
+        if notify_success:
+            notify_success("TTS Hotkey", "Configuracao atualizada")
+        return updated_config, True
+
+    def _persist_and_apply(self, config: StandaloneConfig) -> bool:
+        """Persist config, sync environment, and rebuild dependent services."""
+        save_success = self._config_repository.save(config)
+        if not save_success:
+            logger.warning(
+                "[DESKTOP_APP] Falha ao salvar configuracao, continuando com configuracao em memoria"
+            )
+
+        EnvironmentUpdater.update_from_config(config)
+        self._update_services()
+        return save_success

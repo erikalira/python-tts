@@ -1,4 +1,4 @@
-"""Main entry point for the Windows standalone hotkey app."""
+"""Main entry point for the Windows desktop app."""
 
 from src.standalone.app.standalone_app import main
 

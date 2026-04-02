@@ -5,7 +5,7 @@
 Este projeto contém dois aplicativos independentes:
 
 1. Bot do Discord com endpoint HTTP para TTS
-2. App standalone Windows com hotkeys, GUI e system tray
+2. Desktop app Windows com hotkeys, GUI e system tray
 
 Ambos seguem Clean Architecture e os princípios SOLID para garantir:
 
@@ -19,7 +19,7 @@ Ambos seguem Clean Architecture e os princípios SOLID para garantir:
 
 ## Estado atual dos entry points
 
-### Standalone
+### Desktop app
 
 - Entry point oficial: `app.py`
 - Implementação principal: `src/standalone/`

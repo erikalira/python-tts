@@ -6,7 +6,7 @@ Este diretório reúne a documentação complementar do projeto. O `README.md` d
 
 - [BUILD_GUIDE.md](BUILD_GUIDE.md): build do executável Windows
 - [ARCHITECTURE.md](ARCHITECTURE.md): visão de arquitetura e organização das camadas
-- [README_STANDALONE.md](README_STANDALONE.md): foco no app standalone
+- [README_STANDALONE.md](README_STANDALONE.md): foco no desktop app
 - [HOTKEY_SETUP.md](HOTKEY_SETUP.md): configuração e uso das hotkeys
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md): problemas comuns e diagnósticos
 
