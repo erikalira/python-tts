@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from src.standalone.config.standalone_config import StandaloneConfig
+from src.standalone.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
 from src.standalone.services.tts_services import (
     DiscordTTSService,
     FallbackTTSEngine,
@@ -26,46 +27,62 @@ class FakeEngine:
         return self.result
 
 
-def test_discord_tts_service_builds_payload_and_sends_request(monkeypatch):
+class FakeDiscordBotClient:
+    def __init__(self, available=True, result=True):
+        self.available = available
+        self.result = result
+        self.requests = []
+
+    def is_available(self):
+        return self.available
+
+    def build_request(self, text):
+        return DiscordSpeakRequest(text=text, channel_id="10", member_id="20")
+
+    def send_speak_request(self, request):
+        self.requests.append(request)
+        return self.result
+
+
+def test_http_discord_bot_client_builds_payload_and_url():
     config = StandaloneConfig.create_default()
     config.discord.bot_url = "http://localhost:10000/"
     config.discord.channel_id = "10"
     config.discord.member_id = "20"
 
-    response = SimpleNamespace(ok=True)
-    post = Mock(return_value=response)
-    monkeypatch.setattr("src.standalone.services.tts_services.requests.post", post)
+    client = HttpDiscordBotClient(config)
+    request = client.build_request("hello")
 
-    service = DiscordTTSService(config)
+    assert request.to_payload() == {"text": "hello", "channel_id": "10", "member_id": "20"}
+    assert client.get_speak_url() == "http://localhost:10000/speak"
+
+
+def test_discord_tts_service_builds_payload_and_sends_request(monkeypatch):
+    config = StandaloneConfig.create_default()
+    bot_client = FakeDiscordBotClient(available=True, result=True)
+    service = DiscordTTSService(config, bot_client=bot_client)
 
     assert service.speak("hello") is True
-    call = post.call_args
-    assert call.args[0] == "http://localhost:10000/speak"
-    assert call.kwargs["json"]["text"] == "hello"
-    assert call.kwargs["json"]["channel_id"] == "10"
-    assert call.kwargs["json"]["member_id"] == "20"
+    assert len(bot_client.requests) == 1
+    assert bot_client.requests[0].to_payload() == {"text": "hello", "channel_id": "10", "member_id": "20"}
 
 
 def test_discord_tts_service_handles_http_error(monkeypatch):
     config = StandaloneConfig.create_default()
+    bot_client = FakeDiscordBotClient(available=True, result=False)
+    assert DiscordTTSService(config, bot_client=bot_client).speak("hello") is False
+
+
+def test_http_discord_bot_client_handles_http_error(monkeypatch):
+    config = StandaloneConfig.create_default()
     config.discord.bot_url = "http://localhost:10000"
 
     post = Mock(return_value=SimpleNamespace(ok=False, status_code=500))
-    monkeypatch.setattr("src.standalone.services.tts_services.requests.post", post)
+    monkeypatch.setattr("src.standalone.services.discord_bot_client.requests.post", post)
 
-    assert DiscordTTSService(config).speak("hello") is False
+    client = HttpDiscordBotClient(config)
 
-
-def test_discord_tts_service_builds_minimal_payload_without_optional_fields():
-    config = StandaloneConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000"
-    config.discord.channel_id = None
-    config.discord.member_id = None
-
-    service = DiscordTTSService(config)
-
-    assert service._build_payload("hello") == {"text": "hello"}
-    assert service._get_speak_url() == "http://localhost:10000/speak"
+    assert client.send_speak_request(client.build_request("hello")) is False
 
 
 def test_fallback_tts_engine_tries_next_available_engine():
@@ -81,7 +98,7 @@ def test_fallback_tts_engine_tries_next_available_engine():
 def test_tts_service_truncates_long_text(monkeypatch):
     config = StandaloneConfig.create_default()
     config.network.max_text_length = 5
-    service = TTSService(config)
+    service = TTSService(config, bot_client=FakeDiscordBotClient())
     engine = Mock()
     engine.speak.return_value = True
     service._engine = engine

@@ -4,6 +4,7 @@ Standalone Application - Clean Architecture
 Main application that orchestrates all services following SOLID principles.
 """
 
+import logging
 from typing import Optional
 
 from ..config.standalone_config import (
@@ -21,6 +22,8 @@ from ..services.hotkey_services import (
 )
 from ..services.notification_services import SystemTrayService
 
+logger = logging.getLogger(__name__)
+
 
 class StandaloneHotkeyHandler:
     """Hotkey handler that integrates TTS processing with notifications."""
@@ -36,8 +39,7 @@ class StandaloneHotkeyHandler:
         if not event.text:
             return
         
-        # Log the capture
-        print(f"[APP] 📝 Texto capturado: '{event.text}'")
+        logger.info("[APP] Texto capturado pelo hotkey handler")
         
         # Notify start of processing
         self._notification_service.notify_info(
@@ -91,11 +93,11 @@ class StandaloneApplication:
             self._setup_integrations()
             
             self._initialized = True
-            print("[APP] ✅ Aplicação inicializada com sucesso")
+            logger.info("[APP] Aplicação inicializada com sucesso")
             return True
             
         except Exception as e:
-            print(f"[APP] ❌ Erro durante inicialização: {e}")
+            logger.error(f"[APP] Erro durante inicialização: {e}")
             return False
     
     def _setup_integrations(self) -> None:
@@ -125,7 +127,7 @@ class StandaloneApplication:
         """Run the standalone application."""
         if not self._initialized:
             if not self.initialize():
-                print("[APP] ❌ Falha na inicialização. Encerrando.")
+                logger.error("[APP] Falha na inicialização. Encerrando.")
                 return
         
         try:
@@ -149,16 +151,16 @@ class StandaloneApplication:
             self._run_main_loop()
             
         except KeyboardInterrupt:
-            print("\n[APP] 🛑 Interrompido pelo usuário")
+            logger.info("[APP] Interrompido pelo usuário")
         except Exception as e:
-            print(f"[APP] ❌ Erro durante execução: {e}")
+            logger.error(f"[APP] Erro durante execução: {e}")
         finally:
             self._shutdown()
     
     def _handle_initial_configuration(self) -> bool:
         """Handle initial configuration if needed."""
         if not ConfigurationValidator.is_configured(self._config):
-            print("[APP] 🔧 Primeira execução detectada! Configurando...")
+            logger.info("[APP] Primeira execução detectada! Configurando...")
             
             updated_config = self._config_service.get_configuration(self._config)
             
@@ -168,7 +170,7 @@ class StandaloneApplication:
             # Save updated configuration
             self._config = updated_config
             if not self._config_repository.save(self._config):
-                print("[APP] ⚠️ Falha ao salvar configuração, continuando com configuração temporária")
+                logger.warning("[APP] Falha ao salvar configuração, continuando com configuração temporária")
             
             # Update services with new configuration
             self._update_services_config()
@@ -177,20 +179,20 @@ class StandaloneApplication:
     
     def _start_services(self) -> bool:
         """Start all application services."""
-        print("[APP] 🚀 Iniciando serviços...")
+        logger.info("[APP] Iniciando serviços...")
         
         # Start hotkey monitoring
         if not self._hotkey_manager.start():
-            print("[APP] ❌ Falha ao iniciar monitoramento de hotkey")
+            logger.error("[APP] Falha ao iniciar monitoramento de hotkey")
             return False
         
         # Start system tray (optional)
         tray_started = self._notification_service.start()
         if not tray_started:
-            print("[APP] ⚠️ System tray não disponível, executando em modo console")
+            logger.warning("[APP] System tray não disponível, executando em modo console")
         
         self._running = True
-        print("[APP] ✅ Todos os serviços iniciados")
+        logger.info("[APP] Todos os serviços iniciados")
         return True
     
     def _run_main_loop(self) -> None:
@@ -199,17 +201,30 @@ class StandaloneApplication:
         
         if tray_available:
             # System tray handles the main loop
-            print("[APP] 🎯 Executando com system tray...")
+            logger.info("[APP] Executando com system tray...")
             # The tray.run() call is blocking and handles the main loop
         else:
             # Console mode - wait for keyboard interrupt
-            print("[APP] ⌨️ Modo console ativo! Pressione Ctrl+C para sair...")
+            logger.info("[APP] Modo console ativo! Pressione Ctrl+C para sair...")
             try:
                 import keyboard
                 keyboard.wait()
             except ImportError:
                 # Fallback if keyboard library is not available
                 input("Pressione Enter para sair...")
+
+    def _show_current_configuration(self) -> None:
+        """Log the current standalone configuration summary."""
+        if not self._config:
+            return
+
+        logger.info(
+            "[APP] Config atual: bot_url=%s, member_id=%s, engine=%s, hotkey=%s",
+            self._config.discord.bot_url,
+            self._config.discord.member_id,
+            self._config.tts.engine,
+            self._config.hotkey.keys,
+        )
     
     def _update_services_config(self) -> None:
         """Update all services with new configuration."""
@@ -225,7 +240,7 @@ class StandaloneApplication:
     
     def _shutdown(self) -> None:
         """Gracefully shutdown all services."""
-        print("[APP] 🛑 Encerrando aplicação...")
+        logger.info("[APP] Encerrando aplicação...")
         
         if self._running:
             if self._hotkey_manager:
@@ -236,7 +251,7 @@ class StandaloneApplication:
             
             self._running = False
         
-        print("[APP] ✅ Aplicação encerrada")
+        logger.info("[APP] Aplicação encerrada")
     
     # System tray callback handlers
     
@@ -261,16 +276,17 @@ class StandaloneApplication:
     
     def _handle_configure(self) -> None:
         """Handle system tray configure action."""
-        print("[APP] 🔧 Abrindo configurações...")
-        
-        config_interface = self._config_ui_factory.create_interface()
-        updated_config = config_interface.show_configuration_dialog(self._config)
+        logger.info("[APP] Abrindo configurações...")
+
+        updated_config = self._config_service.get_configuration(self._config)
         
         if updated_config:
             # Validate new configuration
             is_valid, errors = ConfigurationValidator.validate(updated_config)
             if not is_valid:
-                print(f"[APP] ❌ Configuração inválida: {'; '.join(errors)}")
+                logger.error(f"[APP] Configuração inválida: {'; '.join(errors)}")
+                if self._notification_service:
+                    self._notification_service.notify_error("TTS Hotkey", "Configuração inválida")
                 return
             
             # Save and apply new configuration
@@ -283,13 +299,15 @@ class StandaloneApplication:
             # Update services
             self._update_services_config()
             
-            print("[APP] ✅ Configuração atualizada com sucesso!")
+            logger.info("[APP] Configuração atualizada com sucesso!")
+            if self._notification_service:
+                self._notification_service.notify_success("TTS Hotkey", "Configuração atualizada")
         else:
-            print("[APP] ℹ️ Configuração cancelada")
+            logger.info("[APP] Configuração cancelada")
     
     def _handle_quit(self) -> None:
         """Handle system tray quit action."""
-        print("[APP] 🛑 Encerrando via system tray...")
+        logger.info("[APP] Encerrando via system tray...")
         self._shutdown()
         import os
         os._exit(0)

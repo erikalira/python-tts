@@ -4,6 +4,7 @@ TTS Services Module - Clean Architecture
 Provides text-to-speech services with different engines and delivery methods.
 """
 
+import logging
 import threading
 from abc import ABC, abstractmethod
 from typing import Optional, Protocol
@@ -14,13 +15,10 @@ try:
 except ImportError:
     _pyttsx3_available = False
 
-try:
-    import requests
-    _requests_available = True
-except ImportError:
-    _requests_available = False
-
 from ..config.standalone_config import StandaloneConfig
+from .discord_bot_client import DiscordBotClient, HttpDiscordBotClient
+
+logger = logging.getLogger(__name__)
 
 
 class AudioDevice(Protocol):
@@ -73,7 +71,7 @@ class LocalPyTTSX3Engine(TTSEngine):
             
             return True
         except Exception as e:
-            print(f"[TTS] Erro ao inicializar pyttsx3: {e}")
+            logger.error(f"[TTS] Erro ao inicializar pyttsx3: {e}")
             return False
     
     def speak(self, text: str) -> bool:
@@ -87,7 +85,7 @@ class LocalPyTTSX3Engine(TTSEngine):
                 self._engine.runAndWait()
                 return True
             except Exception as e:
-                print(f"[TTS] Erro ao reproduzir com pyttsx3: {e}")
+                logger.error(f"[TTS] Erro ao reproduzir com pyttsx3: {e}")
                 return False
     
     def is_available(self) -> bool:
@@ -98,63 +96,22 @@ class LocalPyTTSX3Engine(TTSEngine):
 class DiscordTTSService(TTSEngine):
     """TTS service that sends text to Discord bot."""
     
-    def __init__(self, config: StandaloneConfig):
+    def __init__(self, config: StandaloneConfig, bot_client: Optional[DiscordBotClient] = None):
         self._config = config
-
-    def _build_payload(self, text: str) -> dict:
-        """Build the Discord bot request payload from standalone config."""
-        payload = {'text': text}
-
-        if self._config.discord.channel_id:
-            payload['channel_id'] = self._config.discord.channel_id
-
-        if self._config.discord.member_id:
-            payload['member_id'] = self._config.discord.member_id
-
-        return payload
-
-    def _get_speak_url(self) -> str:
-        """Build the Discord bot speak endpoint URL."""
-        return self._config.discord.bot_url.rstrip('/') + '/speak'
-
-    def _send_request(self, payload: dict):
-        """Send the TTS payload to the Discord bot."""
-        return requests.post(
-            self._get_speak_url(),
-            json=payload,
-            timeout=self._config.network.request_timeout,
-            headers={'User-Agent': self._config.network.user_agent}
-        )
+        self._bot_client = bot_client or HttpDiscordBotClient(config)
     
     def speak(self, text: str) -> bool:
         """Send text to Discord bot for TTS."""
-        if not _requests_available or not self._config.discord.bot_url:
+        if not self._bot_client.is_available():
             return False
-        
-        try:
-            payload = self._build_payload(text)
-            
-            print(f"[TTS] 🚀 Enviando '{text}' para Discord...")
-            
-            response = self._send_request(payload)
-            
-            if response.ok:
-                print("[TTS] ✅ Enviado com sucesso!")
-                return True
-            else:
-                print(f"[TTS] ❌ Erro HTTP: {response.status_code}")
-                return False
-                
-        except requests.exceptions.Timeout:
-            print('[TTS] ⏰ Timeout ao conectar com Discord')
-            return False
-        except Exception as e:
-            print(f'[TTS] ❌ Erro ao conectar com Discord: {e}')
-            return False
+
+        logger.info("[TTS] Enviando texto para o bot do Discord")
+        request = self._bot_client.build_request(text)
+        return self._bot_client.send_speak_request(request)
     
     def is_available(self) -> bool:
         """Check if Discord TTS is available."""
-        return _requests_available and bool(self._config.discord.bot_url)
+        return self._bot_client.is_available()
 
 
 class FallbackTTSEngine(TTSEngine):
@@ -170,9 +127,9 @@ class FallbackTTSEngine(TTSEngine):
                 if engine.speak(text):
                     return True
                 else:
-                    print(f"[TTS] Engine {engine.__class__.__name__} falhou, tentando próximo...")
+                    logger.warning(f"[TTS] Engine {engine.__class__.__name__} falhou, tentando próximo...")
         
-        print("[TTS] ❌ Todos os engines falharam")
+        logger.error("[TTS] Todos os engines falharam")
         return False
     
     def is_available(self) -> bool:
@@ -183,8 +140,9 @@ class FallbackTTSEngine(TTSEngine):
 class TTSService:
     """Main TTS service that coordinates different engines."""
     
-    def __init__(self, config: StandaloneConfig):
+    def __init__(self, config: StandaloneConfig, bot_client: Optional[DiscordBotClient] = None):
         self._config = config
+        self._bot_client = bot_client or HttpDiscordBotClient(config)
         self._engine = self._create_engine()
     
     def _create_engine(self) -> TTSEngine:
@@ -193,7 +151,7 @@ class TTSService:
         
         # Add Discord engine if configured
         if self._config.discord.bot_url:
-            discord_engine = DiscordTTSService(self._config)
+            discord_engine = DiscordTTSService(self._config, bot_client=self._bot_client)
             engines.append(discord_engine)
         
         # Add local engine as fallback
@@ -210,9 +168,9 @@ class TTSService:
         # Limit text length
         if len(text) > self._config.network.max_text_length:
             text = text[:self._config.network.max_text_length]
-            print(f"[TTS] ⚠️ Texto truncado para {self._config.network.max_text_length} caracteres")
+            logger.warning(f"[TTS] Texto truncado para {self._config.network.max_text_length} caracteres")
         
-        print(f"[TTS] 🔊 Processando: '{text}'")
+        logger.info("[TTS] Processando texto para síntese")
         return self._engine.speak(text)
     
     def is_available(self) -> bool:
@@ -221,11 +179,15 @@ class TTSService:
     
     def get_status_info(self) -> dict:
         """Get status information about available engines."""
+        requests_installed = getattr(self._bot_client, "has_transport", lambda: None)()
+        if requests_installed is None:
+            requests_installed = self._bot_client.is_available()
+
         return {
-            'discord_available': DiscordTTSService(self._config).is_available(),
+            'discord_available': self._bot_client.is_available(),
             'local_available': LocalPyTTSX3Engine(self._config).is_available(),
             'pyttsx3_installed': _pyttsx3_available,
-            'requests_installed': _requests_available,
+            'requests_installed': requests_installed,
             'bot_url_configured': bool(self._config.discord.bot_url)
         }
 
@@ -247,9 +209,9 @@ class KeyboardCleanupService:
                 keyboard.send('backspace')
                 
         except ImportError:
-            print("[TTS] ⚠️ Keyboard library not available for cleanup")
+            logger.warning("[TTS] Keyboard library not available for cleanup")
         except Exception as e:
-            print(f"[TTS] ❌ Erro durante cleanup: {e}")
+            logger.error(f"[TTS] Erro durante cleanup: {e}")
         finally:
             self._suppress_events.clear()
     
@@ -261,9 +223,14 @@ class KeyboardCleanupService:
 class TTSProcessor:
     """High-level processor that coordinates TTS and cleanup."""
     
-    def __init__(self, config: StandaloneConfig):
-        self._tts_service = TTSService(config)
-        self._cleanup_service = KeyboardCleanupService()
+    def __init__(
+        self,
+        config: StandaloneConfig,
+        tts_service: Optional[TTSService] = None,
+        cleanup_service: Optional[KeyboardCleanupService] = None
+    ):
+        self._tts_service = tts_service or TTSService(config)
+        self._cleanup_service = cleanup_service or KeyboardCleanupService()
     
     def process_text(self, text: str, cleanup_count: int = 0) -> None:
         """Process text for TTS and perform cleanup in a separate thread."""
