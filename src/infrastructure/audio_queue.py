@@ -29,11 +29,11 @@ class InMemoryAudioQueue(IAudioQueue):
         self._max_queue_size = max_queue_size
         self._max_queue_wait = max_queue_wait_seconds
     
-    async def enqueue(self, item: AudioQueueItem) -> str:
+    async def enqueue(self, item: AudioQueueItem) -> Optional[str]:
         """Add item to queue for its guild.
         
         Returns:
-            item_id: Unique identifier for this audio request
+            item_id: Unique identifier for this audio request, or None if rejected
         """
         async with self._lock:
             guild_id = item.request.guild_id
@@ -47,7 +47,7 @@ class InMemoryAudioQueue(IAudioQueue):
             if len(queue) >= self._max_queue_size:
                 logger.warning(f"[QUEUE] Guild {guild_id} queue full ({self._max_queue_size} items)")
                 item.mark_failed("Fila de áudio cheia. Tente novamente mais tarde.")
-                return item.item_id
+                return None
             
             # Update position
             item.position_in_queue = len(queue)

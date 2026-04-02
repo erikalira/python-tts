@@ -26,53 +26,53 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install PyInstaller
-        run: |
-          pip install pyinstaller
-          pip show pyinstaller
-
       - name: Build executable
+        shell: pwsh
         run: |
-          echo "=== Checking directory structure ==="
-          dir
-          echo "=== Looking for tts_hotkey files ==="
-          dir tts_hotkey*.py
-          echo "=== Building executable ==="
-          pyinstaller --onefile --windowed --name=tts_hotkey_premium --collect-all pyttsx3 --collect-all keyboard --collect-all requests --collect-all pystray --collect-all PIL tts_hotkey_configurable.py
+          Write-Host "Building current standalone executable from app.py..."
+          ./scripts/build/build_clean_architecture.ps1 -SkipTests
 
       - name: Test executable
+        shell: pwsh
         run: |
-          cd dist
-          dir
+          if (-not (Test-Path "dist/tts_hotkey_clean.exe")) {
+            Write-Error "dist/tts_hotkey_clean.exe was not generated"
+          }
+          Get-ChildItem dist
+          Write-Host "Executable size: $([math]::Round((Get-Item 'dist/tts_hotkey_clean.exe').Length / 1MB, 2)) MB"
 
       - name: Upload Artifact (sempre)
         uses: actions/upload-artifact@v4
         with:
           name: tts-hotkey-windows-exe
-          path: dist/tts_hotkey_premium.exe
+          path: |
+            dist/tts_hotkey_clean.exe
+            dist/run_tts_hotkey_clean.bat
           retention-days: 30
 
       - name: Create Release (só em tags)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/tts_hotkey_premium.exe
+          files: |
+            dist/tts_hotkey_clean.exe
+            dist/run_tts_hotkey_clean.bat
           name: "TTS Hotkey ${{ github.ref_name }}"
           body: |
-            ## 🎯 TTS Hotkey Premium - Windows Executable
+            ## 🎯 TTS Hotkey Clean Architecture - Windows Executable
 
             ### ✨ Recursos:
-            - 🎤 Discord TTS integrado
-            - ⌨️ Hotkeys configuráveis  
-            - 🔊 Múltiplas vozes
-            - 📱 Interface gráfica
-            - 🚀 100% Portável
+            - 🎤 Runtime standalone atual baseado em `app.py`
+            - ⌨️ Hotkeys configuráveis
+            - 🔊 Multi-engine TTS com fallback
+            - 📱 Interface gráfica integrada
+            - 🚀 Build atual de Clean Architecture
 
             ### 📥 Como usar:
-            1. Baixe o arquivo `tts_hotkey_premium.exe`
-            2. Execute diretamente (não precisa instalar nada!)
-            3. Configure suas hotkeys
-            4. Divirta-se!
+            1. Baixe `tts_hotkey_clean.exe` ou `run_tts_hotkey_clean.bat`
+            2. Execute diretamente no Windows
+            3. Configure Discord, TTS e hotkeys na primeira execução
+            4. Use o app standalone normalmente
 
             **Tamanho**: ~30MB | **Compatibilidade**: Windows 10/11
           generate_release_notes: true

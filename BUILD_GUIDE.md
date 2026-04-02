@@ -10,7 +10,7 @@ Este guia explica como criar o executável standalone do TTS Hotkey para Windows
 
 ## 🎯 TTS Hotkey Clean Architecture
 
-- **Arquivo**: `tts_hotkey_configurable.py`
+- **Arquivo**: `app.py`
 - **Arquitetura**: Clean Architecture completa com SOLID principles
 - **Características**:
   - Interface gráfica Tkinter com system tray

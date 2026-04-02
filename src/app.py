@@ -30,7 +30,7 @@ def home():
     return "Bot online! v2.0"
 
 
-@app.route("/health")
+@app.route("/health", methods=["GET", "HEAD"])
 def health():
     """Health check endpoint for Docker/Render."""
     return jsonify({"status": "healthy"})

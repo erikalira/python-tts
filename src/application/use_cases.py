@@ -35,9 +35,9 @@ class SpeakTextUseCase:
         self._channel_repository = channel_repository
         self._config_repository = config_repository
         self._audio_queue = audio_queue
-        self._guild_processors: dict = {}  # Track active queue processors per guild
+        self._guild_processors: dict = {}  # Track active queue processor tasks per guild
         self._guild_locks: dict = {}  # Asyncio locks per guild to prevent concurrent processing
-        self._processing_guilds: set = set()  # Guilds currently processing first item
+        self._processing_guilds: set = set()  # Guilds currently draining queue playback
     
     async def execute(self, request: TTSRequest) -> dict:
         """Execute the speak text use case WITH QUEUE SUPPORT.
@@ -76,6 +76,14 @@ class SpeakTextUseCase:
         # Create and enqueue audio item
         item = AudioQueueItem(request=request)
         item_id = await self._audio_queue.enqueue(item)
+        if item_id is None:
+            logger.warning(f"[USE_CASE] Queue rejected item for guild {request.guild_id}: {item.error_message}")
+            return {
+                "success": False,
+                "message": f"❌ {item.error_message or 'Fila de áudio cheia. Tente novamente mais tarde.'}",
+                "queued": False
+            }
+
         position = await self._audio_queue.get_item_position(item_id)
         
         logger.info(f"[USE_CASE] Item {item_id} enqueued at position {position}, guild {request.guild_id}")
@@ -88,21 +96,20 @@ class SpeakTextUseCase:
             # First item AND no processing in progress - Process it
             logger.info(f"[USE_CASE] Item {item_id} is first in queue and no processing in progress - processing immediately")
             
-            # Mark guild as processing to prevent other items from being position 0
+            # Mark guild as processing until the queue-drain task finishes.
             self._processing_guilds.add(guild_id)
             
             try:
                 item = await self._audio_queue.dequeue(guild_id)
                 result = await self._process_audio(item)
                 
-                # Start background processor for remaining items
-                asyncio.create_task(self._process_queue_items(guild_id))
+                # Start or reuse background processor for remaining items.
+                self._ensure_guild_processor(guild_id)
                 
                 return result
-            
-            finally:
-                # Unmark processing
-                self._processing_guilds.discard(guild_id)
+            except Exception:
+                self._clear_guild_processing(guild_id)
+                raise
         else:
             # Item in queue - return position
             if is_already_processing:
@@ -148,6 +155,22 @@ class SpeakTextUseCase:
         
         except Exception as e:
             logger.error(f"[USE_CASE] Error in _process_queue_items for guild {guild_id}: {e}", exc_info=True)
+        finally:
+            self._clear_guild_processing(guild_id)
+
+    def _ensure_guild_processor(self, guild_id: Optional[int]) -> None:
+        """Ensure there is a single background queue processor for the guild."""
+        existing_task = self._guild_processors.get(guild_id)
+        if existing_task and not existing_task.done():
+            return
+
+        task = asyncio.create_task(self._process_queue_items(guild_id))
+        self._guild_processors[guild_id] = task
+
+    def _clear_guild_processing(self, guild_id: Optional[int]) -> None:
+        """Clear tracking state once queue playback is fully drained."""
+        self._processing_guilds.discard(guild_id)
+        self._guild_processors.pop(guild_id, None)
     
     async def _process_queue(self, guild_id: Optional[int]):
         """Deprecated: Use _process_first_and_queue() instead.
@@ -170,12 +193,19 @@ class SpeakTextUseCase:
             dict with success status and message
         """
         item.mark_processing()
-        logger.info(f"[USE_CASE] Processing item {item.item_id} from user {item.request.member_id}")
+        logger.info(f"[USE_CASE] Processing item {item.item_id} from user {item.request.member_id} in guild {item.request.guild_id}")
         
         request = item.request
         audio = None
         
         try:
+            # VALIDATION: Verify guild_id is set (critical for multi-server isolation)
+            if not request.guild_id:
+                error = "Guild ID não foi fornecido - isolamento de servidor falhou"
+                item.mark_failed(error)
+                logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} has no guild_id!")
+                return {"success": False, "message": f"❌ {error}", "queued": True}
+            
             # Find voice channel
             channel_result = await self._find_voice_channel(request)
             if not channel_result:
@@ -186,8 +216,19 @@ class SpeakTextUseCase:
             
             voice_channel = channel_result["channel"]
             
-            # Get TTS config
-            config = self._config_repository.get_config(request.member_id)
+            # VALIDATION: Verify voice channel belongs to same guild
+            if voice_channel.guild_id != request.guild_id:
+                error = "Canal de voz pertence a servidor diferente"
+                item.mark_failed(error)
+                logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} voice channel guild {voice_channel.guild_id} != request guild {request.guild_id}")
+                return {"success": False, "message": f"❌ {error}", "queued": True}
+            
+            # Get TTS config for this guild (load from storage if available)
+            from src.infrastructure.persistence.config_storage import GuildConfigRepository
+            if isinstance(self._config_repository, GuildConfigRepository):
+                config = await self._config_repository.load_from_storage(request.guild_id)
+            else:
+                config = self._config_repository.get_config(request.guild_id)
             logger.info(f"[USE_CASE] Item {item.item_id}: generating audio with engine={config.engine}")
             
             # Generate audio
@@ -232,7 +273,9 @@ class SpeakTextUseCase:
             
             # Provide helpful error message
             error_lower = error_msg.lower()
-            if "not connected" in error_lower or "connection" in error_lower:
+            if "4017" in error_lower or "dave" in error_lower:
+                message = "❌ Discord recusou a conexao de voz (codigo 4017). A biblioteca atual do bot nao suporta esse handshake de voz."
+            elif "not connected" in error_lower or "connection" in error_lower:
                 message = "🔌 Bot não conseguiu se conectar ao canal"
             elif "permission" in error_lower:
                 message = "⛔ Bot não tem permissão neste canal"
@@ -242,10 +285,14 @@ class SpeakTextUseCase:
             return {"success": False, "message": message, "queued": True}
         
         finally:
-            # Clean up audio file
+            # Clean up audio file (critical for preventing memory leaks)
             if audio:
-                logger.debug(f"[USE_CASE] Item {item.item_id}: cleaning up audio file")
-                audio.cleanup()
+                try:
+                    logger.debug(f"[USE_CASE] Item {item.item_id}: cleaning up audio file {audio.path}")
+                    audio.cleanup()
+                    logger.debug(f"[USE_CASE] Item {item.item_id}: audio file cleaned up successfully")
+                except Exception as cleanup_error:
+                    logger.warning(f"[USE_CASE] Item {item.item_id}: error during audio cleanup: {cleanup_error}")
     
     async def _find_voice_channel(self, request: TTSRequest):
         """Find appropriate voice channel based on request parameters.
@@ -285,10 +332,9 @@ class SpeakTextUseCase:
                     logger.error("[USE_CASE] User not in any channel - cannot auto-join")
                     return None
         
-        # Bot not connected - connect to user's current channel if available  
+        # Bot not connected - use the user's current channel
         if user_current_channel:
-            logger.info("[USE_CASE] INITIAL CONNECTION: Connecting to user's current voice channel")
-            await self._auto_connect_to_channel(user_current_channel)
+            logger.info("[USE_CASE] INITIAL CONNECTION: Using user's current voice channel")
             return {"channel": user_current_channel, "channel_changed": False}
         
         # Only allow explicit channel ID if user is present there (for manual /join commands)
@@ -301,7 +347,6 @@ class SpeakTextUseCase:
             target_channel = await self._channel_repository.find_by_channel_id(request.channel_id)
             if target_channel and request.member_id and await self._is_user_in_channel(request.member_id, target_channel):
                 logger.info("[USE_CASE] Explicit channel ID matches user's current channel")
-                await self._auto_connect_to_channel(target_channel)
                 return {"channel": target_channel, "channel_changed": False}
             else:
                 logger.warning(f"[USE_CASE] SECURITY: Explicit channel {request.channel_id} doesn't match user's current location")
@@ -340,56 +385,140 @@ class SpeakTextUseCase:
             # On error, assume user is NOT in channel for security
             return False
 
-    async def _auto_connect_to_channel(self, channel):
-        """Auto-connect bot to voice channel ONLY where user is currently connected."""
-        try:
-            logger.info("[USE_CASE] AUTO-CONNECT: Connecting to user's current voice channel")
-            if not channel.is_connected():
-                await channel.connect()
-                logger.info("[USE_CASE] AUTO-CONNECT: Successfully connected bot to user's voice channel")
-            else:
-                logger.info("[USE_CASE] AUTO-CONNECT: Bot already connected to user's voice channel")
-        except Exception as e:
-            logger.warning(f"[USE_CASE] AUTO-CONNECT: Failed to auto-connect: {e}")
-            # Continue anyway, the regular connection logic will handle retries
-
-
 class ConfigureTTSUseCase:
-    """Use case for configuring TTS settings."""
+    """Use case for configuring TTS settings per guild.
+    
+    Manages guild-specific TTS configuration with persistence.
+    """
     
     def __init__(self, config_repository: IConfigRepository):
         """Initialize use case with dependencies.
         
         Args:
-            config_repository: Configuration repository
+            config_repository: Configuration repository (must be GuildConfigRepository)
         """
         self._config_repository = config_repository
     
-    def execute(self, user_id: int, engine: Optional[str] = None, 
-                language: Optional[str] = None, voice_id: Optional[str] = None) -> dict:
-        """Execute TTS configuration.
+    def get_config(self, guild_id: int) -> dict:
+        """Get current TTS configuration for a guild.
         
         Args:
-            user_id: User to configure
-            engine: TTS engine ('gtts' or 'pyttsx3')
-            language: Language code
-            voice_id: Voice ID for pyttsx3
+            guild_id: Guild identifier
             
         Returns:
             dict with current configuration
         """
-        current_config = self._config_repository.get_config(user_id)
+        if guild_id is None:
+            return {"success": False, "message": "Guild ID is required"}
+        
+        config = self._config_repository.get_config(guild_id)
+        
+        return {
+            "success": True,
+            "guild_id": guild_id,
+            "config": {
+                "engine": config.engine,
+                "language": config.language,
+                "voice_id": config.voice_id,
+                "rate": config.rate
+            }
+        }
+    
+    async def update_config_async(
+        self,
+        guild_id: int,
+        engine: Optional[str] = None,
+        language: Optional[str] = None,
+        voice_id: Optional[str] = None,
+        rate: Optional[int] = None
+    ) -> dict:
+        """Update TTS configuration for a guild asynchronously.
+        
+        Changes are persisted to storage.
+        
+        Args:
+            guild_id: Guild identifier
+            engine: TTS engine ('gtts' or 'pyttsx3')
+            language: Language code
+            voice_id: Voice ID for pyttsx3
+            rate: Speech rate
+            
+        Returns:
+            dict with updated configuration and success status
+        """
+        if guild_id is None:
+            return {"success": False, "message": "Guild ID is required"}
+        
+        logger.info(f"[CONFIG_USE_CASE] Updating config for guild {guild_id}")
+        
+        # Get current config
+        current_config = self._config_repository.get_config(guild_id)
+        
+        # Validate and update
+        if engine is not None:
+            if engine.lower() not in ['gtts', 'pyttsx3']:
+                return {"success": False, "message": "Invalid engine. Use 'gtts' or 'pyttsx3'"}
+            current_config.engine = engine.lower()
+        
+        if language is not None:
+            current_config.language = language.lower()
+        
+        if voice_id is not None:
+            current_config.voice_id = voice_id
+        
+        if rate is not None:
+            if not (50 <= rate <= 300):
+                return {"success": False, "message": "Rate must be between 50 and 300"}
+            current_config.rate = rate
+        
+        # Save configuration to persistent storage
+        from src.infrastructure.persistence.config_storage import GuildConfigRepository
+        if isinstance(self._config_repository, GuildConfigRepository):
+            saved = await self._config_repository.save_config_async(guild_id, current_config)
+            if not saved:
+                logger.error(f"[CONFIG_USE_CASE] Failed to persist config for guild {guild_id}")
+                return {"success": False, "message": "Failed to save configuration"}
+        else:
+            # Fallback for tests or old repositories
+            self._config_repository.set_config(guild_id, current_config)
+        
+        logger.info(f"[CONFIG_USE_CASE] Updated config for guild {guild_id}: {current_config}")
+        
+        return {
+            "success": True,
+            "guild_id": guild_id,
+            "config": {
+                "engine": current_config.engine,
+                "language": current_config.language,
+                "voice_id": current_config.voice_id,
+                "rate": current_config.rate
+            }
+        }
+    
+    # Backwards-compatible synchronous wrapper (for old HTTP endpoints)
+    def execute(self, user_id: int, engine: Optional[str] = None,
+                language: Optional[str] = None, voice_id: Optional[str] = None) -> dict:
+        """Deprecated: Use update_config_async() instead.
+        
+        Kept for backwards compatibility with old HTTP endpoints.
+        
+        Args:
+            user_id: Old parameter (treated as guild_id now)
+            engine: TTS engine
+            language: Language
+            voice_id: Voice ID
+            
+        Returns:
+            dict with configuration
+        """
+        logger.warning("[CONFIG_USE_CASE] Using deprecated execute() method, use update_config_async() instead")
+        
+        guild_id = user_id  # Treat old user_id as guild_id
+        current_config = self._config_repository.get_config(guild_id)
         
         # If no parameters, return current config
         if engine is None and language is None and voice_id is None:
-            return {
-                "success": True,
-                "config": {
-                    "engine": current_config.engine,
-                    "language": current_config.language,
-                    "voice_id": current_config.voice_id
-                }
-            }
+            return self.get_config(guild_id)
         
         # Validate and update
         if engine is not None:
@@ -403,8 +532,8 @@ class ConfigureTTSUseCase:
         if voice_id is not None:
             current_config.voice_id = voice_id
         
-        # Save configuration
-        self._config_repository.set_config(user_id, current_config)
+        # Save configuration (sync version for backwards compatibility)
+        self._config_repository.set_config(guild_id, current_config)
         
         return {
             "success": True,

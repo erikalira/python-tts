@@ -12,7 +12,7 @@ Write-Host "=================================================="
 
 # Configuration
 $AppName = "tts_hotkey_clean"
-$MainScript = "tts_hotkey_configurable.py"
+$MainScript = "app.py"
 $DistPath = "dist"
 $BuildPath = "build"
 
@@ -176,6 +176,4 @@ Write-Host "  System Tray support" -ForegroundColor Green
 Write-Host "  Persistent configuration" -ForegroundColor Green
 Write-Host "  TTS Multi-engine (gTTS + pyttsx3)" -ForegroundColor Green
 Write-Host "  Global Hotkey support" -ForegroundColor Green
-Write-Host "  Automatic fallback" -ForegroundColor Green
-
 Write-Host "`nReady for Windows deployment!" -ForegroundColor Green

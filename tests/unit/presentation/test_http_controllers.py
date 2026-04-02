@@ -30,8 +30,9 @@ class TestSpeakController:
         request = Mock(spec=web.Request)
         request.json = AsyncMock(return_value={
             'text': 'Hello world',
-            'channel_id': 123,
-            'member_id': 123123
+            'guild_id': 789012,
+            'channel_id': 123456,
+            'member_id': 345678
         })
         
         response = await controller.handle(request)
@@ -107,9 +108,9 @@ class TestSpeakController:
         request = Mock(spec=web.Request)
         request.json = AsyncMock(return_value={
             'text': 'Hello world',
-            'channel_id': '123',
-            'guild_id': '456',
-            'member_id': '789'
+            'channel_id': 123456,
+            'guild_id': 789012,
+            'member_id': 345678
         })
         
         response = await controller.handle(request)
@@ -136,7 +137,8 @@ class TestSpeakController:
         request = Mock(spec=web.Request)
         request.json = AsyncMock(return_value={
             'text': 'Hello',
-            'user_id': '999'
+            'guild_id': 789012,
+            'user_id': 345678
         })
         
         response = await controller.handle(request)

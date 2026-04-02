@@ -1,7 +1,7 @@
 # Makefile para Python TTS Project
 # Facilita execução de comandos comuns de desenvolvimento
 
-.PHONY: help install test test-unit test-integration lint format build-standalone build-exe build-configurable clean coverage docs run-bot run-standalone run-configurable setup dev
+.PHONY: help install test test-unit test-integration lint format build-standalone build-exe clean coverage docs run-bot run-standalone setup dev
 
 # Default target
 help:
@@ -25,7 +25,6 @@ help:
 	@echo "🏃 Running:"
 	@echo "  make run-bot      - Run Discord bot"
 	@echo "  make run-standalone - Run standalone TTS"
-	@echo "  make run-configurable - Run configurable TTS"
 	@echo ""
 	@echo "🔧 Development:"
 	@echo "  make lint         - Run code linting"
@@ -91,12 +90,8 @@ run-standalone:
 	@if [ -f "tts_hotkey_standalone.exe" ]; then \
 		./tts_hotkey_standalone.exe; \
 	else \
-		python tts_hotkey_configurable.py; \
+		python app.py; \
 	fi
-
-run-configurable:
-	@echo "⚙️ Starting configurable TTS..."
-	python tts_hotkey_configurable.py
 
 # Development commands
 lint:

@@ -1,0 +1,32 @@
+---
+name: shared-logic-extraction
+description: Identify duplicated logic between standalone and src and extract it into shared use cases or services.
+---
+
+# When to use
+
+Use when similar logic exists in multiple flows (Discord bot and Windows app).
+
+# Steps
+
+1. Identify duplicated logic:
+   - same function behavior
+   - same business rules
+   - same external calls
+
+2. Classify logic:
+   - business → move to `core` or `application`
+   - integration → move to `infrastructure`
+   - UI/entrypoint → keep separate
+
+3. Extract shared module:
+   - create use case or service
+   - define interface if needed
+
+4. Replace duplicated code with shared usage
+
+# Output
+
+- duplicated areas
+- extraction plan
+- target location (core/application/infrastructure)

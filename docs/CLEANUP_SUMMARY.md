@@ -21,7 +21,7 @@
 ### Files Updated:
 
 1. **Makefile**: Simplified to use only Clean Architecture build
-2. **tts_hotkey_configurable.py**: Updated recompile instructions
+2. **app.py**: Defined as the standalone entry point
 3. **docs/README_STANDALONE.md**: Updated build script references
 4. **docs/TROUBLESHOOTING.md**: Updated all build commands
 5. **docs/HOTKEY_SETUP.md**: Updated build instructions
@@ -40,7 +40,6 @@
 ### Why One Script is Better:
 
 - **Clean Architecture**: Full SOLID principles implementation
-- **Embedded Fallback**: Works even when clean architecture unavailable
 - **GUI Configuration**: User-friendly Discord ID setup
 - **Robust Error Handling**: Icon fallback, dependency management
 - **Single Point of Truth**: One script, one executable, one solution
@@ -54,7 +53,7 @@
 - Multi-engine TTS support (gTTS, pyttsx3)
 - Global hotkey management
 - Persistent configuration with JSON
-- Comprehensive error handling and fallback mechanisms
+- Comprehensive error handling in the standalone runtime
 
 ## 🚀 Usage
 
@@ -68,7 +67,7 @@ powershell scripts/build/build_clean_architecture.ps1
 
 ## 📦 Result
 
-Single executable: `dist/tts_hotkey_configurable.exe` with:
+Single executable: `dist/tts_hotkey_clean.exe` with:
 
 - Complete Clean Architecture implementation
 - All necessary dependencies bundled

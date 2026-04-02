@@ -13,7 +13,7 @@ try:
     from pystray import Icon, Menu, MenuItem
     from PIL import Image, ImageDraw
     _pystray_available = True
-except (ImportError, ValueError) as e:
+except Exception as e:
     print(f"[NOTIFICATION] ⚠️ pystray not available: {e}")
     _pystray_available = False
 

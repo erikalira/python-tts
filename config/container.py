@@ -5,10 +5,11 @@ and injecting them into components.
 """
 import discord
 from discord import app_commands
+import importlib.util
 from config.settings import Config
 from src.application.use_cases import SpeakTextUseCase, ConfigureTTSUseCase
 from src.infrastructure.tts.engines import TTSEngineFactory
-from src.infrastructure.tts.config_repository import InMemoryConfigRepository
+from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 from src.presentation.http_controllers import SpeakController
@@ -35,8 +36,12 @@ class Container:
         self.discord_client = discord.Client(intents=intents)
         self.command_tree = app_commands.CommandTree(self.discord_client)
         
-        # Repositories
-        self.config_repository = InMemoryConfigRepository(config.tts_config)
+        # Repositories with per-guild configuration
+        json_storage = JSONConfigStorage(storage_dir="configs")
+        self.config_repository = GuildConfigRepository(
+            default_config=config.tts_config,
+            storage=json_storage
+        )
         self.voice_channel_repository = DiscordVoiceChannelRepository(self.discord_client)
         
         # Audio queue for multi-user support
@@ -68,9 +73,17 @@ class Container:
             config_use_case=self.config_use_case,
             channel_repository=self.voice_channel_repository
         )
+
+        self._log_voice_runtime_status()
         
         # Register event handlers
         self._register_events()
+
+    def _log_voice_runtime_status(self) -> None:
+        """Log voice runtime compatibility for Discord voice features."""
+        has_davey = importlib.util.find_spec("davey") is not None
+        if not has_davey:
+            print("⚠️ Voice support requires the `davey` package with newer discord.py versions.")
     
     def _register_events(self):
         """Register Discord event handlers."""
