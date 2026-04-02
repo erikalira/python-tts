@@ -53,6 +53,11 @@ class IVoiceChannel(ABC):
         """Get the channel ID."""
         pass
 
+    @abstractmethod
+    def get_guild_id(self) -> int:
+        """Get the guild ID for the voice channel."""
+        pass
+
 
 class IVoiceChannelRepository(ABC):
     """Interface for finding voice channels."""
@@ -85,10 +90,20 @@ class IConfigRepository(ABC):
     def get_config(self, user_id: Optional[int] = None) -> TTSConfig:
         """Get TTS configuration for user or global default."""
         pass
+
+    @abstractmethod
+    async def load_config_async(self, user_id: Optional[int] = None) -> TTSConfig:
+        """Load TTS configuration asynchronously for user or global default."""
+        pass
     
     @abstractmethod
     def set_config(self, user_id: int, config: TTSConfig) -> None:
         """Set TTS configuration for a specific user."""
+        pass
+
+    @abstractmethod
+    async def save_config_async(self, user_id: int, config: TTSConfig) -> bool:
+        """Persist TTS configuration asynchronously for a specific user."""
         pass
 
 

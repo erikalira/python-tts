@@ -15,7 +15,7 @@ Seu bot está recebendo o erro `429 Too Many Requests` ao tentar conectar no Dis
 
 ### 1. Retry com Exponential Backoff
 
-O runtime do bot foi atualizado com a função `start_discord_bot_with_retry()`:
+Esta seção é histórica. O runtime atual em `src/bot.py` não expõe mais a função `start_discord_bot_with_retry()`; o ponto principal aqui é a orientação operacional para evitar ciclos agressivos de restart e monitoramento.
 
 ```python
 # Retry automático com backoff exponencial
@@ -26,7 +26,7 @@ O runtime do bot foi atualizado com a função `start_discord_bot_with_retry()`:
 # 5º tentativa: 8 segundos
 ```
 
-**Status**: ✅ Implementado
+**Status**: ℹ️ Referência histórica
 
 ### 2. Health Check Endpoint
 
@@ -106,12 +106,7 @@ Após o rate limit passar e o bot estar online:
 
 **Arquivo atual: `src/bot.py`**
 
-Adicionada função `start_discord_bot_with_retry()` que:
-
-- ✅ Detecta erros 429
-- ✅ Espera com backoff exponencial
-- ✅ Tenta até 5 vezes antes de falhar
-- ✅ Log detalhado de cada tentativa
+O entry point atual continua em `src/bot.py`, mas esta documentação deve ser lida como registro operacional do problema de rate limit, não como descrição literal da implementação corrente.
 
 ## Próximas Ações
 

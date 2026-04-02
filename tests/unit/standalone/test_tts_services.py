@@ -56,6 +56,18 @@ def test_discord_tts_service_handles_http_error(monkeypatch):
     assert DiscordTTSService(config).speak("hello") is False
 
 
+def test_discord_tts_service_builds_minimal_payload_without_optional_fields():
+    config = StandaloneConfig.create_default()
+    config.discord.bot_url = "http://localhost:10000"
+    config.discord.channel_id = None
+    config.discord.member_id = None
+
+    service = DiscordTTSService(config)
+
+    assert service._build_payload("hello") == {"text": "hello"}
+    assert service._get_speak_url() == "http://localhost:10000/speak"
+
+
 def test_fallback_tts_engine_tries_next_available_engine():
     first = FakeEngine(available=True, result=False)
     second = FakeEngine(available=True, result=True)

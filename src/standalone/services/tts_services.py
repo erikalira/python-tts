@@ -100,6 +100,31 @@ class DiscordTTSService(TTSEngine):
     
     def __init__(self, config: StandaloneConfig):
         self._config = config
+
+    def _build_payload(self, text: str) -> dict:
+        """Build the Discord bot request payload from standalone config."""
+        payload = {'text': text}
+
+        if self._config.discord.channel_id:
+            payload['channel_id'] = self._config.discord.channel_id
+
+        if self._config.discord.member_id:
+            payload['member_id'] = self._config.discord.member_id
+
+        return payload
+
+    def _get_speak_url(self) -> str:
+        """Build the Discord bot speak endpoint URL."""
+        return self._config.discord.bot_url.rstrip('/') + '/speak'
+
+    def _send_request(self, payload: dict):
+        """Send the TTS payload to the Discord bot."""
+        return requests.post(
+            self._get_speak_url(),
+            json=payload,
+            timeout=self._config.network.request_timeout,
+            headers={'User-Agent': self._config.network.user_agent}
+        )
     
     def speak(self, text: str) -> bool:
         """Send text to Discord bot for TTS."""
@@ -107,24 +132,11 @@ class DiscordTTSService(TTSEngine):
             return False
         
         try:
-            payload = {'text': text}
-            
-            if self._config.discord.channel_id:
-                payload['channel_id'] = self._config.discord.channel_id
-            
-            if self._config.discord.member_id:
-                payload['member_id'] = self._config.discord.member_id
-            
-            url = self._config.discord.bot_url.rstrip('/') + '/speak'
+            payload = self._build_payload(text)
             
             print(f"[TTS] 🚀 Enviando '{text}' para Discord...")
             
-            response = requests.post(
-                url, 
-                json=payload, 
-                timeout=self._config.network.request_timeout,
-                headers={'User-Agent': self._config.network.user_agent}
-            )
+            response = self._send_request(payload)
             
             if response.ok:
                 print("[TTS] ✅ Enviado com sucesso!")

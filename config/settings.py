@@ -28,12 +28,8 @@ class Config:
         self.discord_enabled = os.getenv('DISCORD_ENABLED', 'true').lower() == 'true'
         
         # HTTP settings shared by the bot runtime and standalone client.
-        # Keep legacy env names as fallbacks while converging on a single port.
-        self.http_port = int(
-            os.getenv('PORT', os.getenv('DISCORD_BOT_PORT', os.getenv('FLASK_PORT', '10000')))
-        )
+        self.http_port = int(os.getenv('PORT', os.getenv('DISCORD_BOT_PORT', '10000')))
         self.discord_bot_port = self.http_port
-        self.flask_port = self.http_port
         
         # TTS settings
         self.tts_config = TTSConfig(

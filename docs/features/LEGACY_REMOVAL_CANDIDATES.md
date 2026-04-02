@@ -49,6 +49,22 @@ Removido.
 Motivo:
 Os testes e o fluxo ativo foram migrados para `update_config_async()`.
 
+### 5. Acoplamento de `application` com `infrastructure` para configuração
+
+Status:
+Removido.
+
+Motivo:
+Os use cases agora dependem de métodos assíncronos expostos no contrato de repositório, sem `isinstance(...)` nem import de implementação concreta.
+
+### 6. Compatibilidade `voice_channel.guild_id`
+
+Status:
+Removida do código ativo.
+
+Motivo:
+A checagem de guild agora usa `get_guild_id()` no contrato de `IVoiceChannel`, evitando dependência implícita de atributo concreto.
+
 ## Documentação alinhada nesta rodada
 
 Os ajustes feitos nesta rodada foram:
@@ -60,12 +76,14 @@ Os ajustes feitos nesta rodada foram:
 - remoção de `src/app.py`
 - remoção do wrapper síncrono `ConfigureTTSUseCase.execute()`
 - remoção de `_process_queue()`
+- remoção do fallback `FLASK_PORT`
+- remoção do acesso compatível `voice_channel.guild_id`
+- remoção do acoplamento de `application` com implementações concretas de config
 - adição deste inventário no índice de `docs/README.md`
 
 ## Próximo passo recomendado
 
 Ordem mais segura de limpeza:
 
-1. Revisar documentação histórica de features que ainda menciona compatibilidade antiga
-2. Confirmar se `FLASK_PORT` ainda precisa existir como alias de ambiente
-3. Fazer uma passada final para remover linguagem de transição agora obsoleta
+1. Revisar documentação histórica de features que ainda menciona exemplos pré-refactor
+2. Fazer uma passada final para remover linguagem de transição agora obsoleta

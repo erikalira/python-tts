@@ -209,18 +209,15 @@ class SpeakTextUseCase:
             voice_channel = channel_result["channel"]
             
             # VALIDATION: Verify voice channel belongs to same guild
-            if voice_channel.guild_id != request.guild_id:
+            channel_guild_id = voice_channel.get_guild_id()
+            if channel_guild_id != request.guild_id:
                 error = "Canal de voz pertence a servidor diferente"
                 item.mark_failed(error)
-                logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} voice channel guild {voice_channel.guild_id} != request guild {request.guild_id}")
+                logger.error(f"[USE_CASE] SECURITY: Item {item.item_id} voice channel guild {channel_guild_id} != request guild {request.guild_id}")
                 return {"success": False, "message": f"❌ {error}", "queued": True}
             
-            # Get TTS config for this guild (load from storage if available)
-            from src.infrastructure.persistence.config_storage import GuildConfigRepository
-            if isinstance(self._config_repository, GuildConfigRepository):
-                config = await self._config_repository.load_from_storage(request.guild_id)
-            else:
-                config = self._config_repository.get_config(request.guild_id)
+            # Load guild-specific config through the repository contract.
+            config = await self._config_repository.load_config_async(request.guild_id)
             logger.info(f"[USE_CASE] Item {item.item_id}: generating audio with engine={config.engine}")
             
             # Generate audio
@@ -463,16 +460,10 @@ class ConfigureTTSUseCase:
                 return {"success": False, "message": "Rate must be between 50 and 300"}
             current_config.rate = rate
         
-        # Save configuration to persistent storage
-        from src.infrastructure.persistence.config_storage import GuildConfigRepository
-        if isinstance(self._config_repository, GuildConfigRepository):
-            saved = await self._config_repository.save_config_async(guild_id, current_config)
-            if not saved:
-                logger.error(f"[CONFIG_USE_CASE] Failed to persist config for guild {guild_id}")
-                return {"success": False, "message": "Failed to save configuration"}
-        else:
-            # Fallback for tests or old repositories
-            self._config_repository.set_config(guild_id, current_config)
+        saved = await self._config_repository.save_config_async(guild_id, current_config)
+        if not saved:
+            logger.error(f"[CONFIG_USE_CASE] Failed to persist config for guild {guild_id}")
+            return {"success": False, "message": "Failed to save configuration"}
         
         logger.info(f"[CONFIG_USE_CASE] Updated config for guild {guild_id}: {current_config}")
         
