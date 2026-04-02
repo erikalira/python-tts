@@ -47,7 +47,7 @@ pip install -r requirements.txt
 pip install -r requirements-test.txt
 
 # Desenvolvimento diário
-pytest
+python -m pytest tests
 
 # Build do executável no Windows
 pwsh -File scripts/build/build_clean_architecture.ps1

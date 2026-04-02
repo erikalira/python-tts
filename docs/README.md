@@ -25,6 +25,7 @@ Este diretório reúne a documentação complementar do projeto. O `README.md` d
 - [features/MULTI_SERVER_IMPROVEMENTS.md](features/MULTI_SERVER_IMPROVEMENTS.md): melhorias para múltiplos servidores
 - [features/SISTEMA_CONEXAO_INTELIGENTE.md](features/SISTEMA_CONEXAO_INTELIGENTE.md): detalhes do fluxo de conexão
 - [features/CLEANUP_SUMMARY.md](features/CLEANUP_SUMMARY.md): resumo de limpeza/refatoração
+- [features/LEGACY_REMOVAL_CANDIDATES.md](features/LEGACY_REMOVAL_CANDIDATES.md): inventário de legado remanescente, remoções seguras e compatibilidades ainda ativas
 
 ## Navegação
 

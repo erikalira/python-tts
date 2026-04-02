@@ -172,14 +172,6 @@ class SpeakTextUseCase:
         self._processing_guilds.discard(guild_id)
         self._guild_processors.pop(guild_id, None)
     
-    async def _process_queue(self, guild_id: Optional[int]):
-        """Deprecated: Use _process_first_and_queue() instead.
-        
-        Kept for backwards compatibility but not used anymore.
-        """
-        logger.warning(f"[USE_CASE] _process_queue() called but should use _process_first_and_queue() for guild {guild_id}")
-        pass
-    
     async def _process_audio(self, item: AudioQueueItem) -> dict:
         """Process a single audio item (generate and play).
         
@@ -495,51 +487,3 @@ class ConfigureTTSUseCase:
             }
         }
     
-    # Backwards-compatible synchronous wrapper (for old HTTP endpoints)
-    def execute(self, user_id: int, engine: Optional[str] = None,
-                language: Optional[str] = None, voice_id: Optional[str] = None) -> dict:
-        """Deprecated: Use update_config_async() instead.
-        
-        Kept for backwards compatibility with old HTTP endpoints.
-        
-        Args:
-            user_id: Old parameter (treated as guild_id now)
-            engine: TTS engine
-            language: Language
-            voice_id: Voice ID
-            
-        Returns:
-            dict with configuration
-        """
-        logger.warning("[CONFIG_USE_CASE] Using deprecated execute() method, use update_config_async() instead")
-        
-        guild_id = user_id  # Treat old user_id as guild_id
-        current_config = self._config_repository.get_config(guild_id)
-        
-        # If no parameters, return current config
-        if engine is None and language is None and voice_id is None:
-            return self.get_config(guild_id)
-        
-        # Validate and update
-        if engine is not None:
-            if engine.lower() not in ['gtts', 'pyttsx3']:
-                return {"success": False, "message": "Invalid engine"}
-            current_config.engine = engine.lower()
-        
-        if language is not None:
-            current_config.language = language.lower()
-        
-        if voice_id is not None:
-            current_config.voice_id = voice_id
-        
-        # Save configuration (sync version for backwards compatibility)
-        self._config_repository.set_config(guild_id, current_config)
-        
-        return {
-            "success": True,
-            "config": {
-                "engine": current_config.engine,
-                "language": current_config.language,
-                "voice_id": current_config.voice_id
-            }
-        }

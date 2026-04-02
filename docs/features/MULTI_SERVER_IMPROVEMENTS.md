@@ -202,12 +202,7 @@ async def update_config_async(guild_id, engine, language, voice_id, rate):
     # Retorna resultado
 ```
 
-**Antigo (backwards compatible):**
-
-```python
-def execute(user_id, engine, language, voice_id):
-    """Mantido apenas para compatibilidade com endpoints HTTP antigos"""
-```
+O wrapper síncrono legado foi removido depois da migração completa para `update_config_async()`.
 
 ---
 
@@ -291,7 +286,7 @@ await voice_channel_repository.cleanup_all()
 - [x] Cleanup de áudio files
 - [x] Cleanup de conexões obsoletas
 - [x] Logging detalhado para debug
-- [x] Backwards compatibility para endpoints antigos
+- [x] Migração completa para configuração assíncrona por servidor
 - [x] Imports funcionando sem erros
 - [x] Sem memory leaks óbvios
 - [x] Isolamento total entre servidores

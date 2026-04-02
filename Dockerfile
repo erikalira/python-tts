@@ -29,5 +29,5 @@ USER appuser
 # Expose port (Render provides this via $PORT)
 EXPOSE 10000
 
-# Run the bot directly with Python
-CMD ["python3", "main.py"]
+# Run the modular bot entry point
+CMD ["python3", "-m", "src.bot"]

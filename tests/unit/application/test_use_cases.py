@@ -197,22 +197,24 @@ class TestSpeakTextUseCase:
 class TestConfigureTTSUseCase:
     """Test ConfigureTTSUseCase."""
     
-    def test_get_current_config(self, mock_config_repository):
+    @pytest.mark.asyncio
+    async def test_get_current_config(self, mock_config_repository):
         """Test getting current configuration."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
         
-        result = use_case.execute(user_id=123)
+        result = use_case.get_config(guild_id=123)
         
         assert result["success"] is True
         assert "config" in result
         assert result["config"]["engine"] == "gtts"
         assert result["config"]["language"] == "pt"
     
-    def test_update_engine(self, mock_config_repository):
+    @pytest.mark.asyncio
+    async def test_update_engine(self, mock_config_repository):
         """Test updating TTS engine."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
         
-        result = use_case.execute(user_id=123, engine="pyttsx3")
+        result = await use_case.update_config_async(guild_id=123, engine="pyttsx3")
         
         assert result["success"] is True
         assert result["config"]["engine"] == "pyttsx3"
@@ -221,39 +223,43 @@ class TestConfigureTTSUseCase:
         saved_config = mock_config_repository.get_config(123)
         assert saved_config.engine == "pyttsx3"
     
-    def test_update_language(self, mock_config_repository):
+    @pytest.mark.asyncio
+    async def test_update_language(self, mock_config_repository):
         """Test updating TTS language."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
         
-        result = use_case.execute(user_id=123, language="en")
+        result = await use_case.update_config_async(guild_id=123, language="en")
         
         assert result["success"] is True
         assert result["config"]["language"] == "en"
     
-    def test_update_voice_id(self, mock_config_repository):
+    @pytest.mark.asyncio
+    async def test_update_voice_id(self, mock_config_repository):
         """Test updating voice ID."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
         
-        result = use_case.execute(user_id=123, voice_id="en-us")
+        result = await use_case.update_config_async(guild_id=123, voice_id="en-us")
         
         assert result["success"] is True
         assert result["config"]["voice_id"] == "en-us"
     
-    def test_invalid_engine(self, mock_config_repository):
+    @pytest.mark.asyncio
+    async def test_invalid_engine(self, mock_config_repository):
         """Test setting invalid engine."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
         
-        result = use_case.execute(user_id=123, engine="invalid")
+        result = await use_case.update_config_async(guild_id=123, engine="invalid")
         
         assert result["success"] is False
         assert "Invalid engine" in result["message"]
     
-    def test_update_multiple_settings(self, mock_config_repository):
+    @pytest.mark.asyncio
+    async def test_update_multiple_settings(self, mock_config_repository):
         """Test updating multiple settings at once."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
         
-        result = use_case.execute(
-            user_id=123,
+        result = await use_case.update_config_async(
+            guild_id=123,
             engine="pyttsx3",
             language="en",
             voice_id="en-us"

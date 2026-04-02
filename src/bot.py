@@ -34,7 +34,7 @@ async def main():
     # Start HTTP server
     http_server = HTTPServer(
         speak_controller=container.speak_controller,
-        port=config.discord_bot_port
+        port=config.http_port
     )
     await http_server.start()
     

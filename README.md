@@ -12,7 +12,7 @@ O repositório segue Clean Architecture e busca reutilizar lógica entre os dois
 
 ## Estrutura rápida
 
-- `main.py`: sobe o bot do Discord e o servidor HTTP
+- `src/bot.py`: sobe o bot do Discord e o servidor HTTP
 - `app.py`: inicia o app standalone/hotkey
 - `src/`: camadas principais da aplicação
 - `docs/`: documentação complementar
@@ -42,13 +42,14 @@ Configure um arquivo `.env` com pelo menos:
 
 ```env
 DISCORD_TOKEN=seu_token_aqui
-DISCORD_BOT_URL=http://127.0.0.1:5000
+DISCORD_BOT_URL=http://127.0.0.1:10000
+DISCORD_BOT_PORT=10000
 ```
 
 Suba o bot:
 
 ```bash
-python main.py
+python -m src.bot
 ```
 
 Em outro terminal, rode o app standalone:

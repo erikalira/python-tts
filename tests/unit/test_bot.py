@@ -16,7 +16,7 @@ class TestBot:
             # Mock config validation
             mock_config = Mock()
             mock_config.validate.return_value = (True, None)
-            mock_config.discord_bot_port = 5000
+            mock_config.http_port = 10000
             MockConfig.return_value = mock_config
             
             # Mock HTTP server
