@@ -4,7 +4,6 @@ Notification and System Tray Services - Clean Architecture (Fixed)
 Provides system tray icon and notification services.
 """
 
-import os
 from abc import ABC, abstractmethod
 from typing import Callable, Optional
 

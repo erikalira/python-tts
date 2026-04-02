@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.application.use_cases import SpeakTextUseCase
 from src.core.entities import TTSRequest
+from src.infrastructure.audio_queue import InMemoryAudioQueue
 from tests.conftest import MockTTSEngine, MockVoiceChannelRepository, MockVoiceChannel, MockConfigRepository
 
 
@@ -61,12 +62,14 @@ async def test_security_vulnerability():
     tts_engine = MockTTSEngine()
     repository = SecurityTestRepository()
     config_repository = MockConfigRepository()
+    audio_queue = InMemoryAudioQueue()
 
     # Criar use case
     use_case = SpeakTextUseCase(
         tts_engine=tts_engine,
         channel_repository=repository,
-        config_repository=config_repository
+        config_repository=config_repository,
+        audio_queue=audio_queue,
     )
 
     # Cenario: Usuario solicita TTS
@@ -118,6 +121,7 @@ async def test_security_valid_scenario():
     # Setup - usuario e bot no mesmo canal
     tts_engine = MockTTSEngine()
     config_repository = MockConfigRepository()
+    audio_queue = InMemoryAudioQueue()
 
     # Repository onde usuário está no mesmo canal do bot
     class ValidRepository(MockVoiceChannelRepository):
@@ -137,7 +141,8 @@ async def test_security_valid_scenario():
     use_case = SpeakTextUseCase(
         tts_engine=tts_engine,
         channel_repository=repository,
-        config_repository=config_repository
+        config_repository=config_repository,
+        audio_queue=audio_queue,
     )
 
     print("\n📝 CENÁRIO:")

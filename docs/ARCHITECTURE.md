@@ -400,8 +400,14 @@ def test_speak_use_case():
     mock_channel = MockVoiceChannel()
     mock_repo = MockChannelRepository(mock_channel)
     mock_config = MockConfigRepository()
+    audio_queue = InMemoryAudioQueue()
 
-    use_case = SpeakTextUseCase(mock_engine, mock_repo, mock_config)
+    use_case = SpeakTextUseCase(
+        mock_engine,
+        mock_repo,
+        mock_config,
+        audio_queue,
+    )
     result = await use_case.execute(TTSRequest(text="test"))
 
     assert result["success"] == True
