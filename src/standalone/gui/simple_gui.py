@@ -5,7 +5,9 @@ Provides simplified interfaces for configuration without complex type hints.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+import logging
+import queue
+from typing import Callable, Optional
 import os
 
 try:
@@ -22,6 +24,8 @@ from .config_helpers import (
     prompt_numeric_input,
     resolve_text_value,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigInterface(ABC):
@@ -433,25 +437,7 @@ class GUIConfig(ConfigInterface):
         title = ttk.Label(main_frame, text="🎤 TTS Hotkey Configuration", 
                          font=("Arial", 14, "bold"))
         title.pack(pady=(0, 20))
-        
-        # Notebook for tabs
-        notebook = ttk.Notebook(main_frame)
-        notebook.pack(fill="both", expand=True, pady=(0, 10))
-        
-        # Discord tab
-        discord_frame = ttk.Frame(notebook, padding="10")
-        notebook.add(discord_frame, text="🌐 Discord")
-        self._create_discord_tab(discord_frame)
-        
-        # TTS tab
-        tts_frame = ttk.Frame(notebook, padding="10")
-        notebook.add(tts_frame, text="🎵 TTS")
-        self._create_tts_tab(tts_frame)
-        
-        # Hotkey tab
-        hotkey_frame = ttk.Frame(notebook, padding="10")
-        notebook.add(hotkey_frame, text="⌨️ Hotkey")
-        self._create_hotkey_tab(hotkey_frame)
+        self._build_config_notebook(main_frame)
         
         # Buttons
         button_frame = ttk.Frame(main_frame)
@@ -461,6 +447,24 @@ class GUIConfig(ConfigInterface):
                   command=self._save_config).pack(side="right", padx=(10, 0))
         ttk.Button(button_frame, text="❌ Cancelar", 
                   command=self._cancel).pack(side="right")
+
+    def _build_config_notebook(self, parent):
+        """Create and populate the shared configuration notebook."""
+        notebook = ttk.Notebook(parent)
+        notebook.pack(fill="both", expand=True, pady=(0, 10))
+
+        discord_frame = ttk.Frame(notebook, padding="10")
+        notebook.add(discord_frame, text="🌐 Discord")
+        self._create_discord_tab(discord_frame)
+
+        tts_frame = ttk.Frame(notebook, padding="10")
+        notebook.add(tts_frame, text="🎵 TTS")
+        self._create_tts_tab(tts_frame)
+
+        hotkey_frame = ttk.Frame(notebook, padding="10")
+        notebook.add(hotkey_frame, text="⌨️ Hotkey")
+        self._create_hotkey_tab(hotkey_frame)
+        return notebook
     
     def _create_discord_tab(self, parent):
         """Create Discord configuration tab."""
@@ -542,38 +546,10 @@ class GUIConfig(ConfigInterface):
     
     def _save_config(self):
         """Save configuration."""
-        if not self.config or not all([
-            self.member_id_var, self.bot_url_var, self.engine_var,
-            self.guild_id_var,
-            self.language_var, self.voice_id_var, self.rate_var,
-            self.trigger_open_var, self.trigger_close_var
-        ]):
-            return
-            
         try:
-            # Get values
-            member_id = self.member_id_var.get().strip()
-            guild_id = self.guild_id_var.get().strip()
-            bot_url = self.bot_url_var.get().strip()
-            engine = self.engine_var.get()
-            language = self.language_var.get().strip()
-            voice_id = self.voice_id_var.get().strip()
-            rate = int(self.rate_var.get())
-            trigger_open = self.trigger_open_var.get().strip()
-            trigger_close = self.trigger_close_var.get().strip()
-            
-            new_config = build_updated_config(
-                self.config,
-                member_id=member_id,
-                guild_id=guild_id,
-                bot_url=bot_url,
-                engine=engine,
-                language=language,
-                voice_id=voice_id,
-                rate=rate,
-                trigger_open=trigger_open,
-                trigger_close=trigger_close,
-            )
+            new_config = self._build_config_from_form()
+            if new_config is None:
+                return
             
             # Validate
             is_valid, errors = ConfigurationValidator.validate(new_config)
@@ -589,10 +565,242 @@ class GUIConfig(ConfigInterface):
             messagebox.showerror("Erro", f"Valor inválido: {e}")
         except Exception as e:
             messagebox.showerror("Erro", f"Erro inesperado: {e}")
+
+    def _build_config_from_form(self) -> Optional[StandaloneConfig]:
+        """Build configuration from the current form values."""
+        if not self.config or not all([
+            self.member_id_var, self.bot_url_var, self.engine_var,
+            self.guild_id_var,
+            self.language_var, self.voice_id_var, self.rate_var,
+            self.trigger_open_var, self.trigger_close_var
+        ]):
+            return None
+
+        member_id = self.member_id_var.get().strip()
+        guild_id = self.guild_id_var.get().strip()
+        bot_url = self.bot_url_var.get().strip()
+        engine = self.engine_var.get()
+        language = self.language_var.get().strip()
+        voice_id = self.voice_id_var.get().strip()
+        rate = int(self.rate_var.get())
+        trigger_open = self.trigger_open_var.get().strip()
+        trigger_close = self.trigger_close_var.get().strip()
+
+        return build_updated_config(
+            self.config,
+            member_id=member_id,
+            guild_id=guild_id,
+            bot_url=bot_url,
+            engine=engine,
+            language=language,
+            voice_id=voice_id,
+            rate=rate,
+            trigger_open=trigger_open,
+            trigger_close=trigger_close,
+        )
     
     def _cancel(self):
         """Cancel configuration."""
         self.result = None
+        if self.root:
+            self.root.destroy()
+
+
+class UILogHandler(logging.Handler):
+    """Logging handler that forwards formatted records to a queue."""
+
+    def __init__(self, target_queue: "queue.Queue[str]"):
+        super().__init__()
+        self._target_queue = target_queue
+        self.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", "%H:%M:%S"))
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            self._target_queue.put_nowait(self.format(record))
+        except Exception:
+            pass
+
+
+class StandaloneMainWindow(GUIConfig):
+    """Main standalone window that keeps configuration, actions, and logs visible."""
+
+    def __init__(
+        self,
+        config: StandaloneConfig,
+        on_save: Callable[[StandaloneConfig], dict],
+        on_test_connection: Callable[[StandaloneConfig], dict],
+    ):
+        super().__init__()
+        self.config = config
+        self._on_save = on_save
+        self._on_test_connection = on_test_connection
+        self._log_queue: "queue.Queue[str]" = queue.Queue()
+        self._log_handler = UILogHandler(self._log_queue)
+        self._status_var: Optional[tk.StringVar] = None
+        self._connection_var: Optional[tk.StringVar] = None
+        self._logs_widget = None
+
+    def show(self) -> None:
+        """Display the standalone main window."""
+        if not TKINTER_AVAILABLE:
+            raise RuntimeError("Tkinter não disponível para a janela principal")
+
+        self.root = tk.Tk()
+        self.root.title("TTS Hotkey - Painel Principal")
+        self.root.geometry("980x760")
+        self.root.minsize(860, 640)
+        self.root.protocol("WM_DELETE_WINDOW", self._close)
+
+        self._attach_logging()
+        self._create_main_layout()
+        self._drain_logs()
+        self.root.mainloop()
+
+    def focus(self) -> None:
+        """Bring the window to the foreground when possible."""
+        if not self.root:
+            return
+        self.root.after(0, self._focus_now)
+
+    def push_log(self, message: str) -> None:
+        """Append an ad-hoc log message to the visible activity panel."""
+        self._log_queue.put(message)
+
+    def _focus_now(self) -> None:
+        if not self.root:
+            return
+        try:
+            self.root.deiconify()
+            self.root.lift()
+            self.root.focus_force()
+        except Exception:
+            logger.debug("[GUI] Falha ao focar janela principal", exc_info=True)
+
+    def _create_main_layout(self) -> None:
+        main_frame = ttk.Frame(self.root, padding="16")
+        main_frame.pack(fill="both", expand=True)
+
+        self._status_var = tk.StringVar(value="Preencha os campos, teste a conexão e mantenha a janela aberta durante o uso.")
+        self._connection_var = tk.StringVar(value="Conexão ainda não testada")
+
+        ttk.Label(main_frame, text="TTS Hotkey", font=("Arial", 18, "bold")).pack(anchor="w")
+        ttk.Label(
+            main_frame,
+            text=(
+                "Use esta janela como painel principal do app. Aqui você configura o standalone, "
+                "valida a conexão com o bot e acompanha a atividade sem depender do terminal."
+            ),
+            wraplength=900,
+            justify="left",
+        ).pack(anchor="w", pady=(6, 12))
+
+        status_frame = ttk.LabelFrame(main_frame, text="Status do app", padding="10")
+        status_frame.pack(fill="x", pady=(0, 12))
+        ttk.Label(status_frame, textvariable=self._status_var, wraplength=880, justify="left").pack(anchor="w")
+        ttk.Label(status_frame, textvariable=self._connection_var, wraplength=880, justify="left").pack(anchor="w", pady=(8, 0))
+
+        form_frame = ttk.LabelFrame(main_frame, text="Configuração", padding="10")
+        form_frame.pack(fill="both", expand=True, pady=(0, 12))
+        self._build_config_notebook(form_frame)
+
+        action_frame = ttk.Frame(main_frame)
+        action_frame.pack(fill="x", pady=(0, 12))
+        ttk.Button(action_frame, text="Salvar configuração", command=self._handle_save).pack(side="left")
+        ttk.Button(action_frame, text="Testar conexão", command=self._handle_test_connection).pack(side="left", padx=(10, 0))
+        ttk.Button(action_frame, text="Limpar logs", command=self._clear_logs).pack(side="left", padx=(10, 0))
+        ttk.Button(action_frame, text="Fechar app", command=self._close).pack(side="right")
+
+        logs_frame = ttk.LabelFrame(main_frame, text="Atividade", padding="10")
+        logs_frame.pack(fill="both", expand=True)
+        self._logs_widget = tk.Text(logs_frame, height=14, wrap="word", state="disabled")
+        self._logs_widget.pack(side="left", fill="both", expand=True)
+        scrollbar = ttk.Scrollbar(logs_frame, orient="vertical", command=self._logs_widget.yview)
+        scrollbar.pack(side="right", fill="y")
+        self._logs_widget.configure(yscrollcommand=scrollbar.set)
+
+        self.push_log("Painel principal iniciado")
+
+    def _handle_save(self) -> None:
+        try:
+            new_config = self._build_config_from_form()
+            if new_config is None:
+                return
+        except ValueError as exc:
+            messagebox.showerror("Erro", f"Valor inválido: {exc}")
+            return
+        except Exception as exc:
+            messagebox.showerror("Erro", f"Erro ao montar configuração: {exc}")
+            return
+
+        is_valid, errors = ConfigurationValidator.validate(new_config)
+        if not is_valid:
+            messagebox.showerror("Erro de Validação", "Erros encontrados:\n\n" + "\n".join(errors))
+            self._set_status("Configuração inválida. Corrija os campos destacados nas mensagens.", success=False)
+            return
+
+        result = self._on_save(new_config)
+        if result.get("success"):
+            self.config = new_config
+            self._set_status(result.get("message", "Configuração salva com sucesso"), success=True)
+        else:
+            self._set_status(result.get("message", "Falha ao salvar configuração"), success=False)
+
+    def _handle_test_connection(self) -> None:
+        try:
+            config = self._build_config_from_form()
+            if config is None:
+                return
+        except ValueError as exc:
+            self._connection_var.set(f"Teste falhou: valor inválido ({exc})")
+            return
+
+        result = self._on_test_connection(config)
+        self._connection_var.set(result.get("message", "Sem resposta do teste"))
+        self.push_log(f"Teste de conexão: {self._connection_var.get()}")
+
+    def _set_status(self, message: str, success: bool) -> None:
+        if self._status_var:
+            prefix = "OK:" if success else "Atenção:"
+            self._status_var.set(f"{prefix} {message}")
+        self.push_log(message)
+
+    def _clear_logs(self) -> None:
+        if not self._logs_widget:
+            return
+        self._logs_widget.configure(state="normal")
+        self._logs_widget.delete("1.0", tk.END)
+        self._logs_widget.configure(state="disabled")
+        self.push_log("Logs limpos pelo usuário")
+
+    def _append_log(self, message: str) -> None:
+        if not self._logs_widget:
+            return
+        self._logs_widget.configure(state="normal")
+        self._logs_widget.insert(tk.END, message + "\n")
+        self._logs_widget.see(tk.END)
+        self._logs_widget.configure(state="disabled")
+
+    def _drain_logs(self) -> None:
+        while True:
+            try:
+                message = self._log_queue.get_nowait()
+            except queue.Empty:
+                break
+            self._append_log(message)
+
+        if self.root:
+            self.root.after(250, self._drain_logs)
+
+    def _attach_logging(self) -> None:
+        root_logger = logging.getLogger()
+        self._log_handler.setLevel(logging.INFO)
+        root_logger.addHandler(self._log_handler)
+
+    def _detach_logging(self) -> None:
+        logging.getLogger().removeHandler(self._log_handler)
+
+    def _close(self) -> None:
+        self._detach_logging()
         if self.root:
             self.root.destroy()
 

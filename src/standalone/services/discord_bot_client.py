@@ -49,6 +49,9 @@ class DiscordBotClient(Protocol):
     def send_speak_request(self, request: DiscordSpeakRequest) -> bool:
         """Send a speak request to the Discord bot."""
 
+    def check_connection(self) -> dict:
+        """Check whether the bot runtime is reachable."""
+
 
 class HttpDiscordBotClient:
     """HTTP adapter for the Discord bot speak endpoint."""
@@ -76,6 +79,10 @@ class HttpDiscordBotClient:
     def get_speak_url(self) -> str:
         """Return the bot speak endpoint URL."""
         return self._config.discord.bot_url.rstrip("/") + "/speak"
+
+    def get_health_url(self) -> str:
+        """Return the bot health endpoint URL."""
+        return self._config.discord.bot_url.rstrip("/") + "/health"
 
     def send_speak_request(self, request: DiscordSpeakRequest) -> bool:
         """Send a speak request to the configured Discord bot."""
@@ -106,3 +113,32 @@ class HttpDiscordBotClient:
 
         logger.warning(f"[DISCORD_BOT_CLIENT] Discord bot returned HTTP {response.status_code}")
         return False
+
+    def check_connection(self) -> dict:
+        """Check whether the bot runtime is reachable and healthy."""
+        if not self.has_transport():
+            return {"success": False, "message": "Biblioteca requests não está disponível"}
+
+        if not self._config.discord.bot_url:
+            return {"success": False, "message": "Bot URL não configurada"}
+
+        try:
+            response = requests.get(
+                self.get_health_url(),
+                timeout=self._config.network.request_timeout,
+                headers={"User-Agent": self._config.network.user_agent},
+            )
+        except requests.exceptions.Timeout:
+            logger.warning("[DISCORD_BOT_CLIENT] Timeout while checking bot health")
+            return {"success": False, "message": "Timeout ao conectar no bot"}
+        except Exception as exc:
+            logger.error(f"[DISCORD_BOT_CLIENT] Failed to check bot health: {exc}")
+            return {"success": False, "message": f"Falha ao conectar: {exc}"}
+
+        if response.ok:
+            return {"success": True, "message": "Conexão com o bot validada com sucesso"}
+
+        return {
+            "success": False,
+            "message": f"Bot respondeu HTTP {response.status_code}",
+        }

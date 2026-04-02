@@ -149,3 +149,35 @@ def test_standalone_application_update_services_config_rebuilds_hotkey_manager()
 
     assert app._hotkey_manager is not None
     app._hotkey_manager.initialize.assert_called_once()
+
+
+def test_standalone_application_save_configuration_from_ui_applies_changes():
+    app = StandaloneApplication()
+    updated_config = StandaloneConfig.create_default()
+    updated_config.discord.bot_url = "http://localhost:10000"
+    updated_config.discord.guild_id = "456"
+    updated_config.discord.member_id = "123"
+    app._config = StandaloneConfig.create_default()
+    app._config_repository = Mock()
+    app._update_services_config = Mock()
+
+    result = app._save_configuration_from_ui(updated_config)
+
+    assert result["success"] is True
+    app._config_repository.save.assert_called_once_with(updated_config)
+    app._update_services_config.assert_called_once()
+
+
+def test_standalone_application_test_bot_connection_uses_http_client(monkeypatch):
+    app = StandaloneApplication()
+    config = StandaloneConfig.create_default()
+    config.discord.bot_url = "http://localhost:10000"
+
+    fake_client = Mock()
+    fake_client.check_connection.return_value = {"success": True, "message": "ok"}
+    monkeypatch.setattr("src.standalone.app.standalone_app.HttpDiscordBotClient", lambda cfg: fake_client)
+
+    result = app._test_bot_connection(config)
+
+    assert result == {"success": True, "message": "ok"}
+    fake_client.check_connection.assert_called_once_with()

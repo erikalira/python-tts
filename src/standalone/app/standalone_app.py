@@ -20,7 +20,8 @@ from ..config.standalone_config import (
     EnvironmentUpdater, 
     ConfigurationValidator
 )
-from ..gui.simple_gui import ConfigurationService
+from ..gui.simple_gui import ConfigurationService, StandaloneMainWindow, TKINTER_AVAILABLE
+from ..services.discord_bot_client import HttpDiscordBotClient
 from ..services.tts_services import TTSProcessor
 from ..services.hotkey_services import (
     HotkeyManager,
@@ -123,6 +124,7 @@ class StandaloneApplication:
         self._running = False
         self._main_loop_actions: "queue.Queue[Callable[[], None]]" = queue.Queue()
         self._shutdown_requested = threading.Event()
+        self._main_window: Optional[StandaloneMainWindow] = None
     
     def initialize(self) -> bool:
         """Initialize all application components."""
@@ -256,6 +258,10 @@ class StandaloneApplication:
     
     def _run_main_loop(self) -> None:
         """Run the main application loop."""
+        if TKINTER_AVAILABLE:
+            self._show_main_window()
+            return
+
         tray_available = self._notification_service.is_available()
         
         if tray_available:
@@ -282,6 +288,46 @@ class StandaloneApplication:
         except queue.Empty:
             return
         action()
+
+    def _show_main_window(self) -> None:
+        """Show the standalone main window when Tkinter is available."""
+        self._main_window = StandaloneMainWindow(
+            self._config,
+            on_save=self._save_configuration_from_ui,
+            on_test_connection=self._test_bot_connection,
+        )
+        self._main_window.show()
+
+    def _save_configuration_from_ui(self, updated_config: StandaloneConfig) -> dict:
+        """Validate, persist, and apply configuration changes from the main UI."""
+        is_valid, errors = ConfigurationValidator.validate(updated_config)
+        if not is_valid:
+            message = "; ".join(errors)
+            logger.error("[APP] Configuração inválida recebida da UI: %s", message)
+            return {"success": False, "message": message}
+
+        self._config = updated_config
+        save_success = self._config_repository.save(self._config)
+        if not save_success:
+            logger.warning("[APP] Falha ao salvar configuração recebida da UI")
+
+        EnvironmentUpdater.update_from_config(self._config)
+        self._update_services_config()
+        logger.info("[APP] Configuração salva pela janela principal")
+        return {
+            "success": True,
+            "message": "Configuração aplicada com sucesso" if save_success else "Configuração aplicada, mas não foi possível persistir o arquivo",
+        }
+
+    def _test_bot_connection(self, config: StandaloneConfig) -> dict:
+        """Test connectivity against the bot health endpoint using UI-provided config."""
+        client = HttpDiscordBotClient(config)
+        result = client.check_connection()
+        if result.get("success"):
+            logger.info("[APP] Teste de conexão com o bot concluído com sucesso")
+        else:
+            logger.warning("[APP] Teste de conexão com o bot falhou: %s", result.get("message"))
+        return result
 
     def _show_current_configuration(self) -> None:
         """Log the current standalone configuration summary."""
@@ -333,6 +379,12 @@ class StandaloneApplication:
                 self._notification_service.stop()
             
             self._running = False
+
+        if self._main_window and self._main_window.root:
+            try:
+                self._main_window.root.quit()
+            except Exception:
+                logger.debug("[APP] Falha ao encerrar loop da janela principal", exc_info=True)
         
         logger.info("[APP] Aplicação encerrada")
     
@@ -344,6 +396,11 @@ class StandaloneApplication:
 
     def _handle_status_click(self) -> None:
         """Handle system tray status click."""
+        if self._main_window:
+            self._main_window.focus()
+            self._main_window.push_log("Janela principal trazida para frente via tray")
+            return
+
         status = self._get_application_status()
         mode = "Discord" if status['discord_configured'] else "Local"
         hotkeys = "ativas" if status['hotkey_active'] else "inativas"
@@ -359,6 +416,11 @@ class StandaloneApplication:
 
     def _handle_configure(self) -> None:
         """Handle system tray configure action."""
+        if self._main_window:
+            self._main_window.focus()
+            self._main_window.push_log("Ação de configuração solicitada via tray")
+            return
+
         logger.info("[APP] Abrindo configurações...")
 
         hotkeys_were_active = bool(self._hotkey_manager and self._hotkey_manager.is_active())

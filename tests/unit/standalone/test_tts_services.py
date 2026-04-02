@@ -63,6 +63,7 @@ def test_http_discord_bot_client_builds_payload_and_url():
 
     assert request.to_payload() == {"text": "hello", "guild_id": "30", "channel_id": "10", "member_id": "20"}
     assert client.get_speak_url() == "http://localhost:10000/speak"
+    assert client.get_health_url() == "http://localhost:10000/health"
 
 
 def test_discord_tts_service_builds_payload_and_sends_request(monkeypatch):
@@ -91,6 +92,31 @@ def test_http_discord_bot_client_handles_http_error(monkeypatch):
     client = HttpDiscordBotClient(config)
 
     assert client.send_speak_request(client.build_request("hello")) is False
+
+
+def test_http_discord_bot_client_check_connection_success(monkeypatch):
+    config = StandaloneConfig.create_default()
+    config.discord.bot_url = "http://localhost:10000"
+
+    get = Mock(return_value=SimpleNamespace(ok=True, status_code=200))
+    monkeypatch.setattr("src.standalone.services.discord_bot_client.requests.get", get)
+
+    result = HttpDiscordBotClient(config).check_connection()
+
+    assert result["success"] is True
+    assert "sucesso" in result["message"].lower()
+
+
+def test_http_discord_bot_client_check_connection_http_failure(monkeypatch):
+    config = StandaloneConfig.create_default()
+    config.discord.bot_url = "http://localhost:10000"
+
+    get = Mock(return_value=SimpleNamespace(ok=False, status_code=503))
+    monkeypatch.setattr("src.standalone.services.discord_bot_client.requests.get", get)
+
+    result = HttpDiscordBotClient(config).check_connection()
+
+    assert result == {"success": False, "message": "Bot respondeu HTTP 503"}
 
 
 def test_fallback_tts_engine_tries_next_available_engine():

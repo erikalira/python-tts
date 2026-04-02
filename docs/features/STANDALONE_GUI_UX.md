@@ -46,6 +46,14 @@ Este documento registra requisitos e critérios de qualidade para a GUI do aplic
 - mensagens de erro e status devem ser objetivas e acionáveis
 - a GUI deve priorizar tarefas frequentes e reduzir surpresa comportamental
 
+### 5. Fluxo de inicialização e painel principal
+
+- ao abrir o executável, a janela principal deve permanecer aberta
+- a primeira tela deve apresentar o app e orientar o usuário sobre os próximos passos
+- a configuração não deve depender de terminal nem de uma janela puramente modal
+- a janela principal deve permitir testar a conexão com o bot antes do uso normal
+- a janela principal deve exibir atividade relevante do app, incluindo logs úteis de envio, teste e status
+
 ## Requisitos de arquitetura
 
 - lógica de negócio não deve ser implementada na GUI
