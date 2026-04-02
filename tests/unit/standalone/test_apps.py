@@ -181,3 +181,36 @@ def test_standalone_application_test_bot_connection_uses_http_client(monkeypatch
 
     assert result == {"success": True, "message": "ok"}
     fake_client.check_connection.assert_called_once_with()
+
+
+def test_standalone_application_send_test_message_requires_discord_identifiers():
+    app = StandaloneApplication()
+    config = StandaloneConfig.create_default()
+    config.discord.bot_url = "http://localhost:10000"
+    config.discord.guild_id = None
+    config.discord.member_id = None
+
+    result = app._send_test_message(config)
+
+    assert result["success"] is False
+    assert "Guild ID" in result["message"]
+
+
+def test_standalone_application_send_test_message_uses_http_client(monkeypatch):
+    app = StandaloneApplication()
+    config = StandaloneConfig.create_default()
+    config.discord.bot_url = "http://localhost:10000"
+    config.discord.guild_id = "456"
+    config.discord.member_id = "123"
+
+    fake_request = Mock()
+    fake_client = Mock()
+    fake_client.build_request.return_value = fake_request
+    fake_client.send_speak_request.return_value = True
+    monkeypatch.setattr("src.standalone.app.standalone_app.HttpDiscordBotClient", lambda cfg: fake_client)
+
+    result = app._send_test_message(config)
+
+    assert result == {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
+    fake_client.build_request.assert_called_once_with("Teste rápido do TTS Hotkey.")
+    fake_client.send_speak_request.assert_called_once_with(fake_request)

@@ -395,6 +395,8 @@ class GUIConfig(ConfigInterface):
         self.rate_var: Optional[tk.StringVar] = None
         self.trigger_open_var: Optional[tk.StringVar] = None
         self.trigger_close_var: Optional[tk.StringVar] = None
+        self.show_notifications_var = None
+        self.console_logs_var = None
         
     def show_config(self, config: StandaloneConfig) -> Optional[StandaloneConfig]:
         """Show GUI configuration."""
@@ -464,6 +466,10 @@ class GUIConfig(ConfigInterface):
         hotkey_frame = ttk.Frame(notebook, padding="10")
         notebook.add(hotkey_frame, text="⌨️ Hotkey")
         self._create_hotkey_tab(hotkey_frame)
+
+        interface_frame = ttk.Frame(notebook, padding="10")
+        notebook.add(interface_frame, text="🖥️ Interface")
+        self._create_interface_tab(interface_frame)
         return notebook
     
     def _create_discord_tab(self, parent):
@@ -543,6 +549,36 @@ class GUIConfig(ConfigInterface):
                     "para falar 'olá mundo'")
         ttk.Label(parent, text=help_text, wraplength=400, 
                  font=("Arial", 8)).pack(anchor="w", pady=(10, 0))
+
+    def _create_interface_tab(self, parent):
+        """Create interface configuration tab."""
+        if not self.config:
+            return
+
+        self.show_notifications_var = tk.BooleanVar(value=self.config.interface.show_notifications)
+        self.console_logs_var = tk.BooleanVar(value=self.config.interface.console_logs)
+
+        ttk.Checkbutton(
+            parent,
+            text="Exibir notificações do app",
+            variable=self.show_notifications_var,
+        ).pack(anchor="w", pady=(0, 10))
+        ttk.Checkbutton(
+            parent,
+            text="Manter logs detalhados na interface",
+            variable=self.console_logs_var,
+        ).pack(anchor="w", pady=(0, 10))
+
+        ttk.Label(
+            parent,
+            text=(
+                "Comportamento padrão: ao abrir o executável, a janela principal permanece visível. "
+                "A bandeja funciona como acesso rápido e não faz verificações automáticas de conexão."
+            ),
+            wraplength=420,
+            justify="left",
+            font=("Arial", 8),
+        ).pack(anchor="w", pady=(10, 0))
     
     def _save_config(self):
         """Save configuration."""
@@ -573,6 +609,7 @@ class GUIConfig(ConfigInterface):
             self.guild_id_var,
             self.language_var, self.voice_id_var, self.rate_var,
             self.trigger_open_var, self.trigger_close_var
+            , self.show_notifications_var, self.console_logs_var
         ]):
             return None
 
@@ -585,6 +622,8 @@ class GUIConfig(ConfigInterface):
         rate = int(self.rate_var.get())
         trigger_open = self.trigger_open_var.get().strip()
         trigger_close = self.trigger_close_var.get().strip()
+        show_notifications = bool(self.show_notifications_var.get())
+        console_logs = bool(self.console_logs_var.get())
 
         return build_updated_config(
             self.config,
@@ -597,6 +636,8 @@ class GUIConfig(ConfigInterface):
             rate=rate,
             trigger_open=trigger_open,
             trigger_close=trigger_close,
+            show_notifications=show_notifications,
+            console_logs=console_logs,
         )
     
     def _cancel(self):
@@ -629,16 +670,22 @@ class StandaloneMainWindow(GUIConfig):
         config: StandaloneConfig,
         on_save: Callable[[StandaloneConfig], dict],
         on_test_connection: Callable[[StandaloneConfig], dict],
+        on_send_test: Callable[[StandaloneConfig], dict],
     ):
         super().__init__()
         self.config = config
         self._on_save = on_save
         self._on_test_connection = on_test_connection
+        self._on_send_test = on_send_test
         self._log_queue: "queue.Queue[str]" = queue.Queue()
         self._log_handler = UILogHandler(self._log_queue)
         self._status_var: Optional[tk.StringVar] = None
+        self._config_var: Optional[tk.StringVar] = None
         self._connection_var: Optional[tk.StringVar] = None
         self._logs_widget = None
+        self._status_label = None
+        self._config_label = None
+        self._connection_label = None
 
     def show(self) -> None:
         """Display the standalone main window."""
@@ -681,6 +728,7 @@ class StandaloneMainWindow(GUIConfig):
         main_frame.pack(fill="both", expand=True)
 
         self._status_var = tk.StringVar(value="Preencha os campos, teste a conexão e mantenha a janela aberta durante o uso.")
+        self._config_var = tk.StringVar(value="")
         self._connection_var = tk.StringVar(value="Conexão ainda não testada")
 
         ttk.Label(main_frame, text="TTS Hotkey", font=("Arial", 18, "bold")).pack(anchor="w")
@@ -696,8 +744,12 @@ class StandaloneMainWindow(GUIConfig):
 
         status_frame = ttk.LabelFrame(main_frame, text="Status do app", padding="10")
         status_frame.pack(fill="x", pady=(0, 12))
-        ttk.Label(status_frame, textvariable=self._status_var, wraplength=880, justify="left").pack(anchor="w")
-        ttk.Label(status_frame, textvariable=self._connection_var, wraplength=880, justify="left").pack(anchor="w", pady=(8, 0))
+        self._status_label = tk.Label(status_frame, textvariable=self._status_var, anchor="w", justify="left", fg="#155724")
+        self._status_label.pack(anchor="w")
+        self._config_label = tk.Label(status_frame, textvariable=self._config_var, anchor="w", justify="left", fg="#856404")
+        self._config_label.pack(anchor="w", pady=(8, 0))
+        self._connection_label = tk.Label(status_frame, textvariable=self._connection_var, anchor="w", justify="left", fg="#856404")
+        self._connection_label.pack(anchor="w", pady=(8, 0))
 
         form_frame = ttk.LabelFrame(main_frame, text="Configuração", padding="10")
         form_frame.pack(fill="both", expand=True, pady=(0, 12))
@@ -707,8 +759,23 @@ class StandaloneMainWindow(GUIConfig):
         action_frame.pack(fill="x", pady=(0, 12))
         ttk.Button(action_frame, text="Salvar configuração", command=self._handle_save).pack(side="left")
         ttk.Button(action_frame, text="Testar conexão", command=self._handle_test_connection).pack(side="left", padx=(10, 0))
+        ttk.Button(action_frame, text="Enviar teste de voz", command=self._handle_send_test).pack(side="left", padx=(10, 0))
         ttk.Button(action_frame, text="Limpar logs", command=self._clear_logs).pack(side="left", padx=(10, 0))
         ttk.Button(action_frame, text="Fechar app", command=self._close).pack(side="right")
+
+        help_frame = ttk.LabelFrame(main_frame, text="Como usar", padding="10")
+        help_frame.pack(fill="x", pady=(0, 12))
+        ttk.Label(
+            help_frame,
+            text=(
+                "1. Preencha os dados do bot e clique em 'Testar conexão'. "
+                "2. Salve a configuração. "
+                f"3. Use {self.config.hotkey.trigger_open}texto{self.config.hotkey.trigger_close} para enviar fala no uso normal. "
+                "4. Se quiser, use 'Enviar teste de voz' para validar o fluxo manualmente."
+            ),
+            wraplength=900,
+            justify="left",
+        ).pack(anchor="w")
 
         logs_frame = ttk.LabelFrame(main_frame, text="Atividade", padding="10")
         logs_frame.pack(fill="both", expand=True)
@@ -719,6 +786,7 @@ class StandaloneMainWindow(GUIConfig):
         self._logs_widget.configure(yscrollcommand=scrollbar.set)
 
         self.push_log("Painel principal iniciado")
+        self._refresh_local_status()
 
     def _handle_save(self) -> None:
         try:
@@ -742,6 +810,7 @@ class StandaloneMainWindow(GUIConfig):
         if result.get("success"):
             self.config = new_config
             self._set_status(result.get("message", "Configuração salva com sucesso"), success=True)
+            self._refresh_local_status()
         else:
             self._set_status(result.get("message", "Falha ao salvar configuração"), success=False)
 
@@ -756,13 +825,51 @@ class StandaloneMainWindow(GUIConfig):
 
         result = self._on_test_connection(config)
         self._connection_var.set(result.get("message", "Sem resposta do teste"))
+        self._set_label_color(self._connection_label, "#155724" if result.get("success") else "#721c24")
         self.push_log(f"Teste de conexão: {self._connection_var.get()}")
+
+    def _handle_send_test(self) -> None:
+        try:
+            config = self._build_config_from_form()
+            if config is None:
+                return
+        except ValueError as exc:
+            self._connection_var.set(f"Envio de teste falhou: valor inválido ({exc})")
+            self._set_label_color(self._connection_label, "#721c24")
+            return
+
+        result = self._on_send_test(config)
+        message = result.get("message", "Sem resposta do envio de teste")
+        self._connection_var.set(message)
+        self._set_label_color(self._connection_label, "#155724" if result.get("success") else "#721c24")
+        self.push_log(f"Envio de teste: {message}")
 
     def _set_status(self, message: str, success: bool) -> None:
         if self._status_var:
             prefix = "OK:" if success else "Atenção:"
             self._status_var.set(f"{prefix} {message}")
+        self._set_label_color(self._status_label, "#155724" if success else "#721c24")
         self.push_log(message)
+
+    def _refresh_local_status(self) -> None:
+        is_discord_ready = bool(
+            self.config
+            and self.config.discord.bot_url
+            and self.config.discord.guild_id
+            and self.config.discord.member_id
+        )
+        config_message = (
+            "Bot configurado: URL, Guild ID e User ID preenchidos."
+            if is_discord_ready
+            else "Configuração incompleta: preencha Bot URL, Guild ID e User ID para usar o bot."
+        )
+        if self._config_var:
+            self._config_var.set(config_message)
+        self._set_label_color(self._config_label, "#155724" if is_discord_ready else "#856404")
+
+    def _set_label_color(self, label, color: str) -> None:
+        if label is not None and hasattr(label, "configure"):
+            label.configure(fg=color)
 
     def _clear_logs(self) -> None:
         if not self._logs_widget:

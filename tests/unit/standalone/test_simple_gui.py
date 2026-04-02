@@ -87,12 +87,14 @@ def build_fake_tk_module():
     return SimpleNamespace(
         Tk=DummyRoot,
         StringVar=lambda value="": DummyVar(value),
+        BooleanVar=lambda value=False: DummyVar(value),
         BOTH="both",
         CENTER="center",
         X="x",
         W="w",
         LEFT="left",
         RIGHT="right",
+        END="end",
     )
 
 
@@ -103,6 +105,8 @@ def build_fake_ttk_module():
         LabelFrame=DummyWidget,
         Entry=DummyWidget,
         Button=DummyWidget,
+        Checkbutton=DummyWidget,
+        Scrollbar=DummyWidget,
         Combobox=DummyWidget,
         Notebook=DummyWidget,
     )
@@ -452,6 +456,8 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
     assert gui.rate_var.get() == "220"
     assert gui.trigger_open_var.get() == "["
     assert gui.trigger_close_var.get() == "]"
+    assert gui.show_notifications_var.get() is True
+    assert gui.console_logs_var.get() is True
 
 
 def test_gui_config_save_config_returns_early_when_fields_missing():
@@ -478,6 +484,8 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
     gui.rate_var = DummyVar("210")
     gui.trigger_open_var = DummyVar("[")
     gui.trigger_close_var = DummyVar("]")
+    gui.show_notifications_var = DummyVar(True)
+    gui.console_logs_var = DummyVar(True)
 
     monkeypatch.setattr(simple_gui.ConfigurationValidator, "validate", lambda config: (True, []))
 
@@ -504,6 +512,8 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch):
     gui.rate_var = DummyVar("180")
     gui.trigger_open_var = DummyVar("{")
     gui.trigger_close_var = DummyVar("}")
+    gui.show_notifications_var = DummyVar(True)
+    gui.console_logs_var = DummyVar(True)
     errors = []
 
     monkeypatch.setattr(simple_gui.ConfigurationValidator, "validate", lambda config: (False, ["bad rate"]))
@@ -527,6 +537,8 @@ def test_gui_config_save_config_handles_value_error(monkeypatch):
     gui.rate_var = DummyVar("abc")
     gui.trigger_open_var = DummyVar("{")
     gui.trigger_close_var = DummyVar("}")
+    gui.show_notifications_var = DummyVar(True)
+    gui.console_logs_var = DummyVar(True)
     errors = []
 
     monkeypatch.setattr(simple_gui.messagebox, "showerror", lambda title, message: errors.append((title, message)))
@@ -550,6 +562,8 @@ def test_gui_config_save_config_handles_unexpected_error(monkeypatch):
     gui.rate_var = DummyVar("180")
     gui.trigger_open_var = DummyVar("{")
     gui.trigger_close_var = DummyVar("}")
+    gui.show_notifications_var = DummyVar(True)
+    gui.console_logs_var = DummyVar(True)
     errors = []
 
     monkeypatch.setattr(simple_gui, "build_updated_config", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))

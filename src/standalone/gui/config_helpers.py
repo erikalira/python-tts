@@ -51,6 +51,8 @@ def build_updated_config(
     rate: int | None = None,
     trigger_open: str | None = None,
     trigger_close: str | None = None,
+    show_notifications: bool | None = None,
+    console_logs: bool | None = None,
 ) -> StandaloneConfig:
     """Create a new config with the provided updated values."""
     return StandaloneConfig(
@@ -72,6 +74,10 @@ def build_updated_config(
             trigger_open=current_config.hotkey.trigger_open if trigger_open is None else trigger_open,
             trigger_close=current_config.hotkey.trigger_close if trigger_close is None else trigger_close,
         ),
-        interface=current_config.interface,
+        interface=replace(
+            current_config.interface,
+            show_notifications=current_config.interface.show_notifications if show_notifications is None else show_notifications,
+            console_logs=current_config.interface.console_logs if console_logs is None else console_logs,
+        ),
         network=current_config.network,
     )

@@ -26,7 +26,15 @@ code app.py
 dist/tts_hotkey_clean.exe
 ```
 
-### 🎨 Configuração elegante:
+### 🎨 Painel principal do standalone
+
+Ao abrir o executável, o usuário vê um painel principal que:
+
+- permanece aberto como janela principal do app
+- permite configurar Discord, TTS, hotkeys e preferências de interface
+- oferece `Testar conexão` sob demanda, sem polling contínuo
+- oferece `Enviar teste de voz` manual com mensagem curta
+- exibe atividade e logs úteis sem depender do terminal
 
 Use a configuração persistida do standalone em `src/standalone/config/standalone_config.py`
 e a interface gráfica do próprio app para ajustar Discord, TTS e hotkeys.

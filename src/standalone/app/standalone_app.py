@@ -295,6 +295,7 @@ class StandaloneApplication:
             self._config,
             on_save=self._save_configuration_from_ui,
             on_test_connection=self._test_bot_connection,
+            on_send_test=self._send_test_message,
         )
         self._main_window.show()
 
@@ -328,6 +329,26 @@ class StandaloneApplication:
         else:
             logger.warning("[APP] Teste de conexão com o bot falhou: %s", result.get("message"))
         return result
+
+    def _send_test_message(self, config: StandaloneConfig) -> dict:
+        """Send a short manual test message to validate end-to-end speak flow."""
+        if not config.discord.bot_url:
+            return {"success": False, "message": "Bot URL não configurada para envio de teste"}
+        if not config.discord.guild_id or not config.discord.member_id:
+            return {
+                "success": False,
+                "message": "Guild ID e User ID são necessários para enviar o teste",
+            }
+
+        client = HttpDiscordBotClient(config)
+        request = client.build_request("Teste rápido do TTS Hotkey.")
+        success = client.send_speak_request(request)
+        if success:
+            logger.info("[APP] Mensagem curta de teste enviada ao bot")
+            return {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
+
+        logger.warning("[APP] Falha ao enviar mensagem curta de teste ao bot")
+        return {"success": False, "message": "Não foi possível enviar a mensagem de teste ao bot"}
 
     def _show_current_configuration(self) -> None:
         """Log the current standalone configuration summary."""
