@@ -1,6 +1,6 @@
 # Scripts Directory
 
-Esta pasta contém scripts de build para o TTS Hotkey.
+Esta pasta contem scripts de build, teste manual e utilitarios para o TTS Hotkey.
 
 ## Compilação para Windows
 
@@ -24,6 +24,11 @@ O executável será criado em `dist/tts_hotkey_clean.exe`
 ### 🛠️ Utils
 
 - **create_icon.py**: Gera ícones para os executáveis
+
+### 🧪 Testes manuais
+
+- **scripts/test/manual_integration_check.py**: smoke check manual de integracao e dependencias
+- **scripts/test/manual_security_check.py**: validacao manual do cenario de seguranca do bot
 
 ## Requisitos
 

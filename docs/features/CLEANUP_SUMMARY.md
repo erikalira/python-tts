@@ -29,7 +29,7 @@
 7. **README.md**: Updated build commands
 8. **scripts/README.md**: Updated documentation
 9. **docs/ARCHITECTURE.md**: Updated project structure
-10. **test_integration.py**: Updated required files list
+10. **scripts/test/manual_integration_check.py**: Updated required files list
 
 ### Removed Documentation:
 

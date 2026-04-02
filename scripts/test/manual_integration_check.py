@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Teste de Integração - TTS Hotkey
-Verifica se todas as funcionalidades estão operacionais antes da compilação.
+Teste de Integracao - TTS Hotkey
+Verifica se todas as funcionalidades estao operacionais antes da compilacao.
 """
 
+
 def test_discord_integration():
-    """Testa integração com Discord bot."""
+    """Testa integracao com Discord bot."""
     import requests
-    
+
     print("🔍 Testando Discord Bot Integration...")
-    
+
     # Test health endpoint
     try:
         response = requests.get('https://python-tts-s3z8.onrender.com/health', timeout=10)
@@ -20,7 +21,7 @@ def test_discord_integration():
     except Exception as e:
         print(f"❌ Erro conectando ao Discord bot: {e}")
         return False
-    
+
     # Test TTS endpoint
     try:
         payload = {
@@ -28,14 +29,14 @@ def test_discord_integration():
             'channel_id': None,
             'member_id': None
         }
-        
+
         response = requests.post(
             'https://python-tts-s3z8.onrender.com/speak',
             json=payload,
             timeout=10,
             headers={'User-Agent': 'TTS-Integration-Test/1.0'}
         )
-        
+
         if response.status_code == 200:
             print("✅ Endpoint /speak funcionando - TTS enviado com sucesso")
             return True
@@ -45,28 +46,28 @@ def test_discord_integration():
             if "não está conectado" in error_msg:
                 print("⚠️ Bot não está em canal de voz (normal se não estiver testando)")
                 print("💡 Para testar completamente: entre num canal e use /join")
-                return True  # This is expected behavior
+                return True
             else:
                 print(f"❌ Erro TTS: {error_msg}")
                 return False
         else:
             print(f"❌ Erro inesperado: {response.status_code}")
             return False
-            
+
     except Exception as e:
         print(f"❌ Erro testando TTS: {e}")
         return False
 
 
 def test_dependencies():
-    """Testa se dependências estão instaladas."""
+    """Testa se dependencias estao instaladas."""
     print("\n📦 Testando Dependências...")
-    
+
     required_packages = [
         ('requests', 'Comunicação HTTP'),
         ('keyboard', 'Captura de hotkeys'),
     ]
-    
+
     optional_packages = [
         ('pygame', 'Reprodução de áudio'),
         ('pyttsx3', 'TTS local'),
@@ -74,10 +75,10 @@ def test_dependencies():
         ('pystray', 'System tray'),
         ('PIL', 'Ícones'),
     ]
-    
+
     missing_required = []
     missing_optional = []
-    
+
     # Test required packages
     for package, description in required_packages:
         try:
@@ -86,8 +87,8 @@ def test_dependencies():
         except ImportError:
             print(f"❌ {package} - {description} (OBRIGATÓRIO)")
             missing_required.append(package)
-    
-    # Test optional packages  
+
+    # Test optional packages
     for package, description in optional_packages:
         try:
             __import__(package)
@@ -101,50 +102,50 @@ def test_dependencies():
             else:
                 print(f"⚠️ {package} - {description} (erro: {e})")
                 missing_optional.append(package)
-    
+
     if missing_required:
         print(f"\n❌ DEPENDÊNCIAS OBRIGATÓRIAS EM FALTA: {', '.join(missing_required)}")
         print("Execute: pip install " + " ".join(missing_required))
         return False
-    
+
     if missing_optional:
         print(f"\n💡 Dependências opcionais em falta: {', '.join(missing_optional)}")
         print("Para funcionalidade completa: pip install " + " ".join(missing_optional))
-    
+
     return True
 
 
 def test_file_structure():
-    """Testa se arquivos necessários existem."""
+    """Testa se arquivos necessarios existem."""
     print("\n📁 Testando Estrutura de Arquivos...")
-    
+
     import os
-    
+
     required_files = [
         ('app.py', 'Entry point standalone com Clean Architecture'),
         ('scripts/build/build_clean_architecture.ps1', 'Script de build Clean Architecture'),
     ]
-    
+
     missing_files = []
-    
+
     for file_path, description in required_files:
         if os.path.exists(file_path):
             print(f"✅ {file_path} - {description}")
         else:
             print(f"❌ {file_path} - {description} (FALTANDO)")
             missing_files.append(file_path)
-    
+
     if missing_files:
         print(f"\n❌ ARQUIVOS EM FALTA: {', '.join(missing_files)}")
         return False
-    
+
     return True
 
 
 def test_basic_functionality():
-    """Testa funcionalidade básica do código."""
+    """Testa funcionalidade basica do codigo."""
     print("\n⚙️ Testando Funcionalidades Básicas...")
-    
+
     try:
         # Test syntax only - don't execute (avoids GUI dependencies)
         print("🔍 Testando sintaxe app.py...")
@@ -159,7 +160,7 @@ def test_basic_functionality():
     except Exception as e:
         print(f"⚠️ Aviso em app.py: {e}")
         print("💡 Sintaxe OK, erro pode ser dependência GUI (normal em Linux)")
-        
+
     return True
 
 
@@ -168,17 +169,17 @@ def main():
     print("=" * 70)
     print("TTS HOTKEY - INTEGRATION TEST")
     print("=" * 70)
-    
+
     tests = [
         ("Estrutura de Arquivos", test_file_structure),
-        ("Dependências", test_dependencies), 
+        ("Dependências", test_dependencies),
         ("Funcionalidade Básica", test_basic_functionality),
         ("Integração Discord", test_discord_integration),
     ]
-    
+
     passed = 0
     failed = 0
-    
+
     for test_name, test_func in tests:
         print(f"\n{'='*20} {test_name} {'='*20}")
         try:
@@ -191,14 +192,14 @@ def main():
         except Exception as e:
             print(f"❌ {test_name}: ERRO - {e}")
             failed += 1
-    
+
     print("\n" + "=" * 70)
     print("📊 RESULTADO DOS TESTES")
     print("=" * 70)
     print(f"✅ Passou: {passed}")
     print(f"❌ Falhou: {failed}")
     print(f"📈 Total: {passed + failed}")
-    
+
     if failed == 0:
         print("\n🎉 TODOS OS TESTES PASSARAM!")
         print("✅ Sistema pronto para compilação")

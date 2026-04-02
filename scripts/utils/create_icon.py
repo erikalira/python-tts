@@ -1,5 +1,6 @@
 """Generate system tray icon for TTS Hotkey."""
 from PIL import Image, ImageDraw
+from pathlib import Path
 
 # Create a 64x64 icon with a microphone symbol
 img = Image.new('RGB', (64, 64), color='#2C2F33')
@@ -20,7 +21,10 @@ draw.arc([5, 20, 15, 35], 90, 270, fill='#43B581', width=2)
 draw.arc([49, 20, 59, 35], 270, 90, fill='#43B581', width=2)
 
 # Save as ICO and PNG
-img.save('icon.ico', format='ICO', sizes=[(64, 64)])
-img.save('icon.png', format='PNG')
+output_dir = Path("assets")
+output_dir.mkdir(exist_ok=True)
 
-print("✅ Icon created: icon.ico and icon.png")
+img.save(output_dir / 'icon.ico', format='ICO', sizes=[(64, 64)])
+img.save(output_dir / 'icon.png', format='PNG')
+
+print("✅ Icon created: assets/icon.ico and assets/icon.png")

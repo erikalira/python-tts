@@ -182,7 +182,7 @@ if _pystray_available:
             """Create the icon image."""
             try:
                 # Try to load custom icon first
-                icon_path = Path(__file__).resolve().parents[3] / "icon.png"
+                icon_path = Path(__file__).resolve().parents[3] / "assets" / "icon.png"
                 if icon_path.exists():
                     return Image.open(icon_path)
             except Exception:

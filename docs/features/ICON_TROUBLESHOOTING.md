@@ -2,7 +2,7 @@
 
 ## 💡 O que aconteceu
 
-O PyInstaller falhou com o erro: `Icon input file C:\Users\lirae\Desktop\tts-hotkey-windows\build\icon.ico not found`
+O PyInstaller falhou com o erro: `Icon input file C:\Users\lirae\Desktop\tts-hotkey-windows\build\assets\icon.ico not found`
 
 Este erro ocorre quando o PyInstaller não consegue encontrar o arquivo de ícone especificado.
 
@@ -29,7 +29,7 @@ python scripts/utils/create_icon.py
 
 ```powershell
 # Verificar se o ícone existe no diretório raiz
-ls icon.ico
+ls assets/icon.ico
 
 # Se não existir, copiar de outro local ou recriar
 ```
