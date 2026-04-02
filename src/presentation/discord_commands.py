@@ -272,10 +272,10 @@ class DiscordCommands:
                 if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
                     await interaction.edit_original_response(content='❌ Bot está inativo ou desligando.')
                 else:
-                    await interaction.edit_original_response(content=f'❌ Erro inesperado')
+                    await interaction.edit_original_response(content='❌ Erro inesperado')
             except:
                 # If we can't send error message, just log it
-                logger.debug(f"[SPEAK] Could not send error message")
+                logger.debug("[SPEAK] Could not send error message")
     
     async def _handle_config(
         self,
