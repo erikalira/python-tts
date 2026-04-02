@@ -52,7 +52,7 @@ class TestDiscordCommands:
     ):
         """Test successful /speak command."""
         commands_instance._speak_use_case.execute = AsyncMock(
-            return_value={"success": True, "message": "Success"}
+            return_value={"success": True, "code": "ok", "queued": False}
         )
         
         interaction = Mock()
@@ -86,7 +86,7 @@ class TestDiscordCommands:
     async def test_handle_speak_failure(self, commands_instance):
         """Test /speak command failure."""
         commands_instance._speak_use_case.execute = AsyncMock(
-            return_value={"success": False, "message": "Error occurred"}
+            return_value={"success": False, "code": "unknown_error", "queued": False}
         )
         
         interaction = Mock()

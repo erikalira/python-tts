@@ -62,6 +62,7 @@ class TestSpeakController:
         response = await controller.handle(request)
         
         assert response.status == 400
+        assert response.text == "missing text"
     
     async def test_handle_invalid_json(
         self,

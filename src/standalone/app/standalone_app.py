@@ -5,7 +5,7 @@ Main application that orchestrates all services following SOLID principles.
 """
 
 import logging
-from typing import Optional
+from typing import Callable, Optional
 
 from ..config.standalone_config import (
     StandaloneConfig, 
@@ -54,10 +54,17 @@ class StandaloneHotkeyHandler:
 class StandaloneApplication:
     """Main standalone application class following Clean Architecture."""
     
-    def __init__(self):
+    def __init__(
+        self,
+        config_repository: Optional[ConfigurationRepository] = None,
+        config_service: Optional[ConfigurationService] = None,
+        tts_processor_factory: Callable[[StandaloneConfig], TTSProcessor] = TTSProcessor,
+        hotkey_manager_factory: Callable[[StandaloneConfig], HotkeyManager] = HotkeyManager,
+        notification_service_factory: Callable[[StandaloneConfig], SystemTrayService] = SystemTrayService
+    ):
         # Core components
         self._config: Optional[StandaloneConfig] = None
-        self._config_repository: Optional[ConfigurationRepository] = None
+        self._config_repository: Optional[ConfigurationRepository] = config_repository
         
         # Services
         self._tts_processor: Optional[TTSProcessor] = None
@@ -65,7 +72,10 @@ class StandaloneApplication:
         self._notification_service: Optional[SystemTrayService] = None
         
         # UI Services
-        self._config_service: Optional[ConfigurationService] = None
+        self._config_service: Optional[ConfigurationService] = config_service
+        self._tts_processor_factory = tts_processor_factory
+        self._hotkey_manager_factory = hotkey_manager_factory
+        self._notification_service_factory = notification_service_factory
         
         # Application state
         self._initialized = False
@@ -78,16 +88,18 @@ class StandaloneApplication:
         
         try:
             # Initialize configuration
-            self._config_repository = ConfigurationRepository()
+            if self._config_repository is None:
+                self._config_repository = ConfigurationRepository()
             self._config = self._config_repository.load()
             
             # Initialize UI services
-            self._config_service = ConfigurationService(prefer_gui=True)
+            if self._config_service is None:
+                self._config_service = ConfigurationService(prefer_gui=True)
             
             # Initialize core services
-            self._tts_processor = TTSProcessor(self._config)
-            self._hotkey_manager = HotkeyManager(self._config)
-            self._notification_service = SystemTrayService(self._config)
+            self._tts_processor = self._tts_processor_factory(self._config)
+            self._hotkey_manager = self._hotkey_manager_factory(self._config)
+            self._notification_service = self._notification_service_factory(self._config)
             
             # Set up integrations
             self._setup_integrations()
@@ -230,13 +242,13 @@ class StandaloneApplication:
     def _update_services_config(self) -> None:
         """Update all services with new configuration."""
         if self._tts_processor:
-            self._tts_processor = TTSProcessor(self._config)
+            self._tts_processor = self._tts_processor_factory(self._config)
         
         if self._hotkey_manager:
             self._hotkey_manager.update_config(self._config)
         
         if self._notification_service:
-            self._notification_service = SystemTrayService(self._config)
+            self._notification_service = self._notification_service_factory(self._config)
             self._setup_integrations()
     
     def _shutdown(self) -> None:
@@ -342,7 +354,8 @@ class StandaloneApplication:
 
 def create_standalone_application() -> StandaloneApplication:
     """Factory function to create a standalone application instance."""
-    return StandaloneApplication()
+    from .bootstrap import create_standalone_application as build_application
+    return build_application()
 
 
 def main() -> None:

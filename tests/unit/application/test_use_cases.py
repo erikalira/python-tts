@@ -2,7 +2,15 @@
 import asyncio
 
 import pytest
-from src.application.use_cases import SpeakTextUseCase, ConfigureTTSUseCase
+from src.application.use_cases import (
+    ConfigureTTSUseCase,
+    SpeakTextUseCase,
+    SPEAK_RESULT_MISSING_TEXT,
+    SPEAK_RESULT_OK,
+    SPEAK_RESULT_QUEUED,
+    SPEAK_RESULT_QUEUE_FULL,
+    SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+)
 from src.core.entities import TTSRequest, TTSConfig
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 
@@ -30,7 +38,7 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(sample_tts_request)
         
         assert result["success"] is True
-        assert "Áudio reproduzido" in result["message"]  # Check for emoji and message
+        assert result["code"] == SPEAK_RESULT_OK
         assert "queued" in result
         assert len(mock_tts_engine.calls) == 1
         assert len(mock_channel_repository.channel.played_audio) == 1
@@ -54,7 +62,7 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(request)
         
         assert result["success"] is False
-        assert result["message"] == "missing text"
+        assert result["code"] == SPEAK_RESULT_MISSING_TEXT
     
     async def test_execute_no_channel_found(
         self,
@@ -79,7 +87,7 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(sample_tts_request)
         
         assert result["success"] is False
-        assert "não está em nenhuma sala" in result["message"]  # Check for new error message
+        assert result["code"] == SPEAK_RESULT_USER_NOT_IN_CHANNEL
         assert result["queued"] is False
     
     async def test_execute_finds_by_channel_id(
@@ -136,7 +144,7 @@ class TestSpeakTextUseCase:
 
             return {
                 "success": True,
-                "message": "✅ Áudio reproduzido",
+                "code": SPEAK_RESULT_OK,
                 "queued": False,
                 "item_id": item.item_id,
             }
@@ -152,6 +160,7 @@ class TestSpeakTextUseCase:
 
         second_result = await use_case.execute(second_request)
         assert second_result["queued"] is True
+        assert second_result["code"] == SPEAK_RESULT_QUEUED
         assert second_result["position"] == 0
 
         first_release.set()
@@ -163,6 +172,7 @@ class TestSpeakTextUseCase:
         third_result = await use_case.execute(third_request)
         assert third_result["success"] is True
         assert third_result["queued"] is True
+        assert third_result["code"] == SPEAK_RESULT_QUEUED
         assert third_result["position"] == 0
         assert process_order == ["first", "second"]
 
@@ -190,8 +200,8 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(sample_tts_request)
 
         assert result["success"] is False
+        assert result["code"] == SPEAK_RESULT_QUEUE_FULL
         assert result["queued"] is False
-        assert "Fila de áudio cheia" in result["message"]
 
 
 class TestConfigureTTSUseCase:

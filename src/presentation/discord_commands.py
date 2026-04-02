@@ -2,7 +2,23 @@
 import logging
 import discord
 from discord import app_commands
-from src.application.use_cases import SpeakTextUseCase, ConfigureTTSUseCase
+from src.application.use_cases import (
+    ConfigureTTSUseCase,
+    SpeakTextUseCase,
+    SPEAK_RESULT_CROSS_GUILD_CHANNEL,
+    SPEAK_RESULT_MISSING_GUILD_ID,
+    SPEAK_RESULT_MISSING_TEXT,
+    SPEAK_RESULT_OK,
+    SPEAK_RESULT_PLAYBACK_TIMEOUT,
+    SPEAK_RESULT_QUEUED,
+    SPEAK_RESULT_QUEUE_FULL,
+    SPEAK_RESULT_UNKNOWN_ERROR,
+    SPEAK_RESULT_USER_LEFT_CHANNEL,
+    SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+    SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
+    SPEAK_RESULT_VOICE_CONNECTION_FAILED,
+    SPEAK_RESULT_VOICE_PERMISSION_DENIED,
+)
 from src.core.entities import TTSRequest
 import shutil
 
@@ -247,17 +263,19 @@ class DiscordCommands:
             
             # Handle response based on queue status
             try:
-                if result.get("queued"):
+                if result.get("code") == SPEAK_RESULT_QUEUED:
                     # Show queue position with formatted message
                     await interaction.edit_original_response(
-                        content=result["message"]
+                        content=self._build_speak_message(result)
                     )
-                elif result["success"]:
+                elif result.get("code") == SPEAK_RESULT_OK:
                     # Delete the thinking message on success (audio played)
                     await interaction.delete_original_response()
                 else:
                     # Show error message
-                    await interaction.edit_original_response(content=result["message"])
+                    await interaction.edit_original_response(
+                        content=self._build_speak_message(result)
+                    )
                     
             except Exception as msg_error:
                 # Ignore message update errors - audio already played or failed
@@ -276,6 +294,37 @@ class DiscordCommands:
             except:
                 # If we can't send error message, just log it
                 logger.debug("[SPEAK] Could not send error message")
+
+    def _build_speak_message(self, result: dict) -> str:
+        """Map a neutral application result to a Discord-facing message."""
+        code = result.get("code")
+        if code == SPEAK_RESULT_QUEUED:
+            position = result.get("position", 0) + 1
+            queue_size = result.get("queue_size", position)
+            return f"⏳ Sua mensagem está na **fila** (posição **{position}**/{queue_size}). Será reproduzida em breve!"
+        if code == SPEAK_RESULT_MISSING_TEXT:
+            return "❌ Texto não informado."
+        if code == SPEAK_RESULT_USER_NOT_IN_CHANNEL:
+            return "❌ Você não está em nenhuma sala de voz. Entre em uma sala e tente novamente."
+        if code == SPEAK_RESULT_QUEUE_FULL:
+            return "❌ Fila de áudio cheia. Tente novamente mais tarde."
+        if code == SPEAK_RESULT_MISSING_GUILD_ID:
+            return "❌ Erro: Não foi possível determinar o servidor."
+        if code == SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND:
+            return "❌ Bot não conseguiu encontrar sua sala de voz."
+        if code == SPEAK_RESULT_CROSS_GUILD_CHANNEL:
+            return "❌ Canal de voz pertence a servidor diferente."
+        if code == SPEAK_RESULT_USER_LEFT_CHANNEL:
+            return "❌ Você saiu do canal de voz."
+        if code == SPEAK_RESULT_PLAYBACK_TIMEOUT:
+            return "⏱️ Tempo limite excedido durante reprodução."
+        if code == SPEAK_RESULT_VOICE_CONNECTION_FAILED:
+            return "🔌 Bot não conseguiu se conectar ao canal."
+        if code == SPEAK_RESULT_VOICE_PERMISSION_DENIED:
+            return "⛔ Bot não tem permissão neste canal."
+        if code == SPEAK_RESULT_UNKNOWN_ERROR:
+            return "❌ Erro ao reproduzir áudio."
+        return "❌ Erro inesperado ao processar áudio."
     
     async def _handle_config(
         self,
