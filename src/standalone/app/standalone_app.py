@@ -7,6 +7,11 @@ Main application that orchestrates all services following SOLID principles.
 import logging
 from typing import Callable, Optional
 
+from src.application.tts_execution import (
+    TTS_EXECUTION_RESULT_FAILED,
+    TTS_EXECUTION_RESULT_MISSING_TEXT,
+    TTS_EXECUTION_RESULT_OK,
+)
 from ..config.standalone_config import (
     StandaloneConfig, 
     ConfigurationRepository, 
@@ -49,7 +54,28 @@ class StandaloneHotkeyHandler:
         )
         
         # Process the text
-        self._tts_processor.process_text(event.text, event.character_count)
+        self._tts_processor.process_text(
+            event.text,
+            event.character_count,
+            on_complete=self._handle_tts_result,
+        )
+
+    def _handle_tts_result(self, result: dict) -> None:
+        """Show user-facing feedback after TTS execution completes."""
+        code = result.get("code")
+        if code == TTS_EXECUTION_RESULT_OK:
+            self._notification_service.notify_success("TTS Hotkey", "Texto reproduzido com sucesso")
+            return
+
+        if code == TTS_EXECUTION_RESULT_MISSING_TEXT:
+            self._notification_service.notify_error("TTS Hotkey", "Nenhum texto valido foi capturado")
+            return
+
+        if code == TTS_EXECUTION_RESULT_FAILED:
+            self._notification_service.notify_error("TTS Hotkey", "Falha ao reproduzir o texto")
+            return
+
+        self._notification_service.notify_error("TTS Hotkey", "Falha inesperada ao processar TTS")
 
 
 class StandaloneApplication:

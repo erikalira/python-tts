@@ -1,5 +1,10 @@
 from unittest.mock import Mock
 
+from src.application.tts_execution import (
+    TTS_EXECUTION_RESULT_FAILED,
+    TTS_EXECUTION_RESULT_MISSING_TEXT,
+    TTS_EXECUTION_RESULT_OK,
+)
 from src.standalone.app.standalone_app import StandaloneApplication, StandaloneHotkeyHandler
 from src.standalone.config.standalone_config import StandaloneConfig
 from src.standalone.services.hotkey_services import HotkeyEvent
@@ -14,7 +19,9 @@ def test_standalone_hotkey_handler_processes_captured_text():
     handler.handle_text_captured(event)
 
     notifier.notify_info.assert_called_once()
-    processor.process_text.assert_called_once_with("hello", 7)
+    processor.process_text.assert_called_once()
+    assert processor.process_text.call_args.args == ("hello", 7)
+    assert callable(processor.process_text.call_args.kwargs["on_complete"])
 
 
 def test_standalone_hotkey_handler_ignores_empty_text():
@@ -27,6 +34,36 @@ def test_standalone_hotkey_handler_ignores_empty_text():
 
     notifier.notify_info.assert_not_called()
     processor.process_text.assert_not_called()
+
+
+def test_standalone_hotkey_handler_notifies_success_after_tts():
+    processor = Mock()
+    notifier = Mock()
+    handler = StandaloneHotkeyHandler(processor, notifier)
+
+    handler._handle_tts_result({"success": True, "code": TTS_EXECUTION_RESULT_OK})
+
+    notifier.notify_success.assert_called_once_with("TTS Hotkey", "Texto reproduzido com sucesso")
+
+
+def test_standalone_hotkey_handler_notifies_missing_text_error():
+    processor = Mock()
+    notifier = Mock()
+    handler = StandaloneHotkeyHandler(processor, notifier)
+
+    handler._handle_tts_result({"success": False, "code": TTS_EXECUTION_RESULT_MISSING_TEXT})
+
+    notifier.notify_error.assert_called_once_with("TTS Hotkey", "Nenhum texto valido foi capturado")
+
+
+def test_standalone_hotkey_handler_notifies_failure():
+    processor = Mock()
+    notifier = Mock()
+    handler = StandaloneHotkeyHandler(processor, notifier)
+
+    handler._handle_tts_result({"success": False, "code": TTS_EXECUTION_RESULT_FAILED})
+
+    notifier.notify_error.assert_called_once_with("TTS Hotkey", "Falha ao reproduzir o texto")
 
 
 def test_standalone_application_handle_configure_updates_services():

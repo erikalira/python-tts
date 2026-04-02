@@ -229,6 +229,7 @@ def test_tts_processor_runs_cleanup_after_success(monkeypatch):
     execution_service = Mock()
     execution_service.execute.return_value = {"success": True, "code": TTS_EXECUTION_RESULT_OK}
     cleanup_service = Mock()
+    on_complete = Mock()
     processor = TTSProcessor(
         StandaloneConfig.create_default(),
         execution_service=execution_service,
@@ -244,16 +245,18 @@ def test_tts_processor_runs_cleanup_after_success(monkeypatch):
 
     monkeypatch.setattr("src.standalone.services.tts_services.threading.Thread", ImmediateThread)
 
-    processor.process_text("hello", cleanup_count=3)
+    processor.process_text("hello", cleanup_count=3, on_complete=on_complete)
 
     execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_called_once_with(3)
+    on_complete.assert_called_once_with({"success": True, "code": TTS_EXECUTION_RESULT_OK})
 
 
 def test_tts_processor_skips_cleanup_when_execution_fails(monkeypatch):
     execution_service = Mock()
     execution_service.execute.return_value = {"success": False, "code": TTS_EXECUTION_RESULT_FAILED}
     cleanup_service = Mock()
+    on_complete = Mock()
     processor = TTSProcessor(
         StandaloneConfig.create_default(),
         execution_service=execution_service,
@@ -269,7 +272,8 @@ def test_tts_processor_skips_cleanup_when_execution_fails(monkeypatch):
 
     monkeypatch.setattr("src.standalone.services.tts_services.threading.Thread", ImmediateThread)
 
-    processor.process_text("hello", cleanup_count=3)
+    processor.process_text("hello", cleanup_count=3, on_complete=on_complete)
 
     execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_not_called()
+    on_complete.assert_called_once_with({"success": False, "code": TTS_EXECUTION_RESULT_FAILED})

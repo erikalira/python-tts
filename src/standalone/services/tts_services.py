@@ -7,7 +7,7 @@ Provides text-to-speech services with different engines and delivery methods.
 import logging
 import threading
 from abc import ABC, abstractmethod
-from typing import Optional, Protocol
+from typing import Callable, Optional, Protocol
 
 from src.application.tts_execution import SpeakTextExecutionUseCase
 from src.application.tts_routing import TTSFallbackChain, build_tts_engine_chain
@@ -218,13 +218,21 @@ class TTSProcessor:
         self._execution_service = execution_service
         self._cleanup_service = cleanup_service
     
-    def process_text(self, text: str, cleanup_count: int = 0) -> None:
+    def process_text(
+        self,
+        text: str,
+        cleanup_count: int = 0,
+        on_complete: Optional[Callable[[dict], None]] = None,
+    ) -> None:
         """Process text for TTS and perform cleanup in a separate thread."""
         def _process():
             result = self._execution_service.execute(text)
             
             if result.get("success") and cleanup_count > 0:
                 self._cleanup_service.cleanup_typed_text(cleanup_count)
+
+            if on_complete is not None:
+                on_complete(result)
         
         # Run in separate thread to avoid blocking
         thread = threading.Thread(target=_process, daemon=True)
