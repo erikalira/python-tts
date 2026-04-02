@@ -12,7 +12,8 @@ from .standalone_config import (
     StandaloneConfig,
     ConfigurationRepository,
     EnvironmentUpdater,
-    ConfigurationValidator
+    ConfigurationValidator,
+    get_config_directory,
 )
 
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     'StandaloneConfig',
     'ConfigurationRepository',
     'EnvironmentUpdater',
-    'ConfigurationValidator'
+    'ConfigurationValidator',
+    'get_config_directory',
 ]
