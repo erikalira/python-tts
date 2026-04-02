@@ -37,3 +37,4 @@ Use when modifying:
 - potential break points
 - affected input flows
 - manual test checklist
+- if the change adds feature documentation, place it in `docs/features/`

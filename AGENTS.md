@@ -32,6 +32,13 @@ When making changes:
 3. Check impact on bot flow and Windows hotkey flow
 4. Avoid introducing logic into outer layers that belongs in core/application
 
+# Documentation policy
+
+- Keep `docs/` focused on main structure docs and operational guides
+- Add documentation for new features, feature iterations, and implementation notes under `docs/features/`
+- When adding or updating feature docs, update `docs/README.md` so the index reflects the new location
+- Prefer feature-specific filenames in `docs/features/` instead of expanding the top-level `docs/` directory
+
 # Validation
 
 Before finishing:

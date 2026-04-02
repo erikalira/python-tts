@@ -75,7 +75,7 @@ No Linux, o build do `.exe` pode ser feito via Docker, seguindo o mesmo fluxo au
 
 ## Documentação
 
-Use o README principal como ponto de entrada e deixe os detalhes nos guias específicos:
+Use o README principal como ponto de entrada e deixe os detalhes nos guias específicos. A pasta `docs/` fica reservada para estrutura principal e guides; documentação de novas features deve ir em `docs/features/`.
 
 - [Índice da documentação](docs/README.md)
 - [Guia de build do executável Windows](docs/BUILD_GUIDE.md)
