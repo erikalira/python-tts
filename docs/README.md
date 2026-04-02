@@ -1,37 +1,25 @@
-# Documentação do Python-TTS
+# Documentação
 
-Este diretório contém toda a documentação do projeto Python-TTS.
+Este diretório reúne a documentação complementar do projeto. O `README.md` da raiz fica propositalmente curto; os detalhes estão centralizados aqui e no `BUILD_GUIDE.md`.
 
-## 📋 Índice de Documentação
+## Guias principais
 
-### 🏗️ Arquitetura e Desenvolvimento
+- [../BUILD_GUIDE.md](../BUILD_GUIDE.md): build do executável Windows
+- [ARCHITECTURE.md](ARCHITECTURE.md): visão de arquitetura e organização das camadas
+- [README_STANDALONE.md](README_STANDALONE.md): foco no app standalone
+- [HOTKEY_SETUP.md](HOTKEY_SETUP.md): configuração e uso das hotkeys
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md): problemas comuns e diagnósticos
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Arquitetura do sistema e estrutura do código
-- **[CORREÇÕES_IMPLEMENTADAS.md](CORREÇÕES_IMPLEMENTADAS.md)** - Log de correções e melhorias implementadas
+## Guias específicos
 
-### ⚙️ Configuração e Setup
+- [INTERFACE_CONFIGURACAO.md](INTERFACE_CONFIGURACAO.md): detalhes da interface de configuração
+- [VOICE_TIMEOUT.md](VOICE_TIMEOUT.md): comportamento e ajustes de timeout
+- [ICON_TROUBLESHOOTING.md](ICON_TROUBLESHOOTING.md): problemas com ícones
+- [DISCORD_RATE_LIMIT_SOLUTION.md](DISCORD_RATE_LIMIT_SOLUTION.md): observações sobre rate limit
+- [MULTI_SERVER_IMPROVEMENTS.md](MULTI_SERVER_IMPROVEMENTS.md): melhorias para múltiplos servidores
+- [SISTEMA_CONEXAO_INTELIGENTE.md](SISTEMA_CONEXAO_INTELIGENTE.md): detalhes do fluxo de conexão
+- [CLEANUP_SUMMARY.md](CLEANUP_SUMMARY.md): resumo de limpeza/refatoração
 
-- **[HOTKEY_SETUP.md](HOTKEY_SETUP.md)** - Guia de configuração de teclas de atalho (atual)
-- **[HOTKEY_SETUP_OLD.md](HOTKEY_SETUP_OLD.md)** - Configuração antiga (histórico)
-- **[README_STANDALONE.md](README_STANDALONE.md)** - Documentação da versão standalone/premium
+## Navegação
 
-### 🔧 Solução de Problemas
-
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Guia de solução de problemas comuns
-- **[VOICE_TIMEOUT.md](VOICE_TIMEOUT.md)** - Documentação específica sobre timeouts de voz
-
-## 🔄 Navegação
-
-- **[← Voltar ao README Principal](../README.md)**
-- **[🏠 Raiz do Projeto](../)**
-
-## 💡 Como Usar Esta Documentação
-
-1. **Iniciantes**: Comece com [ARCHITECTURE.md](ARCHITECTURE.md) para entender a estrutura
-2. **Configuração**: Use [HOTKEY_SETUP.md](HOTKEY_SETUP.md) para configurar o sistema
-3. **Problemas**: Consulte [TROUBLESHOOTING.md](TROUBLESHOOTING.md) em caso de dificuldades
-4. **Versão Standalone**: Para a versão premium, veja [README_STANDALONE.md](README_STANDALONE.md)
-
----
-
-> 📝 **Nota**: Esta organização foi implementada para manter o projeto limpo e facilitar a navegação na documentação.
+- [Voltar para o README principal](../README.md)
