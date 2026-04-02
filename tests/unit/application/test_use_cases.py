@@ -95,6 +95,28 @@ class TestSpeakTextUseCase:
         assert result["success"] is False
         assert result["code"] == SPEAK_RESULT_USER_NOT_IN_CHANNEL
         assert result["queued"] is False
+
+    async def test_execute_truncates_text_with_shared_policy(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue
+    ):
+        """Speak use case should reuse the shared TTS text preparation rules."""
+        use_case = SpeakTextUseCase(
+            tts_engine=mock_tts_engine,
+            channel_repository=mock_channel_repository,
+            config_repository=mock_config_repository,
+            audio_queue=mock_audio_queue,
+            max_text_length=5,
+        )
+
+        request = TTSRequest(text="  abcdefgh  ", channel_id=123456, guild_id=789012, member_id=345678)
+        result = await use_case.execute(request)
+
+        assert result["success"] is True
+        assert mock_tts_engine.calls[0]["text"] == "abcde"
     
     async def test_execute_finds_by_channel_id(
         self,

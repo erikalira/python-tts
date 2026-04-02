@@ -30,6 +30,7 @@ class Config:
         # HTTP settings shared by the bot runtime and standalone client.
         self.http_port = int(os.getenv('PORT', os.getenv('DISCORD_BOT_PORT', '10000')))
         self.discord_bot_port = self.http_port
+        self.max_text_length = int(os.getenv('MAX_TEXT_LENGTH', os.getenv('TTS_MAX_TEXT_LENGTH', '500')))
         
         # TTS settings
         self.tts_config = TTSConfig(

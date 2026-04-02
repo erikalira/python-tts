@@ -9,6 +9,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Optional, Protocol
 
+from src.application.tts_text import prepare_tts_text
 from ..config.standalone_config import StandaloneConfig
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter, is_pyttsx3_available
@@ -158,16 +159,15 @@ class TTSService:
     
     def speak_text(self, text: str) -> bool:
         """Speak the given text using available engines."""
-        if not text or not text.strip():
+        prepared_text = prepare_tts_text(text, self._config.network.max_text_length)
+        if not prepared_text:
             return False
-        
-        # Limit text length
-        if len(text) > self._config.network.max_text_length:
-            text = text[:self._config.network.max_text_length]
+
+        if prepared_text != text.strip():
             logger.warning(f"[TTS] Texto truncado para {self._config.network.max_text_length} caracteres")
         
         logger.info("[TTS] Processando texto para síntese")
-        return self._engine.speak(text)
+        return self._engine.speak(prepared_text)
     
     def is_available(self) -> bool:
         """Check if TTS service is available."""

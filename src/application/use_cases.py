@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 from src.core.interfaces import ITTSEngine, IVoiceChannelRepository, IConfigRepository, IAudioQueue
 from src.core.entities import TTSRequest, AudioQueueItem
+from src.application.tts_text import prepare_tts_text
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,8 @@ class SpeakTextUseCase:
         tts_engine: ITTSEngine,
         channel_repository: IVoiceChannelRepository,
         config_repository: IConfigRepository,
-        audio_queue: IAudioQueue
+        audio_queue: IAudioQueue,
+        max_text_length: Optional[int] = None,
     ):
         """Initialize use case with dependencies (Dependency Injection).
         
@@ -120,6 +122,7 @@ class SpeakTextUseCase:
         self._channel_repository = channel_repository
         self._config_repository = config_repository
         self._audio_queue = audio_queue
+        self._max_text_length = max_text_length
         self._guild_processors: dict = {}  # Track active queue processor tasks per guild
         self._guild_locks: dict = {}  # Asyncio locks per guild to prevent concurrent processing
         self._processing_guilds: set = set()  # Guilds currently draining queue playback
@@ -169,8 +172,16 @@ class SpeakTextUseCase:
             - position: Position in queue (if queued)
             - queue_size: Total items in queue (if queued)
         """
+        prepared_text = prepare_tts_text(request.text, self._max_text_length)
+        request = TTSRequest(
+            text=prepared_text,
+            channel_id=request.channel_id,
+            guild_id=request.guild_id,
+            member_id=request.member_id,
+        )
+
         logger.info(f"[USE_CASE] Speak request from user {request.member_id}: text='{request.text[:50]}...', guild_id={request.guild_id}")
-        
+
         if not request.text:
             logger.warning("[USE_CASE] Missing text in request")
             return self._build_result(

@@ -108,6 +108,17 @@ def test_tts_service_truncates_long_text(monkeypatch):
     engine.speak.assert_called_once_with("abcde")
 
 
+def test_tts_service_strips_whitespace_before_speaking():
+    config = StandaloneConfig.create_default()
+    service = TTSService(config, bot_client=FakeDiscordBotClient())
+    engine = Mock()
+    engine.speak.return_value = True
+    service._engine = engine
+
+    assert service.speak_text("  hello  ") is True
+    engine.speak.assert_called_once_with("hello")
+
+
 def test_tts_service_returns_false_for_blank_text():
     service = TTSService(StandaloneConfig.create_default())
     assert service.speak_text("   ") is False

@@ -61,7 +61,8 @@ class Container:
             tts_engine=self.tts_engine,
             channel_repository=self.voice_channel_repository,
             config_repository=self.config_repository,
-            audio_queue=self.audio_queue
+            audio_queue=self.audio_queue,
+            max_text_length=config.max_text_length,
         )
         
         self.config_use_case = ConfigureTTSUseCase(
