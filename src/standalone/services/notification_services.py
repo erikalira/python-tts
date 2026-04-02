@@ -9,11 +9,12 @@ from typing import Callable, Optional
 
 from ..config.standalone_config import StandaloneConfig
 from ..adapters.system_tray import (
-    NullSystemTrayIcon,
-    PySystemTrayIcon,
+    NullSystemTrayIcon as _NullSystemTrayIcon,
     create_system_tray_icon,
     is_system_tray_available,
 )
+
+NullSystemTrayIcon = _NullSystemTrayIcon
 
 
 class NotificationService(ABC):

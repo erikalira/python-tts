@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Local text-to-speech adapters for standalone services."""
 
-from typing import Optional
-
 try:
     import pyttsx3
     _pyttsx3_available = True

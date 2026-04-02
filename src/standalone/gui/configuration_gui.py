@@ -4,17 +4,12 @@
 from typing import Optional
 
 try:
-    from tkinter import messagebox, ttk
-    import tkinter as tk
     _tkinter_available = True
 except ImportError:
-    messagebox = None
-    ttk = None
-    tk = None
     _tkinter_available = False
 
 from ..config.standalone_config import StandaloneConfig
-from .simple_gui import ConfigInterface, ConfigurationService, ConsoleConfig, GUIConfig
+from .simple_gui import ConfigInterface, ConsoleConfig, GUIConfig
 
 
 class ConfigurationInterface(ConfigInterface):

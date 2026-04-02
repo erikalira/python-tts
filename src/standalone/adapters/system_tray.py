@@ -123,8 +123,8 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
             icon_path = Path(__file__).resolve().parents[3] / "assets" / "icon.png"
             if icon_path.exists():
                 return Image.open(icon_path)
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[TRAY] ⚠️ Failed to load tray icon asset: {exc}")
 
         img = Image.new("RGB", (64, 64), color="#2C2F33")
         draw = ImageDraw.Draw(img)
