@@ -111,24 +111,27 @@ def test_console_configuration_interface_accepts_existing_member_id(monkeypatch)
     interface = configuration_gui.ConsoleConfigurationInterface()
     current_config = StandaloneConfig.create_default()
     current_config.discord.member_id = "123456"
+    current_config.discord.guild_id = "654321"
 
     monkeypatch.setattr("builtins.input", lambda _prompt: "   ")
 
     updated = interface.show_configuration_dialog(current_config)
 
     assert updated.discord.member_id == "123456"
+    assert updated.discord.guild_id == "654321"
 
 
 def test_console_configuration_interface_retries_until_numeric(monkeypatch, capsys):
     interface = configuration_gui.ConsoleConfigurationInterface()
     current_config = StandaloneConfig.create_default()
-    responses = iter(["abc", "789"])
+    responses = iter(["abc", "789", "xyz", "987"])
 
     monkeypatch.setattr("builtins.input", lambda _prompt: next(responses))
 
     updated = interface.show_configuration_dialog(current_config)
 
     assert updated.discord.member_id == "789"
+    assert updated.discord.guild_id == "987"
     assert "deve conter apenas números" in capsys.readouterr().out.lower()
 
 
@@ -191,6 +194,7 @@ def test_gui_create_widgets_builds_form_variables(monkeypatch):
     interface.root = DummyRoot()
     interface._current_config = StandaloneConfig.create_default()
     interface._current_config.discord.member_id = "123"
+    interface._current_config.discord.guild_id = "456"
     interface._current_config.discord.bot_url = "http://bot"
     interface._current_config.tts.engine = "edge-tts"
     interface._current_config.tts.language = "en"
@@ -201,6 +205,7 @@ def test_gui_create_widgets_builds_form_variables(monkeypatch):
     interface._create_widgets()
 
     assert interface.member_id_var.get() == "123"
+    assert interface.guild_id_var.get() == "456"
     assert interface.bot_url_var.get() == "http://bot"
     assert interface.engine_var.get() == "edge-tts"
     assert interface.language_var.get() == "en"
@@ -210,6 +215,7 @@ def test_gui_save_config_requires_member_id(monkeypatch):
     interface = configuration_gui.GUIConfigurationInterface()
     interface._current_config = StandaloneConfig.create_default()
     interface.member_id_var = DummyVar("   ")
+    interface.guild_id_var = DummyVar("456")
     interface.bot_url_var = DummyVar("http://bot")
     interface.engine_var = DummyVar("gtts")
     interface.language_var = DummyVar("pt")
@@ -227,6 +233,7 @@ def test_gui_save_config_requires_numeric_member_id(monkeypatch):
     interface = configuration_gui.GUIConfigurationInterface()
     interface._current_config = StandaloneConfig.create_default()
     interface.member_id_var = DummyVar("abc")
+    interface.guild_id_var = DummyVar("456")
     interface.bot_url_var = DummyVar("http://bot")
     interface.engine_var = DummyVar("gtts")
     interface.language_var = DummyVar("pt")
@@ -240,10 +247,47 @@ def test_gui_save_config_requires_numeric_member_id(monkeypatch):
     assert errors == [("Erro", "Discord User ID deve conter apenas números!")]
 
 
+def test_gui_save_config_requires_guild_id(monkeypatch):
+    interface = configuration_gui.GUIConfigurationInterface()
+    interface._current_config = StandaloneConfig.create_default()
+    interface.member_id_var = DummyVar("123")
+    interface.guild_id_var = DummyVar("   ")
+    interface.bot_url_var = DummyVar("http://bot")
+    interface.engine_var = DummyVar("gtts")
+    interface.language_var = DummyVar("pt")
+    errors = []
+
+    monkeypatch.setattr(configuration_gui.messagebox, "showerror", lambda title, message: errors.append((title, message)))
+
+    interface._save_config()
+
+    assert interface.result is None
+    assert errors == [("Erro", "Discord Guild ID é obrigatório!")]
+
+
+def test_gui_save_config_requires_numeric_guild_id(monkeypatch):
+    interface = configuration_gui.GUIConfigurationInterface()
+    interface._current_config = StandaloneConfig.create_default()
+    interface.member_id_var = DummyVar("123")
+    interface.guild_id_var = DummyVar("abc")
+    interface.bot_url_var = DummyVar("http://bot")
+    interface.engine_var = DummyVar("gtts")
+    interface.language_var = DummyVar("pt")
+    errors = []
+
+    monkeypatch.setattr(configuration_gui.messagebox, "showerror", lambda title, message: errors.append((title, message)))
+
+    interface._save_config()
+
+    assert interface.result is None
+    assert errors == [("Erro", "Discord Guild ID deve conter apenas números!")]
+
+
 def test_gui_save_config_reports_validation_errors(monkeypatch):
     interface = configuration_gui.GUIConfigurationInterface()
     interface._current_config = StandaloneConfig.create_default()
     interface.member_id_var = DummyVar("123")
+    interface.guild_id_var = DummyVar("456")
     interface.bot_url_var = DummyVar("http://bot")
     interface.engine_var = DummyVar("gtts")
     interface.language_var = DummyVar("pt")
@@ -268,6 +312,7 @@ def test_gui_save_config_updates_result_and_closes_window(monkeypatch):
     current_config.discord.bot_url = "http://old-bot"
     interface._current_config = current_config
     interface.member_id_var = DummyVar("123")
+    interface.guild_id_var = DummyVar("456")
     interface.bot_url_var = DummyVar("http://new-bot")
     interface.engine_var = DummyVar("pyttsx3")
     interface.language_var = DummyVar("en")
@@ -280,6 +325,7 @@ def test_gui_save_config_updates_result_and_closes_window(monkeypatch):
 
     assert interface.result is not None
     assert interface.result.discord.member_id == "123"
+    assert interface.result.discord.guild_id == "456"
     assert interface.result.discord.bot_url == "http://new-bot"
     assert interface.result.tts.engine == "pyttsx3"
     assert interface.result.tts.language == "en"
@@ -290,8 +336,10 @@ def test_gui_save_config_preserves_existing_bot_url_when_blank(monkeypatch):
     interface = configuration_gui.GUIConfigurationInterface()
     current_config = StandaloneConfig.create_default()
     current_config.discord.bot_url = "http://existing-bot"
+    current_config.discord.guild_id = "999"
     interface._current_config = current_config
     interface.member_id_var = DummyVar("123")
+    interface.guild_id_var = DummyVar("999")
     interface.bot_url_var = DummyVar("   ")
     interface.engine_var = DummyVar("gtts")
     interface.language_var = DummyVar("pt")
@@ -327,6 +375,7 @@ def test_configuration_display_service_shows_local_mode_without_optional_depende
     config = StandaloneConfig.create_default()
     config.discord.bot_url = ""
     config.discord.member_id = None
+    config.discord.guild_id = None
 
     original_import = __import__
 
@@ -350,6 +399,7 @@ def test_configuration_display_service_shows_discord_mode_when_requests_is_avail
     config = StandaloneConfig.create_default()
     config.discord.bot_url = "http://localhost:10000"
     config.discord.member_id = "123"
+    config.discord.guild_id = "456"
 
     original_import = __import__
 

@@ -45,6 +45,16 @@ class ConsoleConfigurationInterface(ConfigurationInterface):
             if member_id and member_id.isdigit():
                 break
             print("❌ Discord User ID deve conter apenas números!")
+
+        current_guild_id = current_config.discord.guild_id or ""
+        while True:
+            guild_id = input(f"Discord Guild ID [{current_guild_id}]: ").strip()
+            if not guild_id and current_guild_id:
+                guild_id = current_guild_id
+                break
+            if guild_id and guild_id.isdigit():
+                break
+            print("❌ Discord Guild ID deve conter apenas números!")
         
         # Update configuration
         updated_config = StandaloneConfig(
@@ -55,6 +65,7 @@ class ConsoleConfigurationInterface(ConfigurationInterface):
             network=current_config.network
         )
         updated_config.discord.member_id = member_id
+        updated_config.discord.guild_id = guild_id
         
         print("✅ Configuração atualizada!")
         return updated_config
@@ -70,6 +81,7 @@ class GUIConfigurationInterface(ConfigurationInterface):
         
         # Form variables
         self.member_id_var: Optional[tk.StringVar] = None
+        self.guild_id_var: Optional[tk.StringVar] = None
         self.bot_url_var: Optional[tk.StringVar] = None
         self.engine_var: Optional[tk.StringVar] = None
         self.language_var: Optional[tk.StringVar] = None
@@ -160,6 +172,22 @@ class GUIConfigurationInterface(ConfigurationInterface):
                                 "2. Clique com botão direito em seu nome e escolha 'Copiar ID'")
         help_text.config(state="disabled", bg="#f0f0f0")
         help_text.pack(fill="x", pady=(0, 10))
+
+        ttk.Label(
+            discord_frame,
+            text="Discord Guild ID (obrigatório):",
+            font=("Arial", 10, "bold")
+        ).pack(anchor="w", pady=(0, 5))
+
+        self.guild_id_var = tk.StringVar(value=self._current_config.discord.guild_id or "")
+        guild_id_entry = ttk.Entry(discord_frame, textvariable=self.guild_id_var, width=50)
+        guild_id_entry.pack(fill="x", pady=(0, 5))
+
+        guild_help_text = tk.Text(discord_frame, height=2, wrap=tk.WORD, font=("Arial", 8))
+        guild_help_text.insert("1.0", "💡 Para obter o Guild ID:\n"
+                                      "1. No Discord, clique com botão direito no servidor e escolha 'Copiar ID'")
+        guild_help_text.config(state="disabled", bg="#f0f0f0")
+        guild_help_text.pack(fill="x", pady=(0, 10))
         
         # Bot URL
         ttk.Label(discord_frame, text="URL do Bot (opcional):").pack(anchor="w", pady=(0, 5))
@@ -216,6 +244,7 @@ class GUIConfigurationInterface(ConfigurationInterface):
     def _save_config(self) -> None:
         """Save configuration and close."""
         member_id = self.member_id_var.get().strip()
+        guild_id = self.guild_id_var.get().strip()
         
         if not member_id:
             messagebox.showerror("Erro", "Discord User ID é obrigatório!")
@@ -223,6 +252,14 @@ class GUIConfigurationInterface(ConfigurationInterface):
         
         if not member_id.isdigit():
             messagebox.showerror("Erro", "Discord User ID deve conter apenas números!")
+            return
+
+        if not guild_id:
+            messagebox.showerror("Erro", "Discord Guild ID é obrigatório!")
+            return
+
+        if not guild_id.isdigit():
+            messagebox.showerror("Erro", "Discord Guild ID deve conter apenas números!")
             return
         
         # Create updated configuration
@@ -236,6 +273,7 @@ class GUIConfigurationInterface(ConfigurationInterface):
         
         # Update values
         updated_config.discord.member_id = member_id
+        updated_config.discord.guild_id = guild_id
         updated_config.discord.bot_url = self.bot_url_var.get().strip() or self._current_config.discord.bot_url
         updated_config.tts.engine = self.engine_var.get()
         updated_config.tts.language = self.language_var.get()
@@ -285,6 +323,8 @@ class ConfigurationDisplayService:
         # Discord Configuration
         print("🌐 DISCORD:")
         print(f"   Bot URL: {config.discord.bot_url or 'Não configurado'}")
+        if config.discord.guild_id:
+            print(f"   🏠 Guild ID: {config.discord.guild_id}")
         if config.discord.channel_id:
             print(f"   📺 Channel ID: {config.discord.channel_id}")
         if config.discord.member_id:
@@ -341,9 +381,9 @@ class ConfigurationDisplayService:
         print(f"   System Tray: {'✅' if _pystray_available else '❌'}")
         
         print("\n📝 COMO CONFIGURAR:")
-        if not config.discord.member_id:
+        if not config.discord.member_id or not config.discord.guild_id:
             print("   ⚠️  Na primeira execução, uma janela aparecerá para configuração")
-        print("   1. Insira seu Discord User ID (obrigatório)")
+        print("   1. Insira seu Discord User ID e Guild ID (obrigatórios)")
         print("   2. Configure outras opções se necessário")
         print("   3. Clique em 'Salvar e Continuar'")
         print("   4. Use {texto} para falar!")
@@ -356,7 +396,7 @@ class ConfigurationDisplayService:
         print("     Windows: %LOCALAPPDATA%/TTS-Hotkey/config.json")
         
         print("\n💡 DICAS IMPORTANTES:")
-        print("   • Configure DISCORD_MEMBER_ID para melhor detecção do canal")
+        print("   • Configure DISCORD_MEMBER_ID e DISCORD_GUILD_ID para usar o bot com isolamento por servidor")
         print("   • Bot tenta conectar automaticamente onde você estiver")
         print("   • Bot sai da sala após 30 minutos de inatividade")
         print("   • Use /join no Discord se precisar conectar manualmente")

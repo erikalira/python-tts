@@ -219,8 +219,9 @@ class StandaloneApplication:
             return
 
         logger.info(
-            "[APP] Config atual: bot_url=%s, member_id=%s, engine=%s, hotkey=%s",
+            "[APP] Config atual: bot_url=%s, guild_id=%s, member_id=%s, engine=%s, hotkey=%s",
             self._config.discord.bot_url,
+            self._config.discord.guild_id,
             self._config.discord.member_id,
             self._config.tts.engine,
             self._config.hotkey.keys,
@@ -265,6 +266,7 @@ class StandaloneApplication:
         
         if status['discord_configured']:
             print(f"✅ Discord: {self._config.discord.bot_url}")
+            print(f"🏠 Guild ID: {self._config.discord.guild_id}")
             print(f"👤 User ID: {self._config.discord.member_id}")
         else:
             print("⚠️ Discord não configurado completamente")
@@ -320,6 +322,7 @@ class StandaloneApplication:
             'discord_configured': (
                 self._config and 
                 self._config.discord.bot_url and 
+                self._config.discord.guild_id and
                 self._config.discord.member_id
             ),
             'hotkey_active': (

@@ -47,6 +47,7 @@ class TTSConfig:
 class DiscordConfig:
     """Discord bot configuration."""
     bot_url: str = os.getenv('DISCORD_BOT_URL', 'localhost:10000')
+    guild_id: Optional[str] = os.getenv('DISCORD_GUILD_ID')
     channel_id: Optional[str] = os.getenv('DISCORD_CHANNEL_ID')
     member_id: Optional[str] = os.getenv('DISCORD_MEMBER_ID')
 
@@ -134,6 +135,7 @@ class ConfigurationRepository:
                 ),
                 discord=DiscordConfig(
                     bot_url=os.getenv('DISCORD_BOT_URL') or data.get('discord_bot_url'),
+                    guild_id=os.getenv('DISCORD_GUILD_ID') or data.get('discord_guild_id'),
                     channel_id=os.getenv('DISCORD_CHANNEL_ID') or data.get('discord_channel_id'),
                     member_id=os.getenv('DISCORD_MEMBER_ID') or data.get('discord_member_id')
                 ),
@@ -165,6 +167,7 @@ class ConfigurationRepository:
                 'tts_rate': config.tts.rate,
                 'tts_output_device': config.tts.output_device,
                 'discord_bot_url': config.discord.bot_url,
+                'discord_guild_id': config.discord.guild_id,
                 'discord_channel_id': config.discord.channel_id,
                 'discord_member_id': config.discord.member_id,
                 'trigger_open': config.hotkey.trigger_open,
@@ -194,6 +197,9 @@ class EnvironmentUpdater:
         """Update environment variables from configuration."""
         os.environ['DISCORD_BOT_URL'] = config.discord.bot_url
         
+        if config.discord.guild_id:
+            os.environ['DISCORD_GUILD_ID'] = config.discord.guild_id
+        
         if config.discord.channel_id:
             os.environ['DISCORD_CHANNEL_ID'] = config.discord.channel_id
         
@@ -207,7 +213,11 @@ class EnvironmentUpdater:
         if config.tts.output_device:
             os.environ['TTS_OUTPUT_DEVICE'] = config.tts.output_device
         
-        print(f"[CONFIG] ✅ Variáveis de ambiente atualizadas - DISCORD_MEMBER_ID: {config.discord.member_id}")
+        print(
+            "[CONFIG] ✅ Variáveis de ambiente atualizadas - "
+            f"DISCORD_GUILD_ID: {config.discord.guild_id}, "
+            f"DISCORD_MEMBER_ID: {config.discord.member_id}"
+        )
 
 
 class ConfigurationValidator:
@@ -221,6 +231,10 @@ class ConfigurationValidator:
         # Discord Member ID validation (if provided)
         if config.discord.member_id and not config.discord.member_id.isdigit():
             errors.append("Discord Member ID deve conter apenas números")
+
+        # Discord Guild ID validation (if provided)
+        if config.discord.guild_id and not config.discord.guild_id.isdigit():
+            errors.append("Discord Guild ID deve conter apenas números")
         
         # TTS Rate validation
         if config.tts.rate < 50 or config.tts.rate > 500:
@@ -239,4 +253,9 @@ class ConfigurationValidator:
     @staticmethod
     def is_configured(config: StandaloneConfig) -> bool:
         """Check if minimum configuration is present."""
-        return config.discord.member_id is not None and len(config.discord.member_id.strip()) > 0
+        return (
+            config.discord.member_id is not None
+            and len(config.discord.member_id.strip()) > 0
+            and config.discord.guild_id is not None
+            and len(config.discord.guild_id.strip()) > 0
+        )

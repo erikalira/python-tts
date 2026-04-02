@@ -37,7 +37,7 @@ class FakeDiscordBotClient:
         return self.available
 
     def build_request(self, text):
-        return DiscordSpeakRequest(text=text, channel_id="10", member_id="20")
+        return DiscordSpeakRequest(text=text, guild_id="30", channel_id="10", member_id="20")
 
     def send_speak_request(self, request):
         self.requests.append(request)
@@ -47,13 +47,14 @@ class FakeDiscordBotClient:
 def test_http_discord_bot_client_builds_payload_and_url():
     config = StandaloneConfig.create_default()
     config.discord.bot_url = "http://localhost:10000/"
+    config.discord.guild_id = "30"
     config.discord.channel_id = "10"
     config.discord.member_id = "20"
 
     client = HttpDiscordBotClient(config)
     request = client.build_request("hello")
 
-    assert request.to_payload() == {"text": "hello", "channel_id": "10", "member_id": "20"}
+    assert request.to_payload() == {"text": "hello", "guild_id": "30", "channel_id": "10", "member_id": "20"}
     assert client.get_speak_url() == "http://localhost:10000/speak"
 
 
@@ -64,7 +65,7 @@ def test_discord_tts_service_builds_payload_and_sends_request(monkeypatch):
 
     assert service.speak("hello") is True
     assert len(bot_client.requests) == 1
-    assert bot_client.requests[0].to_payload() == {"text": "hello", "channel_id": "10", "member_id": "20"}
+    assert bot_client.requests[0].to_payload() == {"text": "hello", "guild_id": "30", "channel_id": "10", "member_id": "20"}
 
 
 def test_discord_tts_service_handles_http_error(monkeypatch):
