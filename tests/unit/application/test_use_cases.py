@@ -4,6 +4,12 @@ import asyncio
 import pytest
 from src.application.use_cases import (
     ConfigureTTSUseCase,
+    JoinVoiceChannelUseCase,
+    LeaveVoiceChannelUseCase,
+    JOIN_RESULT_OK,
+    JOIN_RESULT_USER_NOT_IN_CHANNEL,
+    LEAVE_RESULT_NOT_CONNECTED,
+    LEAVE_RESULT_OK,
     SpeakTextUseCase,
     SPEAK_RESULT_MISSING_TEXT,
     SPEAK_RESULT_OK,
@@ -262,6 +268,52 @@ class TestConfigureTTSUseCase:
         
         assert result["success"] is False
         assert "Invalid engine" in result["message"]
+
+
+@pytest.mark.asyncio
+class TestVoiceChannelUseCases:
+    """Test voice channel connection use cases."""
+
+    async def test_join_voice_channel_success(self, mock_channel_repository):
+        """Join use case should connect to the member channel."""
+        use_case = JoinVoiceChannelUseCase(mock_channel_repository)
+
+        result = await use_case.execute(guild_id=789012, member_id=345678)
+
+        assert result["success"] is True
+        assert result["code"] == JOIN_RESULT_OK
+        assert mock_channel_repository.channel.is_connected() is True
+
+    async def test_join_voice_channel_requires_member_channel(self):
+        """Join use case should fail when the member is not in voice."""
+        from tests.conftest import MockVoiceChannelRepository
+
+        use_case = JoinVoiceChannelUseCase(MockVoiceChannelRepository(return_none=True))
+
+        result = await use_case.execute(guild_id=789012, member_id=345678)
+
+        assert result["success"] is False
+        assert result["code"] == JOIN_RESULT_USER_NOT_IN_CHANNEL
+
+    async def test_leave_voice_channel_success(self, mock_channel_repository):
+        """Leave use case should disconnect an active guild voice channel."""
+        use_case = LeaveVoiceChannelUseCase(mock_channel_repository)
+        await mock_channel_repository.channel.connect()
+
+        result = await use_case.execute(guild_id=789012)
+
+        assert result["success"] is True
+        assert result["code"] == LEAVE_RESULT_OK
+        assert mock_channel_repository.channel.is_connected() is False
+
+    async def test_leave_voice_channel_when_not_connected(self, mock_channel_repository):
+        """Leave use case should report not connected when no voice session exists."""
+        use_case = LeaveVoiceChannelUseCase(mock_channel_repository)
+
+        result = await use_case.execute(guild_id=789012)
+
+        assert result["success"] is False
+        assert result["code"] == LEAVE_RESULT_NOT_CONNECTED
     
     @pytest.mark.asyncio
     async def test_update_multiple_settings(self, mock_config_repository):

@@ -4,7 +4,18 @@ import discord
 from discord import app_commands
 from src.application.use_cases import (
     ConfigureTTSUseCase,
+    JoinVoiceChannelUseCase,
+    LeaveVoiceChannelUseCase,
     SpeakTextUseCase,
+    JOIN_RESULT_MISSING_GUILD_ID,
+    JOIN_RESULT_OK,
+    JOIN_RESULT_USER_NOT_IN_CHANNEL,
+    JOIN_RESULT_VOICE_CHANNEL_NOT_FOUND,
+    JOIN_RESULT_VOICE_CONNECTION_FAILED,
+    LEAVE_RESULT_MISSING_GUILD_ID,
+    LEAVE_RESULT_NOT_CONNECTED,
+    LEAVE_RESULT_OK,
+    LEAVE_RESULT_VOICE_CONNECTION_FAILED,
     SPEAK_RESULT_CROSS_GUILD_CHANNEL,
     SPEAK_RESULT_MISSING_GUILD_ID,
     SPEAK_RESULT_MISSING_TEXT,
@@ -76,7 +87,8 @@ class DiscordCommands:
         tree: app_commands.CommandTree,
         speak_use_case: SpeakTextUseCase,
         config_use_case: ConfigureTTSUseCase,
-        channel_repository
+        join_use_case: JoinVoiceChannelUseCase,
+        leave_use_case: LeaveVoiceChannelUseCase,
     ):
         """Initialize commands with dependencies.
         
@@ -89,7 +101,8 @@ class DiscordCommands:
         self._tree = tree
         self._speak_use_case = speak_use_case
         self._config_use_case = config_use_case
-        self._channel_repository = channel_repository
+        self._join_use_case = join_use_case
+        self._leave_use_case = leave_use_case
         
         # Register commands
         self._register_commands()
@@ -177,50 +190,72 @@ class DiscordCommands:
             )
             return
         
-        member = interaction.user
-        if not isinstance(member, discord.Member) and interaction.guild:
-            member = interaction.guild.get_member(member.id)
-        
-        if member and member.voice and member.voice.channel:
-            await interaction.response.defer(ephemeral=True)
-            try:
-                channel = await self._channel_repository.find_by_channel_id(member.voice.channel.id)
-                if channel:
-                    await channel.connect()
-                    await interaction.edit_original_response(content='Joined your channel.')
-                else:
-                    await interaction.edit_original_response(content='Could not find voice channel.')
-            except Exception as e:
-                logger.error(f"[JOIN] Error joining channel: {e}", exc_info=True)
-                error_msg = str(e).lower()
-                
-                # Simple error handling
-                try:
-                    if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
-                        await self._send_bot_inactive_message(interaction)
-                    else:
-                        await interaction.edit_original_response(content='❌ Não foi possível entrar no canal. Tente novamente.')
-                except:
-                    logger.error(f"[JOIN] Failed to send error response")
-        else:
-            await interaction.response.send_message(
+        guild_id = interaction.guild.id if interaction.guild else None
+        member_id = interaction.user.id if interaction.user else None
+
+        await interaction.response.defer(ephemeral=True)
+        result = await self._join_use_case.execute(guild_id=guild_id, member_id=member_id)
+
+        if result.get("code") == JOIN_RESULT_OK:
+            await interaction.edit_original_response(content='Joined your channel.')
+            return
+
+        if result.get("code") == JOIN_RESULT_USER_NOT_IN_CHANNEL:
+            await interaction.edit_original_response(
                 'You are not connected to a voice channel.',
-                ephemeral=True
             )
+            return
+
+        if result.get("code") == JOIN_RESULT_MISSING_GUILD_ID:
+            await interaction.edit_original_response(content='❌ Este comando só pode ser usado em um servidor.')
+            return
+
+        if result.get("code") == JOIN_RESULT_VOICE_CHANNEL_NOT_FOUND:
+            await interaction.edit_original_response(content='Could not find voice channel.')
+            return
+
+        if result.get("code") == JOIN_RESULT_VOICE_CONNECTION_FAILED:
+            error_msg = result.get("error_detail", "").lower()
+            if 'interpreter shutdown' in error_msg or 'cannot schedule new futures' in error_msg:
+                await self._send_bot_inactive_message(interaction)
+            else:
+                await interaction.edit_original_response(content='❌ Não foi possível entrar no canal. Tente novamente.')
+            return
+
+        await interaction.edit_original_response(content='❌ Não foi possível entrar no canal. Tente novamente.')
     
     async def _handle_leave(self, interaction: discord.Interaction):
         """Handle /leave command."""
-        if interaction.guild and interaction.guild.voice_client:
-            try:
-                await interaction.guild.voice_client.disconnect()
-                await interaction.response.send_message('Disconnected.', ephemeral=True)
-            except Exception as e:
-                await interaction.response.send_message(f'Error disconnecting: {e}', ephemeral=True)
-        else:
+        guild_id = interaction.guild.id if interaction.guild else None
+        result = await self._leave_use_case.execute(guild_id=guild_id)
+
+        if result.get("code") == LEAVE_RESULT_OK:
+            await interaction.response.send_message('Disconnected.', ephemeral=True)
+            return
+
+        if result.get("code") == LEAVE_RESULT_NOT_CONNECTED:
             await interaction.response.send_message(
                 'I am not connected to a voice channel.',
                 ephemeral=True
             )
+            return
+
+        if result.get("code") == LEAVE_RESULT_MISSING_GUILD_ID:
+            await interaction.response.send_message(
+                '❌ Este comando só pode ser usado em um servidor.',
+                ephemeral=True
+            )
+            return
+
+        if result.get("code") == LEAVE_RESULT_VOICE_CONNECTION_FAILED:
+            detail = result.get("error_detail")
+            if detail:
+                await interaction.response.send_message(f'Error disconnecting: {detail}', ephemeral=True)
+            else:
+                await interaction.response.send_message('Error disconnecting.', ephemeral=True)
+            return
+
+        await interaction.response.send_message('Error disconnecting.', ephemeral=True)
     
     async def _handle_speak(self, interaction: discord.Interaction, text: str):
         """Handle /speak command.

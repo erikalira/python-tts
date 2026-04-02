@@ -3,7 +3,12 @@ import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from discord import app_commands
 from src.presentation.discord_commands import DiscordCommands
-from src.application.use_cases import SpeakTextUseCase, ConfigureTTSUseCase
+from src.application.use_cases import (
+    ConfigureTTSUseCase,
+    JoinVoiceChannelUseCase,
+    LeaveVoiceChannelUseCase,
+    SpeakTextUseCase,
+)
 
 
 class TestDiscordCommands:
@@ -25,6 +30,8 @@ class TestDiscordCommands:
             mock_audio_queue
         )
         config_use_case = ConfigureTTSUseCase(mock_config_repository)
+        join_use_case = JoinVoiceChannelUseCase(mock_channel_repository)
+        leave_use_case = LeaveVoiceChannelUseCase(mock_channel_repository)
         
         tree = Mock(spec=app_commands.CommandTree)
         tree.command = Mock(return_value=lambda func: func)
@@ -33,7 +40,8 @@ class TestDiscordCommands:
             tree,
             speak_use_case,
             config_use_case,
-            mock_channel_repository
+            join_use_case,
+            leave_use_case,
         )
     
     def test_initialization(self, commands_instance):
@@ -41,7 +49,8 @@ class TestDiscordCommands:
         assert commands_instance._tree is not None
         assert commands_instance._speak_use_case is not None
         assert commands_instance._config_use_case is not None
-        assert commands_instance._channel_repository is not None
+        assert commands_instance._join_use_case is not None
+        assert commands_instance._leave_use_case is not None
     
     @pytest.mark.asyncio
     async def test_handle_speak_command_success(
@@ -171,17 +180,25 @@ class TestDiscordCommands:
     @pytest.mark.asyncio
     async def test_handle_join_no_voice_channel(self, commands_instance):
         """Test /join when user is not in voice channel."""
+        commands_instance._join_use_case.execute = AsyncMock(
+            return_value={"success": False, "code": "user_not_in_channel"}
+        )
         interaction = Mock()
         interaction.user = Mock()
-        interaction.user.voice = None
-        interaction.guild = None
+        interaction.user.id = 123
+        interaction.guild = Mock()
+        interaction.guild.id = 456
         interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
         
-        with patch('src.presentation.discord_commands.HAS_PYNACL', True):
+        with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
+             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
+             patch('src.presentation.discord_commands.HAS_FFMPEG', True):
             await commands_instance._handle_join(interaction)
         
-        interaction.response.send_message.assert_called_once()
-        call_args = interaction.response.send_message.call_args
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
+        call_args = interaction.edit_original_response.call_args
         assert "not connected" in call_args[0][0].lower()
     
     @pytest.mark.asyncio
@@ -194,27 +211,54 @@ class TestDiscordCommands:
             await commands_instance._handle_join(interaction)
         
         interaction.response.send_message.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_join_success(self, commands_instance):
+        """Test /join delegates success handling to the use case."""
+        commands_instance._join_use_case.execute = AsyncMock(
+            return_value={"success": True, "code": "ok"}
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 123
+        interaction.guild = Mock()
+        interaction.guild.id = 456
+        interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
+             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
+             patch('src.presentation.discord_commands.HAS_FFMPEG', True):
+            await commands_instance._handle_join(interaction)
+
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once_with(content='Joined your channel.')
     
     @pytest.mark.asyncio
     async def test_handle_leave(self, commands_instance):
         """Test /leave command."""
+        commands_instance._leave_use_case.execute = AsyncMock(
+            return_value={"success": True, "code": "ok"}
+        )
         interaction = Mock()
         interaction.guild = Mock()
-        voice_client = AsyncMock()
-        interaction.guild.voice_client = voice_client
+        interaction.guild.id = 67890
         interaction.response = AsyncMock()
         
         await commands_instance._handle_leave(interaction)
         
-        voice_client.disconnect.assert_called_once()
         interaction.response.send_message.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_handle_leave_not_connected(self, commands_instance):
         """Test /leave when bot is not connected."""
+        commands_instance._leave_use_case.execute = AsyncMock(
+            return_value={"success": False, "code": "not_connected"}
+        )
         interaction = Mock()
         interaction.guild = Mock()
-        interaction.guild.voice_client = None
+        interaction.guild.id = 67890
         interaction.response = AsyncMock()
         
         await commands_instance._handle_leave(interaction)

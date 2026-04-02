@@ -7,7 +7,12 @@ import discord
 from discord import app_commands
 import importlib.util
 from config.settings import Config
-from src.application.use_cases import SpeakTextUseCase, ConfigureTTSUseCase
+from src.application.use_cases import (
+    ConfigureTTSUseCase,
+    JoinVoiceChannelUseCase,
+    LeaveVoiceChannelUseCase,
+    SpeakTextUseCase,
+)
 from src.infrastructure.tts.engines import TTSEngineFactory
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
@@ -62,6 +67,14 @@ class Container:
         self.config_use_case = ConfigureTTSUseCase(
             config_repository=self.config_repository
         )
+
+        self.join_use_case = JoinVoiceChannelUseCase(
+            channel_repository=self.voice_channel_repository
+        )
+
+        self.leave_use_case = LeaveVoiceChannelUseCase(
+            channel_repository=self.voice_channel_repository
+        )
         
         # Controllers
         self.speak_controller = SpeakController(self.speak_use_case)
@@ -71,7 +84,8 @@ class Container:
             tree=self.command_tree,
             speak_use_case=self.speak_use_case,
             config_use_case=self.config_use_case,
-            channel_repository=self.voice_channel_repository
+            join_use_case=self.join_use_case,
+            leave_use_case=self.leave_use_case,
         )
 
         self._log_voice_runtime_status()

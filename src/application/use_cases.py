@@ -20,6 +20,77 @@ SPEAK_RESULT_PLAYBACK_TIMEOUT = "playback_timeout"
 SPEAK_RESULT_VOICE_CONNECTION_FAILED = "voice_connection_failed"
 SPEAK_RESULT_VOICE_PERMISSION_DENIED = "voice_permission_denied"
 SPEAK_RESULT_UNKNOWN_ERROR = "unknown_error"
+JOIN_RESULT_OK = "ok"
+JOIN_RESULT_MISSING_GUILD_ID = "missing_guild_id"
+JOIN_RESULT_USER_NOT_IN_CHANNEL = "user_not_in_channel"
+JOIN_RESULT_VOICE_CHANNEL_NOT_FOUND = "voice_channel_not_found"
+JOIN_RESULT_VOICE_CONNECTION_FAILED = "voice_connection_failed"
+LEAVE_RESULT_OK = "ok"
+LEAVE_RESULT_MISSING_GUILD_ID = "missing_guild_id"
+LEAVE_RESULT_NOT_CONNECTED = "not_connected"
+LEAVE_RESULT_VOICE_CONNECTION_FAILED = "voice_connection_failed"
+
+
+class JoinVoiceChannelUseCase:
+    """Use case for connecting the bot to a member's current voice channel."""
+
+    def __init__(self, channel_repository: IVoiceChannelRepository):
+        self._channel_repository = channel_repository
+
+    async def execute(self, guild_id: Optional[int], member_id: Optional[int]) -> dict:
+        """Connect the bot to the member's current voice channel."""
+        if guild_id is None:
+            return {"success": False, "code": JOIN_RESULT_MISSING_GUILD_ID}
+
+        if member_id is None:
+            return {"success": False, "code": JOIN_RESULT_USER_NOT_IN_CHANNEL}
+
+        channel = await self._channel_repository.find_by_member_id(member_id)
+        if not channel:
+            return {"success": False, "code": JOIN_RESULT_USER_NOT_IN_CHANNEL}
+
+        if channel.get_guild_id() != guild_id:
+            return {"success": False, "code": JOIN_RESULT_VOICE_CHANNEL_NOT_FOUND}
+
+        try:
+            await channel.connect()
+        except Exception as exc:
+            logger.error(f"[JOIN_USE_CASE] Failed to connect to voice channel: {exc}", exc_info=True)
+            return {
+                "success": False,
+                "code": JOIN_RESULT_VOICE_CONNECTION_FAILED,
+                "error_detail": str(exc),
+            }
+
+        return {"success": True, "code": JOIN_RESULT_OK}
+
+
+class LeaveVoiceChannelUseCase:
+    """Use case for disconnecting the bot from a guild voice channel."""
+
+    def __init__(self, channel_repository: IVoiceChannelRepository):
+        self._channel_repository = channel_repository
+
+    async def execute(self, guild_id: Optional[int]) -> dict:
+        """Disconnect the bot from the current guild voice channel."""
+        if guild_id is None:
+            return {"success": False, "code": LEAVE_RESULT_MISSING_GUILD_ID}
+
+        channel = await self._channel_repository.find_by_guild_id(guild_id)
+        if not channel or not channel.is_connected():
+            return {"success": False, "code": LEAVE_RESULT_NOT_CONNECTED}
+
+        try:
+            await channel.disconnect()
+        except Exception as exc:
+            logger.error(f"[LEAVE_USE_CASE] Failed to disconnect from voice channel: {exc}", exc_info=True)
+            return {
+                "success": False,
+                "code": LEAVE_RESULT_VOICE_CONNECTION_FAILED,
+                "error_detail": str(exc),
+            }
+
+        return {"success": True, "code": LEAVE_RESULT_OK}
 
 
 class SpeakTextUseCase:
