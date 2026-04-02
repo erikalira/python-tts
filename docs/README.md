@@ -1,10 +1,10 @@
 # Documentação
 
-Este diretório reúne a documentação complementar do projeto. O `README.md` da raiz fica propositalmente curto; os detalhes estão centralizados aqui e no `BUILD_GUIDE.md`.
+Este diretório reúne a documentação complementar do projeto. O `README.md` da raiz fica propositalmente curto; os detalhes estão centralizados aqui e em `docs/BUILD_GUIDE.md`.
 
 ## Guias principais
 
-- [../BUILD_GUIDE.md](../BUILD_GUIDE.md): build do executável Windows
+- [BUILD_GUIDE.md](BUILD_GUIDE.md): build do executável Windows
 - [ARCHITECTURE.md](ARCHITECTURE.md): visão de arquitetura e organização das camadas
 - [README_STANDALONE.md](README_STANDALONE.md): foco no app standalone
 - [HOTKEY_SETUP.md](HOTKEY_SETUP.md): configuração e uso das hotkeys

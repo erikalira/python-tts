@@ -16,7 +16,7 @@ O repositório segue Clean Architecture e busca reutilizar lógica entre os dois
 - `app.py`: inicia o app standalone/hotkey
 - `src/`: camadas principais da aplicação
 - `docs/`: documentação complementar
-- `BUILD_GUIDE.md`: guia de build do executável Windows
+- `docs/BUILD_GUIDE.md`: guia de build do executável Windows
 
 ## Requisitos
 
@@ -63,12 +63,22 @@ python app.py
 pytest
 ```
 
+## Build do executavel Windows
+
+No Windows, use o script oficial:
+
+```powershell
+./scripts/build/build_clean_architecture.ps1
+```
+
+No Linux, o build do `.exe` pode ser feito via Docker, seguindo o mesmo fluxo automatizado usado em CI.
+
 ## Documentação
 
 Use o README principal como ponto de entrada e deixe os detalhes nos guias específicos:
 
 - [Índice da documentação](docs/README.md)
-- [Guia de build do executável Windows](BUILD_GUIDE.md)
+- [Guia de build do executável Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
 - [Guia do app standalone](docs/README_STANDALONE.md)
 - [Configuração de hotkeys](docs/HOTKEY_SETUP.md)

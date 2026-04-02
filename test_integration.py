@@ -203,8 +203,8 @@ def main():
         print("\n🎉 TODOS OS TESTES PASSARAM!")
         print("✅ Sistema pronto para compilação")
         print("\n💡 Próximos passos:")
-        print("   • make build-windows  (versão simples)")  
-        print("   • make build-hotkey   (versão completa)")
+        print("   • No Windows: pwsh -File scripts/build/build_clean_architecture.ps1")
+        print("   • No Linux: gere o .exe via Docker, como no fluxo de CI")
         print("   • Teste o executável em máquina Windows")
         return True
     else:
