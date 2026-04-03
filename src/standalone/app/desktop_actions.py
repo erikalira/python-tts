@@ -1,4 +1,4 @@
-"""Action coordinators for the Windows desktop app runtime."""
+"""Action coordinators for the Windows Desktop App runtime."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class DesktopBotActions:
-    """Handle desktop-panel actions that talk to the Discord bot runtime."""
+    """Handle Desktop App panel actions that talk to the Discord bot runtime."""
 
     def test_bot_connection(self, config: StandaloneConfig) -> dict:
         """Test connectivity against the bot health endpoint."""
@@ -44,7 +44,7 @@ class DesktopBotActions:
             }
 
         client = HttpDiscordBotClient(config)
-        request = client.build_request("Teste rápido do TTS Hotkey.")
+        request = client.build_request("Teste rapido do Desktop App.")
         success = client.send_speak_request(request)
         if success:
             logger.info("[DESKTOP_APP] Mensagem curta de teste enviada ao bot")
@@ -55,7 +55,7 @@ class DesktopBotActions:
 
 
 class DesktopConfigurationCoordinator:
-    """Coordinate configuration edits and their side effects for the desktop app."""
+    """Coordinate configuration edits and their side effects for the Desktop App."""
 
     def __init__(
         self,
@@ -128,7 +128,7 @@ class DesktopConfigurationCoordinator:
         if not is_valid:
             logger.error("[DESKTOP_APP] Configuracao invalida: %s", "; ".join(errors))
             if notify_error:
-                notify_error("TTS Hotkey", "Configuracao invalida")
+                notify_error("Desktop App", "Configuracao invalida")
             if hotkeys_were_active:
                 resume_hotkeys()
             return None, False
@@ -139,7 +139,7 @@ class DesktopConfigurationCoordinator:
 
         logger.info("[DESKTOP_APP] Configuracao atualizada com sucesso")
         if notify_success:
-            notify_success("TTS Hotkey", "Configuracao atualizada")
+            notify_success("Desktop App", "Configuracao atualizada")
         return updated_config, True
 
     def _persist_and_apply(self, config: StandaloneConfig) -> bool:

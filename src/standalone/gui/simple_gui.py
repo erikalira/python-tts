@@ -43,7 +43,7 @@ class ConsoleConfig(ConfigInterface):
     def show_config(self, config: StandaloneConfig) -> Optional[StandaloneConfig]:
         """Show console configuration."""
         print("\n" + "="*50)
-        print("🎤 TTS Hotkey - Configuração")
+        print("🎤 Desktop App - Configuração")
         print("="*50)
         
         # Discord ID
@@ -154,7 +154,7 @@ class InitialSetupGUI:
         
         try:
             self.root = tk.Tk()
-            self.root.title("TTS Hotkey - Configuração Inicial")
+            self.root.title("Desktop App - Configuração Inicial")
             self.root.geometry("550x500")
             self.root.resizable(False, False)
             
@@ -185,7 +185,7 @@ class InitialSetupGUI:
         main_frame.pack(fill=tk.BOTH, expand=True)
         
         # Title
-        title_label = ttk.Label(main_frame, text="🎤 TTS Hotkey - Configuração Inicial", 
+        title_label = ttk.Label(main_frame, text="🎤 Desktop App - Configuração Inicial", 
                                font=('Arial', 16, 'bold'))
         title_label.pack(pady=(0, 20))
         
@@ -323,7 +323,7 @@ class InitialSetupGUI:
     def _console_initial_setup(self) -> Optional[dict]:
         """Console version of initial setup."""
         print("\n" + "="*60)
-        print("🎤 TTS Hotkey - Configuração Inicial")
+        print("🎤 Desktop App - Configuração Inicial")
         print("="*60)
         print("Para usar o TTS no Discord, configure seus IDs:")
         print("")
@@ -409,7 +409,7 @@ class GUIConfig(ConfigInterface):
         self.result = None
         
         self.root = tk.Tk()
-        self.root.title("🎤 TTS Hotkey - Configuração")
+        self.root.title("🎤 Desktop App - Configuração")
         self.root.geometry("600x500")
         self.root.resizable(True, True)
         self.root.protocol("WM_DELETE_WINDOW", self._cancel)
@@ -436,7 +436,7 @@ class GUIConfig(ConfigInterface):
         main_frame.pack(fill="both", expand=True)
         
         # Title
-        title = ttk.Label(main_frame, text="🎤 TTS Hotkey Configuration", 
+        title = ttk.Label(main_frame, text="🎤 Desktop App Configuration", 
                          font=("Arial", 14, "bold"))
         title.pack(pady=(0, 20))
         self._build_config_notebook(main_frame)
@@ -662,7 +662,7 @@ class UILogHandler(logging.Handler):
             pass
 
 
-class StandaloneMainWindow(GUIConfig):
+class DesktopAppMainWindow(GUIConfig):
     """Main Desktop App window that keeps configuration, actions, and logs visible."""
 
     def __init__(
@@ -693,7 +693,7 @@ class StandaloneMainWindow(GUIConfig):
             raise RuntimeError("Tkinter não disponível para a janela principal")
 
         self.root = tk.Tk()
-        self.root.title("TTS Hotkey - Painel Principal")
+        self.root.title("Desktop App - Painel Principal")
         self.root.geometry("980x760")
         self.root.minsize(860, 640)
         self.root.protocol("WM_DELETE_WINDOW", self._close)
@@ -731,7 +731,7 @@ class StandaloneMainWindow(GUIConfig):
         self._config_var = tk.StringVar(value="")
         self._connection_var = tk.StringVar(value="Conexão ainda não testada")
 
-        ttk.Label(main_frame, text="TTS Hotkey", font=("Arial", 18, "bold")).pack(anchor="w")
+        ttk.Label(main_frame, text="Desktop App", font=("Arial", 18, "bold")).pack(anchor="w")
         ttk.Label(
             main_frame,
             text=(
@@ -931,3 +931,6 @@ class ConfigurationService:
         # Fallback to console
         console = ConsoleConfig()
         return console.show_config(current_config)
+
+
+StandaloneMainWindow = DesktopAppMainWindow

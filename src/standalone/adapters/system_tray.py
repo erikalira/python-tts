@@ -106,7 +106,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
 
     def _create_icon(self) -> Icon:
         menu = Menu(
-            MenuItem("TTS Hotkey", self._handle_status_click, default=True),
+            MenuItem("Desktop App", self._handle_status_click, default=True),
             MenuItem(
                 f"Digite {self._config.hotkey.trigger_open}texto{self._config.hotkey.trigger_close} para falar",
                 lambda: None,
@@ -116,7 +116,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
             MenuItem("⚙️ Configurações", self._handle_configure),
             MenuItem("Sair", self._handle_quit),
         )
-        return Icon("TTS Hotkey", self._create_icon_image(), "TTS Hotkey", menu)
+        return Icon("Desktop App", self._create_icon_image(), "Desktop App", menu)
 
     def _create_icon_image(self):
         try:

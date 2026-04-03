@@ -123,7 +123,7 @@ class SystemTrayService:
 
         self._tray_thread = threading.Thread(
             target=self._tray_icon.show,
-            name="standalone-system-tray",
+            name="desktop-app-system-tray",
             daemon=True,
         )
         self._tray_thread.start()

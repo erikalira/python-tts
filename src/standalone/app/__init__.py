@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""
-Desktop App Module Init
-"""
+"""Public exports for the Desktop App runtime."""
 
-from .standalone_app import (
-    StandaloneHotkeyHandler,
+from .desktop_app import (
+    DesktopApp,
     StandaloneApplication,
+    create_desktop_application,
     create_standalone_application,
-    main
+    main,
 )
+from .tts_runtime import DesktopAppHotkeyHandler, StandaloneHotkeyHandler
 
 __all__ = [
-    'StandaloneHotkeyHandler',
-    'StandaloneApplication', 
-    'create_standalone_application',
-    'main'
+    "DesktopApp",
+    "DesktopAppHotkeyHandler",
+    "StandaloneHotkeyHandler",
+    "StandaloneApplication",
+    "create_desktop_application",
+    "create_standalone_application",
+    "main",
 ]
