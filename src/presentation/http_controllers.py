@@ -2,8 +2,11 @@
 import logging
 from aiohttp import web
 from src.application.use_cases import (
+    GetCurrentVoiceContextUseCase,
     SpeakTextUseCase,
     SPEAK_RESULT_CROSS_GUILD_CHANNEL,
+    VOICE_CONTEXT_RESULT_MEMBER_REQUIRED,
+    VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL,
     SPEAK_RESULT_MISSING_GUILD_ID,
     SPEAK_RESULT_MISSING_TEXT,
     SPEAK_RESULT_OK,
@@ -115,3 +118,33 @@ class SpeakController:
         if code in (SPEAK_RESULT_OK, SPEAK_RESULT_QUEUED):
             return 200
         return 400
+
+
+class VoiceContextController:
+    """Controller for querying the current voice context for a member."""
+
+    def __init__(self, voice_context_use_case: GetCurrentVoiceContextUseCase):
+        self._voice_context_use_case = voice_context_use_case
+
+    async def handle(self, request: web.Request) -> web.Response:
+        member_id = self._parse_int(
+            request.query.get("member_id") or request.query.get("user_id")
+        )
+        result = await self._voice_context_use_case.execute(member_id)
+        return web.json_response(result, status=self._get_status_code(result))
+
+    def _parse_int(self, value) -> int | None:
+        if value is None:
+            return None
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return None
+
+    def _get_status_code(self, result: dict) -> int:
+        code = result.get("code")
+        if code == VOICE_CONTEXT_RESULT_MEMBER_REQUIRED:
+            return 400
+        if code == VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL:
+            return 404
+        return 200

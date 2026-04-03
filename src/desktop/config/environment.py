@@ -16,12 +16,18 @@ class EnvironmentUpdater:
 
         if config.discord.guild_id:
             os.environ["DISCORD_GUILD_ID"] = config.discord.guild_id
+        else:
+            os.environ.pop("DISCORD_GUILD_ID", None)
 
         if config.discord.channel_id:
             os.environ["DISCORD_CHANNEL_ID"] = config.discord.channel_id
+        else:
+            os.environ.pop("DISCORD_CHANNEL_ID", None)
 
         if config.discord.member_id:
             os.environ["DISCORD_MEMBER_ID"] = config.discord.member_id
+        else:
+            os.environ.pop("DISCORD_MEMBER_ID", None)
 
         os.environ["TTS_ENGINE"] = config.tts.engine
         os.environ["TTS_LANGUAGE"] = config.tts.language

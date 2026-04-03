@@ -11,6 +11,7 @@ from .models import (
     InterfaceConfig,
     NetworkConfig,
     TTSConfig,
+    get_default_discord_bot_url,
 )
 from .paths import get_config_directory
 from .repository import ConfigurationRepository
@@ -26,6 +27,7 @@ __all__ = [
     "ConfigurationRepository",
     "EnvironmentUpdater",
     "ConfigurationValidator",
+    "get_default_discord_bot_url",
     "get_config_directory",
     "os",
 ]

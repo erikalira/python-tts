@@ -68,8 +68,6 @@ class ConfigurationDisplayService:
 
         print("🌐 DISCORD:")
         print(f"   Bot URL: {config.discord.bot_url or 'Não configurado'}")
-        if config.discord.guild_id:
-            print(f"   🏠 Guild ID: {config.discord.guild_id}")
         if config.discord.channel_id:
             print(f"   📺 Channel ID: {config.discord.channel_id}")
         if config.discord.member_id:
@@ -122,9 +120,9 @@ class ConfigurationDisplayService:
         print(f"   System Tray: {'✅' if _pystray_available else '❌'}")
 
         print("\n📝 COMO CONFIGURAR:")
-        if not config.discord.member_id or not config.discord.guild_id:
+        if not config.discord.member_id:
             print("   ⚠️  Na primeira execução, uma janela aparecerá para configuração")
-        print("   1. Insira seu Discord User ID e Guild ID (obrigatórios)")
+        print("   1. Insira seu Discord User ID")
         print("   2. Configure outras opções se necessário")
         print("   3. Clique em 'Salvar e Continuar'")
         print("   4. Use {texto} para falar!")
@@ -137,7 +135,7 @@ class ConfigurationDisplayService:
         print("     Windows: %LOCALAPPDATA%/TTS-Hotkey/config.json")
 
         print("\n💡 DICAS IMPORTANTES:")
-        print("   • Configure DISCORD_MEMBER_ID e DISCORD_GUILD_ID para usar o bot com isolamento por servidor")
+        print("   • Configure DISCORD_MEMBER_ID para o bot localizar seu canal de voz atual")
         print("   • Bot tenta conectar automaticamente onde você estiver")
         print("   • Bot sai da sala após 30 minutos de inatividade")
         print("   • Use /join no Discord se precisar conectar manualmente")

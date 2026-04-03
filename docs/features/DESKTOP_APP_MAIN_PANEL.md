@@ -17,16 +17,18 @@ Dar ao usuario final uma experiencia clara ao abrir o executavel:
 
 1. O usuario abre `tts_hotkey_clean.exe`
 2. O painel principal aparece e permanece visivel
-3. O usuario preenche `Bot URL`, `Guild ID` e `User ID`
+3. O usuario preenche `Bot URL` e `User ID`
 4. O usuario clica em `Testar conexao`
-5. O usuario salva a configuracao
-6. O usuario pode clicar em `Enviar teste de voz` para validar o fluxo manualmente
-7. O usuario passa a usar as hotkeys normalmente, mantendo a janela como referencia visual
+5. O usuario pode clicar em `Recarregar canal detectado` para ver qual servidor e canal de voz o bot encontrou
+6. O usuario salva a configuracao
+7. O usuario pode clicar em `Enviar teste de voz` para validar o fluxo manualmente
+8. O usuario passa a usar as hotkeys normalmente, mantendo a janela como referencia visual
 
 ## Regras de custo e infraestrutura
 
 - nao ha polling continuo de conexao
 - a verificacao de conexao ocorre apenas quando o usuario clica em `Testar conexao`
+- a deteccao de servidor/canal ocorre apenas quando o usuario clica em `Recarregar canal detectado`
 - o envio de fala de teste ocorre apenas quando o usuario clica em `Enviar teste de voz`
 - a mensagem de teste deve ser curta para reduzir custo e ruido operacional
 
@@ -34,6 +36,7 @@ Dar ao usuario final uma experiencia clara ao abrir o executavel:
 
 - a GUI apenas coleta dados, mostra estado e delega acoes
 - a checagem de conexao usa o adapter HTTP do Desktop App
+- a deteccao de canal atual usa um endpoint HTTP dedicado do bot
 - o envio de teste reutiliza o fluxo HTTP ja existente para o bot
 - o runtime do Desktop App continua separado do bot, preservando execucao independente
 
@@ -41,6 +44,7 @@ Dar ao usuario final uma experiencia clara ao abrir o executavel:
 
 - status visual do app
 - status claro de configuracao do bot
+- status claro do servidor/canal de voz detectados para o usuario configurado
 - status claro do ultimo teste de conexao e envio
 - orientacoes curtas de uso no proprio painel
 - area de atividade com logs uteis para o usuario
@@ -51,6 +55,7 @@ Dar ao usuario final uma experiencia clara ao abrir o executavel:
 - abrir o executavel e confirmar que a janela continua visivel
 - preencher configuracao valida e salvar
 - testar conexao com o bot
+- recarregar o canal detectado e verificar servidor/canal exibidos
 - enviar mensagem curta de teste
 - confirmar atualizacao dos logs no painel
 - minimizar, restaurar e fechar o app

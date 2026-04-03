@@ -37,10 +37,10 @@ class DesktopBotActions:
         """Send a short manual test message to validate the speak flow."""
         if not config.discord.bot_url:
             return {"success": False, "message": "Bot URL nao configurada para envio de teste"}
-        if not config.discord.guild_id or not config.discord.member_id:
+        if not config.discord.member_id:
             return {
                 "success": False,
-                "message": "Guild ID e User ID sao necessarios para enviar o teste",
+                "message": "User ID e necessario para enviar o teste",
             }
 
         client = HttpDiscordBotClient(config)
@@ -50,8 +50,34 @@ class DesktopBotActions:
             logger.info("[DESKTOP_APP] Mensagem curta de teste enviada ao bot")
             return {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
 
-        logger.warning("[DESKTOP_APP] Falha ao enviar mensagem curta de teste ao bot")
-        return {"success": False, "message": "Nao foi possivel enviar a mensagem de teste ao bot"}
+        error_message = client.get_last_error_message() or "Nao foi possivel enviar a mensagem de teste ao bot"
+        logger.warning(
+            "[DESKTOP_APP] Falha ao enviar mensagem curta de teste ao bot: %s",
+            error_message,
+        )
+        return {"success": False, "message": error_message}
+
+    def fetch_current_voice_context(self, config: DesktopAppConfig) -> dict:
+        """Fetch the currently detected guild/channel for the configured Discord user."""
+        if not config.discord.bot_url:
+            return {"success": False, "message": "Bot URL nao configurada para detectar o canal"}
+        if not config.discord.member_id:
+            return {"success": False, "message": "User ID e necessario para detectar o canal"}
+
+        client = HttpDiscordBotClient(config)
+        result = client.fetch_voice_context()
+        if result.get("success"):
+            logger.info(
+                "[DESKTOP_APP] Canal detectado para o usuario: guild=%s channel=%s",
+                result.get("guild_name"),
+                result.get("channel_name"),
+            )
+        else:
+            logger.warning(
+                "[DESKTOP_APP] Nao foi possivel detectar o canal atual: %s",
+                result.get("message"),
+            )
+        return result
 
 
 class DesktopConfigurationCoordinator:

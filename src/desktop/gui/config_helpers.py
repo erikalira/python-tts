@@ -43,7 +43,6 @@ def build_updated_config(
     current_config: DesktopAppConfig,
     *,
     member_id: str | None = None,
-    guild_id: str | None = None,
     bot_url: str | None = None,
     engine: str | None = None,
     language: str | None = None,
@@ -60,7 +59,6 @@ def build_updated_config(
         discord=replace(
             current_config.discord,
             member_id=current_config.discord.member_id if member_id is None else member_id,
-            guild_id=current_config.discord.guild_id if guild_id is None else guild_id,
             bot_url=current_config.discord.bot_url if bot_url is None else bot_url,
         ),
         tts=replace(

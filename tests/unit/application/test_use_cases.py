@@ -117,6 +117,28 @@ class TestSpeakTextUseCase:
 
         assert result["success"] is True
         assert mock_tts_engine.calls[0]["text"] == "abcde"
+
+    async def test_execute_infers_guild_id_from_member_channel_when_missing(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+    ):
+        """Speak use case should derive the guild from the member's current voice channel."""
+        use_case = SpeakTextUseCase(
+            tts_engine=mock_tts_engine,
+            channel_repository=mock_channel_repository,
+            config_repository=mock_config_repository,
+            audio_queue=mock_audio_queue,
+        )
+
+        request = TTSRequest(text="test", member_id=345678)
+        result = await use_case.execute(request)
+
+        assert result["success"] is True
+        assert mock_tts_engine.calls[0]["config"].language == "pt"
+        assert mock_channel_repository.channel.played_audio
     
     async def test_execute_finds_by_channel_id(
         self,

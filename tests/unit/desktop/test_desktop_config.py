@@ -1,4 +1,5 @@
 import json
+import os
 
 from src.desktop.config.desktop_config import (
     ConfigurationRepository,
@@ -6,6 +7,7 @@ from src.desktop.config.desktop_config import (
     DesktopAppConfig,
     EnvironmentUpdater,
     HotkeyConfig,
+    get_default_discord_bot_url,
     get_config_directory,
 )
 
@@ -35,7 +37,6 @@ def test_configuration_repository_save_and_load_roundtrip(tmp_path):
     repo = ConfigurationRepository(config_file)
     config = DesktopAppConfig.create_default()
     config.discord.member_id = "123"
-    config.discord.guild_id = "456"
     config.hotkey.trigger_open = "["
     config.hotkey.trigger_close = "]"
     config.interface.local_tts_enabled = True
@@ -44,13 +45,13 @@ def test_configuration_repository_save_and_load_roundtrip(tmp_path):
 
     saved_data = json.loads(config_file.read_text(encoding="utf-8"))
     assert saved_data["discord_member_id"] == "123"
-    assert saved_data["discord_guild_id"] == "456"
+    assert saved_data["discord_guild_id"] is None
     assert saved_data["trigger_open"] == "["
     assert saved_data["local_tts_enabled"] is True
 
     loaded = repo.load()
     assert loaded.discord.member_id == "123"
-    assert loaded.discord.guild_id == "456"
+    assert loaded.discord.guild_id is None
     assert loaded.interface.local_tts_enabled is True
     assert loaded.hotkey.keys == "[text]"
 
@@ -69,8 +70,7 @@ def test_configuration_repository_returns_defaults_on_invalid_json(capsys, tmp_p
 
 def test_environment_updater_sets_expected_variables(monkeypatch):
     config = DesktopAppConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000"
-    config.discord.guild_id = "44"
+    config.discord.bot_url = get_default_discord_bot_url()
     config.discord.channel_id = "55"
     config.discord.member_id = "99"
     config.tts.output_device = "Speaker"
@@ -83,14 +83,16 @@ def test_environment_updater_sets_expected_variables(monkeypatch):
 
     EnvironmentUpdater.update_from_config(config)
 
-    assert config.discord.bot_url == "http://localhost:10000"
-    assert config.discord.guild_id == "44"
+    assert config.discord.bot_url == get_default_discord_bot_url()
+    assert os.environ["DISCORD_BOT_URL"] == get_default_discord_bot_url()
+    assert "DISCORD_GUILD_ID" not in os.environ
+    assert os.environ["DISCORD_CHANNEL_ID"] == "55"
+    assert os.environ["DISCORD_MEMBER_ID"] == "99"
 
 
 def test_configuration_validator_reports_invalid_values():
     config = DesktopAppConfig.create_default()
     config.discord.member_id = "abc"
-    config.discord.guild_id = "def"
     config.tts.rate = 10
     config.network.request_timeout = 0
     config.network.max_text_length = 3000
@@ -98,7 +100,7 @@ def test_configuration_validator_reports_invalid_values():
     is_valid, errors = ConfigurationValidator.validate(config)
 
     assert is_valid is False
-    assert len(errors) == 5
+    assert len(errors) == 4
 
 
 def test_configuration_validator_is_configured_requires_member_id():
@@ -107,9 +109,6 @@ def test_configuration_validator_is_configured_requires_member_id():
     assert ConfigurationValidator.is_configured(config) is False
 
     config.discord.member_id = "123456"
-    assert ConfigurationValidator.is_configured(config) is False
-
-    config.discord.guild_id = "654321"
     assert ConfigurationValidator.is_configured(config) is True
 
 

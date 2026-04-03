@@ -9,7 +9,7 @@ from src.application.tts_execution import (
 )
 from src.application.tts_routing import build_tts_engine_chain
 from src.desktop.app.tts_runtime import DesktopAppTTSProcessor
-from src.desktop.config.desktop_config import DesktopAppConfig
+from src.desktop.config.desktop_config import DesktopAppConfig, get_default_discord_bot_url
 from src.desktop.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
 from src.desktop.services.tts_services import (
     DesktopAppTTSService,
@@ -35,35 +35,38 @@ class FakeEngine:
 
 
 class FakeDiscordBotClient:
-    def __init__(self, available=True, result=True):
+    def __init__(self, available=True, result=True, last_error_message=None):
         self.available = available
         self.result = result
+        self.last_error_message = last_error_message
         self.requests = []
 
     def is_available(self):
         return self.available
 
     def build_request(self, text):
-        return DiscordSpeakRequest(text=text, guild_id="30", channel_id="10", member_id="20")
+        return DiscordSpeakRequest(text=text, channel_id="10", member_id="20")
 
     def send_speak_request(self, request):
         self.requests.append(request)
         return self.result
 
+    def get_last_error_message(self):
+        return self.last_error_message
+
 
 def test_http_discord_bot_client_builds_payload_and_url():
     config = DesktopAppConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000/"
-    config.discord.guild_id = "30"
+    config.discord.bot_url = get_default_discord_bot_url().rstrip("/") + "/"
     config.discord.channel_id = "10"
     config.discord.member_id = "20"
 
     client = HttpDiscordBotClient(config)
     request = client.build_request("hello")
 
-    assert request.to_payload() == {"text": "hello", "guild_id": "30", "channel_id": "10", "member_id": "20"}
-    assert client.get_speak_url() == "http://localhost:10000/speak"
-    assert client.get_health_url() == "http://localhost:10000/health"
+    assert request.to_payload() == {"text": "hello", "channel_id": "10", "member_id": "20"}
+    assert client.get_speak_url() == get_default_discord_bot_url().rstrip("/") + "/speak"
+    assert client.get_health_url() == get_default_discord_bot_url().rstrip("/") + "/health"
 
 
 def test_discord_tts_service_builds_payload_and_sends_request():
@@ -73,7 +76,7 @@ def test_discord_tts_service_builds_payload_and_sends_request():
 
     assert service.speak("hello") is True
     assert len(bot_client.requests) == 1
-    assert bot_client.requests[0].to_payload() == {"text": "hello", "guild_id": "30", "channel_id": "10", "member_id": "20"}
+    assert bot_client.requests[0].to_payload() == {"text": "hello", "channel_id": "10", "member_id": "20"}
 
 
 def test_discord_tts_service_handles_http_error():
@@ -84,19 +87,20 @@ def test_discord_tts_service_handles_http_error():
 
 def test_http_discord_bot_client_handles_http_error(monkeypatch):
     config = DesktopAppConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000"
+    config.discord.bot_url = get_default_discord_bot_url()
 
-    post = Mock(return_value=SimpleNamespace(ok=False, status_code=500))
+    post = Mock(return_value=SimpleNamespace(ok=False, status_code=500, text="playback failed"))
     monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.post", post)
 
     client = HttpDiscordBotClient(config)
 
     assert client.send_speak_request(client.build_request("hello")) is False
+    assert client.get_last_error_message() == "Bot respondeu HTTP 500: playback failed"
 
 
 def test_http_discord_bot_client_check_connection_success(monkeypatch):
     config = DesktopAppConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000"
+    config.discord.bot_url = get_default_discord_bot_url()
 
     get = Mock(return_value=SimpleNamespace(ok=True, status_code=200))
     monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.get", get)
@@ -109,7 +113,7 @@ def test_http_discord_bot_client_check_connection_success(monkeypatch):
 
 def test_http_discord_bot_client_check_connection_http_failure(monkeypatch):
     config = DesktopAppConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000"
+    config.discord.bot_url = get_default_discord_bot_url()
 
     get = Mock(return_value=SimpleNamespace(ok=False, status_code=503))
     monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.get", get)
@@ -117,6 +121,82 @@ def test_http_discord_bot_client_check_connection_http_failure(monkeypatch):
     result = HttpDiscordBotClient(config).check_connection()
 
     assert result == {"success": False, "message": "Bot respondeu HTTP 503"}
+
+
+def test_http_discord_bot_client_fetches_voice_context(monkeypatch):
+    config = DesktopAppConfig.create_default()
+    config.discord.bot_url = get_default_discord_bot_url()
+    config.discord.member_id = "20"
+
+    get = Mock(
+        return_value=SimpleNamespace(
+            ok=True,
+            status_code=200,
+            json=lambda: {
+                "success": True,
+                "guild_name": "Guild A",
+                "guild_id": 30,
+                "channel_name": "Sala 1",
+                "channel_id": 10,
+            },
+        )
+    )
+    monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.get", get)
+
+    result = HttpDiscordBotClient(config).fetch_voice_context()
+
+    assert result == {
+        "success": True,
+        "message": "Canal detectado: Guild A / Sala 1",
+        "guild_name": "Guild A",
+        "guild_id": 30,
+        "channel_name": "Sala 1",
+        "channel_id": 10,
+    }
+
+
+def test_http_discord_bot_client_reports_when_user_not_in_voice(monkeypatch):
+    config = DesktopAppConfig.create_default()
+    config.discord.bot_url = get_default_discord_bot_url()
+    config.discord.member_id = "20"
+
+    get = Mock(
+        return_value=SimpleNamespace(
+            ok=False,
+            status_code=404,
+            json=lambda: {"success": False, "code": "not_in_channel"},
+        )
+    )
+    monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.get", get)
+
+    result = HttpDiscordBotClient(config).fetch_voice_context()
+
+    assert result == {
+        "success": False,
+        "message": "Usuario nao esta conectado a nenhum canal de voz",
+    }
+
+
+def test_http_discord_bot_client_reports_when_voice_context_endpoint_is_missing(monkeypatch):
+    config = DesktopAppConfig.create_default()
+    config.discord.bot_url = get_default_discord_bot_url()
+    config.discord.member_id = "20"
+
+    get = Mock(
+        return_value=SimpleNamespace(
+            ok=False,
+            status_code=404,
+            json=lambda: {},
+        )
+    )
+    monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.get", get)
+
+    result = HttpDiscordBotClient(config).fetch_voice_context()
+
+    assert result == {
+        "success": False,
+        "message": "Endpoint de deteccao de canal nao esta disponivel no bot. Atualize o bot.",
+    }
 
 
 def test_fallback_tts_engine_tries_next_available_engine():

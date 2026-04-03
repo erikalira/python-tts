@@ -51,9 +51,17 @@ class MockVoiceChannel(IVoiceChannel):
         """Get mock channel ID."""
         return self._channel_id
 
+    def get_channel_name(self) -> str:
+        """Get mock channel name."""
+        return "Mock Voice"
+
     def get_guild_id(self) -> int:
         """Get mock guild ID."""
         return self._guild_id
+
+    def get_guild_name(self) -> str:
+        """Get mock guild name."""
+        return "Mock Guild"
 
 
 class MockVoiceChannelRepository(IVoiceChannelRepository):

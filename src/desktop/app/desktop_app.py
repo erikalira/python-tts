@@ -213,6 +213,7 @@ class DesktopApp:
             on_save=self._save_configuration_from_ui,
             on_test_connection=self._test_bot_connection,
             on_send_test=self._send_test_message,
+            on_refresh_voice_context=self._refresh_voice_context,
         )
         self._main_window.show()
 
@@ -236,6 +237,11 @@ class DesktopApp:
         """Send a short manual test message through the bot."""
         self._ensure_action_coordinators()
         return self._bot_actions.send_test_message(config)
+
+    def _refresh_voice_context(self, config: DesktopAppConfig) -> dict:
+        """Refresh the currently detected Discord voice context."""
+        self._ensure_action_coordinators()
+        return self._bot_actions.fetch_current_voice_context(config)
 
     def _show_current_configuration(self) -> None:
         """Log the current Desktop App configuration summary."""
@@ -369,7 +375,6 @@ class DesktopApp:
             "discord_configured": (
                 self._config
                 and self._config.discord.bot_url
-                and self._config.discord.guild_id
                 and self._config.discord.member_id
             ),
             "hotkey_active": (self._hotkey_manager and self._hotkey_manager.is_active()),

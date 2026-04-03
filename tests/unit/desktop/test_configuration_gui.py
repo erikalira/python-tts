@@ -1,6 +1,6 @@
 ﻿from types import SimpleNamespace
 
-from src.desktop.config.desktop_config import DesktopAppConfig
+from src.desktop.config.desktop_config import DesktopAppConfig, get_default_discord_bot_url
 from src.desktop.gui import configuration_gui
 
 
@@ -72,9 +72,8 @@ def test_configuration_display_service_shows_local_mode_without_optional_depende
 def test_configuration_display_service_shows_discord_mode_when_requests_is_available(monkeypatch, capsys):
     service = configuration_gui.ConfigurationDisplayService()
     config = DesktopAppConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000"
+    config.discord.bot_url = get_default_discord_bot_url()
     config.discord.member_id = "123"
-    config.discord.guild_id = "456"
 
     original_import = __import__
 

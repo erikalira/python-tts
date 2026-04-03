@@ -10,7 +10,7 @@ from src.desktop.app.tts_runtime import (
     DesktopAppHotkeyHandler,
     DesktopAppTTSResultPresenter,
 )
-from src.desktop.config.desktop_config import DesktopAppConfig
+from src.desktop.config.desktop_config import DesktopAppConfig, get_default_discord_bot_url
 from src.desktop.services.hotkey_services import HotkeyEvent
 
 
@@ -154,7 +154,7 @@ def test_desktop_app_update_services_config_rebuilds_hotkey_manager():
 def test_desktop_app_save_configuration_from_ui_applies_changes():
     app = DesktopApp()
     updated_config = DesktopAppConfig.create_default()
-    updated_config.discord.bot_url = "http://localhost:10000"
+    updated_config.discord.bot_url = get_default_discord_bot_url()
     updated_config.discord.guild_id = "456"
     updated_config.discord.member_id = "123"
     app._config = DesktopAppConfig.create_default()
@@ -171,7 +171,7 @@ def test_desktop_app_save_configuration_from_ui_applies_changes():
 def test_desktop_app_test_bot_connection_uses_http_client(monkeypatch):
     app = DesktopApp()
     config = DesktopAppConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000"
+    config.discord.bot_url = get_default_discord_bot_url()
 
     fake_client = Mock()
     fake_client.check_connection.return_value = {"success": True, "message": "ok"}
@@ -186,21 +186,19 @@ def test_desktop_app_test_bot_connection_uses_http_client(monkeypatch):
 def test_desktop_app_send_test_message_requires_discord_identifiers():
     app = DesktopApp()
     config = DesktopAppConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000"
-    config.discord.guild_id = None
+    config.discord.bot_url = get_default_discord_bot_url()
     config.discord.member_id = None
 
     result = app._send_test_message(config)
 
     assert result["success"] is False
-    assert "Guild ID" in result["message"]
+    assert "User ID" in result["message"]
 
 
 def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
     app = DesktopApp()
     config = DesktopAppConfig.create_default()
-    config.discord.bot_url = "http://localhost:10000"
-    config.discord.guild_id = "456"
+    config.discord.bot_url = get_default_discord_bot_url()
     config.discord.member_id = "123"
 
     fake_request = Mock()
@@ -214,4 +212,49 @@ def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
     assert result == {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
     fake_client.build_request.assert_called_once_with("Teste rapido do Desktop App.")
     fake_client.send_speak_request.assert_called_once_with(fake_request)
+
+
+def test_desktop_app_send_test_message_returns_bot_error_details(monkeypatch):
+    app = DesktopApp()
+    config = DesktopAppConfig.create_default()
+    config.discord.bot_url = get_default_discord_bot_url()
+    config.discord.member_id = "123"
+
+    fake_request = Mock()
+    fake_client = Mock()
+    fake_client.build_request.return_value = fake_request
+    fake_client.send_speak_request.return_value = False
+    fake_client.get_last_error_message.return_value = "Bot respondeu HTTP 400: user is not connected to a voice channel"
+    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+
+    result = app._send_test_message(config)
+
+    assert result == {
+        "success": False,
+        "message": "Bot respondeu HTTP 400: user is not connected to a voice channel",
+    }
+    fake_client.build_request.assert_called_once_with("Teste rapido do Desktop App.")
+    fake_client.send_speak_request.assert_called_once_with(fake_request)
+
+
+def test_desktop_app_refresh_voice_context_uses_http_client(monkeypatch):
+    app = DesktopApp()
+    config = DesktopAppConfig.create_default()
+    config.discord.bot_url = get_default_discord_bot_url()
+    config.discord.member_id = "123"
+
+    fake_client = Mock()
+    fake_client.fetch_voice_context.return_value = {
+        "success": True,
+        "message": "Canal detectado: Guild A / Sala 1",
+    }
+    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+
+    result = app._refresh_voice_context(config)
+
+    assert result == {
+        "success": True,
+        "message": "Canal detectado: Guild A / Sala 1",
+    }
+    fake_client.fetch_voice_context.assert_called_once_with()
 

@@ -30,6 +30,9 @@ LEAVE_RESULT_OK = "ok"
 LEAVE_RESULT_MISSING_GUILD_ID = "missing_guild_id"
 LEAVE_RESULT_NOT_CONNECTED = "not_connected"
 LEAVE_RESULT_VOICE_CONNECTION_FAILED = "voice_connection_failed"
+VOICE_CONTEXT_RESULT_OK = "ok"
+VOICE_CONTEXT_RESULT_MEMBER_REQUIRED = "member_required"
+VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL = "not_in_channel"
 
 
 class JoinVoiceChannelUseCase:
@@ -92,6 +95,32 @@ class LeaveVoiceChannelUseCase:
             }
 
         return {"success": True, "code": LEAVE_RESULT_OK}
+
+
+class GetCurrentVoiceContextUseCase:
+    """Use case for discovering the member's current voice context."""
+
+    def __init__(self, channel_repository: IVoiceChannelRepository):
+        self._channel_repository = channel_repository
+
+    async def execute(self, member_id: Optional[int]) -> dict:
+        """Return the member's current guild and voice channel when available."""
+        if member_id is None:
+            return {"success": False, "code": VOICE_CONTEXT_RESULT_MEMBER_REQUIRED}
+
+        channel = await self._channel_repository.find_by_member_id(member_id)
+        if not channel:
+            return {"success": False, "code": VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL}
+
+        return {
+            "success": True,
+            "code": VOICE_CONTEXT_RESULT_OK,
+            "member_id": member_id,
+            "guild_id": channel.get_guild_id(),
+            "guild_name": channel.get_guild_name(),
+            "channel_id": channel.get_channel_id(),
+            "channel_name": channel.get_channel_name(),
+        }
 
 
 class SpeakTextUseCase:
@@ -173,10 +202,15 @@ class SpeakTextUseCase:
             - queue_size: Total items in queue (if queued)
         """
         prepared_text = prepare_tts_text(request.text, self._max_text_length)
+        inferred_guild_id = request.guild_id
+        if request.member_id and inferred_guild_id is None:
+            inferred_channel = await self._channel_repository.find_by_member_id(request.member_id)
+            if inferred_channel:
+                inferred_guild_id = inferred_channel.get_guild_id()
         request = TTSRequest(
             text=prepared_text,
             channel_id=request.channel_id,
-            guild_id=request.guild_id,
+            guild_id=inferred_guild_id,
             member_id=request.member_id,
         )
 

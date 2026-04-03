@@ -17,7 +17,11 @@ try:
 except ImportError:
     TKINTER_AVAILABLE = False
 
-from ..config.desktop_config import DesktopAppConfig, ConfigurationValidator
+from ..config.desktop_config import (
+    ConfigurationValidator,
+    DesktopAppConfig,
+    get_default_discord_bot_url,
+)
 from .config_helpers import (
     build_updated_config,
     normalize_optional_text,
@@ -54,13 +58,6 @@ class ConsoleConfig(ConfigInterface):
             "❌ Discord User ID deve conter apenas números!",
         )
 
-        current_guild_id = config.discord.guild_id or ""
-        guild_id = prompt_numeric_input(
-            f"Discord Guild ID [{current_guild_id}]: ",
-            current_guild_id,
-            "❌ Discord Guild ID deve conter apenas números!",
-        )
-        
         # Bot URL
         bot_url = resolve_text_value(input(f"Bot URL [{config.discord.bot_url}]: "), config.discord.bot_url)
         
@@ -132,7 +129,6 @@ class ConsoleConfig(ConfigInterface):
         new_config = build_updated_config(
             config,
             member_id=member_id,
-            guild_id=guild_id,
             bot_url=bot_url,
             engine=engine,
             language=language,
@@ -164,7 +160,6 @@ class InitialSetupGUI:
         
         # Variables for form fields
         self.member_id_var: Optional[tk.StringVar] = None
-        self.guild_id_var: Optional[tk.StringVar] = None
         self.channel_id_var: Optional[tk.StringVar] = None
         self.bot_url_var: Optional[tk.StringVar] = None
     
@@ -234,20 +229,6 @@ class InitialSetupGUI:
             foreground='gray', font=('Arial', 8))
         help_text.pack(anchor=tk.W, pady=(0, 10))
 
-        # Guild ID
-        ttk.Label(discord_frame, text="Guild ID (servidor):").pack(anchor=tk.W)
-        self.guild_id_var = tk.StringVar()
-        guild_id_entry = ttk.Entry(discord_frame, textvariable=self.guild_id_var, width=30)
-        guild_id_entry.pack(fill=tk.X, pady=(5, 10))
-
-        guild_help = ttk.Label(
-            discord_frame,
-            text="💡 Como encontrar: Botão direito no servidor → Copiar ID",
-            foreground='gray',
-            font=('Arial', 8),
-        )
-        guild_help.pack(anchor=tk.W, pady=(0, 10))
-        
         # Channel ID
         ttk.Label(discord_frame, text="Channel ID (opcional):").pack(anchor=tk.W)
         self.channel_id_var = tk.StringVar()
@@ -262,7 +243,7 @@ class InitialSetupGUI:
         
         # Bot URL
         ttk.Label(discord_frame, text="Bot URL:").pack(anchor=tk.W)
-        self.bot_url_var = tk.StringVar(value=os.getenv('DISCORD_BOT_URL'))
+        self.bot_url_var = tk.StringVar(value=get_default_discord_bot_url())
         bot_url_entry = ttk.Entry(discord_frame, textvariable=self.bot_url_var, width=50)
         bot_url_entry.pack(fill=tk.X, pady=(5, 10))
         
@@ -291,7 +272,7 @@ class InitialSetupGUI:
             'member_id': None,
             'guild_id': None,
             'channel_id': None,
-            'bot_url': os.getenv('DISCORD_BOT_URL'),
+            'bot_url': get_default_discord_bot_url(),
             'skip_discord': True
         }
         self.root.destroy()
@@ -299,7 +280,6 @@ class InitialSetupGUI:
     def _save_and_continue(self):
         """Save configuration and continue."""
         member_id = self.member_id_var.get().strip()
-        guild_id = self.guild_id_var.get().strip()
         channel_id = self.channel_id_var.get().strip()
         bot_url = self.bot_url_var.get().strip()
         
@@ -308,10 +288,6 @@ class InitialSetupGUI:
             messagebox.showerror("Erro", "Discord User ID deve conter apenas números!")
             return
 
-        if guild_id and not guild_id.isdigit():
-            messagebox.showerror("Erro", "Guild ID deve conter apenas números!")
-            return
-        
         # Validate Channel ID
         if channel_id and not channel_id.isdigit():
             messagebox.showerror("Erro", "Channel ID deve conter apenas números!")
@@ -322,13 +298,9 @@ class InitialSetupGUI:
             messagebox.showerror("Erro", "Bot URL é obrigatória!")
             return
 
-        if member_id and not guild_id:
-            messagebox.showerror("Erro", "Guild ID é obrigatória para usar o bot do Discord!")
-            return
-        
         self.result = {
             'member_id': normalize_optional_text(member_id),
-            'guild_id': normalize_optional_text(guild_id),
+            'guild_id': None,
             'channel_id': normalize_optional_text(channel_id),
             'bot_url': bot_url,
             'skip_discord': False
@@ -359,17 +331,8 @@ class InitialSetupGUI:
             print("❌ ID deve conter apenas números!")
             member_id = ""
 
-        # Guild ID
-        print("\n2. Guild ID (ID do servidor, obrigatório para modo Discord):")
-        print("   Como encontrar: Botão direito no servidor → Copiar ID")
-        guild_id = input("   Guild ID (deixe vazio para pular): ").strip()
-
-        if guild_id and not guild_id.isdigit():
-            print("❌ ID deve conter apenas números!")
-            guild_id = ""
-        
         # Channel ID
-        print("\n3. Channel ID (opcional):")
+        print("\n2. Channel ID (opcional):")
         print("   Como encontrar: Botão direito no canal de voz → Copiar ID")
         channel_id = input("   Channel ID (opcional): ").strip()
         
@@ -378,8 +341,8 @@ class InitialSetupGUI:
             channel_id = ""
         
         # Bot URL
-        print("\n4. Bot URL:")
-        default_url = os.getenv('DISCORD_BOT_URL')
+        print("\n3. Bot URL:")
+        default_url = get_default_discord_bot_url()
         bot_url = input(f"   Bot URL [{default_url}]: ").strip()
         if not bot_url:
             bot_url = default_url
@@ -391,10 +354,10 @@ class InitialSetupGUI:
         
         return {
             'member_id': normalize_optional_text(member_id),
-            'guild_id': normalize_optional_text(guild_id),
+            'guild_id': None,
             'channel_id': normalize_optional_text(channel_id),
             'bot_url': bot_url,
-            'skip_discord': not bool(member_id and guild_id)
+            'skip_discord': not bool(member_id)
         }
 
 
@@ -408,7 +371,6 @@ class GUIConfig(ConfigInterface):
         
         # Variables for form fields
         self.member_id_var: Optional[tk.StringVar] = None
-        self.guild_id_var: Optional[tk.StringVar] = None
         self.bot_url_var: Optional[tk.StringVar] = None
         self.engine_var: Optional[tk.StringVar] = None
         self.language_var: Optional[tk.StringVar] = None
@@ -507,11 +469,6 @@ class GUIConfig(ConfigInterface):
         if hasattr(member_id_entry, "focus_set"):
             self.root.after(0, member_id_entry.focus_set)
 
-        # Guild ID
-        ttk.Label(parent, text="Discord Guild ID:").pack(anchor="w", pady=(0, 5))
-        self.guild_id_var = tk.StringVar(value=self.config.discord.guild_id or "")
-        ttk.Entry(parent, textvariable=self.guild_id_var, width=50).pack(fill="x", pady=(0, 10))
-        
         # Bot URL
         ttk.Label(parent, text="Bot URL:").pack(anchor="w", pady=(0, 5))
         self.bot_url_var = tk.StringVar(value=self.config.discord.bot_url)
@@ -520,7 +477,7 @@ class GUIConfig(ConfigInterface):
         # Help text
         help_text = ("Dica: Clique com botão direito no seu nome no Discord, "
                     "depois 'Copiar ID' para obter seu User ID. "
-                    "Faça o mesmo no servidor para obter o Guild ID.")
+                    "O bot vai descobrir o servidor pelo seu canal de voz atual.")
         ttk.Label(parent, text=help_text, wraplength=400, 
                  font=("Arial", 8)).pack(anchor="w", pady=(10, 0))
     
@@ -644,7 +601,6 @@ class GUIConfig(ConfigInterface):
         """Build configuration from the current form values."""
         if not self.config or not all([
             self.member_id_var, self.bot_url_var, self.engine_var,
-            self.guild_id_var,
             self.language_var, self.voice_id_var, self.rate_var,
             self.trigger_open_var, self.trigger_close_var
             , self.show_notifications_var, self.console_logs_var, self.local_tts_enabled_var
@@ -652,7 +608,6 @@ class GUIConfig(ConfigInterface):
             return None
 
         member_id = self.member_id_var.get().strip()
-        guild_id = self.guild_id_var.get().strip()
         bot_url = self.bot_url_var.get().strip()
         engine = self.engine_var.get()
         language = self.language_var.get().strip()
@@ -667,7 +622,6 @@ class GUIConfig(ConfigInterface):
         return build_updated_config(
             self.config,
             member_id=member_id,
-            guild_id=guild_id,
             bot_url=bot_url,
             engine=engine,
             language=language,
@@ -711,21 +665,25 @@ class DesktopAppMainWindow(GUIConfig):
         on_save: Callable[[DesktopAppConfig], dict],
         on_test_connection: Callable[[DesktopAppConfig], dict],
         on_send_test: Callable[[DesktopAppConfig], dict],
+        on_refresh_voice_context: Callable[[DesktopAppConfig], dict],
     ):
         super().__init__()
         self.config = config
         self._on_save = on_save
         self._on_test_connection = on_test_connection
         self._on_send_test = on_send_test
+        self._on_refresh_voice_context = on_refresh_voice_context
         self._log_queue: "queue.Queue[str]" = queue.Queue()
         self._log_handler = UILogHandler(self._log_queue)
         self._status_var: Optional[tk.StringVar] = None
         self._config_var: Optional[tk.StringVar] = None
         self._connection_var: Optional[tk.StringVar] = None
+        self._voice_context_var: Optional[tk.StringVar] = None
         self._logs_widget = None
         self._status_label = None
         self._config_label = None
         self._connection_label = None
+        self._voice_context_label = None
 
     def show(self) -> None:
         """Display the Desktop App main window."""
@@ -770,6 +728,7 @@ class DesktopAppMainWindow(GUIConfig):
         self._status_var = tk.StringVar(value="Preencha os campos, teste a conexão e mantenha a janela aberta durante o uso.")
         self._config_var = tk.StringVar(value="")
         self._connection_var = tk.StringVar(value="Conexão ainda não testada")
+        self._voice_context_var = tk.StringVar(value="Canal detectado ainda nao consultado")
 
         ttk.Label(main_frame, text="Desktop App", font=("Arial", 18, "bold")).pack(anchor="w")
         ttk.Label(
@@ -790,6 +749,8 @@ class DesktopAppMainWindow(GUIConfig):
         self._config_label.pack(anchor="w", pady=(8, 0))
         self._connection_label = tk.Label(status_frame, textvariable=self._connection_var, anchor="w", justify="left", fg="#856404")
         self._connection_label.pack(anchor="w", pady=(8, 0))
+        self._voice_context_label = tk.Label(status_frame, textvariable=self._voice_context_var, anchor="w", justify="left", fg="#856404")
+        self._voice_context_label.pack(anchor="w", pady=(8, 0))
 
         form_frame = ttk.LabelFrame(main_frame, text="Configuração", padding="10")
         form_frame.pack(fill="both", expand=True, pady=(0, 12))
@@ -799,6 +760,7 @@ class DesktopAppMainWindow(GUIConfig):
         action_frame.pack(fill="x", pady=(0, 12))
         ttk.Button(action_frame, text="Salvar configuração", command=self._handle_save).pack(side="left")
         ttk.Button(action_frame, text="Testar conexão", command=self._handle_test_connection).pack(side="left", padx=(10, 0))
+        ttk.Button(action_frame, text="Recarregar canal detectado", command=self._handle_refresh_voice_context).pack(side="left", padx=(10, 0))
         ttk.Button(action_frame, text="Enviar teste de voz", command=self._handle_send_test).pack(side="left", padx=(10, 0))
         ttk.Button(action_frame, text="Limpar logs", command=self._clear_logs).pack(side="left", padx=(10, 0))
         ttk.Button(action_frame, text="Fechar app", command=self._close).pack(side="right")
@@ -809,9 +771,10 @@ class DesktopAppMainWindow(GUIConfig):
             help_frame,
             text=(
                 "1. Preencha os dados do bot e clique em 'Testar conexão'. "
-                "2. Salve a configuração. "
-                f"3. Use {self.config.hotkey.trigger_open}texto{self.config.hotkey.trigger_close} para enviar fala no uso normal. "
-                "4. Se quiser, use 'Enviar teste de voz' para validar o fluxo manualmente."
+                "2. Use 'Recarregar canal detectado' para verificar o servidor e canal de voz encontrados para seu usuario. "
+                "3. Salve a configuração. "
+                f"4. Use {self.config.hotkey.trigger_open}texto{self.config.hotkey.trigger_close} para enviar fala no uso normal. "
+                "5. Se quiser, use 'Enviar teste de voz' para validar o fluxo manualmente."
             ),
             wraplength=900,
             justify="left",
@@ -884,6 +847,24 @@ class DesktopAppMainWindow(GUIConfig):
         self._set_label_color(self._connection_label, "#155724" if result.get("success") else "#721c24")
         self.push_log(f"Envio de teste: {message}")
 
+    def _handle_refresh_voice_context(self) -> None:
+        try:
+            config = self._build_config_from_form()
+            if config is None:
+                return
+        except ValueError as exc:
+            if self._voice_context_var:
+                self._voice_context_var.set(f"Deteccao falhou: valor invalido ({exc})")
+            self._set_label_color(self._voice_context_label, "#721c24")
+            return
+
+        result = self._on_refresh_voice_context(config)
+        message = result.get("message", "Sem resposta da deteccao de canal")
+        if self._voice_context_var:
+            self._voice_context_var.set(message)
+        self._set_label_color(self._voice_context_label, "#155724" if result.get("success") else "#721c24")
+        self.push_log(f"Canal detectado: {message}")
+
     def _set_status(self, message: str, success: bool) -> None:
         if self._status_var:
             prefix = "OK:" if success else "Atenção:"
@@ -895,13 +876,12 @@ class DesktopAppMainWindow(GUIConfig):
         is_discord_ready = bool(
             self.config
             and self.config.discord.bot_url
-            and self.config.discord.guild_id
             and self.config.discord.member_id
         )
         config_message = (
-            "Bot configurado: URL, Guild ID e User ID preenchidos."
+            "Bot configurado: URL e User ID preenchidos."
             if is_discord_ready
-            else "Configuração incompleta: preencha Bot URL, Guild ID e User ID para usar o bot."
+            else "Configuração incompleta: preencha Bot URL e User ID para usar o bot."
         )
         if (
             self.config

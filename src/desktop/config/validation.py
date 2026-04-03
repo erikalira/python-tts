@@ -13,10 +13,7 @@ class ConfigurationValidator:
         errors = []
 
         if config.discord.member_id and not config.discord.member_id.isdigit():
-            errors.append("Discord Member ID deve conter apenas números")
-
-        if config.discord.guild_id and not config.discord.guild_id.isdigit():
-            errors.append("Discord Guild ID deve conter apenas números")
+            errors.append("Discord Member ID deve conter apenas numeros")
 
         if config.tts.rate < 50 or config.tts.rate > 500:
             errors.append("TTS Rate deve estar entre 50 e 500 WPM")
@@ -25,7 +22,7 @@ class ConfigurationValidator:
             errors.append("Request timeout deve estar entre 1 e 60 segundos")
 
         if config.network.max_text_length < 1 or config.network.max_text_length > 2000:
-            errors.append("Comprimento máximo do texto deve estar entre 1 e 2000 caracteres")
+            errors.append("Comprimento maximo do texto deve estar entre 1 e 2000 caracteres")
 
         return len(errors) == 0, errors
 
@@ -35,6 +32,4 @@ class ConfigurationValidator:
         return (
             config.discord.member_id is not None
             and len(config.discord.member_id.strip()) > 0
-            and config.discord.guild_id is not None
-            and len(config.discord.guild_id.strip()) > 0
         )

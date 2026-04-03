@@ -13,11 +13,21 @@ from src.core.entities import TTSConfig
 load_dotenv(Path(__file__).resolve().parents[3] / ".env", override=True)
 
 
+def get_default_discord_bot_url() -> str:
+    """Return the default Discord bot URL for the current environment."""
+    explicit_url = os.getenv("DISCORD_BOT_URL")
+    if explicit_url:
+        return explicit_url
+
+    port = os.getenv("DISCORD_BOT_PORT", "10000")
+    return f"http://localhost:{port}"
+
+
 @dataclass
 class DiscordConfig:
     """Discord bot configuration."""
 
-    bot_url: str = os.getenv("DISCORD_BOT_URL", "localhost:10000")
+    bot_url: str = get_default_discord_bot_url()
     guild_id: Optional[str] = os.getenv("DISCORD_GUILD_ID")
     channel_id: Optional[str] = os.getenv("DISCORD_CHANNEL_ID")
     member_id: Optional[str] = os.getenv("DISCORD_MEMBER_ID")
