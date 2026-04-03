@@ -1,98 +1,77 @@
-# 🚀 Como Criar Executável do TTS Hotkey para Windows
+# Como Criar Executavel do TTS Hotkey para Windows
 
-Este guia explica como criar o executável do Desktop App TTS Hotkey para Windows com **Clean Architecture** e **SOLID principles**.
+Este guia explica como criar o executavel do Desktop App TTS Hotkey para Windows com Clean Architecture.
 
-## 📋 Pré-requisitos
+## Pre-requisitos
 
-- Python 3.8+ instalado no Windows
-- Dependências instaladas via `pip install -r requirements.txt`
+- Python 3.11+ instalado no Windows
 - Windows 10/11
+- `.venv` criado e ativado antes de instalar dependencias
 
-## 🎯 TTS Hotkey Clean Architecture
-
-- **Arquivo**: `app.py`
-- **Arquitetura**: Clean Architecture completa com SOLID principles
-- **Características**:
-  - Interface gráfica Tkinter com system tray
-  - Configuração persistente com JSON
-  - Dependency injection em todas as camadas
-  - Automatic fallback se clean architecture falhar
-- **Tamanho**: ~20MB
-- **Ideal para**: Desktop Windows, desenvolvimento profissional, máxima robustez
-
-## ⚡ Compilação para Windows
+Setup recomendado antes do build:
 
 ```powershell
-# Execute no PowerShell (Windows 10+)
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+## TTS Hotkey Clean Architecture
+
+- Arquivo: `app.py`
+- Arquitetura: Clean Architecture
+- Caracteristicas:
+  - Interface grafica Tkinter com system tray
+  - Configuracao persistente com JSON
+  - Dependency injection nas camadas
+  - Fallback automatico se a inicializacao principal falhar
+
+## Compilacao para Windows
+
+```powershell
 scripts\build\build_clean_architecture.ps1
 ```
 
-**Funcionalidades incluídas automaticamente:**
+## Localizacao do Executavel
 
-- ✅ Clean Architecture completa
-- ✅ Sistema de configuração com dataclasses
-- ✅ Repository pattern para persistência
-- ✅ Service layer com dependency injection
-- ✅ Interface gráfica integrada (Tkinter)
-- ✅ System tray e notificações
-- ✅ Multi-engine TTS (gTTS + pyttsx3) com fallback automático
+Apos a compilacao:
 
-## 📁 Localização do Executável
-
-Após a compilação:
-
-```
+```text
 dist/
-├── tts_hotkey_clean.exe                # Executável principal para usuário final
-└── run_tts_hotkey_clean_debug.bat      # Launcher auxiliar para troubleshooting
+|-- tts_hotkey_clean.exe
+`-- run_tts_hotkey_clean_debug.bat
 ```
 
-## 📦 Dependências Incluídas (Clean Architecture)
+## Como Usar o Executavel
 
-O executável inclui automaticamente:
-
-- **Core**: Python runtime, bibliotecas padrão
-- **Architecture**: Clean Architecture com SOLID principles
-- **TTS**: pyttsx3, gTTS, requests (multi-engine com fallback)
-- **Hotkeys**: keyboard (captura global de teclas)
-- **System Integration**: pystray, PIL (system tray e notificações)
-- **Interface**: tkinter (GUI de configuração)
-- **Persistence**: JSON-based configuration repository
-- **HTTP**: requests, urllib3, certifi
-- **Platform Support**: Windows (full features), Linux (graceful degradation)
-
-## 🎮 Como Usar o Executável
-
-Após compilação, execute:
+Depois do build:
 
 ```powershell
 cd dist
 .\tts_hotkey_clean.exe
 ```
 
-**Na primeira execução:**
-1. Configuração de Discord User ID (Settings > Advanced > Developer Mode)
-2. Escolher engine TTS (pyttsx3 local ou gTTS online)
-3. Definir hotkeys (padrão: `{` abre, `}` fecha)
-4. Salva configuração automaticamente
-5. Inicia system tray com ícone
+Na primeira execucao:
 
-**Uso:** Digite `{seu texto}` para falar. Sistema roda em background.
+1. Configure o Discord User ID
+2. Escolha a engine TTS
+3. Defina as hotkeys
+4. Salve a configuracao
+5. Inicie o app pela tray
 
-## 🔍 Resolução de Problemas
+## Resolucao de Problemas
 
-| Problema | Solução |
+| Problema | Solucao |
 |----------|---------|
-| **Build falha** | Reinstale dependências: `pip install -r requirements.txt` |
-| **Ícone não encontrado** | Está ok, build continua sem ícone |
-| **PyInstaller não encontrado** | `pip install pyinstaller` |
-| **Antivírus bloqueia .exe** | Adicione exceção para `dist/` folder |
+| Build falha | Ative o `.venv` e reinstale dependencias com `pip install -r requirements.txt` |
+| Icone nao encontrado | O build pode continuar sem icone |
+| PyInstaller nao encontrado | Com o `.venv` ativo, rode `pip install pyinstaller` |
+| Antivirus bloqueia `.exe` | Adicione excecao para a pasta `dist/` |
 
-## 🚀 Distribuição
+## Distribuicao
 
-O executável do Desktop App é **portável**:
-- Cópie apenas `dist/tts_hotkey_clean.exe`
-- Funciona em qualquer Windows 10/11
-- Configure na primeira execução via interface gráfica
-- Salva config automaticamente em `AppData/Local/TTS-Hotkey/`
-- Abre como aplicativo de janela, sem console para o usuário final
+O executavel do Desktop App e portatil:
+
+- Copie `dist/tts_hotkey_clean.exe`
+- Funciona em Windows 10/11
+- Salva configuracao em `AppData/Local/TTS-Hotkey/`

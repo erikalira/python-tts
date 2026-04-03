@@ -4,11 +4,11 @@ This directory contains the repository's supporting documentation. The root `REA
 
 ## Main guides
 
+- [SETUP.md](SETUP.md): ambiente virtual, instalacao e ativacao no Windows e Linux
 - [BUILD_GUIDE.md](BUILD_GUIDE.md): Windows executable build flow
 - [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview and layer map
 - [README_DESKTOP_APP.md](README_DESKTOP_APP.md): desktop app guide
 - [HOTKEY_SETUP.md](HOTKEY_SETUP.md): hotkey setup and usage
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md): common issues and diagnostics
 
 ## Governance
 

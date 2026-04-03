@@ -1,56 +1,56 @@
 # Painel Principal do Desktop App
 
-Esta feature transforma a GUI do Desktop App em um painel principal persistente, em vez de uma janela usada apenas para configuraÃ§Ã£o inicial.
+Esta feature transforma a GUI do Desktop App em um painel principal persistente, em vez de uma janela usada apenas para configuracao inicial.
 
 ## Objetivo
 
-Dar ao usuÃ¡rio final uma experiÃªncia clara ao abrir o executÃ¡vel:
+Dar ao usuario final uma experiencia clara ao abrir o executavel:
 
 - a janela principal permanece aberta
 - o app se apresenta e orienta o fluxo inicial
-- a configuraÃ§Ã£o pode ser salva sem depender de terminal
-- a conexÃ£o com o bot pode ser testada manualmente
+- a configuracao pode ser salva sem depender de terminal
+- a conexao com o bot pode ser testada manualmente
 - um teste curto de envio pode ser disparado sob demanda
-- a atividade relevante do app fica visÃ­vel em uma Ã¡rea de logs
+- a atividade relevante do app fica visivel em uma area de logs
 
 ## Fluxo esperado
 
-1. O usuÃ¡rio abre `tts_hotkey_clean.exe`
-2. O painel principal aparece e permanece visÃ­vel
-3. O usuÃ¡rio preenche `Bot URL`, `Guild ID` e `User ID`
-4. O usuÃ¡rio clica em `Testar conexÃ£o`
-5. O usuÃ¡rio salva a configuraÃ§Ã£o
-6. O usuÃ¡rio pode clicar em `Enviar teste de voz` para validar o fluxo manualmente
-7. O usuÃ¡rio passa a usar as hotkeys normalmente, mantendo a janela como referÃªncia visual
+1. O usuario abre `tts_hotkey_clean.exe`
+2. O painel principal aparece e permanece visivel
+3. O usuario preenche `Bot URL`, `Guild ID` e `User ID`
+4. O usuario clica em `Testar conexao`
+5. O usuario salva a configuracao
+6. O usuario pode clicar em `Enviar teste de voz` para validar o fluxo manualmente
+7. O usuario passa a usar as hotkeys normalmente, mantendo a janela como referencia visual
 
 ## Regras de custo e infraestrutura
 
-- nÃ£o hÃ¡ polling contÃ­nuo de conexÃ£o
-- a verificaÃ§Ã£o de conexÃ£o ocorre apenas quando o usuÃ¡rio clica em `Testar conexÃ£o`
-- o envio de fala de teste ocorre apenas quando o usuÃ¡rio clica em `Enviar teste de voz`
-- a mensagem de teste deve ser curta para reduzir custo e ruÃ­do operacional
+- nao ha polling continuo de conexao
+- a verificacao de conexao ocorre apenas quando o usuario clica em `Testar conexao`
+- o envio de fala de teste ocorre apenas quando o usuario clica em `Enviar teste de voz`
+- a mensagem de teste deve ser curta para reduzir custo e ruido operacional
 
-## IntegraÃ§Ã£o arquitetural
+## Integracao arquitetural
 
-- a GUI apenas coleta dados, mostra estado e delega aÃ§Ãµes
-- a checagem de conexÃ£o usa o adapter HTTP do Desktop App
-- o envio de teste reutiliza o fluxo HTTP jÃ¡ existente para o bot
-- o runtime do Desktop App continua separado do bot, preservando execuÃ§Ã£o independente
+- a GUI apenas coleta dados, mostra estado e delega acoes
+- a checagem de conexao usa o adapter HTTP do Desktop App
+- o envio de teste reutiliza o fluxo HTTP ja existente para o bot
+- o runtime do Desktop App continua separado do bot, preservando execucao independente
 
 ## UX implementada
 
 - status visual do app
-- status claro de configuraÃ§Ã£o do bot
-- status claro do Ãºltimo teste de conexÃ£o/envio
-- orientaÃ§Ãµes curtas de uso no prÃ³prio painel
-- Ã¡rea de atividade com logs Ãºteis para o usuÃ¡rio
-- bandeja usada como atalho secundÃ¡rio, nÃ£o como fluxo principal obrigatÃ³rio
+- status claro de configuracao do bot
+- status claro do ultimo teste de conexao e envio
+- orientacoes curtas de uso no proprio painel
+- area de atividade com logs uteis para o usuario
+- bandeja usada como atalho secundario, nao como fluxo principal obrigatorio
 
-## ValidaÃ§Ã£o manual recomendada
+## Validacao manual recomendada
 
-- abrir o executÃ¡vel e confirmar que a janela continua visÃ­vel
-- preencher configuraÃ§Ã£o vÃ¡lida e salvar
-- testar conexÃ£o com o bot
+- abrir o executavel e confirmar que a janela continua visivel
+- preencher configuracao valida e salvar
+- testar conexao com o bot
 - enviar mensagem curta de teste
-- confirmar atualizaÃ§Ã£o dos logs no painel
+- confirmar atualizacao dos logs no painel
 - minimizar, restaurar e fechar o app

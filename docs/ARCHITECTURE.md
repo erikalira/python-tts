@@ -1,18 +1,18 @@
-﻿# Arquitetura do Projeto - TTS Hotkey Windows
+# Arquitetura do Projeto - TTS Hotkey Windows
 
-## VisÃ£o geral
+## Visao geral
 
-Este projeto contÃ©m dois aplicativos independentes:
+Este projeto contem dois aplicativos independentes:
 
 1. Bot do Discord com endpoint HTTP para TTS
 2. Desktop App Windows com hotkeys, GUI e system tray
 
-Ambos seguem Clean Architecture e os princÃ­pios SOLID para manter:
+Ambos seguem Clean Architecture e os principios SOLID para manter:
 
 - baixo acoplamento entre camadas
-- alta coesÃ£o dentro dos mÃ³dulos
+- alta coesao dentro dos modulos
 - reuso de regras compartilhadas em `src/application/` e `src/core/`
-- independÃªncia entre o bot e o Desktop App
+- independencia entre o bot e o Desktop App
 
 ## Entry points
 
@@ -33,8 +33,8 @@ Ambos seguem Clean Architecture e os princÃ­pios SOLID para manter:
 ```text
 src/
   core/                  # entidades, value objects, interfaces puras
-  application/           # casos de uso e orquestraÃ§Ã£o compartilhada
-  infrastructure/        # integraÃ§Ãµes externas e IO
+  application/           # casos de uso e orquestracao compartilhada
+  infrastructure/        # integracoes externas e IO
   presentation/          # controllers e fluxos de entrada
   desktop/               # runtime interno do Desktop App
     adapters/            # teclado, tray, TTS local
@@ -48,7 +48,7 @@ src/
 
 ### Config
 
-O Desktop App usa `DesktopAppConfig` como container principal de configuraÃ§Ã£o.
+O Desktop App usa `DesktopAppConfig` como container principal de configuracao.
 
 ```python
 @dataclass
@@ -67,7 +67,7 @@ Arquivos principais:
 - `src/desktop/config/repository.py`
 - `src/desktop/config/validation.py`
 
-O ambiente local Ã© carregado a partir de `.env`, usado como base para defaults do Desktop App e para reproduzir comportamento em desenvolvimento e em parte dos testes.
+O ambiente local e carregado a partir de `.env`, usado como base para defaults do Desktop App e para reproduzir comportamento em desenvolvimento e em parte dos testes.
 
 ### Runtime
 
@@ -75,30 +75,30 @@ O runtime principal do Desktop App fica em `src/desktop/app/desktop_app.py`.
 
 Responsabilidades principais:
 
-- carregar configuraÃ§Ã£o
+- carregar configuracao
 - montar TTS, hotkeys e tray
-- abrir o painel principal quando Tkinter estiver disponÃ­vel
-- coordenar reconfiguraÃ§Ã£o sem misturar regra de negÃ³cio com GUI
+- abrir o painel principal quando Tkinter estiver disponivel
+- coordenar reconfiguracao sem misturar regra de negocio com GUI
 
 ### TTS e hotkeys
 
 O Desktop App foi separado em responsabilidades menores:
 
-- `src/desktop/app/tts_runtime.py`: threading, cleanup e feedback de execuÃ§Ã£o
-- `src/desktop/services/tts_services.py`: engines e seleÃ§Ã£o de entrega de TTS
+- `src/desktop/app/tts_runtime.py`: threading, cleanup e feedback de execucao
+- `src/desktop/services/tts_services.py`: engines e selecao de entrega de TTS
 - `src/desktop/services/hotkey_services.py`: monitor e gerenciamento de hotkeys
 - `src/desktop/services/hotkey_capture.py`: estado puro de captura de texto
 
-## Regras de dependÃªncia
+## Regras de dependencia
 
-- `src/core/` nÃ£o depende de camadas externas
+- `src/core/` nao depende de camadas externas
 - `src/application/` depende apenas de `src/core/`
 - `src/infrastructure/` pode depender de `application` e `core`
 - `src/presentation/` delega para `application`
-- `src/desktop/` deve conter apenas runtime, adapters e coordenaÃ§Ã£o especÃ­fica do Desktop App
-- lÃ³gica compartilhÃ¡vel entre bot e Desktop App deve ser extraÃ­da para `src/application/` ou `src/core/`
+- `src/desktop/` deve conter apenas runtime, adapters e coordenacao especifica do Desktop App
+- logica compartilhavel entre bot e Desktop App deve ser extraida para `src/application/` ou `src/core/`
 
-## ExecuÃ§Ã£o
+## Execucao
 
 ```bash
 # Bot
@@ -112,15 +112,14 @@ python app.py
 
 Os testes do Desktop App ficam em `tests/unit/desktop/`.
 
-ObservaÃ§Ãµes:
+Observacoes:
 
 - a pasta de testes do Desktop App foi padronizada para `tests/unit/desktop/`
-- os sÃ­mbolos pÃºblicos do cÃ³digo foram padronizados para `Desktop App`
-- o ambiente local de testes usa `.env` como base para parte dos defaults e cenÃ¡rios
+- os simbolos publicos do codigo foram padronizados para `Desktop App`
+- o ambiente local de testes usa `.env` como base para parte dos defaults e cenarios
 
-## ReferÃªncias
+## Referencias
 
 - [README_DESKTOP_APP.md](README_DESKTOP_APP.md)
 - [features/DESKTOP_APP_MAIN_PANEL.md](features/DESKTOP_APP_MAIN_PANEL.md)
 - [features/DESKTOP_APP_GUI_UX.md](features/DESKTOP_APP_GUI_UX.md)
-

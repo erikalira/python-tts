@@ -311,7 +311,6 @@ Para monitorar limpeza automática, veja logs com `[VOICE_REPO] Cleaned up stale
 ## 📚 Documentação Relacionada
 
 - [ARCHITECTURE.md](../ARCHITECTURE.md) - Visão geral da arquitetura
-- [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) - Diagnóstico de problemas
 - Código comentado com `[SECURITY]` marca seções críticas
 
 ---

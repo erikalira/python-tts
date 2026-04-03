@@ -1,4 +1,4 @@
-﻿# python-tts-discord-bot
+# python-tts-discord-bot
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/7ed90fe1cc6f4090a7386df4681df463)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/7ed90fe1cc6f4090a7386df4681df463)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
@@ -8,35 +8,49 @@ Projeto com dois aplicativos independentes:
 - Bot do Discord para entrar em canal de voz e reproduzir TTS
 - Desktop App Windows com hotkeys para capturar texto e enviar ao bot
 
-O repositÃ³rio segue Clean Architecture e busca reutilizar lÃ³gica entre os dois fluxos, sem duplicaÃ§Ã£o entre o runtime interno do Desktop App em `src/desktop` e o restante de `src`.
+O repositorio segue Clean Architecture e busca reutilizar logica entre os dois fluxos, sem duplicacao entre o runtime interno do Desktop App em `src/desktop` e o restante de `src`.
 
-## Estrutura rÃ¡pida
+## Estrutura rapida
 
 - `src/bot.py`: sobe o bot do Discord e o servidor HTTP
 - `app.py`: inicia o Desktop App Windows
-- `src/`: camadas principais da aplicaÃ§Ã£o
-- `docs/`: documentaÃ§Ã£o complementar
-- `docs/BUILD_GUIDE.md`: guia de build do executÃ¡vel Windows
+- `src/`: camadas principais da aplicacao
+- `docs/`: documentacao complementar
+- `docs/BUILD_GUIDE.md`: guia de build do executavel Windows
 
 ## Requisitos
 
 - Python 3.11+
 - `ffmpeg` para o fluxo de voz do Discord
-- Ambiente virtual recomendado
+- O ambiente virtual `.venv` faz parte da instalacao
 
-InstalaÃ§Ã£o bÃ¡sica:
+Instalacao basica:
 
-```bash
+### Windows (PowerShell)
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Para voz no Discord localmente, tambÃ©m pode ser necessÃ¡rio:
+### Linux/macOS
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Para voz no Discord localmente, tambem pode ser necessario:
 
 ```bash
 pip install pynacl
 ```
 
-## ExecuÃ§Ã£o rÃ¡pida
+Para o passo a passo completo, consulte [docs/SETUP.md](docs/SETUP.md).
+
+## Execucao rapida
 
 Configure um arquivo `.env` com pelo menos:
 
@@ -71,23 +85,23 @@ No Windows, use o script oficial:
 ```powershell
 ./scripts/build/build_clean_architecture.ps1
 ```
+
 No Linux, gere o `.exe` pelo workflow de CI que roda em ambiente Windows.
 
-## DocumentaÃ§Ã£o
+## Documentacao
 
-Use o README principal como ponto de entrada e deixe os detalhes nos guias especÃ­ficos. A pasta `docs/` fica reservada para estrutura principal e guides; documentaÃ§Ã£o de novas features deve ir em `docs/features/`.
+Use o README principal como ponto de entrada e deixe os detalhes nos guias especificos. A pasta `docs/` fica reservada para estrutura principal e guias duraveis; documentacao de novas features deve ir em `docs/features/`.
 
-- [Ãndice da documentaÃ§Ã£o](docs/README.md)
+- [Indice da documentacao](docs/README.md)
+- [Guia de setup do ambiente](docs/SETUP.md)
 - [Governanca de IA e instrucoes canonicas](docs/ai/README.md)
-- [Guia de build do executÃ¡vel Windows](docs/BUILD_GUIDE.md)
+- [Guia de build do executavel Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
 - [Guia do Desktop App](docs/README_DESKTOP_APP.md)
-- [ConfiguraÃ§Ã£o de hotkeys](docs/HOTKEY_SETUP.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Configuracao de hotkeys](docs/HOTKEY_SETUP.md)
 
-## ObservaÃ§Ãµes
+## Observacoes
 
-- NÃ£o versione o `DISCORD_TOKEN`
+- Nao versione o `DISCORD_TOKEN`
 - O bot e o Desktop App devem continuar funcionando de forma independente
 - Prefira consultar `docs/` para detalhes de arquitetura, setup e troubleshooting
-

@@ -1,61 +1,59 @@
-﻿# ðŸš€ Interface de ConfiguraÃ§Ã£o Implementada
+# Interface de Configuracao Implementada
 
-## âœ… O que foi adicionado:
+## O que foi adicionado
 
-### 1. **Interface GrÃ¡fica de ConfiguraÃ§Ã£o Inicial**
+### 1. Interface grafica de configuracao inicial
 
-- Aparece automaticamente na primeira execuÃ§Ã£o
+- Aparece automaticamente na primeira execucao
 - Solicita Discord User ID e Channel ID
-- InstruÃ§Ãµes visuais de como encontrar os IDs
-- ValidaÃ§Ã£o de entrada (apenas nÃºmeros)
-- OpÃ§Ã£o "Continuar Sem Discord" para uso apenas local
+- Instrucoes visuais de como encontrar os IDs
+- Validacao de entrada, apenas numeros
+- Opcao `Continuar Sem Discord` para uso apenas local
 
-### 2. **Fallback Console**
+### 2. Fallback console
 
-- Se a GUI nÃ£o funcionar, usa interface de console
+- Se a GUI nao funcionar, usa interface de console
 - Mesma funcionalidade, mas em modo texto
 
-### 3. **IntegraÃ§Ã£o na Clean Architecture**
+### 3. Integracao na Clean Architecture
 
 - `InitialSetupGUI` em `src/desktop/gui/simple_gui.py`
 - Integrada ao runtime atual do Desktop App
-- Salva automaticamente no repositÃ³rio de configuraÃ§Ã£o
+- Salva automaticamente no repositorio de configuracao
 
-### 4. **IntegraÃ§Ã£o no Runtime Atual**
+### 4. Integracao no runtime atual
 
 - Interface integrada ao runtime do Desktop App em `src/desktop`
-- Um Ãºnico caminho de execuÃ§Ã£o para configuraÃ§Ã£o e startup
+- Um unico caminho de execucao para configuracao e startup
 
-## ðŸŽ¯ Como funciona:
+## Como funciona
 
-### **Primeira execuÃ§Ã£o:**
+### Primeira execucao
 
-1. âœ… Sistema detecta que IDs nÃ£o estÃ£o configurados
-2. âœ… Abre interface grÃ¡fica de configuraÃ§Ã£o
-3. âœ… Usuario preenche Discord User ID
-4. âœ… Opcionalmente preenche Channel ID
-5. âœ… Sistema salva e continua
+1. Sistema detecta que os IDs nao estao configurados
+2. Abre a interface grafica de configuracao
+3. O usuario preenche o Discord User ID
+4. Opcionalmente preenche o Channel ID
+5. O sistema salva e continua
 
-### **Uso normal:**
+### Uso normal
 
-- âœ… `{testando}` vai direto pro Discord (se configurado)
-- âœ… Fallback local funciona se Discord nÃ£o disponÃ­vel
-- âœ… Sistema reconhece usuÃ¡rio corretamente
+- `{testando}` vai direto para o Discord, se configurado
+- O fallback local funciona se o Discord nao estiver disponivel
+- O sistema reconhece o usuario corretamente
 
-## ðŸ”§ Para testar:
+## Para testar
 
-1. **Delete qualquer config existente** (para simular primeira execuÃ§Ã£o)
-2. **Execute o programa**
-3. **Interface aparecerÃ¡ automaticamente**
-4. **Configure seus IDs do Discord**
-5. **Teste `{texto}` - deve funcionar no Discord**
+1. Delete qualquer config existente para simular a primeira execucao
+2. Execute o programa
+3. A interface aparecera automaticamente
+4. Configure seus IDs do Discord
+5. Teste `{texto}` para validar o fluxo
 
-## ðŸ“‹ PrÃ³ximo build:
+## Proximo build
 
 ```powershell
-# Recompilar com nova interface
 ./scripts/build/build_clean_architecture.ps1
 ```
 
-**Agora o usuÃ¡rio tem uma interface amigÃ¡vel para configurar os IDs sem editar cÃ³digo!** ðŸŽ‰
-
+Agora o usuario tem uma interface amigavel para configurar os IDs sem editar codigo.

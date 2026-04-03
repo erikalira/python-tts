@@ -1,59 +1,59 @@
-﻿# ðŸŽ¤ TTS Hotkey - ConfiguraÃ§Ã£o AvanÃ§ada
+# TTS Hotkey - Configuracao Avancada
 
-## ðŸ† Desktop App Atual
+## Desktop App Atual
 
 **Entry point**: `app.py`  
-**ExecutÃ¡vel**: `dist/tts_hotkey_clean.exe`
+**Executavel**: `dist/tts_hotkey_clean.exe`
 
-### âœ¨ Discord ID AutomÃ¡tico
+### Discord ID Automatico
 
-O Desktop App usa a configuraÃ§Ã£o persistida para descobrir em qual canal vocÃª estÃ¡.
+O Desktop App usa a configuracao persistida para descobrir em qual canal voce esta.
 
-## ðŸ”§ **Como Descobrir seu Discord ID**
+## Como Descobrir seu Discord ID
 
 ### Passo 1: Ativar Modo Desenvolvedor
 
-1. Discord â†’ **ConfiguraÃ§Ãµes do UsuÃ¡rio**
-2. **AvanÃ§ado** â†’ Ativar **Modo Desenvolvedor**
+1. Discord -> **Configuracoes do Usuario**
+2. **Avancado** -> Ativar **Modo Desenvolvedor**
 
 ### Passo 2: Copiar seu ID
 
 1. Clique direito no **seu nome** em qualquer chat
-2. **Copiar ID do UsuÃ¡rio**
-3. Cole na interface de configuraÃ§Ã£o do app
+2. **Copiar ID do Usuario**
+3. Cole na interface de configuracao do app
 
-## ðŸŽ¯ **Funcionamento Inteligente**
+## Funcionamento Inteligente
 
-O bot usa esta **ordem de prioridade**:
+O bot usa esta ordem de prioridade:
 
-1. ðŸŽ¯ **Canal jÃ¡ conectado** (se usou `/join` antes)
-2. ðŸ“ **Channel ID especÃ­fico** (se configurou `DISCORD_CHANNEL_ID`)
-3. ðŸ‘¤ **Member ID** (encontra onde vocÃª estÃ¡)
-4. âŒ **Erro** se nenhuma opÃ§Ã£o funcionar
+1. Canal ja conectado, se voce usou `/join` antes
+2. Channel ID especifico, se configurou `DISCORD_CHANNEL_ID`
+3. Member ID, para encontrar onde voce esta
+4. Erro, se nenhuma opcao funcionar
 
-## ðŸŽ® **ConfiguraÃ§Ãµes por Perfil**
+## Configuracoes por Perfil
 
 ### Perfis sugeridos
 
-- Gaming: taxa de fala mais alta e menos notificaÃ§Ãµes
+- Gaming: taxa de fala mais alta e menos notificacoes
 - Office: taxa mais baixa e timeout maior
 - Streaming: canal fixo e menos logs visuais
 
-## âš¡ **Triggers PersonalizÃ¡veis**
+## Triggers Personalizaveis
 
 Evite conflitos com outros programas:
 
-Escolha uma combinaÃ§Ã£o de abertura/fechamento que nÃ£o conflite com outros programas.
+Escolha uma combinacao de abertura e fechamento que nao conflite com outros programas.
 
-## ðŸ”Š **ConfiguraÃ§Ã£o de Ãudio AvanÃ§ada**
+## Configuracao de Audio Avancada
 
-Configure engine, idioma, taxa e dispositivo de Ã¡udio pela interface do Desktop App.
+Configure engine, idioma, taxa e dispositivo de audio pela interface do Desktop App.
 
-## ðŸ“Š Status
+## Status
 
-Quando executado, o app mostra logs de inicializaÃ§Ã£o e status dos serviÃ§os do Desktop App.
+Quando executado, o app mostra logs de inicializacao e status dos servicos do Desktop App.
 
-## ðŸš€ **Compilar e Usar**
+## Compilar e Usar
 
 ```powershell
 # 1. Rodar o app
@@ -66,35 +66,34 @@ python app.py
 dist/tts_hotkey_clean.exe
 ```
 
-## ðŸŽ¯ **Modo de Uso**
+## Modo de Uso
 
-1. **Entre em um canal de voz** no Discord
-2. **Execute o app** (`python app.py` ou o `.exe`)
-3. **Aperte sua trigger key** (ex: `{`)
-4. **Digite o texto** que quer falar
-5. **Aperte a close key** (ex: `}`)
-6. **Bot fala automaticamente!**
+1. Entre em um canal de voz no Discord
+2. Execute o app com `python app.py` ou o `.exe`
+3. Aperte sua trigger key, por exemplo `{`
+4. Digite o texto que quer falar
+5. Aperte a close key, por exemplo `}`
+6. O bot fala automaticamente
 
-## ðŸ› ï¸ **Troubleshooting Premium**
+## Solucao de Problemas
 
-### âŒ "Hotkey registration failed"
+### "Hotkey registration failed"
 
-Mude as hotkeys na interface de configuraÃ§Ã£o do app.
+Mude as hotkeys na interface de configuracao do app.
 
-### âŒ "Discord not found"
+### "Discord not found"
 
-Verifique a URL do bot na configuraÃ§Ã£o do app ou no `.env`.
+Verifique a URL do bot na configuracao do app ou no `.env`.
 
-### âŒ "Member not found"
+### "Member not found"
 
-Use o ID correto do usuÃ¡rio ou configure um canal fixo na interface do app.
+Use o ID correto do usuario ou configure um canal fixo na interface do app.
 
-## ðŸ’Ž Vantagens da VersÃ£o Atual
+## Vantagens da Versao Atual
 
-- ðŸŽ¯ Um Ãºnico runtime do Desktop App
-- ðŸ“Š ConfiguraÃ§Ã£o persistida
-- âš¡ Build dedicado para Windows
-- ðŸ”§ Menos caminhos paralelos de execuÃ§Ã£o
+- Um unico runtime do Desktop App
+- Configuracao persistida
+- Build dedicado para Windows
+- Menos caminhos paralelos de execucao
 
-**Resultado**: um Ãºnico `.exe` baseado no runtime limpo de `src/desktop`.
-
+**Resultado**: um unico `.exe` baseado no runtime limpo de `src/desktop`.
