@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """System tray adapters for Desktop App services."""
 
-import os
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -161,9 +160,8 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         if self._on_quit:
             self._on_quit()
         else:
-            print("🛑 Encerrando TTS Hotkey...")
+            print("[TRAY] Pedido de saida sem quit_handler configurado; ocultando tray.")
             self.hide()
-            os._exit(0)
 
 
 def create_system_tray_icon(config: DesktopAppConfig) -> SystemTrayIconAdapter:

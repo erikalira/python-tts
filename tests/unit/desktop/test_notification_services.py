@@ -133,3 +133,28 @@ def test_system_tray_service_get_status_reflects_runtime():
     assert status["tray_running"] is False
     assert status["notifications_enabled"] is True
 
+
+def test_py_system_tray_icon_quit_without_handler_only_hides_tray():
+    from src.desktop.adapters.system_tray import PySystemTrayIcon
+
+    tray = PySystemTrayIcon(DesktopAppConfig.create_default())
+    tray.hide = Mock()
+
+    tray._handle_quit(None, None)
+
+    tray.hide.assert_called_once_with()
+
+
+def test_py_system_tray_icon_quit_with_handler_delegates_without_hiding():
+    from src.desktop.adapters.system_tray import PySystemTrayIcon
+
+    tray = PySystemTrayIcon(DesktopAppConfig.create_default())
+    tray.hide = Mock()
+    quit_handler = Mock()
+    tray.set_handlers(quit_handler=quit_handler)
+
+    tray._handle_quit(None, None)
+
+    quit_handler.assert_called_once_with()
+    tray.hide.assert_not_called()
+
