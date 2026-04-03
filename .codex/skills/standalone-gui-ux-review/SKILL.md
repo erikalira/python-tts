@@ -1,21 +1,21 @@
 ---
-name: standalone-gui-ux-review
-description: Review or validate standalone GUI changes for responsiveness, editability, tray behavior, end-user UX, and clean architecture boundaries.
+name: desktop-app-gui-ux-review
+description: Review or validate Desktop App GUI changes for responsiveness, editability, tray behavior, end-user UX, and clean architecture boundaries.
 ---
 
 # When to use
 
 Use when:
 
-- modifying `standalone/` GUI code
+- modifying `src/desktop/` GUI code
 - changing window, tray, or startup behavior
 - adjusting editable fields or form interactions
 - reviewing packaging behavior for end users
-- validating UX quality before finishing a standalone GUI change
+- validating UX quality before finishing a Desktop App GUI change
 
 # Goal
 
-Catch UX regressions early while keeping the standalone app responsive, understandable for end users, and aligned with clean architecture.
+Catch UX regressions early while keeping the Desktop App responsive, understandable for end users, and aligned with clean architecture.
 
 # What to check
 
@@ -42,7 +42,7 @@ Catch UX regressions early while keeping the standalone app responsive, understa
 
 ## 4. End-user distribution experience
 
-- the user-facing standalone build should not open an unnecessary terminal window
+- the user-facing Desktop App build should not open an unnecessary terminal window
 - packaging decisions match the intended UX for non-technical users
 - errors and startup state are communicated clearly without relying on console output
 
@@ -50,12 +50,12 @@ Catch UX regressions early while keeping the standalone app responsive, understa
 
 - GUI code stays in presentation/runtime concerns
 - business rules remain in `src/core/` or `src/application/`
-- reusable logic is not duplicated between `standalone/` and `src/`
-- standalone-specific adapters do not leak into shared business logic
+- reusable logic is not duplicated between `src/desktop/` and the shared layers in `src/`
+- Desktop App-specific adapters do not leak into shared business logic
 
 # Review process
 
-1. Identify the standalone entrypoints and GUI files affected by the change
+1. Identify the Desktop App entrypoints and GUI files affected by the change
 2. Inspect event handlers for blocking work, hidden state changes, or mixed responsibilities
 3. Check editable controls and their state transitions
 4. Review startup, tray, minimize, restore, and exit behavior

@@ -7,14 +7,14 @@ description: Validate changes that may impact Windows hotkey app behavior and in
 
 Use when modifying:
 
-- standalone/
+- `src/desktop/`
 - keyboard input handling
 - TTS trigger logic
 
 # Steps
 
 1. Identify entrypoints:
-   - standalone app main file
+   - Desktop App main file
    - hotkey listener
 
 2. Validate input handling:

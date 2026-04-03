@@ -25,18 +25,18 @@ Use this repository layer model:
 - `src/application/` → use cases, orchestration, application services
 - `src/infrastructure/` → external integrations, framework code, IO, persistence, Discord adapters, TTS providers
 - `src/presentation/` → entrypoints, controllers, UI-facing flow, request/response handling
-- `standalone/` → standalone application-specific runtime and adapters for the Windows hotkey app
+- `src/desktop/` → Desktop App-specific runtime and adapters for the Windows hotkey app
 
 # Dependency rules
 
 Apply these rules strictly:
 
-1. `core` must not depend on `application`, `infrastructure`, `presentation`, or `standalone`
+1. `core` must not depend on `application`, `infrastructure`, `presentation`, or `src/desktop`
 2. `application` may depend on `core`, but not on `presentation` or framework-specific runtime code
 3. `infrastructure` may depend on `application` and `core`
 4. `presentation` should delegate to `application`, not contain business rules
-5. `standalone` should only contain app-specific bootstrap/runtime behavior and should reuse shared logic whenever possible
-6. business rules must not live in `presentation`, `infrastructure`, or `standalone` unless there is a very strong reason
+5. `src/desktop` should only contain Desktop App-specific bootstrap/runtime behavior and should reuse shared logic whenever possible
+6. business rules must not live in `presentation`, `infrastructure`, or `src/desktop` unless there is a very strong reason
 
 # What to check
 
@@ -45,7 +45,7 @@ For the relevant files, check the following:
 ## 1. Layer placement
 
 - Does each file belong in its current layer?
-- Is any business logic placed in `presentation`, `infrastructure`, or `standalone`?
+- Is any business logic placed in `presentation`, `infrastructure`, or `src/desktop`?
 - Is orchestration logic in `application` instead of scattered across entrypoints?
 
 ## 2. Dependency direction
@@ -61,7 +61,7 @@ For the relevant files, check the following:
 
 ## 4. Duplication and boundary erosion
 
-- Is similar logic duplicated between `standalone/` and `src/`?
+- Is similar logic duplicated between `src/desktop/` and the shared layers in `src/`?
 - Did the change introduce shortcut logic in an outer layer instead of reusing a shared use case/service?
 
 ## 5. Safe improvements
@@ -80,7 +80,7 @@ Follow this process:
 5. Suggest the smallest safe refactor instead of proposing a full rewrite
 6. Preserve both application modes:
    - Discord bot
-   - Windows standalone hotkey app
+   - Windows Desktop App hotkey flow
 
 # Output format
 
@@ -109,7 +109,7 @@ List the smallest safe refactors in priority order.
 List what should be tested after the change, especially for:
 
 - bot flow
-- standalone hotkey flow
+- Desktop App hotkey flow
 - shared services/use cases
 
 # Important behavior

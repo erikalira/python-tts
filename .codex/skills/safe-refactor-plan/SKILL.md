@@ -5,7 +5,7 @@ description: Generate a safe, step-by-step refactor plan minimizing risk and pre
 
 # When to use
 
-Use when refactoring code that affects multiple modules, especially shared logic between standalone and src.
+Use when refactoring code that affects multiple modules, especially shared logic between the Desktop App runtime and the shared layers in `src`.
 
 # Steps
 
@@ -25,7 +25,7 @@ Use when refactoring code that affects multiple modules, especially shared logic
 
 4. Define validation per step:
    - bot still runs
-   - standalone app still runs
+   - Desktop App still runs
    - no import errors
 
 5. Order steps to minimize risk:

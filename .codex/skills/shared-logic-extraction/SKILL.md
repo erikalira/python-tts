@@ -1,6 +1,6 @@
 ---
 name: shared-logic-extraction
-description: Identify duplicated logic between standalone and src and extract it into shared use cases or services.
+description: Identify duplicated logic between the Desktop App runtime and the shared layers in `src`, then extract it into shared use cases or services.
 ---
 
 # When to use

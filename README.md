@@ -6,14 +6,14 @@
 Projeto com dois aplicativos independentes:
 
 - Bot do Discord para entrar em canal de voz e reproduzir TTS
-- Desktop app Windows com hotkeys para capturar texto e enviar ao bot
+- Desktop App Windows com hotkeys para capturar texto e enviar ao bot
 
 O repositÃ³rio segue Clean Architecture e busca reutilizar lÃ³gica entre os dois fluxos, sem duplicaÃ§Ã£o entre o runtime interno do Desktop App em `src/desktop` e o restante de `src`.
 
 ## Estrutura rÃ¡pida
 
 - `src/bot.py`: sobe o bot do Discord e o servidor HTTP
-- `app.py`: inicia o desktop app Windows
+- `app.py`: inicia o Desktop App Windows
 - `src/`: camadas principais da aplicaÃ§Ã£o
 - `docs/`: documentaÃ§Ã£o complementar
 - `docs/BUILD_GUIDE.md`: guia de build do executÃ¡vel Windows
@@ -52,7 +52,7 @@ Suba o bot:
 python -m src.bot
 ```
 
-Em outro terminal, rode o desktop app:
+Em outro terminal, rode o Desktop App:
 
 ```bash
 python app.py
@@ -80,13 +80,13 @@ Use o README principal como ponto de entrada e deixe os detalhes nos guias espec
 - [Ãndice da documentaÃ§Ã£o](docs/README.md)
 - [Guia de build do executÃ¡vel Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
-- [Guia do desktop app](docs/README_STANDALONE.md)
+- [Guia do Desktop App](docs/README_DESKTOP_APP.md)
 - [ConfiguraÃ§Ã£o de hotkeys](docs/HOTKEY_SETUP.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 ## ObservaÃ§Ãµes
 
 - NÃ£o versione o `DISCORD_TOKEN`
-- O bot e o desktop app devem continuar funcionando de forma independente
+- O bot e o Desktop App devem continuar funcionando de forma independente
 - Prefira consultar `docs/` para detalhes de arquitetura, setup e troubleshooting
 
