@@ -15,7 +15,7 @@ Todos os arquivos de documentação do projeto (exceto o README.md principal) de
 - `CORREÇÕES_IMPLEMENTADAS.md` - Log de correções implementadas
 - `HOTKEY_SETUP.md` - Configuração de teclas de atalho
 - `HOTKEY_SETUP_OLD.md` - Configuração antiga de teclas (histórico)
-- `README_STANDALONE.md` - README para versão standalone
+- `README_DESKTOP_APP.md` - README do Desktop App
 - `TROUBLESHOOTING.md` - Guia de solução de problemas
 - `VOICE_TIMEOUT.md` - Documentação sobre timeout de voz
 

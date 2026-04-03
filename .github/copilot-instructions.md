@@ -2,7 +2,7 @@
 
 ## Project Context
 
-Este é um projeto Python de Text-to-Speech (TTS) que integra com Discord e Flask, com suporte completo a aplicações standalone. O projeto implementa Clean Architecture e SOLID principles tanto na versão Discord quanto na versão standalone configurável com interface gráfica.
+Este ? um projeto Python de Text-to-Speech (TTS) que integra com Discord e Flask, com suporte completo ao Desktop App Windows. O projeto implementa Clean Architecture e SOLID principles tanto na vers?o Discord quanto na vers?o Desktop App configur?vel com interface gr?fica.
 
 ## Architecture Overview
 
@@ -27,12 +27,12 @@ src/
 ├── presentation/   # Controllers e comandos
 │   ├── discord_commands.py
 │   └── http_controllers.py
-└── standalone/     # NOVA: Versão standalone com Clean Architecture
-    ├── config/     # Configuração standalone com dataclasses
-    │   └── standalone_config.py
-    ├── app/        # Aplicação principal standalone
-    │   └── simple_app.py
-    ├── services/   # Serviços específicos standalone
+??? desktop/        # Desktop App com Clean Architecture
+    ??? config/     # Configura??o do Desktop App com dataclasses
+    │   └── desktop_config.py
+    ??? app/        # Aplica??o principal do Desktop App
+    │   └── desktop_app.py
+    ??? services/   # Servi?os espec?ficos do Desktop App
     │   ├── tts_services.py
     │   ├── hotkey_services.py
     │   └── notification_services.py
@@ -48,7 +48,7 @@ scripts/build/      # Scripts de build para Windows
 
 docs/               # Documentação técnica detalhada
 ├── ARCHITECTURE.md          # Arquitetura e design do sistema
-├── README_STANDALONE.md     # Versão standalone do aplicativo
+??? README_DESKTOP_APP.md    # Guia do Desktop App
 ├── TROUBLESHOOTING.md       # Guia de solução de problemas
 ├── HOTKEY_SETUP.md         # Configuração de hotkeys
 └── SISTEMA_CONEXAO_INTELIGENTE.md  # Sistema de conexão Discord
@@ -265,7 +265,7 @@ class ConfigRepository(ABC):
 - **README.md**: Overview do projeto, instalação e uso básico
 - **docs/ARCHITECTURE.md**: Arquitetura detalhada e decisões de design
 - **docs/TROUBLESHOOTING.md**: Guia de solução de problemas comuns
-- **docs/README_STANDALONE.md**: Versão standalone e configurações específicas
+- **docs/README_DESKTOP_APP.md**: Guia do Desktop App e configura??es espec?ficas
 - **docs/HOTKEY_SETUP.md**: Configuração de hotkeys e atalhos
 - **docs/SISTEMA_CONEXAO_INTELIGENTE.md**: Sistema de conexão Discord
 - **Docstrings**: Formato Google em todas as classes e métodos públicos
@@ -303,19 +303,19 @@ def process_tts_request(text: str, engine: str = "gtts") -> AudioData:
     pass
 ```
 
-## Standalone Application Architecture
+## Desktop App Architecture
 
 ### Core Components
 
-- **StandaloneConfig**: Dataclass-based configuration with validation
-- **SimpleApplication**: Main application orchestrating all services
+- **DesktopAppConfig**: Dataclass-based configuration with validation
+- **DesktopApp**: Main application orchestrating all services
 - **Service Layer**: TTSProcessor, HotkeyManager, SystemTrayService
 - **GUI Layer**: Tkinter-based configuration interface
 - **Repository Pattern**: Configuration persistence with JSON
 
 ### Entry Points
 
-- **tts_hotkey_configurable.py**: Main entry point with clean architecture and embedded fallback
+- **app.py**: Main entry point for the Desktop App
 - **Build Scripts**: PowerShell scripts for Windows executable creation
 - **Platform Compatibility**: Windows (full features) and Linux (graceful degradation)
 
@@ -331,7 +331,7 @@ def process_tts_request(text: str, engine: str = "gtts") -> AudioData:
 ## When Writing New Code
 
 1. **Understand the Domain**: Leia `docs/ARCHITECTURE.md` e código existente primeiro
-2. **Follow Patterns**: Use os padrões estabelecidos na arquitetura Clean (tanto Discord quanto standalone)
+2. **Follow Patterns**: Use os padrões estabelecidos na arquitetura Clean (tanto Discord quanto Desktop App)
 3. **Test First**: Considere TDD quando apropriado
 4. **Platform Compatibility**: Considere Windows (target) e Linux (development) environments
 5. **Documentation**: Documente APIs públicas e atualize `docs/` conforme necessário
