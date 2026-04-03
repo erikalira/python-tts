@@ -1,0 +1,18 @@
+{
+  "tts_engine": "gtts",
+  "tts_language": "pt",
+  "tts_voice_id": "roa/pt-br",
+  "tts_rate": 180,
+  "tts_output_device": null,
+  "discord_bot_url": "https://python-tts-s3z8.onrender.com",
+  "discord_guild_id": "456",
+  "discord_channel_id": null,
+  "discord_member_id": "123",
+  "trigger_open": "[",
+  "trigger_close": "]",
+  "show_notifications": true,
+  "console_logs": true,
+  "request_timeout": 10,
+  "user_agent": "TTS-Hotkey/2.0",
+  "max_text_length": 500
+}
