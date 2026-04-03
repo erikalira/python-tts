@@ -141,6 +141,7 @@ def test_build_tts_engine_chain_prefers_local_engine_when_configured():
 def test_desktop_app_tts_service_prefers_local_engine_when_configured():
     config = DesktopAppConfig.create_default()
     config.tts.engine = "pyttsx3"
+    config.interface.local_tts_enabled = True
     bot_client = FakeDiscordBotClient(available=True, result=True)
     local_engine = FakeEngine(available=True, result=True)
     service = DesktopAppTTSService(
@@ -152,6 +153,23 @@ def test_desktop_app_tts_service_prefers_local_engine_when_configured():
     assert service.speak_text("hello") is True
     assert local_engine.calls == ["hello"]
     assert bot_client.requests == []
+
+
+def test_desktop_app_tts_service_uses_discord_when_local_voice_is_disabled():
+    config = DesktopAppConfig.create_default()
+    config.tts.engine = "pyttsx3"
+    config.interface.local_tts_enabled = False
+    bot_client = FakeDiscordBotClient(available=True, result=True)
+    local_engine = FakeEngine(available=True, result=True)
+    service = DesktopAppTTSService(
+        config,
+        bot_client=bot_client,
+        local_engine_factory=lambda cfg: local_engine,
+    )
+
+    assert service.speak_text("hello") is True
+    assert local_engine.calls == []
+    assert len(bot_client.requests) == 1
 
 
 def test_desktop_app_tts_service_truncates_long_text():
@@ -202,6 +220,15 @@ def test_local_pyttsx3_engine_initializes_and_speaks():
     engine.setProperty.assert_any_call("rate", config.tts.rate)
     engine.setProperty.assert_any_call("voice", "target-voice")
     engine.say.assert_called_once_with("hello")
+
+
+def test_desktop_app_tts_service_reports_local_voice_as_disabled_by_default():
+    config = DesktopAppConfig.create_default()
+
+    status = DesktopAppTTSService(config, bot_client=FakeDiscordBotClient()).get_status_info()
+
+    assert status["local_tts_enabled"] is False
+    assert status["local_available"] is False
 
 
 def test_keyboard_cleanup_service_reports_suppression():

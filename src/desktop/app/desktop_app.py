@@ -243,11 +243,12 @@ class DesktopApp:
             return
 
         logger.info(
-            "[DESKTOP_APP] Config atual: bot_url=%s, guild_id=%s, member_id=%s, engine=%s, hotkey=%s",
+            "[DESKTOP_APP] Config atual: bot_url=%s, guild_id=%s, member_id=%s, engine=%s, local_tts_enabled=%s, hotkey=%s",
             self._config.discord.bot_url,
             self._config.discord.guild_id,
             self._config.discord.member_id,
             self._config.tts.engine,
+            self._config.interface.local_tts_enabled,
             self._config.hotkey.keys,
         )
 

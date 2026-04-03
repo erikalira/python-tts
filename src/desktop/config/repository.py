@@ -56,6 +56,7 @@ class ConfigurationRepository:
                 interface=InterfaceConfig(
                     show_notifications=data.get("show_notifications", True),
                     console_logs=data.get("console_logs", True),
+                    local_tts_enabled=data.get("local_tts_enabled", False),
                 ),
                 network=NetworkConfig(
                     request_timeout=data.get("request_timeout", 10),
@@ -84,6 +85,7 @@ class ConfigurationRepository:
                 "trigger_close": config.hotkey.trigger_close,
                 "show_notifications": config.interface.show_notifications,
                 "console_logs": config.interface.console_logs,
+                "local_tts_enabled": config.interface.local_tts_enabled,
                 "request_timeout": config.network.request_timeout,
                 "user_agent": config.network.user_agent,
                 "max_text_length": config.network.max_text_length,

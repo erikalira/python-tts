@@ -104,6 +104,26 @@ class ConsoleConfig(ConfigInterface):
             except ValueError:
                 print("❌ Velocidade deve ser um número!")
         
+        print("\nLocal voice in the Windows app:")
+        print("1. Disabled (recommended: use only the Discord bot)")
+        print("2. Enabled (accessibility/local fallback with pyttsx3)")
+
+        while True:
+            local_choice = input(
+                "Enable local voice in the Windows app? "
+                f"[1-2, current: {'enabled' if config.interface.local_tts_enabled else 'disabled'}]: "
+            ).strip()
+            if not local_choice:
+                local_tts_enabled = config.interface.local_tts_enabled
+                break
+            if local_choice == "1":
+                local_tts_enabled = False
+                break
+            if local_choice == "2":
+                local_tts_enabled = True
+                break
+            print("Invalid option!")
+
         # Triggers
         print("\n⌨️ Configuração de Triggers")
         trigger_open = resolve_text_value(input(f"Trigger abrir [{config.hotkey.trigger_open}]: "), config.hotkey.trigger_open)
@@ -120,6 +140,7 @@ class ConsoleConfig(ConfigInterface):
             rate=rate,
             trigger_open=trigger_open,
             trigger_close=trigger_close,
+            local_tts_enabled=local_tts_enabled,
         )
         
         # Validate
@@ -397,6 +418,7 @@ class GUIConfig(ConfigInterface):
         self.trigger_close_var: Optional[tk.StringVar] = None
         self.show_notifications_var = None
         self.console_logs_var = None
+        self.local_tts_enabled_var = None
         
     def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Show GUI configuration."""
@@ -508,11 +530,21 @@ class GUIConfig(ConfigInterface):
             return
             
         # Engine
-        ttk.Label(parent, text="Engine TTS:").pack(anchor="w", pady=(0, 5))
+        ttk.Label(parent, text="Engine de voz do bot:").pack(anchor="w", pady=(0, 5))
         self.engine_var = tk.StringVar(value=self.config.tts.engine)
         engine_combo = ttk.Combobox(parent, textvariable=self.engine_var, 
                                   values=["gtts", "pyttsx3"], state="readonly")
         engine_combo.pack(fill="x", pady=(0, 10))
+        ttk.Label(
+            parent,
+            text=(
+                "O caminho principal do app e enviar o texto para o bot do Discord. "
+                "A voz local do Windows e opcional e fica nas preferencias da interface."
+            ),
+            wraplength=420,
+            justify="left",
+            font=("Arial", 8),
+        ).pack(anchor="w", pady=(0, 10))
         
         # Language
         ttk.Label(parent, text="Idioma:").pack(anchor="w", pady=(0, 5))
@@ -557,6 +589,7 @@ class GUIConfig(ConfigInterface):
 
         self.show_notifications_var = tk.BooleanVar(value=self.config.interface.show_notifications)
         self.console_logs_var = tk.BooleanVar(value=self.config.interface.console_logs)
+        self.local_tts_enabled_var = tk.BooleanVar(value=self.config.interface.local_tts_enabled)
 
         ttk.Checkbutton(
             parent,
@@ -567,6 +600,11 @@ class GUIConfig(ConfigInterface):
             parent,
             text="Manter logs detalhados na interface",
             variable=self.console_logs_var,
+        ).pack(anchor="w", pady=(0, 10))
+        ttk.Checkbutton(
+            parent,
+            text="Ativar voz local opcional no app Windows (pyttsx3)",
+            variable=self.local_tts_enabled_var,
         ).pack(anchor="w", pady=(0, 10))
 
         ttk.Label(
@@ -609,7 +647,7 @@ class GUIConfig(ConfigInterface):
             self.guild_id_var,
             self.language_var, self.voice_id_var, self.rate_var,
             self.trigger_open_var, self.trigger_close_var
-            , self.show_notifications_var, self.console_logs_var
+            , self.show_notifications_var, self.console_logs_var, self.local_tts_enabled_var
         ]):
             return None
 
@@ -624,6 +662,7 @@ class GUIConfig(ConfigInterface):
         trigger_close = self.trigger_close_var.get().strip()
         show_notifications = bool(self.show_notifications_var.get())
         console_logs = bool(self.console_logs_var.get())
+        local_tts_enabled = bool(self.local_tts_enabled_var.get())
 
         return build_updated_config(
             self.config,
@@ -638,6 +677,7 @@ class GUIConfig(ConfigInterface):
             trigger_close=trigger_close,
             show_notifications=show_notifications,
             console_logs=console_logs,
+            local_tts_enabled=local_tts_enabled,
         )
     
     def _cancel(self):
@@ -863,6 +903,14 @@ class DesktopAppMainWindow(GUIConfig):
             if is_discord_ready
             else "Configuração incompleta: preencha Bot URL, Guild ID e User ID para usar o bot."
         )
+        if (
+            self.config
+            and not is_discord_ready
+            and self.config.interface.local_tts_enabled
+        ):
+            config_message += " Voz local opcional ativada como fallback."
+        elif self.config and not is_discord_ready:
+            config_message += " Voz local opcional desativada."
         if self._config_var:
             self._config_var.set(config_message)
         self._set_label_color(self._config_label, "#155724" if is_discord_ready else "#856404")

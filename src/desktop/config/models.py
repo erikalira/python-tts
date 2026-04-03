@@ -42,6 +42,7 @@ class InterfaceConfig:
 
     show_notifications: bool = True
     console_logs: bool = True
+    local_tts_enabled: bool = False
 
 
 @dataclass

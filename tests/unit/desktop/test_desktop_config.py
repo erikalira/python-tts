@@ -26,6 +26,7 @@ def test_configuration_repository_loads_defaults_when_file_missing(tmp_path):
 
     assert isinstance(config, DesktopAppConfig)
     assert config.tts.engine == "gtts"
+    assert config.interface.local_tts_enabled is False
     assert config.hotkey.keys == "{text}"
 
 
@@ -37,6 +38,7 @@ def test_configuration_repository_save_and_load_roundtrip(tmp_path):
     config.discord.guild_id = "456"
     config.hotkey.trigger_open = "["
     config.hotkey.trigger_close = "]"
+    config.interface.local_tts_enabled = True
 
     assert repo.save(config) is True
 
@@ -44,10 +46,12 @@ def test_configuration_repository_save_and_load_roundtrip(tmp_path):
     assert saved_data["discord_member_id"] == "123"
     assert saved_data["discord_guild_id"] == "456"
     assert saved_data["trigger_open"] == "["
+    assert saved_data["local_tts_enabled"] is True
 
     loaded = repo.load()
     assert loaded.discord.member_id == "123"
     assert loaded.discord.guild_id == "456"
+    assert loaded.interface.local_tts_enabled is True
     assert loaded.hotkey.keys == "[text]"
 
 
@@ -59,6 +63,7 @@ def test_configuration_repository_returns_defaults_on_invalid_json(capsys, tmp_p
     config = repo.load()
 
     assert config.tts.engine == "gtts"
+    assert config.interface.local_tts_enabled is False
     assert "Erro ao carregar configura" in capsys.readouterr().out
 
 

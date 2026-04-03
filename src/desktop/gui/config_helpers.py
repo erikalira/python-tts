@@ -53,6 +53,7 @@ def build_updated_config(
     trigger_close: str | None = None,
     show_notifications: bool | None = None,
     console_logs: bool | None = None,
+    local_tts_enabled: bool | None = None,
 ) -> DesktopAppConfig:
     """Create a new config with the provided updated values."""
     return DesktopAppConfig(
@@ -78,6 +79,11 @@ def build_updated_config(
             current_config.interface,
             show_notifications=current_config.interface.show_notifications if show_notifications is None else show_notifications,
             console_logs=current_config.interface.console_logs if console_logs is None else console_logs,
+            local_tts_enabled=(
+                current_config.interface.local_tts_enabled
+                if local_tts_enabled is None
+                else local_tts_enabled
+            ),
         ),
         network=current_config.network,
     )

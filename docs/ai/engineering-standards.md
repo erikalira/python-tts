@@ -20,6 +20,9 @@
 Before finishing relevant code changes:
 
 - run relevant automated tests
+- default to `tests/unit` for routine validation
+- run `tests/integration` explicitly when a change touches real providers, platform bindings, network behavior, or OS-dependent adapters
+- do not classify environment-dependent tests as unit tests
 - verify imports and boundaries did not break
 - confirm Discord bot startup still works
 - confirm Windows desktop app startup still works

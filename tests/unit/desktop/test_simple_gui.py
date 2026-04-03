@@ -121,7 +121,7 @@ def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch)
     config.tts.language = "pt"
     config.tts.voice_id = "voice"
     config.tts.rate = 180
-    responses = iter(["", "", "", "", "", "", "", "", ""])
+    responses = iter(["", "", "", "", "", "", "", "", "", ""])
 
     monkeypatch.setattr("builtins.input", lambda _prompt: next(responses))
 
@@ -133,6 +133,7 @@ def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch)
     assert result.discord.bot_url == "http://bot"
     assert result.tts.engine == "gtts"
     assert result.tts.rate == 180
+    assert result.interface.local_tts_enabled is False
 
 
 def test_console_config_retries_invalid_choices_and_returns_none_on_validation_error(monkeypatch, capsys):
@@ -150,6 +151,8 @@ def test_console_config_retries_invalid_choices_and_returns_none_on_validation_e
         "abc",
         "450",
         "200",
+        "3",
+        "2",
         "",
         "",
     ])
@@ -441,6 +444,7 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
     gui.config.tts.rate = 220
     gui.config.hotkey.trigger_open = "["
     gui.config.hotkey.trigger_close = "]"
+    gui.config.interface.local_tts_enabled = True
 
     monkeypatch.setattr(simple_gui, "tk", build_fake_tk_module())
     monkeypatch.setattr(simple_gui, "ttk", build_fake_ttk_module())
@@ -458,6 +462,7 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
     assert gui.trigger_close_var.get() == "]"
     assert gui.show_notifications_var.get() is True
     assert gui.console_logs_var.get() is True
+    assert gui.local_tts_enabled_var.get() is True
 
 
 def test_gui_config_save_config_returns_early_when_fields_missing():
@@ -486,6 +491,7 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
     gui.trigger_close_var = DummyVar("]")
     gui.show_notifications_var = DummyVar(True)
     gui.console_logs_var = DummyVar(True)
+    gui.local_tts_enabled_var = DummyVar(True)
 
     monkeypatch.setattr(simple_gui.ConfigurationValidator, "validate", lambda config: (True, []))
 
@@ -496,6 +502,7 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
     assert gui.result.discord.guild_id == "456"
     assert gui.result.tts.engine == "pyttsx3"
     assert gui.result.tts.rate == 210
+    assert gui.result.interface.local_tts_enabled is True
     assert gui.result.hotkey.trigger_open == "["
     assert gui.root.destroy_called is True
 
@@ -514,6 +521,7 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch):
     gui.trigger_close_var = DummyVar("}")
     gui.show_notifications_var = DummyVar(True)
     gui.console_logs_var = DummyVar(True)
+    gui.local_tts_enabled_var = DummyVar(False)
     errors = []
 
     monkeypatch.setattr(simple_gui.ConfigurationValidator, "validate", lambda config: (False, ["bad rate"]))
@@ -539,6 +547,7 @@ def test_gui_config_save_config_handles_value_error(monkeypatch):
     gui.trigger_close_var = DummyVar("}")
     gui.show_notifications_var = DummyVar(True)
     gui.console_logs_var = DummyVar(True)
+    gui.local_tts_enabled_var = DummyVar(False)
     errors = []
 
     monkeypatch.setattr(simple_gui.messagebox, "showerror", lambda title, message: errors.append((title, message)))
@@ -564,6 +573,7 @@ def test_gui_config_save_config_handles_unexpected_error(monkeypatch):
     gui.trigger_close_var = DummyVar("}")
     gui.show_notifications_var = DummyVar(True)
     gui.console_logs_var = DummyVar(True)
+    gui.local_tts_enabled_var = DummyVar(False)
     errors = []
 
     monkeypatch.setattr(simple_gui, "build_updated_config", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))

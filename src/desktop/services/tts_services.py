@@ -132,7 +132,9 @@ class DesktopAppTTSService:
         if self._config.discord.bot_url:
             discord_engine = DiscordTTSService(self._config, bot_client=self._bot_client)
 
-        local_engine = self._local_engine_factory(self._config)
+        local_engine = None
+        if self._config.interface.local_tts_enabled:
+            local_engine = self._local_engine_factory(self._config)
         engines = build_tts_engine_chain(
             self._config.tts.engine,
             discord_engine=discord_engine,
@@ -168,7 +170,12 @@ class DesktopAppTTSService:
 
         return {
             "discord_available": self._bot_client.is_available(),
-            "local_available": LocalPyTTSX3Engine(self._config).is_available(),
+            "local_tts_enabled": self._config.interface.local_tts_enabled,
+            "local_available": (
+                LocalPyTTSX3Engine(self._config).is_available()
+                if self._config.interface.local_tts_enabled
+                else False
+            ),
             "pyttsx3_installed": is_pyttsx3_available(),
             "requests_installed": requests_installed,
             "bot_url_configured": bool(self._config.discord.bot_url),

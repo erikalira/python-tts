@@ -48,6 +48,8 @@ Escolha uma combinacao de abertura e fechamento que nao conflite com outros prog
 ## Configuracao de Audio Avancada
 
 Configure engine, idioma, taxa e dispositivo de audio pela interface do Desktop App.
+Por padrao, o Desktop App envia o texto para o bot do Discord.
+Se voce quiser usar voz local no proprio Windows, ative a opcao de voz local manualmente na interface.
 
 ## Status
 
@@ -74,6 +76,12 @@ dist/tts_hotkey_clean.exe
 4. Digite o texto que quer falar
 5. Aperte a close key, por exemplo `}`
 6. O bot fala automaticamente
+
+## Voz local opcional
+
+Se o bot nao estiver disponivel e voce quiser usar o app como leitor local no Windows,
+ative explicitamente a voz local opcional na aba de interface do Desktop App.
+Esse modo usa `pyttsx3` e nao faz parte do fluxo padrao.
 
 ## Solucao de Problemas
 
