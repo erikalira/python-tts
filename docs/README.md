@@ -29,6 +29,7 @@ This directory contains the repository's supporting documentation. The root `REA
 ## Features
 
 - [features/README.md](features/README.md): feature documentation index
+- [features/DESKTOP_APP_ARCHITECTURE_REFACTOR_PLAN.md](features/DESKTOP_APP_ARCHITECTURE_REFACTOR_PLAN.md): desktop architecture review and refactor execution log
 - [features/DESKTOP_APP_GUI_UX.md](features/DESKTOP_APP_GUI_UX.md): desktop GUI UX and responsiveness
 - [features/DESKTOP_APP_MAIN_PANEL.md](features/DESKTOP_APP_MAIN_PANEL.md): desktop main panel flow and manual checks
 - [features/INTERFACE_CONFIGURACAO.md](features/INTERFACE_CONFIGURACAO.md): configuration interface details
@@ -38,10 +39,6 @@ This directory contains the repository's supporting documentation. The root `REA
 - [features/MULTI_SERVER_IMPROVEMENTS.md](features/MULTI_SERVER_IMPROVEMENTS.md): multi-server improvements
 - [features/SISTEMA_CONEXAO_INTELIGENTE.md](features/SISTEMA_CONEXAO_INTELIGENTE.md): connection flow details
 
-
-## Refators
-
-- [refators/DESKTOP_APP_ARCHITECTURE_REFACTOR_PLAN.md](refators/DESKTOP_APP_ARCHITECTURE_REFACTOR_PLAN.md): desktop architecture review and refactor plan
 ## Navigation
 
 - [Back to root README](../README.md)

@@ -1,21 +1,21 @@
-#!/usr/bin/env python3
-"""
-Desktop App GUI Module Init
-"""
+"""Desktop App GUI public exports."""
 
-try:
-    from .simple_gui import (
-        ConfigInterface,
-        GUIConfig,
-        ConsoleConfig,
-        ConfigurationService
-    )
-except ImportError:
-    pass
+from .config_dialogs import ConfigInterface, ConsoleConfig, GUIConfig, InitialSetupGUI
+from .configuration_service import ConfigurationService
+from .main_window import DesktopAppMainWindow
+from .tk_support import TKINTER_AVAILABLE, messagebox, tk, ttk
+from .ui_logging import UILogHandler
 
 __all__ = [
-    'ConfigInterface',
-    'GUIConfig',
-    'ConsoleConfig',
-    'ConfigurationService'
+    "ConfigInterface",
+    "ConfigurationService",
+    "ConsoleConfig",
+    "DesktopAppMainWindow",
+    "GUIConfig",
+    "InitialSetupGUI",
+    "TKINTER_AVAILABLE",
+    "UILogHandler",
+    "messagebox",
+    "tk",
+    "ttk",
 ]

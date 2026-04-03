@@ -4,7 +4,9 @@ from types import SimpleNamespace
 import pytest
 
 from src.desktop.config.desktop_config import DesktopAppConfig
-from src.desktop.gui import simple_gui
+from src.desktop.gui import tk_support
+from src.desktop.gui.config_dialogs import ConsoleConfig, GUIConfig, InitialSetupGUI
+from src.desktop.gui.ui_logging import UILogHandler
 
 
 class DummyVar:
@@ -118,14 +120,12 @@ def build_fake_ttk_module():
 def prevent_real_messageboxes(monkeypatch):
     calls = {"info": [], "error": []}
     monkeypatch.setattr(
-        simple_gui.messagebox,
-        "showinfo",
-        lambda title, message: calls["info"].append((title, message)),
-    )
-    monkeypatch.setattr(
-        simple_gui.messagebox,
-        "showerror",
-        lambda title, message: calls["error"].append((title, message)),
+        tk_support,
+        "messagebox",
+        SimpleNamespace(
+            showinfo=lambda title, message: calls["info"].append((title, message)),
+            showerror=lambda title, message: calls["error"].append((title, message)),
+        ),
     )
     return calls
 
@@ -142,7 +142,7 @@ def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch)
 
     monkeypatch.setattr("builtins.input", lambda _prompt: next(responses))
 
-    result = simple_gui.ConsoleConfig().show_config(config)
+    result = ConsoleConfig().show_config(config)
 
     assert result is not None
     assert result.discord.member_id == "123"
@@ -154,12 +154,12 @@ def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch)
 
 
 def test_initial_setup_gui_create_widgets_populates_variables(monkeypatch):
-    gui = simple_gui.InitialSetupGUI()
+    gui = InitialSetupGUI()
     gui.root = DummyRoot()
 
     monkeypatch.setenv("DISCORD_BOT_URL", "http://env-bot")
-    monkeypatch.setattr(simple_gui, "tk", build_fake_tk_module())
-    monkeypatch.setattr(simple_gui, "ttk", build_fake_ttk_module())
+    monkeypatch.setattr(tk_support, "tk", build_fake_tk_module())
+    monkeypatch.setattr(tk_support, "ttk", build_fake_ttk_module())
 
     gui._create_initial_setup_widgets()
 
@@ -169,7 +169,7 @@ def test_initial_setup_gui_create_widgets_populates_variables(monkeypatch):
 
 
 def test_initial_setup_gui_skip_discord_sets_result_and_destroys_root(monkeypatch):
-    gui = simple_gui.InitialSetupGUI()
+    gui = InitialSetupGUI()
     gui.root = DummyRoot()
 
     monkeypatch.setenv("DISCORD_BOT_URL", "http://bot")
@@ -187,7 +187,7 @@ def test_initial_setup_gui_skip_discord_sets_result_and_destroys_root(monkeypatc
 
 
 def test_initial_setup_gui_save_and_continue_validates_member_id(prevent_real_messageboxes):
-    gui = simple_gui.InitialSetupGUI()
+    gui = InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("abc")
     gui.channel_id_var = DummyVar("")
@@ -200,7 +200,7 @@ def test_initial_setup_gui_save_and_continue_validates_member_id(prevent_real_me
 
 
 def test_initial_setup_gui_save_and_continue_validates_channel_id(prevent_real_messageboxes):
-    gui = simple_gui.InitialSetupGUI()
+    gui = InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("123")
     gui.channel_id_var = DummyVar("abc")
@@ -213,7 +213,7 @@ def test_initial_setup_gui_save_and_continue_validates_channel_id(prevent_real_m
 
 
 def test_initial_setup_gui_save_and_continue_requires_bot_url(prevent_real_messageboxes):
-    gui = simple_gui.InitialSetupGUI()
+    gui = InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("123")
     gui.channel_id_var = DummyVar("456")
@@ -226,7 +226,7 @@ def test_initial_setup_gui_save_and_continue_requires_bot_url(prevent_real_messa
 
 
 def test_initial_setup_gui_save_and_continue_with_member_id(prevent_real_messageboxes):
-    gui = simple_gui.InitialSetupGUI()
+    gui = InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("123")
     gui.channel_id_var = DummyVar("456")
@@ -246,7 +246,7 @@ def test_initial_setup_gui_save_and_continue_with_member_id(prevent_real_message
 
 
 def test_initial_setup_gui_save_and_continue_without_member_id(prevent_real_messageboxes):
-    gui = simple_gui.InitialSetupGUI()
+    gui = InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("   ")
     gui.channel_id_var = DummyVar("")
@@ -265,7 +265,7 @@ def test_initial_setup_gui_save_and_continue_without_member_id(prevent_real_mess
 
 
 def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, capsys):
-    gui = simple_gui.InitialSetupGUI()
+    gui = InitialSetupGUI()
     responses = iter(["abc", "qwe", ""])
 
     monkeypatch.setenv("DISCORD_BOT_URL", "http://default-bot")
@@ -285,11 +285,11 @@ def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, cap
 
 
 def test_gui_config_show_config_creates_window_and_returns_result(monkeypatch):
-    gui = simple_gui.GUIConfig()
+    gui = GUIConfig()
     config = DesktopAppConfig.create_default()
 
-    monkeypatch.setattr(simple_gui, "TKINTER_AVAILABLE", True)
-    monkeypatch.setattr(simple_gui, "tk", build_fake_tk_module())
+    monkeypatch.setattr(tk_support, "TKINTER_AVAILABLE", True)
+    monkeypatch.setattr(tk_support, "tk", build_fake_tk_module())
     monkeypatch.setattr(gui, "_create_interface", lambda: setattr(gui, "result", config))
 
     result = gui.show_config(config)
@@ -303,7 +303,7 @@ def test_gui_config_show_config_creates_window_and_returns_result(monkeypatch):
 
 
 def test_gui_config_create_tabs_populates_variables(monkeypatch):
-    gui = simple_gui.GUIConfig()
+    gui = GUIConfig()
     gui.root = DummyRoot()
     gui.config = DesktopAppConfig.create_default()
     gui.config.discord.member_id = "123"
@@ -316,8 +316,8 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
     gui.config.hotkey.trigger_close = "]"
     gui.config.interface.local_tts_enabled = True
 
-    monkeypatch.setattr(simple_gui, "tk", build_fake_tk_module())
-    monkeypatch.setattr(simple_gui, "ttk", build_fake_ttk_module())
+    monkeypatch.setattr(tk_support, "tk", build_fake_tk_module())
+    monkeypatch.setattr(tk_support, "ttk", build_fake_ttk_module())
 
     gui._create_interface()
 
@@ -335,7 +335,9 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
 
 
 def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
-    gui = simple_gui.GUIConfig()
+    from src.desktop.gui import config_dialogs
+
+    gui = GUIConfig()
     gui.root = DummyRoot()
     gui.config = DesktopAppConfig.create_default()
     gui.member_id_var = DummyVar("123")
@@ -350,7 +352,7 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
     gui.console_logs_var = DummyVar(True)
     gui.local_tts_enabled_var = DummyVar(True)
 
-    monkeypatch.setattr(simple_gui.ConfigurationValidator, "validate", lambda config: (True, []))
+    monkeypatch.setattr(config_dialogs.ConfigurationValidator, "validate", lambda config: (True, []))
 
     gui._save_config()
 
@@ -365,7 +367,9 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
 
 
 def test_gui_config_save_config_shows_validation_errors(monkeypatch, prevent_real_messageboxes):
-    gui = simple_gui.GUIConfig()
+    from src.desktop.gui import config_dialogs
+
+    gui = GUIConfig()
     gui.config = DesktopAppConfig.create_default()
     gui.member_id_var = DummyVar("123")
     gui.bot_url_var = DummyVar("http://bot")
@@ -379,18 +383,20 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch, prevent_rea
     gui.console_logs_var = DummyVar(True)
     gui.local_tts_enabled_var = DummyVar(False)
 
-    monkeypatch.setattr(simple_gui.ConfigurationValidator, "validate", lambda config: (False, ["bad rate"]))
+    monkeypatch.setattr(config_dialogs.ConfigurationValidator, "validate", lambda config: (False, ["bad rate"]))
 
     gui._save_config()
 
     assert gui.result is None
     assert prevent_real_messageboxes["error"] == [("Erro de Validação", "Erros encontrados:\n\nbad rate")]
+
+
 def test_ui_log_handler_reports_queue_errors(monkeypatch):
     class FailingQueue:
         def put_nowait(self, _message):
             raise RuntimeError("queue full")
 
-    handler = simple_gui.UILogHandler(FailingQueue())
+    handler = UILogHandler(FailingQueue())
     record = logging.LogRecord(
         name="test",
         level=logging.INFO,

@@ -4,7 +4,7 @@ from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter
 from ..adapters.system_tray import create_system_tray_icon
 from ..config.desktop_config import ConfigurationRepository
-from ..gui.simple_gui import ConfigurationService
+from ..gui.configuration_service import ConfigurationService
 from ..services.discord_bot_client import HttpDiscordBotClient
 from ..services.hotkey_services import HotkeyManager, HotkeyService, StandardKeyboardMonitor
 from ..services.notification_services import ConsoleNotificationService, SystemTrayService

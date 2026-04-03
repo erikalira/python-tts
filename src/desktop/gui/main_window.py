@@ -43,7 +43,7 @@ class DesktopAppMainWindow(GUIConfig):
         self._voice_context_label = None
 
     def show(self) -> None:
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
             raise RuntimeError("Tkinter nÃ£o disponÃ­vel para a janela principal")
@@ -76,7 +76,7 @@ class DesktopAppMainWindow(GUIConfig):
             logger.debug("[GUI] Falha ao focar janela principal", exc_info=True)
 
     def _create_main_layout(self) -> None:
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         main_frame = compat.ttk.Frame(self.root, padding="16")
         main_frame.pack(fill="both", expand=True)
@@ -148,7 +148,7 @@ class DesktopAppMainWindow(GUIConfig):
         self._refresh_local_status()
 
     def _handle_save(self) -> None:
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         try:
             new_config = self._build_config_from_form()
@@ -247,7 +247,7 @@ class DesktopAppMainWindow(GUIConfig):
             label.configure(fg=color)
 
     def _clear_logs(self) -> None:
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not self._logs_widget:
             return
@@ -257,7 +257,7 @@ class DesktopAppMainWindow(GUIConfig):
         self.push_log("Logs limpos pelo usuÃ¡rio")
 
     def _append_log(self, message: str) -> None:
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not self._logs_widget:
             return

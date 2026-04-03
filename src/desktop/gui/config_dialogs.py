@@ -138,7 +138,7 @@ class InitialSetupGUI:
         self.bot_url_var: Optional[object] = None
 
     def show_initial_setup(self) -> Optional[dict]:
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
             return self._console_initial_setup()
@@ -164,7 +164,7 @@ class InitialSetupGUI:
             return self._console_initial_setup()
 
     def _create_initial_setup_widgets(self):
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         main_frame = compat.ttk.Frame(self.root, padding="20")
         main_frame.pack(fill=compat.tk.BOTH, expand=True)
@@ -240,7 +240,7 @@ class InitialSetupGUI:
         self.root.destroy()
 
     def _save_and_continue(self):
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         member_id = self.member_id_var.get().strip()
         channel_id = self.channel_id_var.get().strip()
@@ -330,7 +330,7 @@ class GUIConfig(ConfigInterface):
         self.local_tts_enabled_var = None
 
     def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
             print("Tkinter não disponível, usando console...")
@@ -351,7 +351,7 @@ class GUIConfig(ConfigInterface):
         return self.result
 
     def _create_interface(self):
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not self.root or not self.config:
             return
@@ -365,7 +365,7 @@ class GUIConfig(ConfigInterface):
         compat.ttk.Button(button_frame, text="Cancelar", command=self._cancel).pack(side="right")
 
     def _build_config_notebook(self, parent):
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         notebook = compat.ttk.Notebook(parent)
         notebook.pack(fill="both", expand=True, pady=(0, 10))
@@ -388,7 +388,7 @@ class GUIConfig(ConfigInterface):
         return notebook
 
     def _create_discord_tab(self, parent):
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not self.config:
             return
@@ -413,7 +413,7 @@ class GUIConfig(ConfigInterface):
         ).pack(anchor="w", pady=(10, 0))
 
     def _create_tts_tab(self, parent):
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not self.config:
             return
@@ -441,7 +441,7 @@ class GUIConfig(ConfigInterface):
         compat.ttk.Entry(parent, textvariable=self.rate_var, width=50).pack(fill="x", pady=(0, 10))
 
     def _create_hotkey_tab(self, parent):
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not self.config:
             return
@@ -462,7 +462,7 @@ class GUIConfig(ConfigInterface):
         ).pack(anchor="w", pady=(10, 0))
 
     def _create_interface_tab(self, parent):
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         if not self.config:
             return
@@ -488,7 +488,7 @@ class GUIConfig(ConfigInterface):
         ).pack(anchor="w", pady=(10, 0))
 
     def _save_config(self):
-        from . import simple_gui as compat
+        from . import tk_support as compat
 
         try:
             new_config = self._build_config_from_form()

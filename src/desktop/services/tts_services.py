@@ -180,10 +180,6 @@ class KeyboardCleanupService:
         """Check if keyboard events are currently being suppressed."""
         return self._suppress_events.is_set()
 
-
-TTSService = DesktopAppTTSService
-
-
 class _DesktopAppTTSStatusGateway:
     """Adapter exposing Desktop App TTS status through the shared status port."""
 

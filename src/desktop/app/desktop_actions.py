@@ -14,7 +14,7 @@ from src.application.desktop_bot import (
 from ..config.desktop_config import (
     DesktopAppConfig,
 )
-from ..gui.simple_gui import ConfigurationService
+from ..gui.configuration_service import ConfigurationService
 from ..services.discord_bot_client import HttpDiscordBotClient
 from .configuration_application import DesktopConfigurationApplicationService
 

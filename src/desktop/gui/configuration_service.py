@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Optional
 
 from ..config.desktop_config import DesktopAppConfig
+from . import tk_support
+from .config_dialogs import ConsoleConfig, GUIConfig
 
 
 class ConfigurationService:
@@ -15,13 +17,10 @@ class ConfigurationService:
 
     def get_configuration(self, current_config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Get configuration from user."""
-        from . import simple_gui as compat
-        from .config_dialogs import ConsoleConfig, GUIConfig
-
-        if self.prefer_gui and compat.TKINTER_AVAILABLE:
+        if self.prefer_gui and tk_support.TKINTER_AVAILABLE:
             try:
                 return GUIConfig().show_config(current_config)
             except Exception as exc:
-                print(f"[CONFIG] âŒ Erro na GUI: {exc}")
-                print("[CONFIG] ðŸ”„ Alternando para console...")
+                print(f"[CONFIG] GUI error: {exc}")
+                print("[CONFIG] Falling back to console...")
         return ConsoleConfig().show_config(current_config)

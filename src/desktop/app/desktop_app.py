@@ -8,7 +8,9 @@ from typing import Callable, Optional
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
-from ..gui.simple_gui import ConfigurationService, DesktopAppMainWindow, TKINTER_AVAILABLE
+from ..gui.configuration_service import ConfigurationService
+from ..gui.main_window import DesktopAppMainWindow
+from ..gui.tk_support import TKINTER_AVAILABLE
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
 from .configuration_application import DesktopConfigurationApplicationService
