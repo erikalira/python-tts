@@ -1,5 +1,6 @@
-﻿from unittest.mock import Mock
+from unittest.mock import Mock
 
+from src.application.desktop_bot import DESKTOP_BOT_TEST_MESSAGE
 from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_FAILED,
     TTS_EXECUTION_RESULT_MISSING_TEXT,
@@ -174,6 +175,7 @@ def test_desktop_app_test_bot_connection_uses_http_client(monkeypatch):
     config.discord.bot_url = get_default_discord_bot_url()
 
     fake_client = Mock()
+    fake_client.has_bot_url.return_value = True
     fake_client.check_connection.return_value = {"success": True, "message": "ok"}
     monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
 
@@ -201,17 +203,16 @@ def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
     config.discord.bot_url = get_default_discord_bot_url()
     config.discord.member_id = "123"
 
-    fake_request = Mock()
     fake_client = Mock()
-    fake_client.build_request.return_value = fake_request
-    fake_client.send_speak_request.return_value = True
+    fake_client.has_bot_url.return_value = True
+    fake_client.has_member_id.return_value = True
+    fake_client.send_text.return_value = True
     monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
 
     result = app._send_test_message(config)
 
     assert result == {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
-    fake_client.build_request.assert_called_once_with("Teste rapido do Desktop App.")
-    fake_client.send_speak_request.assert_called_once_with(fake_request)
+    fake_client.send_text.assert_called_once_with(DESKTOP_BOT_TEST_MESSAGE)
 
 
 def test_desktop_app_send_test_message_returns_bot_error_details(monkeypatch):
@@ -220,10 +221,10 @@ def test_desktop_app_send_test_message_returns_bot_error_details(monkeypatch):
     config.discord.bot_url = get_default_discord_bot_url()
     config.discord.member_id = "123"
 
-    fake_request = Mock()
     fake_client = Mock()
-    fake_client.build_request.return_value = fake_request
-    fake_client.send_speak_request.return_value = False
+    fake_client.has_bot_url.return_value = True
+    fake_client.has_member_id.return_value = True
+    fake_client.send_text.return_value = False
     fake_client.get_last_error_message.return_value = "Bot respondeu HTTP 400: user is not connected to a voice channel"
     monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
 
@@ -233,8 +234,7 @@ def test_desktop_app_send_test_message_returns_bot_error_details(monkeypatch):
         "success": False,
         "message": "Bot respondeu HTTP 400: user is not connected to a voice channel",
     }
-    fake_client.build_request.assert_called_once_with("Teste rapido do Desktop App.")
-    fake_client.send_speak_request.assert_called_once_with(fake_request)
+    fake_client.send_text.assert_called_once_with(DESKTOP_BOT_TEST_MESSAGE)
 
 
 def test_desktop_app_refresh_voice_context_uses_http_client(monkeypatch):
@@ -244,6 +244,8 @@ def test_desktop_app_refresh_voice_context_uses_http_client(monkeypatch):
     config.discord.member_id = "123"
 
     fake_client = Mock()
+    fake_client.has_bot_url.return_value = True
+    fake_client.has_member_id.return_value = True
     fake_client.fetch_voice_context.return_value = {
         "success": True,
         "message": "Canal detectado: Guild A / Sala 1",
@@ -257,4 +259,3 @@ def test_desktop_app_refresh_voice_context_uses_http_client(monkeypatch):
         "message": "Canal detectado: Guild A / Sala 1",
     }
     fake_client.fetch_voice_context.assert_called_once_with()
-

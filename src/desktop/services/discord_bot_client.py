@@ -70,6 +70,14 @@ class HttpDiscordBotClient:
         """Check whether HTTP requests can be sent to the bot."""
         return _requests_available and bool(self._config.discord.bot_url)
 
+    def has_bot_url(self) -> bool:
+        """Return whether the bot base URL is configured."""
+        return bool(self._config.discord.bot_url)
+
+    def has_member_id(self) -> bool:
+        """Return whether the Desktop App has a configured Discord member."""
+        return bool(self._config.discord.member_id)
+
     def has_transport(self) -> bool:
         """Return whether the HTTP transport dependency is installed."""
         return _requests_available
@@ -81,6 +89,10 @@ class HttpDiscordBotClient:
             channel_id=self._config.discord.channel_id,
             member_id=self._config.discord.member_id,
         )
+
+    def send_text(self, text: str) -> bool:
+        """Build and send a text payload through the bot runtime."""
+        return self.send_speak_request(self.build_request(text))
 
     def get_speak_url(self) -> str:
         """Return the bot speak endpoint URL."""

@@ -5,6 +5,12 @@ from __future__ import annotations
 import logging
 from typing import Callable, Optional
 
+from src.application.desktop_bot import (
+    CheckDesktopBotConnectionUseCase,
+    FetchDesktopBotVoiceContextUseCase,
+    SendDesktopBotTestMessageUseCase,
+)
+
 from ..config.desktop_config import (
     ConfigurationRepository,
     ConfigurationValidator,
@@ -20,10 +26,13 @@ logger = logging.getLogger(__name__)
 class DesktopBotActions:
     """Handle Desktop App panel actions that talk to the Discord bot runtime."""
 
+    def __init__(self, gateway_factory: Optional[Callable[[DesktopAppConfig], object]] = None):
+        self._gateway_factory = gateway_factory or HttpDiscordBotClient
+
     def test_bot_connection(self, config: DesktopAppConfig) -> dict:
         """Test connectivity against the bot health endpoint."""
-        client = HttpDiscordBotClient(config)
-        result = client.check_connection()
+        gateway = self._gateway_factory(config)
+        result = CheckDesktopBotConnectionUseCase(gateway).execute()
         if result.get("success"):
             logger.info("[DESKTOP_APP] Teste de conexao com o bot concluido com sucesso")
         else:
@@ -35,37 +44,21 @@ class DesktopBotActions:
 
     def send_test_message(self, config: DesktopAppConfig) -> dict:
         """Send a short manual test message to validate the speak flow."""
-        if not config.discord.bot_url:
-            return {"success": False, "message": "Bot URL nao configurada para envio de teste"}
-        if not config.discord.member_id:
-            return {
-                "success": False,
-                "message": "User ID e necessario para enviar o teste",
-            }
-
-        client = HttpDiscordBotClient(config)
-        request = client.build_request("Teste rapido do Desktop App.")
-        success = client.send_speak_request(request)
-        if success:
+        gateway = self._gateway_factory(config)
+        result = SendDesktopBotTestMessageUseCase(gateway).execute()
+        if result.get("success"):
             logger.info("[DESKTOP_APP] Mensagem curta de teste enviada ao bot")
-            return {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
-
-        error_message = client.get_last_error_message() or "Nao foi possivel enviar a mensagem de teste ao bot"
-        logger.warning(
-            "[DESKTOP_APP] Falha ao enviar mensagem curta de teste ao bot: %s",
-            error_message,
-        )
-        return {"success": False, "message": error_message}
+        else:
+            logger.warning(
+                "[DESKTOP_APP] Falha ao enviar mensagem curta de teste ao bot: %s",
+                result.get("message"),
+            )
+        return result
 
     def fetch_current_voice_context(self, config: DesktopAppConfig) -> dict:
         """Fetch the currently detected guild/channel for the configured Discord user."""
-        if not config.discord.bot_url:
-            return {"success": False, "message": "Bot URL nao configurada para detectar o canal"}
-        if not config.discord.member_id:
-            return {"success": False, "message": "User ID e necessario para detectar o canal"}
-
-        client = HttpDiscordBotClient(config)
-        result = client.fetch_voice_context()
+        gateway = self._gateway_factory(config)
+        result = FetchDesktopBotVoiceContextUseCase(gateway).execute()
         if result.get("success"):
             logger.info(
                 "[DESKTOP_APP] Canal detectado para o usuario: guild=%s channel=%s",

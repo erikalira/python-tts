@@ -53,6 +53,7 @@ The local test environment uses `.env` as a source of variables.
 - When reproducing failures locally, verify that `.env` is present and matches the expected scenario.
 - When a test overrides variables with `monkeypatch`, that override applies only to that test.
 - The VS Code Testing panel should use `.env.test` as its dedicated test env file so proxy variables from the host session do not leak into integration tests.
+- Pytest temporary files and cache are redirected to `.test-artifacts/` so the repository root stays clean during local runs.
 
 ## Running Tests
 
