@@ -9,8 +9,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Optional, Protocol
 
-from src.application.tts_routing import TTSFallbackChain, build_tts_engine_chain
-from src.application.tts_text import prepare_tts_text
+from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
 from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
@@ -106,10 +105,6 @@ class DiscordTTSService(TTSEngine):
         """Check if Discord TTS is available."""
         return self._bot_client.is_available()
 
-
-FallbackTTSEngine = TTSFallbackChain
-
-
 class DesktopAppTTSService:
     """Main Desktop App TTS service that coordinates available engines."""
 
@@ -124,10 +119,10 @@ class DesktopAppTTSService:
         self._local_engine_factory = local_engine_factory or (
             lambda cfg: LocalPyTTSX3Engine(cfg)
         )
-        self._engine = self._create_engine()
+        self._flow_service = self._create_flow_service()
 
-    def _create_engine(self) -> TTSEngine:
-        """Create the appropriate TTS engine based on configuration."""
+    def _create_flow_service(self) -> DesktopTTSFlowService:
+        """Create the shared Desktop App TTS flow service."""
         discord_engine = None
         if self._config.discord.bot_url:
             discord_engine = DiscordTTSService(self._config, bot_client=self._bot_client)
@@ -135,51 +130,26 @@ class DesktopAppTTSService:
         local_engine = None
         if self._config.interface.local_tts_enabled:
             local_engine = self._local_engine_factory(self._config)
-        engines = build_tts_engine_chain(
-            self._config.tts.engine,
+
+        return DesktopTTSFlowService(
+            preferred_engine=self._config.tts.engine,
             discord_engine=discord_engine,
             local_engine=local_engine,
+            max_text_length=self._config.network.max_text_length,
+            logger=logger,
         )
-
-        return FallbackTTSEngine(engines, logger=logger)
 
     def speak_text(self, text: str) -> bool:
         """Speak the given text using available engines."""
-        prepared_text = prepare_tts_text(text, self._config.network.max_text_length)
-        if not prepared_text:
-            return False
-
-        if prepared_text != text.strip():
-            logger.warning(
-                "[TTS] Texto truncado para %s caracteres",
-                self._config.network.max_text_length,
-            )
-
-        logger.info("[TTS] Processando texto para sintese")
-        return self._engine.speak(prepared_text)
+        return self._flow_service.speak_text(text)
 
     def is_available(self) -> bool:
         """Check if TTS service is available."""
-        return self._engine.is_available()
+        return self._flow_service.is_available()
 
     def get_status_info(self) -> dict:
         """Get status information about available engines."""
-        requests_installed = getattr(self._bot_client, "has_transport", lambda: None)()
-        if requests_installed is None:
-            requests_installed = self._bot_client.is_available()
-
-        return {
-            "discord_available": self._bot_client.is_available(),
-            "local_tts_enabled": self._config.interface.local_tts_enabled,
-            "local_available": (
-                LocalPyTTSX3Engine(self._config).is_available()
-                if self._config.interface.local_tts_enabled
-                else False
-            ),
-            "pyttsx3_installed": is_pyttsx3_available(),
-            "requests_installed": requests_installed,
-            "bot_url_configured": bool(self._config.discord.bot_url),
-        }
+        return DesktopTTSStatusUseCase(_DesktopAppTTSStatusGateway(self)).execute()
 
 
 class KeyboardCleanupService:
@@ -212,3 +182,33 @@ class KeyboardCleanupService:
 
 
 TTSService = DesktopAppTTSService
+
+
+class _DesktopAppTTSStatusGateway:
+    """Adapter exposing Desktop App TTS status through the shared status port."""
+
+    def __init__(self, service: DesktopAppTTSService):
+        self._service = service
+
+    def is_remote_available(self) -> bool:
+        return self._service._bot_client.is_available()
+
+    def is_local_enabled(self) -> bool:
+        return self._service._config.interface.local_tts_enabled
+
+    def is_local_available(self) -> bool:
+        if not self.is_local_enabled():
+            return False
+        return LocalPyTTSX3Engine(self._service._config).is_available()
+
+    def is_local_dependency_installed(self) -> bool:
+        return is_pyttsx3_available()
+
+    def has_transport(self) -> bool:
+        requests_installed = getattr(self._service._bot_client, "has_transport", lambda: None)()
+        if requests_installed is None:
+            return self._service._bot_client.is_available()
+        return requests_installed
+
+    def has_bot_url(self) -> bool:
+        return bool(self._service._config.discord.bot_url)

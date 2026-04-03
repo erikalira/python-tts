@@ -1,6 +1,7 @@
-﻿from types import SimpleNamespace
+from types import SimpleNamespace
 from unittest.mock import Mock
 
+from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
 from src.application.tts_execution import (
     SpeakTextExecutionUseCase,
     TTS_EXECUTION_RESULT_FAILED,
@@ -14,7 +15,6 @@ from src.desktop.services.discord_bot_client import DiscordSpeakRequest, HttpDis
 from src.desktop.services.tts_services import (
     DesktopAppTTSService,
     DiscordTTSService,
-    FallbackTTSEngine,
     KeyboardCleanupService,
     LocalPyTTSX3Engine,
 )
@@ -199,12 +199,17 @@ def test_http_discord_bot_client_reports_when_voice_context_endpoint_is_missing(
     }
 
 
-def test_fallback_tts_engine_tries_next_available_engine():
+def test_desktop_tts_flow_service_tries_next_available_engine():
     first = FakeEngine(available=True, result=False)
     second = FakeEngine(available=True, result=True)
-    engine = FallbackTTSEngine([first, second])
+    flow = DesktopTTSFlowService(
+        preferred_engine="discord",
+        discord_engine=first,
+        local_engine=second,
+        max_text_length=500,
+    )
 
-    assert engine.speak("hello") is True
+    assert flow.speak_text("hello") is True
     assert first.calls == ["hello"]
     assert second.calls == ["hello"]
 
@@ -252,32 +257,25 @@ def test_desktop_app_tts_service_uses_discord_when_local_voice_is_disabled():
     assert len(bot_client.requests) == 1
 
 
-def test_desktop_app_tts_service_truncates_long_text():
+def test_desktop_app_tts_service_delegates_to_flow_service():
     config = DesktopAppConfig.create_default()
-    config.network.max_text_length = 5
     service = DesktopAppTTSService(config, bot_client=FakeDiscordBotClient())
-    engine = Mock()
-    engine.speak.return_value = True
-    service._engine = engine
+    flow_service = Mock()
+    flow_service.speak_text.return_value = True
+    service._flow_service = flow_service
 
     assert service.speak_text("abcdefgh") is True
-    engine.speak.assert_called_once_with("abcde")
-
-
-def test_desktop_app_tts_service_strips_whitespace_before_speaking():
-    config = DesktopAppConfig.create_default()
-    service = DesktopAppTTSService(config, bot_client=FakeDiscordBotClient())
-    engine = Mock()
-    engine.speak.return_value = True
-    service._engine = engine
-
-    assert service.speak_text("  hello  ") is True
-    engine.speak.assert_called_once_with("hello")
+    flow_service.speak_text.assert_called_once_with("abcdefgh")
 
 
 def test_desktop_app_tts_service_returns_false_for_blank_text():
     service = DesktopAppTTSService(DesktopAppConfig.create_default())
+    flow_service = Mock()
+    flow_service.speak_text.return_value = False
+    service._flow_service = flow_service
+
     assert service.speak_text("   ") is False
+    flow_service.speak_text.assert_called_once_with("   ")
 
 
 def test_local_pyttsx3_engine_initializes_and_speaks():
@@ -309,6 +307,27 @@ def test_desktop_app_tts_service_reports_local_voice_as_disabled_by_default():
 
     assert status["local_tts_enabled"] is False
     assert status["local_available"] is False
+
+
+def test_desktop_tts_status_use_case_builds_status_payload():
+    gateway = Mock()
+    gateway.is_remote_available.return_value = True
+    gateway.is_local_enabled.return_value = True
+    gateway.is_local_available.return_value = True
+    gateway.is_local_dependency_installed.return_value = True
+    gateway.has_transport.return_value = True
+    gateway.has_bot_url.return_value = True
+
+    status = DesktopTTSStatusUseCase(gateway).execute()
+
+    assert status == {
+        "discord_available": True,
+        "local_tts_enabled": True,
+        "local_available": True,
+        "pyttsx3_installed": True,
+        "requests_installed": True,
+        "bot_url_configured": True,
+    }
 
 
 def test_keyboard_cleanup_service_reports_suppression():
@@ -408,4 +427,3 @@ def test_desktop_app_tts_processor_skips_cleanup_when_execution_fails(monkeypatc
     execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_not_called()
     on_complete.assert_called_once_with({"success": False, "code": TTS_EXECUTION_RESULT_FAILED})
-
