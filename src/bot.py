@@ -5,8 +5,9 @@ Run with: python -m src.bot
 """
 import asyncio
 import logging
-from config.settings import Config
-from config.container import Container
+
+from src.bot_runtime.container import Container
+from src.bot_runtime.settings import Config
 from src.infrastructure.http.server import HTTPServer
 
 # Configure logging
