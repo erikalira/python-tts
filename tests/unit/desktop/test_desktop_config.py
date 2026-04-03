@@ -90,6 +90,26 @@ def test_environment_updater_sets_expected_variables(monkeypatch):
     assert os.environ["DISCORD_MEMBER_ID"] == "99"
 
 
+def test_environment_updater_removes_optional_identifiers_when_missing(monkeypatch):
+    config = DesktopAppConfig.create_default()
+    config.discord.bot_url = get_default_discord_bot_url()
+    config.discord.guild_id = None
+    config.discord.channel_id = None
+    config.discord.member_id = None
+    config.tts.output_device = None
+
+    monkeypatch.setenv("DISCORD_GUILD_ID", "guild")
+    monkeypatch.setenv("DISCORD_CHANNEL_ID", "channel")
+    monkeypatch.setenv("DISCORD_MEMBER_ID", "member")
+    monkeypatch.setenv("TTS_OUTPUT_DEVICE", "Speaker")
+
+    EnvironmentUpdater.update_from_config(config)
+
+    assert "DISCORD_GUILD_ID" not in os.environ
+    assert "DISCORD_CHANNEL_ID" not in os.environ
+    assert "DISCORD_MEMBER_ID" not in os.environ
+
+
 def test_configuration_validator_reports_invalid_values():
     config = DesktopAppConfig.create_default()
     config.discord.member_id = "abc"
