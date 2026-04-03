@@ -1,3 +1,4 @@
+import logging
 from types import SimpleNamespace
 
 import pytest
@@ -384,3 +385,24 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch, prevent_rea
 
     assert gui.result is None
     assert prevent_real_messageboxes["error"] == [("Erro de Validação", "Erros encontrados:\n\nbad rate")]
+def test_ui_log_handler_reports_queue_errors(monkeypatch):
+    class FailingQueue:
+        def put_nowait(self, _message):
+            raise RuntimeError("queue full")
+
+    handler = simple_gui.UILogHandler(FailingQueue())
+    record = logging.LogRecord(
+        name="test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="hello",
+        args=(),
+        exc_info=None,
+    )
+    reported = []
+    monkeypatch.setattr(handler, "handleError", lambda error_record: reported.append(error_record))
+
+    handler.emit(record)
+
+    assert reported == [record]

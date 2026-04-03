@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 import logging
 import queue
 from typing import Callable, Optional
-import os
 
 try:
     import tkinter as tk
@@ -348,9 +347,9 @@ class InitialSetupGUI:
             bot_url = default_url
         
         if member_id:
-            print(f"\n✅ Configuração salva! TTS funcionará no Discord.")
+            print("\n✅ Configuração salva! TTS funcionará no Discord.")
         else:
-            print(f"\n⚠️ Sem Discord User ID, TTS funcionará apenas localmente.")
+            print("\n⚠️ Sem Discord User ID, TTS funcionará apenas localmente.")
         
         return {
             'member_id': normalize_optional_text(member_id),
@@ -653,7 +652,7 @@ class UILogHandler(logging.Handler):
         try:
             self._target_queue.put_nowait(self.format(record))
         except Exception:
-            pass
+            self.handleError(record)
 
 
 class DesktopAppMainWindow(GUIConfig):
