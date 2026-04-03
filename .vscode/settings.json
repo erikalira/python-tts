@@ -1,0 +1,11 @@
+{
+  "python.envFile": "${workspaceFolder}\\.env.test",
+  "python.testing.cwd": "${workspaceFolder}",
+  "python.testing.pytestArgs": [
+    "tests/unit",
+    "tests/integration"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.terminal.activateEnvironment": true
+}
