@@ -33,6 +33,7 @@ htmlcov/
 .coverage
 coverage.xml
 .pytest_cache/
+.test-artifacts/
 
 # Build files
 dist/

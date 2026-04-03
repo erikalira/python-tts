@@ -78,6 +78,8 @@ python app.py
 pytest
 ```
 
+Detalhes de estrutura e execucao estao em [docs/TESTING.md](docs/TESTING.md).
+
 ## Build do executavel Windows
 
 No Windows, use o script oficial:
@@ -94,6 +96,7 @@ Use o README principal como ponto de entrada e deixe os detalhes nos guias espec
 
 - [Indice da documentacao](docs/README.md)
 - [Guia de setup do ambiente](docs/SETUP.md)
+- [Guia de testes](docs/TESTING.md)
 - [Governanca de IA e instrucoes canonicas](docs/ai/README.md)
 - [Guia de build do executavel Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)

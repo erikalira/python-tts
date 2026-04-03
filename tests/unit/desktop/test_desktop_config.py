@@ -1,6 +1,4 @@
-﻿import json
-import shutil
-from pathlib import Path
+import json
 
 from src.desktop.config.desktop_config import (
     ConfigurationRepository,
@@ -12,16 +10,7 @@ from src.desktop.config.desktop_config import (
 )
 
 
-def _make_test_dir(name: str) -> Path:
-    base_dir = Path.cwd() / ".test-artifacts" / name
-    if base_dir.exists():
-        shutil.rmtree(base_dir, ignore_errors=True)
-    base_dir.mkdir(parents=True, exist_ok=True)
-    return base_dir
-
-
-def test_get_config_directory_windows(monkeypatch):
-    tmp_path = _make_test_dir("config-dir")
+def test_get_config_directory_windows(monkeypatch, tmp_path):
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
 
     config_dir = get_config_directory()
@@ -30,8 +19,7 @@ def test_get_config_directory_windows(monkeypatch):
     assert config_dir.exists()
 
 
-def test_configuration_repository_loads_defaults_when_file_missing():
-    tmp_path = _make_test_dir("repo-missing")
+def test_configuration_repository_loads_defaults_when_file_missing(tmp_path):
     repo = ConfigurationRepository(tmp_path / "config.json")
 
     config = repo.load()
@@ -41,8 +29,7 @@ def test_configuration_repository_loads_defaults_when_file_missing():
     assert config.hotkey.keys == "{text}"
 
 
-def test_configuration_repository_save_and_load_roundtrip():
-    tmp_path = _make_test_dir("repo-roundtrip")
+def test_configuration_repository_save_and_load_roundtrip(tmp_path):
     config_file = tmp_path / "config.json"
     repo = ConfigurationRepository(config_file)
     config = DesktopAppConfig.create_default()
@@ -64,8 +51,7 @@ def test_configuration_repository_save_and_load_roundtrip():
     assert loaded.hotkey.keys == "[text]"
 
 
-def test_configuration_repository_returns_defaults_on_invalid_json(capsys):
-    tmp_path = _make_test_dir("repo-invalid-json")
+def test_configuration_repository_returns_defaults_on_invalid_json(capsys, tmp_path):
     config_file = tmp_path / "config.json"
     config_file.write_text("{invalid", encoding="utf-8")
 
@@ -125,4 +111,3 @@ def test_configuration_validator_is_configured_requires_member_id():
 def test_hotkey_config_keys_property():
     hotkey = HotkeyConfig(trigger_open="<", trigger_close=">")
     assert hotkey.keys == "<text>"
-
