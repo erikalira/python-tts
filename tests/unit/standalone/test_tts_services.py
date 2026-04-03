@@ -8,15 +8,15 @@ from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_OK,
 )
 from src.application.tts_routing import build_tts_engine_chain
-from src.standalone.config.standalone_config import StandaloneConfig
+from src.standalone.app.tts_runtime import DesktopAppTTSProcessor
+from src.standalone.config.desktop_config import DesktopAppConfig
 from src.standalone.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
 from src.standalone.services.tts_services import (
+    DesktopAppTTSService,
     DiscordTTSService,
     FallbackTTSEngine,
     KeyboardCleanupService,
     LocalPyTTSX3Engine,
-    TTSProcessor,
-    TTSService,
 )
 
 
@@ -52,7 +52,7 @@ class FakeDiscordBotClient:
 
 
 def test_http_discord_bot_client_builds_payload_and_url():
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.bot_url = "http://localhost:10000/"
     config.discord.guild_id = "30"
     config.discord.channel_id = "10"
@@ -66,8 +66,8 @@ def test_http_discord_bot_client_builds_payload_and_url():
     assert client.get_health_url() == "http://localhost:10000/health"
 
 
-def test_discord_tts_service_builds_payload_and_sends_request(monkeypatch):
-    config = StandaloneConfig.create_default()
+def test_discord_tts_service_builds_payload_and_sends_request():
+    config = DesktopAppConfig.create_default()
     bot_client = FakeDiscordBotClient(available=True, result=True)
     service = DiscordTTSService(config, bot_client=bot_client)
 
@@ -76,14 +76,14 @@ def test_discord_tts_service_builds_payload_and_sends_request(monkeypatch):
     assert bot_client.requests[0].to_payload() == {"text": "hello", "guild_id": "30", "channel_id": "10", "member_id": "20"}
 
 
-def test_discord_tts_service_handles_http_error(monkeypatch):
-    config = StandaloneConfig.create_default()
+def test_discord_tts_service_handles_http_error():
+    config = DesktopAppConfig.create_default()
     bot_client = FakeDiscordBotClient(available=True, result=False)
     assert DiscordTTSService(config, bot_client=bot_client).speak("hello") is False
 
 
 def test_http_discord_bot_client_handles_http_error(monkeypatch):
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.bot_url = "http://localhost:10000"
 
     post = Mock(return_value=SimpleNamespace(ok=False, status_code=500))
@@ -95,7 +95,7 @@ def test_http_discord_bot_client_handles_http_error(monkeypatch):
 
 
 def test_http_discord_bot_client_check_connection_success(monkeypatch):
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.bot_url = "http://localhost:10000"
 
     get = Mock(return_value=SimpleNamespace(ok=True, status_code=200))
@@ -108,7 +108,7 @@ def test_http_discord_bot_client_check_connection_success(monkeypatch):
 
 
 def test_http_discord_bot_client_check_connection_http_failure(monkeypatch):
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.bot_url = "http://localhost:10000"
 
     get = Mock(return_value=SimpleNamespace(ok=False, status_code=503))
@@ -138,12 +138,12 @@ def test_build_tts_engine_chain_prefers_local_engine_when_configured():
     assert chain == [local, discord]
 
 
-def test_tts_service_prefers_local_engine_when_configured():
-    config = StandaloneConfig.create_default()
+def test_desktop_app_tts_service_prefers_local_engine_when_configured():
+    config = DesktopAppConfig.create_default()
     config.tts.engine = "pyttsx3"
     bot_client = FakeDiscordBotClient(available=True, result=True)
     local_engine = FakeEngine(available=True, result=True)
-    service = TTSService(
+    service = DesktopAppTTSService(
         config,
         bot_client=bot_client,
         local_engine_factory=lambda cfg: local_engine,
@@ -154,10 +154,10 @@ def test_tts_service_prefers_local_engine_when_configured():
     assert bot_client.requests == []
 
 
-def test_tts_service_truncates_long_text(monkeypatch):
-    config = StandaloneConfig.create_default()
+def test_desktop_app_tts_service_truncates_long_text():
+    config = DesktopAppConfig.create_default()
     config.network.max_text_length = 5
-    service = TTSService(config, bot_client=FakeDiscordBotClient())
+    service = DesktopAppTTSService(config, bot_client=FakeDiscordBotClient())
     engine = Mock()
     engine.speak.return_value = True
     service._engine = engine
@@ -166,9 +166,9 @@ def test_tts_service_truncates_long_text(monkeypatch):
     engine.speak.assert_called_once_with("abcde")
 
 
-def test_tts_service_strips_whitespace_before_speaking():
-    config = StandaloneConfig.create_default()
-    service = TTSService(config, bot_client=FakeDiscordBotClient())
+def test_desktop_app_tts_service_strips_whitespace_before_speaking():
+    config = DesktopAppConfig.create_default()
+    service = DesktopAppTTSService(config, bot_client=FakeDiscordBotClient())
     engine = Mock()
     engine.speak.return_value = True
     service._engine = engine
@@ -177,13 +177,13 @@ def test_tts_service_strips_whitespace_before_speaking():
     engine.speak.assert_called_once_with("hello")
 
 
-def test_tts_service_returns_false_for_blank_text():
-    service = TTSService(StandaloneConfig.create_default())
+def test_desktop_app_tts_service_returns_false_for_blank_text():
+    service = DesktopAppTTSService(DesktopAppConfig.create_default())
     assert service.speak_text("   ") is False
 
 
-def test_local_pyttsx3_engine_initializes_and_speaks(monkeypatch):
-    config = StandaloneConfig.create_default()
+def test_local_pyttsx3_engine_initializes_and_speaks():
+    config = DesktopAppConfig.create_default()
     config.tts.voice_id = "target"
 
     voice = SimpleNamespace(id="target-voice")
@@ -204,7 +204,7 @@ def test_local_pyttsx3_engine_initializes_and_speaks(monkeypatch):
     engine.say.assert_called_once_with("hello")
 
 
-def test_keyboard_cleanup_service_reports_suppression(monkeypatch):
+def test_keyboard_cleanup_service_reports_suppression():
     backend = Mock()
     backend.is_available.return_value = True
     cleanup = KeyboardCleanupService(keyboard_backend=backend)
@@ -251,13 +251,12 @@ def test_speak_text_execution_use_case_returns_failure_when_tts_service_fails():
     assert result == {"success": False, "code": TTS_EXECUTION_RESULT_FAILED}
 
 
-def test_tts_processor_runs_cleanup_after_success(monkeypatch):
+def test_desktop_app_tts_processor_runs_cleanup_after_success(monkeypatch):
     execution_service = Mock()
     execution_service.execute.return_value = {"success": True, "code": TTS_EXECUTION_RESULT_OK}
     cleanup_service = Mock()
     on_complete = Mock()
-    processor = TTSProcessor(
-        StandaloneConfig.create_default(),
+    processor = DesktopAppTTSProcessor(
         execution_service=execution_service,
         cleanup_service=cleanup_service,
     )
@@ -269,7 +268,7 @@ def test_tts_processor_runs_cleanup_after_success(monkeypatch):
         def start(self):
             self._target()
 
-    monkeypatch.setattr("src.standalone.services.tts_services.threading.Thread", ImmediateThread)
+    monkeypatch.setattr("src.standalone.app.tts_runtime.threading.Thread", ImmediateThread)
 
     processor.process_text("hello", cleanup_count=3, on_complete=on_complete)
 
@@ -278,13 +277,12 @@ def test_tts_processor_runs_cleanup_after_success(monkeypatch):
     on_complete.assert_called_once_with({"success": True, "code": TTS_EXECUTION_RESULT_OK})
 
 
-def test_tts_processor_skips_cleanup_when_execution_fails(monkeypatch):
+def test_desktop_app_tts_processor_skips_cleanup_when_execution_fails(monkeypatch):
     execution_service = Mock()
     execution_service.execute.return_value = {"success": False, "code": TTS_EXECUTION_RESULT_FAILED}
     cleanup_service = Mock()
     on_complete = Mock()
-    processor = TTSProcessor(
-        StandaloneConfig.create_default(),
+    processor = DesktopAppTTSProcessor(
         execution_service=execution_service,
         cleanup_service=cleanup_service,
     )
@@ -296,7 +294,7 @@ def test_tts_processor_skips_cleanup_when_execution_fails(monkeypatch):
         def start(self):
             self._target()
 
-    monkeypatch.setattr("src.standalone.services.tts_services.threading.Thread", ImmediateThread)
+    monkeypatch.setattr("src.standalone.app.tts_runtime.threading.Thread", ImmediateThread)
 
     processor.process_text("hello", cleanup_count=3, on_complete=on_complete)
 

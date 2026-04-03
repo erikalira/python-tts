@@ -3,7 +3,7 @@
 
 from dataclasses import replace
 
-from ..config.standalone_config import StandaloneConfig
+from ..config.desktop_config import DesktopAppConfig
 
 
 def normalize_optional_text(value: str) -> str | None:
@@ -40,7 +40,7 @@ def validate_numeric_field(value: str, *, required: bool, required_message: str,
 
 
 def build_updated_config(
-    current_config: StandaloneConfig,
+    current_config: DesktopAppConfig,
     *,
     member_id: str | None = None,
     guild_id: str | None = None,
@@ -53,9 +53,9 @@ def build_updated_config(
     trigger_close: str | None = None,
     show_notifications: bool | None = None,
     console_logs: bool | None = None,
-) -> StandaloneConfig:
+) -> DesktopAppConfig:
     """Create a new config with the provided updated values."""
-    return StandaloneConfig(
+    return DesktopAppConfig(
         discord=replace(
             current_config.discord,
             member_id=current_config.discord.member_id if member_id is None else member_id,

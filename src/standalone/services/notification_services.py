@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 import threading
 from typing import Callable, Optional
 
-from ..config.standalone_config import StandaloneConfig
+from ..config.desktop_config import DesktopAppConfig
 from ..adapters.system_tray import (
     NullSystemTrayIcon as _NullSystemTrayIcon,
     create_system_tray_icon,
@@ -91,7 +91,7 @@ class SystemTrayService:
     
     def __init__(
         self,
-        config: StandaloneConfig,
+        config: DesktopAppConfig,
         tray_icon: Optional[object] = None,
         notification_service: Optional[NotificationService] = None
     ):

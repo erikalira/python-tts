@@ -1,40 +1,51 @@
 import json
+import shutil
 from pathlib import Path
 
-from src.standalone.config.standalone_config import (
+from src.standalone.config.desktop_config import (
     ConfigurationRepository,
     ConfigurationValidator,
+    DesktopAppConfig,
     EnvironmentUpdater,
     HotkeyConfig,
-    StandaloneConfig,
     get_config_directory,
 )
 
 
-def test_get_config_directory_linux(monkeypatch, tmp_path):
-    monkeypatch.setattr("src.standalone.config.standalone_config.os.name", "posix")
-    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+def _make_test_dir(name: str) -> Path:
+    base_dir = Path.cwd() / ".test-artifacts" / name
+    if base_dir.exists():
+        shutil.rmtree(base_dir, ignore_errors=True)
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir
+
+
+def test_get_config_directory_windows(monkeypatch):
+    tmp_path = _make_test_dir("config-dir")
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
 
     config_dir = get_config_directory()
 
-    assert config_dir == tmp_path / ".config" / "tts-hotkey"
+    assert config_dir == tmp_path / "TTS-Hotkey"
     assert config_dir.exists()
 
 
-def test_configuration_repository_loads_defaults_when_file_missing(tmp_path):
+def test_configuration_repository_loads_defaults_when_file_missing():
+    tmp_path = _make_test_dir("repo-missing")
     repo = ConfigurationRepository(tmp_path / "config.json")
 
     config = repo.load()
 
-    assert isinstance(config, StandaloneConfig)
+    assert isinstance(config, DesktopAppConfig)
     assert config.tts.engine == "gtts"
     assert config.hotkey.keys == "{text}"
 
 
-def test_configuration_repository_save_and_load_roundtrip(tmp_path):
+def test_configuration_repository_save_and_load_roundtrip():
+    tmp_path = _make_test_dir("repo-roundtrip")
     config_file = tmp_path / "config.json"
     repo = ConfigurationRepository(config_file)
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.member_id = "123"
     config.discord.guild_id = "456"
     config.hotkey.trigger_open = "["
@@ -53,7 +64,8 @@ def test_configuration_repository_save_and_load_roundtrip(tmp_path):
     assert loaded.hotkey.keys == "[text]"
 
 
-def test_configuration_repository_returns_defaults_on_invalid_json(tmp_path, capsys):
+def test_configuration_repository_returns_defaults_on_invalid_json(capsys):
+    tmp_path = _make_test_dir("repo-invalid-json")
     config_file = tmp_path / "config.json"
     config_file.write_text("{invalid", encoding="utf-8")
 
@@ -61,11 +73,11 @@ def test_configuration_repository_returns_defaults_on_invalid_json(tmp_path, cap
     config = repo.load()
 
     assert config.tts.engine == "gtts"
-    assert "Erro ao carregar configuração" in capsys.readouterr().out
+    assert "Erro ao carregar configura" in capsys.readouterr().out
 
 
 def test_environment_updater_sets_expected_variables(monkeypatch):
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.bot_url = "http://localhost:10000"
     config.discord.guild_id = "44"
     config.discord.channel_id = "55"
@@ -85,7 +97,7 @@ def test_environment_updater_sets_expected_variables(monkeypatch):
 
 
 def test_configuration_validator_reports_invalid_values():
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.member_id = "abc"
     config.discord.guild_id = "def"
     config.tts.rate = 10
@@ -99,7 +111,7 @@ def test_configuration_validator_reports_invalid_values():
 
 
 def test_configuration_validator_is_configured_requires_member_id():
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.member_id = "   "
     assert ConfigurationValidator.is_configured(config) is False
 

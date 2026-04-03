@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from src.standalone.config.standalone_config import StandaloneConfig
+from src.standalone.config.desktop_config import DesktopAppConfig
 from src.standalone.gui import simple_gui
 
 
@@ -113,7 +113,7 @@ def build_fake_ttk_module():
 
 
 def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch):
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.member_id = "123"
     config.discord.guild_id = "456"
     config.discord.bot_url = "http://bot"
@@ -136,7 +136,7 @@ def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch)
 
 
 def test_console_config_retries_invalid_choices_and_returns_none_on_validation_error(monkeypatch, capsys):
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     responses = iter([
         "abc",
         "123",
@@ -203,7 +203,7 @@ def test_initial_setup_gui_show_initial_setup_builds_modal_window(monkeypatch):
     result = gui.show_initial_setup()
 
     assert result == {"ok": True}
-    assert gui.root.title_value == "TTS Hotkey - Configuração Inicial"
+    assert gui.root.title_value == "Desktop App - Configuração Inicial"
     assert gui.root.resizable_args == (False, False)
     assert gui.root.transient_called is True
     assert gui.root.grab_set_called is True
@@ -398,8 +398,8 @@ def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, cap
 
 
 def test_gui_config_show_config_falls_back_to_console_without_tkinter(monkeypatch, capsys):
-    config = StandaloneConfig.create_default()
-    expected = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
+    expected = DesktopAppConfig.create_default()
 
     monkeypatch.setattr(simple_gui, "TKINTER_AVAILABLE", False)
     monkeypatch.setattr(simple_gui.ConsoleConfig, "show_config", lambda self, config: expected)
@@ -412,7 +412,7 @@ def test_gui_config_show_config_falls_back_to_console_without_tkinter(monkeypatc
 
 def test_gui_config_show_config_creates_window_and_returns_result(monkeypatch):
     gui = simple_gui.GUIConfig()
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
 
     monkeypatch.setattr(simple_gui, "TKINTER_AVAILABLE", True)
     monkeypatch.setattr(simple_gui, "tk", build_fake_tk_module())
@@ -421,7 +421,7 @@ def test_gui_config_show_config_creates_window_and_returns_result(monkeypatch):
     result = gui.show_config(config)
 
     assert result is config
-    assert gui.root.title_value == "🎤 TTS Hotkey - Configuração"
+    assert gui.root.title_value == "🎤 Desktop App - Configuração"
     assert gui.root.resizable_args == (True, True)
     assert gui.root.protocol_calls
     assert gui.root.update_idletasks_called is True
@@ -431,7 +431,7 @@ def test_gui_config_show_config_creates_window_and_returns_result(monkeypatch):
 def test_gui_config_create_tabs_populates_variables(monkeypatch):
     gui = simple_gui.GUIConfig()
     gui.root = DummyRoot()
-    gui.config = StandaloneConfig.create_default()
+    gui.config = DesktopAppConfig.create_default()
     gui.config.discord.member_id = "123"
     gui.config.discord.guild_id = "456"
     gui.config.discord.bot_url = "http://bot"
@@ -462,7 +462,7 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
 
 def test_gui_config_save_config_returns_early_when_fields_missing():
     gui = simple_gui.GUIConfig()
-    gui.config = StandaloneConfig.create_default()
+    gui.config = DesktopAppConfig.create_default()
     gui.member_id_var = DummyVar("123")
     gui.guild_id_var = DummyVar("456")
 
@@ -474,7 +474,7 @@ def test_gui_config_save_config_returns_early_when_fields_missing():
 def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
     gui = simple_gui.GUIConfig()
     gui.root = DummyRoot()
-    gui.config = StandaloneConfig.create_default()
+    gui.config = DesktopAppConfig.create_default()
     gui.member_id_var = DummyVar("123")
     gui.guild_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
@@ -502,7 +502,7 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
 
 def test_gui_config_save_config_shows_validation_errors(monkeypatch):
     gui = simple_gui.GUIConfig()
-    gui.config = StandaloneConfig.create_default()
+    gui.config = DesktopAppConfig.create_default()
     gui.member_id_var = DummyVar("123")
     gui.guild_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
@@ -527,7 +527,7 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch):
 
 def test_gui_config_save_config_handles_value_error(monkeypatch):
     gui = simple_gui.GUIConfig()
-    gui.config = StandaloneConfig.create_default()
+    gui.config = DesktopAppConfig.create_default()
     gui.member_id_var = DummyVar("123")
     gui.guild_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
@@ -552,7 +552,7 @@ def test_gui_config_save_config_handles_value_error(monkeypatch):
 
 def test_gui_config_save_config_handles_unexpected_error(monkeypatch):
     gui = simple_gui.GUIConfig()
-    gui.config = StandaloneConfig.create_default()
+    gui.config = DesktopAppConfig.create_default()
     gui.member_id_var = DummyVar("123")
     gui.guild_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
@@ -577,7 +577,7 @@ def test_gui_config_save_config_handles_unexpected_error(monkeypatch):
 def test_gui_config_cancel_destroys_root():
     gui = simple_gui.GUIConfig()
     gui.root = DummyRoot()
-    gui.result = StandaloneConfig.create_default()
+    gui.result = DesktopAppConfig.create_default()
 
     gui._cancel()
 
@@ -586,8 +586,8 @@ def test_gui_config_cancel_destroys_root():
 
 
 def test_configuration_service_prefers_gui_and_falls_back_on_error(monkeypatch, capsys):
-    config = StandaloneConfig.create_default()
-    expected = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
+    expected = DesktopAppConfig.create_default()
 
     monkeypatch.setattr(simple_gui, "TKINTER_AVAILABLE", True)
     monkeypatch.setattr(simple_gui.GUIConfig, "show_config", lambda self, config: (_ for _ in ()).throw(RuntimeError("gui fail")))
@@ -602,8 +602,8 @@ def test_configuration_service_prefers_gui_and_falls_back_on_error(monkeypatch, 
 
 
 def test_configuration_service_uses_console_when_gui_not_preferred(monkeypatch):
-    config = StandaloneConfig.create_default()
-    expected = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
+    expected = DesktopAppConfig.create_default()
 
     monkeypatch.setattr(simple_gui.ConsoleConfig, "show_config", lambda self, config: expected)
 

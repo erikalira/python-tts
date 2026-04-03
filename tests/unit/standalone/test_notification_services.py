@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from src.standalone.config.standalone_config import StandaloneConfig
+from src.standalone.config.desktop_config import DesktopAppConfig
 from src.standalone.services.notification_services import (
     ConsoleNotificationService,
     NullSystemTrayIcon,
@@ -31,7 +31,7 @@ def test_null_system_tray_icon_is_never_available():
 
 
 def test_system_tray_service_start_returns_false_when_unavailable():
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     service = SystemTrayService(config)
     service._tray_icon = NullSystemTrayIcon()
 
@@ -39,7 +39,7 @@ def test_system_tray_service_start_returns_false_when_unavailable():
 
 
 def test_system_tray_service_notify_respects_configuration():
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     service = SystemTrayService(config)
     notifier = Mock()
     service._notification_service = notifier
@@ -53,7 +53,7 @@ def test_system_tray_service_notify_respects_configuration():
 
 
 def test_system_tray_service_initialize_sets_handlers():
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     service = SystemTrayService(config)
     tray = Mock()
     service._tray_icon = tray
@@ -67,7 +67,7 @@ def test_system_tray_service_initialize_sets_handlers():
 
 
 def test_system_tray_service_get_status_reflects_runtime():
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     service = SystemTrayService(config)
     tray = Mock()
     tray.is_available.return_value = True

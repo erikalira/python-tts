@@ -141,8 +141,3 @@ class DesktopAppHotkeyHandler:
 def create_default_cleanup_service() -> KeyboardCleanupService:
     """Build the default keyboard cleanup service for the Desktop App."""
     return KeyboardCleanupService(keyboard_backend=KeyboardHookBackend())
-
-
-TTSProcessor = DesktopAppTTSProcessor
-StandaloneTTSResultPresenter = DesktopAppTTSResultPresenter
-StandaloneHotkeyHandler = DesktopAppHotkeyHandler

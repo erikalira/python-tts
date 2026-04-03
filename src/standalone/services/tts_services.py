@@ -15,7 +15,7 @@ from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter, is_pyttsx3_available
-from ..config.standalone_config import StandaloneConfig
+from ..config.desktop_config import DesktopAppConfig
 from .discord_bot_client import DiscordBotClient, HttpDiscordBotClient
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class TTSEngine(ABC):
 class LocalPyTTSX3Engine(TTSEngine):
     """Local TTS engine using pyttsx3."""
 
-    def __init__(self, config: StandaloneConfig, adapter: Optional[Pyttsx3Adapter] = None):
+    def __init__(self, config: DesktopAppConfig, adapter: Optional[Pyttsx3Adapter] = None):
         self._config = config
         self._adapter = adapter or Pyttsx3Adapter()
         self._engine: Optional[object] = None
@@ -89,7 +89,7 @@ class LocalPyTTSX3Engine(TTSEngine):
 class DiscordTTSService(TTSEngine):
     """TTS service that sends text to the Discord bot."""
 
-    def __init__(self, config: StandaloneConfig, bot_client: Optional[DiscordBotClient] = None):
+    def __init__(self, config: DesktopAppConfig, bot_client: Optional[DiscordBotClient] = None):
         self._config = config
         self._bot_client = bot_client or HttpDiscordBotClient(config)
 
@@ -115,7 +115,7 @@ class DesktopAppTTSService:
 
     def __init__(
         self,
-        config: StandaloneConfig,
+        config: DesktopAppConfig,
         bot_client: Optional[DiscordBotClient] = None,
         local_engine_factory: Optional[object] = None,
     ):

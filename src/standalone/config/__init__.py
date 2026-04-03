@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""
-Desktop App Config Module Init
-"""
+"""Public exports for Desktop App configuration."""
 
-from .standalone_config import (
+from .desktop_config import (
     TTSConfig,
     DiscordConfig,
     HotkeyConfig,
     InterfaceConfig,
     NetworkConfig,
-    StandaloneConfig,
+    DesktopAppConfig,
     ConfigurationRepository,
     EnvironmentUpdater,
     ConfigurationValidator,
@@ -17,14 +15,14 @@ from .standalone_config import (
 )
 
 __all__ = [
-    'TTSConfig',
-    'DiscordConfig', 
-    'HotkeyConfig',
-    'InterfaceConfig',
-    'NetworkConfig',
-    'StandaloneConfig',
-    'ConfigurationRepository',
-    'EnvironmentUpdater',
-    'ConfigurationValidator',
-    'get_config_directory',
+    "TTSConfig",
+    "DiscordConfig",
+    "HotkeyConfig",
+    "InterfaceConfig",
+    "NetworkConfig",
+    "DesktopAppConfig",
+    "ConfigurationRepository",
+    "EnvironmentUpdater",
+    "ConfigurationValidator",
+    "get_config_directory",
 ]

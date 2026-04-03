@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Validation for Desktop App configuration."""
 
-from .models import StandaloneConfig
+from .models import DesktopAppConfig
 
 
 class ConfigurationValidator:
     """Validates configuration values."""
 
     @staticmethod
-    def validate(config: StandaloneConfig) -> tuple[bool, list[str]]:
+    def validate(config: DesktopAppConfig) -> tuple[bool, list[str]]:
         """Validate configuration and return (is_valid, errors)."""
         errors = []
 
@@ -30,7 +30,7 @@ class ConfigurationValidator:
         return len(errors) == 0, errors
 
     @staticmethod
-    def is_configured(config: StandaloneConfig) -> bool:
+    def is_configured(config: DesktopAppConfig) -> bool:
         """Check if minimum configuration is present."""
         return (
             config.discord.member_id is not None

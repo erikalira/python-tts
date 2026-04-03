@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from src.standalone.config.standalone_config import StandaloneConfig
+from src.standalone.config.desktop_config import DesktopAppConfig
 from src.standalone.services.hotkey_services import (
     HotkeyManager,
     StandardKeyboardMonitor,
@@ -9,7 +9,7 @@ from src.standalone.services.hotkey_services import (
 
 
 def test_standard_keyboard_monitor_captures_text_sequence():
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     handler = Mock()
     monitor = StandardKeyboardMonitor(config, handler)
 
@@ -26,7 +26,7 @@ def test_standard_keyboard_monitor_captures_text_sequence():
 
 
 def test_standard_keyboard_monitor_handles_space_and_backspace():
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     handler = Mock()
     monitor = StandardKeyboardMonitor(config, handler)
 
@@ -37,8 +37,8 @@ def test_standard_keyboard_monitor_handles_space_and_backspace():
     assert event.text == "o"
 
 
-def test_standard_keyboard_monitor_ignores_non_keydown(monkeypatch):
-    config = StandaloneConfig.create_default()
+def test_standard_keyboard_monitor_ignores_non_keydown():
+    config = DesktopAppConfig.create_default()
     handler = Mock()
     monitor = StandardKeyboardMonitor(config, handler)
 
@@ -49,8 +49,8 @@ def test_standard_keyboard_monitor_ignores_non_keydown(monkeypatch):
     handler.handle_text_captured.assert_not_called()
 
 
-def test_standard_keyboard_monitor_respects_suppression(monkeypatch):
-    config = StandaloneConfig.create_default()
+def test_standard_keyboard_monitor_respects_suppression():
+    config = DesktopAppConfig.create_default()
     handler = Mock()
     monitor = StandardKeyboardMonitor(config, handler)
     monitor.set_external_suppression_check(lambda: True)
@@ -59,28 +59,24 @@ def test_standard_keyboard_monitor_respects_suppression(monkeypatch):
 
     monitor._on_key_event(SimpleNamespace(event_type="down", name="{"))
 
-    assert monitor._recording is False
+    handler.handle_text_captured.assert_not_called()
 
 
-def test_hotkey_manager_update_config_restarts_active_service(monkeypatch):
-    config = StandaloneConfig.create_default()
-    new_config = StandaloneConfig.create_default()
+def test_hotkey_manager_update_config_restarts_active_service():
+    config = DesktopAppConfig.create_default()
+    new_config = DesktopAppConfig.create_default()
     new_config.hotkey.trigger_open = "["
     handler = Mock()
 
-    manager = HotkeyManager(config)
+    replacement_service = Mock()
+    replacement_service.start.return_value = True
+    factory = Mock(side_effect=[Mock(), replacement_service])
+    manager = HotkeyManager(config, service_factory=factory)
     manager.initialize(handler)
 
     service = Mock()
     service.is_active.return_value = True
     manager._service = service
-
-    replacement_service = Mock()
-    replacement_service.start.return_value = True
-    monkeypatch.setattr(
-        "src.standalone.services.hotkey_services.HotkeyService",
-        lambda cfg, h: replacement_service,
-    )
 
     manager.update_config(new_config)
 
@@ -91,7 +87,7 @@ def test_hotkey_manager_update_config_restarts_active_service(monkeypatch):
 
 
 def test_hotkey_manager_status_before_initialization():
-    manager = HotkeyManager(StandaloneConfig.create_default())
+    manager = HotkeyManager(DesktopAppConfig.create_default())
 
     status = manager.get_status()
 

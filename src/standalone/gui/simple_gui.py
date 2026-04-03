@@ -17,7 +17,7 @@ try:
 except ImportError:
     TKINTER_AVAILABLE = False
 
-from ..config.standalone_config import StandaloneConfig, ConfigurationValidator
+from ..config.desktop_config import DesktopAppConfig, ConfigurationValidator
 from .config_helpers import (
     build_updated_config,
     normalize_optional_text,
@@ -32,7 +32,7 @@ class ConfigInterface(ABC):
     """Abstract interface for configuration."""
     
     @abstractmethod
-    def show_config(self, config: StandaloneConfig) -> Optional[StandaloneConfig]:
+    def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Show configuration dialog."""
         pass
 
@@ -40,7 +40,7 @@ class ConfigInterface(ABC):
 class ConsoleConfig(ConfigInterface):
     """Console configuration interface."""
     
-    def show_config(self, config: StandaloneConfig) -> Optional[StandaloneConfig]:
+    def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Show console configuration."""
         print("\n" + "="*50)
         print("🎤 Desktop App - Configuração")
@@ -382,8 +382,8 @@ class GUIConfig(ConfigInterface):
     
     def __init__(self):
         self.root: Optional[tk.Tk] = None
-        self.config: Optional[StandaloneConfig] = None
-        self.result: Optional[StandaloneConfig] = None
+        self.config: Optional[DesktopAppConfig] = None
+        self.result: Optional[DesktopAppConfig] = None
         
         # Variables for form fields
         self.member_id_var: Optional[tk.StringVar] = None
@@ -398,7 +398,7 @@ class GUIConfig(ConfigInterface):
         self.show_notifications_var = None
         self.console_logs_var = None
         
-    def show_config(self, config: StandaloneConfig) -> Optional[StandaloneConfig]:
+    def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Show GUI configuration."""
         if not TKINTER_AVAILABLE:
             print("❌ Tkinter não disponível, usando console...")
@@ -602,7 +602,7 @@ class GUIConfig(ConfigInterface):
         except Exception as e:
             messagebox.showerror("Erro", f"Erro inesperado: {e}")
 
-    def _build_config_from_form(self) -> Optional[StandaloneConfig]:
+    def _build_config_from_form(self) -> Optional[DesktopAppConfig]:
         """Build configuration from the current form values."""
         if not self.config or not all([
             self.member_id_var, self.bot_url_var, self.engine_var,
@@ -667,10 +667,10 @@ class DesktopAppMainWindow(GUIConfig):
 
     def __init__(
         self,
-        config: StandaloneConfig,
-        on_save: Callable[[StandaloneConfig], dict],
-        on_test_connection: Callable[[StandaloneConfig], dict],
-        on_send_test: Callable[[StandaloneConfig], dict],
+        config: DesktopAppConfig,
+        on_save: Callable[[DesktopAppConfig], dict],
+        on_test_connection: Callable[[DesktopAppConfig], dict],
+        on_send_test: Callable[[DesktopAppConfig], dict],
     ):
         super().__init__()
         self.config = config
@@ -918,7 +918,7 @@ class ConfigurationService:
     def __init__(self, prefer_gui: bool = True):
         self.prefer_gui = prefer_gui
     
-    def get_configuration(self, current_config: StandaloneConfig) -> Optional[StandaloneConfig]:
+    def get_configuration(self, current_config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Get configuration from user."""
         if self.prefer_gui and TKINTER_AVAILABLE:
             try:
@@ -931,6 +931,3 @@ class ConfigurationService:
         # Fallback to console
         console = ConsoleConfig()
         return console.show_config(current_config)
-
-
-StandaloneMainWindow = DesktopAppMainWindow

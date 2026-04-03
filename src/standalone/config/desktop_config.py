@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Compatibility facade for Desktop App configuration modules."""
+"""Public Desktop App configuration facade."""
 
 import os
 
 from .environment import EnvironmentUpdater
 from .models import (
+    DesktopAppConfig,
     DiscordConfig,
     HotkeyConfig,
     InterfaceConfig,
     NetworkConfig,
-    StandaloneConfig,
     TTSConfig,
 )
 from .paths import get_config_directory
@@ -22,7 +22,7 @@ __all__ = [
     "HotkeyConfig",
     "InterfaceConfig",
     "NetworkConfig",
-    "StandaloneConfig",
+    "DesktopAppConfig",
     "ConfigurationRepository",
     "EnvironmentUpdater",
     "ConfigurationValidator",

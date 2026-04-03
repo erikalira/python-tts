@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional, Protocol
 
 from ..adapters.keyboard_backend import KeyboardHookBackend, is_keyboard_backend_available
-from ..config.standalone_config import StandaloneConfig
+from ..config.desktop_config import DesktopAppConfig
 from .hotkey_capture import HotkeyTextCaptureSession
 
 
@@ -56,7 +56,7 @@ class StandardKeyboardMonitor(KeyboardMonitor):
 
     def __init__(
         self,
-        config: StandaloneConfig,
+        config: DesktopAppConfig,
         handler: HotkeyHandler,
         backend: Optional[KeyboardHookBackend] = None,
     ):
@@ -139,9 +139,9 @@ class HotkeyService:
 
     def __init__(
         self,
-        config: StandaloneConfig,
+        config: DesktopAppConfig,
         handler: HotkeyHandler,
-        monitor_factory: Callable[[StandaloneConfig, HotkeyHandler], KeyboardMonitor] | None = None,
+        monitor_factory: Callable[[DesktopAppConfig, HotkeyHandler], KeyboardMonitor] | None = None,
     ):
         self._config = config
         self._handler = handler
@@ -193,8 +193,8 @@ class HotkeyManager:
 
     def __init__(
         self,
-        config: StandaloneConfig,
-        service_factory: Callable[[StandaloneConfig, HotkeyHandler], HotkeyService] | None = None,
+        config: DesktopAppConfig,
+        service_factory: Callable[[DesktopAppConfig, HotkeyHandler], HotkeyService] | None = None,
     ):
         self._config = config
         self._service_factory = service_factory or (
@@ -233,7 +233,7 @@ class HotkeyManager:
         if self._service:
             self._service.set_external_suppression_check(check_func)
 
-    def update_config(self, new_config: StandaloneConfig) -> None:
+    def update_config(self, new_config: DesktopAppConfig) -> None:
         """Update configuration and restart service if active."""
         was_active = self.is_active()
 

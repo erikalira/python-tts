@@ -11,7 +11,7 @@ except ImportError:  # pragma: no cover - exercised via availability checks
     requests = None
     _requests_available = False
 
-from ..config.standalone_config import StandaloneConfig
+from ..config.desktop_config import DesktopAppConfig
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class DiscordBotClient(Protocol):
 class HttpDiscordBotClient:
     """HTTP adapter for the Discord bot speak endpoint."""
 
-    def __init__(self, config: StandaloneConfig):
+    def __init__(self, config: DesktopAppConfig):
         self._config = config
 
     def is_available(self) -> bool:

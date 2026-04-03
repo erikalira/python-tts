@@ -11,7 +11,7 @@ from .models import (
     HotkeyConfig,
     InterfaceConfig,
     NetworkConfig,
-    StandaloneConfig,
+    DesktopAppConfig,
     TTSConfig,
 )
 from .paths import get_config_directory
@@ -26,16 +26,16 @@ class ConfigurationRepository:
         else:
             self._config_file = get_config_directory() / "config.json"
 
-    def load(self) -> StandaloneConfig:
+    def load(self) -> DesktopAppConfig:
         """Load configuration from file or create default."""
         if not self._config_file.exists():
-            return StandaloneConfig.create_default()
+            return DesktopAppConfig.create_default()
 
         try:
             with open(self._config_file, "r", encoding="utf-8") as file:
                 data = json.load(file)
 
-            return StandaloneConfig(
+            return DesktopAppConfig(
                 tts=TTSConfig(
                     engine=os.getenv("TTS_ENGINE") or data.get("tts_engine", "gtts"),
                     language=os.getenv("TTS_LANGUAGE") or data.get("tts_language", "pt"),
@@ -65,9 +65,9 @@ class ConfigurationRepository:
             )
         except Exception as exc:
             print(f"[CONFIG] ⚠️ Erro ao carregar configuração: {exc}")
-            return StandaloneConfig.create_default()
+            return DesktopAppConfig.create_default()
 
-    def save(self, config: StandaloneConfig) -> bool:
+    def save(self, config: DesktopAppConfig) -> bool:
         """Save configuration to file."""
         try:
             data = {

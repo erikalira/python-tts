@@ -7,7 +7,7 @@ import threading
 from typing import Callable, Optional
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
-from ..config.standalone_config import ConfigurationRepository, StandaloneConfig
+from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
 from ..gui.simple_gui import ConfigurationService, DesktopAppMainWindow, TKINTER_AVAILABLE
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
@@ -24,12 +24,12 @@ class DesktopApp:
         self,
         config_repository: Optional[ConfigurationRepository] = None,
         config_service: Optional[ConfigurationService] = None,
-        tts_processor_factory: Callable[[StandaloneConfig], DesktopAppTTSProcessor] = DesktopAppTTSProcessor,
-        hotkey_manager_factory: Callable[[StandaloneConfig], HotkeyManager] = HotkeyManager,
-        notification_service_factory: Callable[[StandaloneConfig], SystemTrayService] = SystemTrayService,
+        tts_processor_factory: Callable[[DesktopAppConfig], DesktopAppTTSProcessor] = DesktopAppTTSProcessor,
+        hotkey_manager_factory: Callable[[DesktopAppConfig], HotkeyManager] = HotkeyManager,
+        notification_service_factory: Callable[[DesktopAppConfig], SystemTrayService] = SystemTrayService,
         console_wait_factory: Optional[Callable[[], object]] = None,
     ):
-        self._config: Optional[StandaloneConfig] = None
+        self._config: Optional[DesktopAppConfig] = None
         self._config_repository: Optional[ConfigurationRepository] = config_repository
 
         self._tts_processor: Optional[DesktopAppTTSProcessor] = None
@@ -216,7 +216,7 @@ class DesktopApp:
         )
         self._main_window.show()
 
-    def _save_configuration_from_ui(self, updated_config: StandaloneConfig) -> dict:
+    def _save_configuration_from_ui(self, updated_config: DesktopAppConfig) -> dict:
         """Validate, persist, and apply config changes from the main window."""
         self._ensure_action_coordinators()
         if self._configuration_coordinator is None:
@@ -227,12 +227,12 @@ class DesktopApp:
             self._config = updated_config
         return result
 
-    def _test_bot_connection(self, config: StandaloneConfig) -> dict:
+    def _test_bot_connection(self, config: DesktopAppConfig) -> dict:
         """Test connectivity against the bot health endpoint."""
         self._ensure_action_coordinators()
         return self._bot_actions.test_bot_connection(config)
 
-    def _send_test_message(self, config: StandaloneConfig) -> dict:
+    def _send_test_message(self, config: DesktopAppConfig) -> dict:
         """Send a short manual test message through the bot."""
         self._ensure_action_coordinators()
         return self._bot_actions.send_test_message(config)
@@ -393,10 +393,6 @@ def main() -> None:
     """Main entry point for the Windows Desktop App."""
     app = create_desktop_application()
     app.run()
-
-
-StandaloneApplication = DesktopApp
-create_standalone_application = create_desktop_application
 
 
 if __name__ == "__main__":

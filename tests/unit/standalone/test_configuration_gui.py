@@ -1,12 +1,12 @@
 from types import SimpleNamespace
 
-from src.standalone.config.standalone_config import StandaloneConfig
+from src.standalone.config.desktop_config import DesktopAppConfig
 from src.standalone.gui import configuration_gui
 
 
 def test_console_configuration_interface_delegates_to_console_config(monkeypatch):
-    expected = StandaloneConfig.create_default()
-    current_config = StandaloneConfig.create_default()
+    expected = DesktopAppConfig.create_default()
+    current_config = DesktopAppConfig.create_default()
     called = {}
 
     def fake_show_config(self, config):
@@ -22,8 +22,8 @@ def test_console_configuration_interface_delegates_to_console_config(monkeypatch
 
 
 def test_gui_configuration_interface_delegates_to_gui_config(monkeypatch):
-    expected = StandaloneConfig.create_default()
-    current_config = StandaloneConfig.create_default()
+    expected = DesktopAppConfig.create_default()
+    current_config = DesktopAppConfig.create_default()
     called = {}
 
     def fake_show_config(self, config):
@@ -46,7 +46,7 @@ def test_configuration_ui_factory_respects_preference(monkeypatch):
 
 def test_configuration_display_service_shows_local_mode_without_optional_dependencies(monkeypatch, capsys):
     service = configuration_gui.ConfigurationDisplayService()
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.bot_url = ""
     config.discord.member_id = None
     config.discord.guild_id = None
@@ -70,7 +70,7 @@ def test_configuration_display_service_shows_local_mode_without_optional_depende
 
 def test_configuration_display_service_shows_discord_mode_when_requests_is_available(monkeypatch, capsys):
     service = configuration_gui.ConfigurationDisplayService()
-    config = StandaloneConfig.create_default()
+    config = DesktopAppConfig.create_default()
     config.discord.bot_url = "http://localhost:10000"
     config.discord.member_id = "123"
     config.discord.guild_id = "456"

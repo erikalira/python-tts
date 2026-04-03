@@ -54,7 +54,7 @@ class NetworkConfig:
 
 
 @dataclass
-class StandaloneConfig:
+class DesktopAppConfig:
     """Main configuration container for the Desktop App."""
 
     tts: TTSConfig
@@ -64,7 +64,7 @@ class StandaloneConfig:
     network: NetworkConfig
 
     @classmethod
-    def create_default(cls) -> "StandaloneConfig":
+    def create_default(cls) -> "DesktopAppConfig":
         """Create configuration with default values."""
         return cls(
             tts=TTSConfig(

@@ -14,7 +14,7 @@ except Exception as exc:
     Icon = Menu = MenuItem = Image = ImageDraw = None
     _pystray_available = False
 
-from ..config.standalone_config import StandaloneConfig
+from ..config.desktop_config import DesktopAppConfig
 
 
 class SystemTrayIconAdapter:
@@ -52,7 +52,7 @@ class NullSystemTrayIcon(SystemTrayIconAdapter):
 class PySystemTrayIcon(SystemTrayIconAdapter):
     """pystray-backed system tray adapter."""
 
-    def __init__(self, config: StandaloneConfig):
+    def __init__(self, config: DesktopAppConfig):
         self._config = config
         self._icon: Optional[Icon] = None
         self._running = False
@@ -156,7 +156,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
             os._exit(0)
 
 
-def create_system_tray_icon(config: StandaloneConfig) -> SystemTrayIconAdapter:
+def create_system_tray_icon(config: DesktopAppConfig) -> SystemTrayIconAdapter:
     """Create the most appropriate tray adapter for the environment."""
     if _pystray_available:
         return PySystemTrayIcon(config)

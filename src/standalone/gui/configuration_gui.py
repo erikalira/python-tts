@@ -8,7 +8,7 @@ try:
 except ImportError:
     _tkinter_available = False
 
-from ..config.standalone_config import StandaloneConfig
+from ..config.desktop_config import DesktopAppConfig
 from .simple_gui import ConfigInterface, ConsoleConfig, GUIConfig
 
 
@@ -22,11 +22,11 @@ class ConsoleConfigurationInterface(ConfigurationInterface):
     def __init__(self):
         self._delegate = ConsoleConfig()
 
-    def show_config(self, current_config: StandaloneConfig) -> Optional[StandaloneConfig]:
+    def show_config(self, current_config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Compatibility alias expected by the shared interface."""
         return self.show_configuration_dialog(current_config)
 
-    def show_configuration_dialog(self, current_config: StandaloneConfig) -> Optional[StandaloneConfig]:
+    def show_configuration_dialog(self, current_config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Show console configuration dialog."""
         return self._delegate.show_config(current_config)
 
@@ -37,11 +37,11 @@ class GUIConfigurationInterface(ConfigurationInterface):
     def __init__(self):
         self._delegate = GUIConfig()
 
-    def show_config(self, current_config: StandaloneConfig) -> Optional[StandaloneConfig]:
+    def show_config(self, current_config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Compatibility alias expected by the shared interface."""
         return self.show_configuration_dialog(current_config)
 
-    def show_configuration_dialog(self, current_config: StandaloneConfig) -> Optional[StandaloneConfig]:
+    def show_configuration_dialog(self, current_config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         """Show GUI configuration dialog."""
         return self._delegate.show_config(current_config)
 
@@ -60,7 +60,7 @@ class ConfigurationUIFactory:
 class ConfigurationDisplayService:
     """Service for displaying configuration information."""
 
-    def show_current_configuration(self, config: StandaloneConfig) -> None:
+    def show_current_configuration(self, config: DesktopAppConfig) -> None:
         """Display current configuration in a formatted way."""
         print("=" * 70)
         print("🎤 TTS Hotkey - Configuração Atual")

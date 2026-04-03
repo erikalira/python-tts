@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 from typing import Callable, Optional
 
-from ..config.standalone_config import (
+from ..config.desktop_config import (
     ConfigurationRepository,
     ConfigurationValidator,
+    DesktopAppConfig,
     EnvironmentUpdater,
-    StandaloneConfig,
 )
 from ..gui.simple_gui import ConfigurationService
 from ..services.discord_bot_client import HttpDiscordBotClient
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class DesktopBotActions:
     """Handle Desktop App panel actions that talk to the Discord bot runtime."""
 
-    def test_bot_connection(self, config: StandaloneConfig) -> dict:
+    def test_bot_connection(self, config: DesktopAppConfig) -> dict:
         """Test connectivity against the bot health endpoint."""
         client = HttpDiscordBotClient(config)
         result = client.check_connection()
@@ -33,7 +33,7 @@ class DesktopBotActions:
             )
         return result
 
-    def send_test_message(self, config: StandaloneConfig) -> dict:
+    def send_test_message(self, config: DesktopAppConfig) -> dict:
         """Send a short manual test message to validate the speak flow."""
         if not config.discord.bot_url:
             return {"success": False, "message": "Bot URL nao configurada para envio de teste"}
@@ -69,8 +69,8 @@ class DesktopConfigurationCoordinator:
 
     def handle_initial_configuration(
         self,
-        current_config: StandaloneConfig,
-    ) -> tuple[bool, StandaloneConfig]:
+        current_config: DesktopAppConfig,
+    ) -> tuple[bool, DesktopAppConfig]:
         """Run first-time configuration when required."""
         if ConfigurationValidator.is_configured(current_config):
             return True, current_config
@@ -83,7 +83,7 @@ class DesktopConfigurationCoordinator:
         self._persist_and_apply(updated_config)
         return True, updated_config
 
-    def save_from_ui(self, updated_config: StandaloneConfig) -> dict:
+    def save_from_ui(self, updated_config: DesktopAppConfig) -> dict:
         """Validate, persist, and apply configuration changes from the main window."""
         is_valid, errors = ConfigurationValidator.validate(updated_config)
         if not is_valid:
@@ -104,14 +104,14 @@ class DesktopConfigurationCoordinator:
 
     def reconfigure(
         self,
-        current_config: StandaloneConfig,
+        current_config: DesktopAppConfig,
         hotkeys_were_active: bool,
         pause_hotkeys: Callable[[], None],
         resume_hotkeys: Callable[[], None],
         notify_error: Optional[Callable[[str, str], None]] = None,
         notify_success: Optional[Callable[[str, str], None]] = None,
         are_hotkeys_active: Optional[Callable[[], bool]] = None,
-    ) -> tuple[Optional[StandaloneConfig], bool]:
+    ) -> tuple[Optional[DesktopAppConfig], bool]:
         """Open configuration UI and apply changes from the tray flow."""
         updated_config = None
         try:
@@ -142,7 +142,7 @@ class DesktopConfigurationCoordinator:
             notify_success("Desktop App", "Configuracao atualizada")
         return updated_config, True
 
-    def _persist_and_apply(self, config: StandaloneConfig) -> bool:
+    def _persist_and_apply(self, config: DesktopAppConfig) -> bool:
         """Persist config, sync environment, and rebuild dependent services."""
         save_success = self._config_repository.save(config)
         if not save_success:

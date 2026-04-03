@@ -3,7 +3,7 @@
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter
 from ..adapters.system_tray import create_system_tray_icon
-from ..config.standalone_config import ConfigurationRepository
+from ..config.desktop_config import ConfigurationRepository
 from ..gui.simple_gui import ConfigurationService
 from ..services.discord_bot_client import HttpDiscordBotClient
 from ..services.hotkey_services import HotkeyManager, HotkeyService, StandardKeyboardMonitor
@@ -60,6 +60,3 @@ def create_desktop_application() -> DesktopApp:
         hotkey_manager_factory=build_hotkey_manager,
         notification_service_factory=build_notification_service,
     )
-
-
-create_standalone_application = create_desktop_application

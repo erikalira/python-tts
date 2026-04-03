@@ -3,14 +3,14 @@
 
 import os
 
-from .models import StandaloneConfig
+from .models import DesktopAppConfig
 
 
 class EnvironmentUpdater:
     """Updates environment variables from configuration."""
 
     @staticmethod
-    def update_from_config(config: StandaloneConfig) -> None:
+    def update_from_config(config: DesktopAppConfig) -> None:
         """Update environment variables from configuration."""
         os.environ["DISCORD_BOT_URL"] = config.discord.bot_url
 
