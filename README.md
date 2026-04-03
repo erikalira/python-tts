@@ -78,6 +78,7 @@ No Linux, gere o `.exe` pelo workflow de CI que roda em ambiente Windows.
 Use o README principal como ponto de entrada e deixe os detalhes nos guias especÃ­ficos. A pasta `docs/` fica reservada para estrutura principal e guides; documentaÃ§Ã£o de novas features deve ir em `docs/features/`.
 
 - [Ãndice da documentaÃ§Ã£o](docs/README.md)
+- [Governanca de IA e instrucoes canonicas](docs/ai/README.md)
 - [Guia de build do executÃ¡vel Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
 - [Guia do Desktop App](docs/README_DESKTOP_APP.md)

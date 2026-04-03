@@ -3,38 +3,34 @@ name: windows-hotkey-change-check
 description: Validate changes that may impact Windows hotkey app behavior and input handling.
 ---
 
+# Canonical references
+
+Read these first:
+
+- `docs/ai/project-context.md`
+- `docs/ai/architecture-rules.md`
+- `docs/ai/change-playbooks.md`
+- `docs/ai/documentation-policy.md`
+
 # When to use
 
 Use when modifying:
 
 - `src/desktop/`
 - keyboard input handling
-- TTS trigger logic
+- desktop TTS trigger logic
 
-# Steps
+# Validation flow
 
-1. Identify entrypoints:
-   - Desktop App main file
-   - hotkey listener
-
-2. Validate input handling:
-   - hotkeys still detected
-   - no blocking or freezing
-
-3. Check TTS flow:
-   - text input still works
-   - audio output still triggered
-
-4. Check shared logic:
-   - if using extracted services, ensure compatibility
-
-5. Validate runtime:
-   - app starts correctly
-   - no crashes on key press
+1. Identify the impacted desktop entrypoints and runtime modules
+2. Validate hotkey capture, text input, and TTS trigger flow
+3. Check for blocking work, crashes, or desktop-specific regressions
+4. Confirm shared logic changes still fit both runtimes
+5. Call out feature docs that belong in `docs/features/`
 
 # Output
 
 - potential break points
 - affected input flows
-- manual test checklist
-- if the change adds feature documentation, place it in `docs/features/`
+- manual validation checklist
+- shared-logic or boundary risks

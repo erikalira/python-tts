@@ -1,32 +1,42 @@
-# DocumentaÃ§Ã£o
+# Documentation
 
-Este diretÃ³rio reÃºne a documentaÃ§Ã£o complementar do projeto. O `README.md` da raiz fica propositalmente curto; os detalhes estÃ£o centralizados aqui e em `docs/BUILD_GUIDE.md`.
+This directory contains the repository's supporting documentation. The root `README.md` stays short on purpose, while the details live here.
 
-## Guias principais
+## Main guides
 
-- [BUILD_GUIDE.md](BUILD_GUIDE.md): build do executÃ¡vel Windows
-- [ARCHITECTURE.md](ARCHITECTURE.md): visÃ£o de arquitetura e organizaÃ§Ã£o das camadas
-- [README_DESKTOP_APP.md](README_DESKTOP_APP.md): foco no Desktop App
-- [HOTKEY_SETUP.md](HOTKEY_SETUP.md): configuraÃ§Ã£o e uso das hotkeys
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md): problemas comuns e diagnÃ³sticos
+- [BUILD_GUIDE.md](BUILD_GUIDE.md): Windows executable build flow
+- [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview and layer map
+- [README_DESKTOP_APP.md](README_DESKTOP_APP.md): desktop app guide
+- [HOTKEY_SETUP.md](HOTKEY_SETUP.md): hotkey setup and usage
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md): common issues and diagnostics
 
-## ConvenÃ§Ã£o
+## Governance
 
-- `docs/` contÃ©m documentaÃ§Ã£o estrutural e guias principais
-- `docs/features/` concentra documentaÃ§Ã£o de novas features, melhorias especÃ­ficas e notas de implementaÃ§Ã£o
+- [ai/README.md](ai/README.md): canonical AI governance index
+- [ai/project-context.md](ai/project-context.md): project scope, entrypoints, and repo map
+- [ai/architecture-rules.md](ai/architecture-rules.md): clean architecture and dependency rules
+- [ai/engineering-standards.md](ai/engineering-standards.md): coding, validation, and definition of done
+- [ai/documentation-policy.md](ai/documentation-policy.md): documentation placement rules
+- [ai/change-playbooks.md](ai/change-playbooks.md): playbooks for common change types
+
+## Conventions
+
+- `docs/` contains durable architecture and operational guides
+- `docs/features/` contains feature docs, feature iterations, and implementation notes
+- `docs/ai/` contains canonical project guidance for AI tools and instruction files
 
 ## Features
 
-- [features/README.md](features/README.md): convenÃ§Ã£o e Ã­ndice das documentaÃ§Ãµes de feature
-- [features/DESKTOP_APP_GUI_UX.md](features/DESKTOP_APP_GUI_UX.md): requisitos de UX, responsividade e distribuiÃ§Ã£o da GUI do Desktop App
-- [features/DESKTOP_APP_MAIN_PANEL.md](features/DESKTOP_APP_MAIN_PANEL.md): fluxo do painel principal, teste manual de conexÃ£o e logs da GUI do Desktop App
-- [features/INTERFACE_CONFIGURACAO.md](features/INTERFACE_CONFIGURACAO.md): detalhes da interface de configuraÃ§Ã£o
-- [features/VOICE_TIMEOUT.md](features/VOICE_TIMEOUT.md): comportamento e ajustes de timeout
-- [features/ICON_TROUBLESHOOTING.md](features/ICON_TROUBLESHOOTING.md): problemas com Ã­cones
-- [features/DISCORD_RATE_LIMIT_SOLUTION.md](features/DISCORD_RATE_LIMIT_SOLUTION.md): observaÃ§Ãµes sobre rate limit
-- [features/MULTI_SERVER_IMPROVEMENTS.md](features/MULTI_SERVER_IMPROVEMENTS.md): melhorias para mÃºltiplos servidores
-- [features/SISTEMA_CONEXAO_INTELIGENTE.md](features/SISTEMA_CONEXAO_INTELIGENTE.md): detalhes do fluxo de conexÃ£o
+- [features/README.md](features/README.md): feature documentation index
+- [features/DESKTOP_APP_GUI_UX.md](features/DESKTOP_APP_GUI_UX.md): desktop GUI UX and responsiveness
+- [features/DESKTOP_APP_MAIN_PANEL.md](features/DESKTOP_APP_MAIN_PANEL.md): desktop main panel flow and manual checks
+- [features/INTERFACE_CONFIGURACAO.md](features/INTERFACE_CONFIGURACAO.md): configuration interface details
+- [features/VOICE_TIMEOUT.md](features/VOICE_TIMEOUT.md): voice timeout behavior
+- [features/ICON_TROUBLESHOOTING.md](features/ICON_TROUBLESHOOTING.md): icon troubleshooting
+- [features/DISCORD_RATE_LIMIT_SOLUTION.md](features/DISCORD_RATE_LIMIT_SOLUTION.md): rate limit notes
+- [features/MULTI_SERVER_IMPROVEMENTS.md](features/MULTI_SERVER_IMPROVEMENTS.md): multi-server improvements
+- [features/SISTEMA_CONEXAO_INTELIGENTE.md](features/SISTEMA_CONEXAO_INTELIGENTE.md): connection flow details
 
-## NavegaÃ§Ã£o
+## Navigation
 
-- [Voltar para o README principal](../README.md)
+- [Back to root README](../README.md)
