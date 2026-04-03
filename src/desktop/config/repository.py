@@ -37,17 +37,17 @@ class ConfigurationRepository:
 
             return DesktopAppConfig(
                 tts=TTSConfig(
-                    engine=os.getenv("TTS_ENGINE") or data.get("tts_engine", "gtts"),
-                    language=os.getenv("TTS_LANGUAGE") or data.get("tts_language", "pt"),
-                    voice_id=os.getenv("TTS_VOICE_ID") or data.get("tts_voice_id", "roa/pt-br"),
-                    rate=int(os.getenv("TTS_RATE") or data.get("tts_rate", 180)),
-                    output_device=os.getenv("TTS_OUTPUT_DEVICE") or data.get("tts_output_device"),
+                    engine=self._get_env_or_file_value(data, "tts_engine", "TTS_ENGINE", "gtts"),
+                    language=self._get_env_or_file_value(data, "tts_language", "TTS_LANGUAGE", "pt"),
+                    voice_id=self._get_env_or_file_value(data, "tts_voice_id", "TTS_VOICE_ID", "roa/pt-br"),
+                    rate=int(self._get_env_or_file_value(data, "tts_rate", "TTS_RATE", 180)),
+                    output_device=self._get_env_or_file_value(data, "tts_output_device", "TTS_OUTPUT_DEVICE"),
                 ),
                 discord=DiscordConfig(
-                    bot_url=os.getenv("DISCORD_BOT_URL") or data.get("discord_bot_url"),
-                    guild_id=os.getenv("DISCORD_GUILD_ID") or data.get("discord_guild_id"),
-                    channel_id=os.getenv("DISCORD_CHANNEL_ID") or data.get("discord_channel_id"),
-                    member_id=os.getenv("DISCORD_MEMBER_ID") or data.get("discord_member_id"),
+                    bot_url=self._get_env_or_file_value(data, "discord_bot_url", "DISCORD_BOT_URL"),
+                    guild_id=self._get_env_or_file_value(data, "discord_guild_id", "DISCORD_GUILD_ID"),
+                    channel_id=self._get_env_or_file_value(data, "discord_channel_id", "DISCORD_CHANNEL_ID"),
+                    member_id=self._get_env_or_file_value(data, "discord_member_id", "DISCORD_MEMBER_ID"),
                 ),
                 hotkey=HotkeyConfig(
                     trigger_open=data.get("trigger_open", "{"),
@@ -67,6 +67,19 @@ class ConfigurationRepository:
         except Exception as exc:
             print(f"[CONFIG] ⚠️ Erro ao carregar configuração: {exc}")
             return DesktopAppConfig.create_default()
+
+    @staticmethod
+    def _get_env_or_file_value(
+        data: dict,
+        file_key: str,
+        env_key: str,
+        default=None,
+    ):
+        """Prefer persisted values; fall back to env only for missing legacy keys."""
+        if file_key in data:
+            return data[file_key]
+
+        return os.getenv(env_key, default)
 
     def save(self, config: DesktopAppConfig) -> bool:
         """Save configuration to file."""

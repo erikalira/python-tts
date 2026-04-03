@@ -2,7 +2,7 @@
 """Configuration models for the Desktop App."""
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -27,10 +27,10 @@ def get_default_discord_bot_url() -> str:
 class DiscordConfig:
     """Discord bot configuration."""
 
-    bot_url: str = get_default_discord_bot_url()
-    guild_id: Optional[str] = os.getenv("DISCORD_GUILD_ID")
-    channel_id: Optional[str] = os.getenv("DISCORD_CHANNEL_ID")
-    member_id: Optional[str] = os.getenv("DISCORD_MEMBER_ID")
+    bot_url: str = field(default_factory=get_default_discord_bot_url)
+    guild_id: Optional[str] = None
+    channel_id: Optional[str] = None
+    member_id: Optional[str] = None
 
 
 @dataclass
