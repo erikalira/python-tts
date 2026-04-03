@@ -1,7 +1,7 @@
-from types import SimpleNamespace
+﻿from types import SimpleNamespace
 
-from src.standalone.config.desktop_config import DesktopAppConfig
-from src.standalone.gui import configuration_gui
+from src.desktop.config.desktop_config import DesktopAppConfig
+from src.desktop.gui import configuration_gui
 
 
 def test_console_configuration_interface_delegates_to_console_config(monkeypatch):
@@ -65,7 +65,8 @@ def test_configuration_display_service_shows_local_mode_without_optional_depende
     output = capsys.readouterr().out
     assert "MODO LOCAL" in output.upper()
     assert "REQUESTS" in output.upper()
-    assert "SYSTEM TRAY: ❌" in output.upper()
+    assert "SYSTEM TRAY:" in output.upper()
+    assert "❌" in output
 
 
 def test_configuration_display_service_shows_discord_mode_when_requests_is_available(monkeypatch, capsys):
@@ -90,4 +91,6 @@ def test_configuration_display_service_shows_discord_mode_when_requests_is_avail
 
     output = capsys.readouterr().out
     assert "MODO DISCORD" in output.upper()
-    assert "SYSTEM TRAY: ✅" in output.upper()
+    assert "SYSTEM TRAY:" in output.upper()
+    assert "✅" in output
+

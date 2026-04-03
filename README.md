@@ -1,4 +1,4 @@
-# python-tts-discord-bot
+﻿# python-tts-discord-bot
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/7ed90fe1cc6f4090a7386df4681df463)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/7ed90fe1cc6f4090a7386df4681df463)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
@@ -8,15 +8,15 @@ Projeto com dois aplicativos independentes:
 - Bot do Discord para entrar em canal de voz e reproduzir TTS
 - Desktop app Windows com hotkeys para capturar texto e enviar ao bot
 
-O repositório segue Clean Architecture e busca reutilizar lógica entre os dois fluxos, sem duplicação entre o runtime interno do Desktop App em `src/standalone` e o restante de `src`.
+O repositÃ³rio segue Clean Architecture e busca reutilizar lÃ³gica entre os dois fluxos, sem duplicaÃ§Ã£o entre o runtime interno do Desktop App em `src/desktop` e o restante de `src`.
 
-## Estrutura rápida
+## Estrutura rÃ¡pida
 
 - `src/bot.py`: sobe o bot do Discord e o servidor HTTP
 - `app.py`: inicia o desktop app Windows
-- `src/`: camadas principais da aplicação
-- `docs/`: documentação complementar
-- `docs/BUILD_GUIDE.md`: guia de build do executável Windows
+- `src/`: camadas principais da aplicaÃ§Ã£o
+- `docs/`: documentaÃ§Ã£o complementar
+- `docs/BUILD_GUIDE.md`: guia de build do executÃ¡vel Windows
 
 ## Requisitos
 
@@ -24,19 +24,19 @@ O repositório segue Clean Architecture e busca reutilizar lógica entre os dois
 - `ffmpeg` para o fluxo de voz do Discord
 - Ambiente virtual recomendado
 
-Instalação básica:
+InstalaÃ§Ã£o bÃ¡sica:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Para voz no Discord localmente, também pode ser necessário:
+Para voz no Discord localmente, tambÃ©m pode ser necessÃ¡rio:
 
 ```bash
 pip install pynacl
 ```
 
-## Execução rápida
+## ExecuÃ§Ã£o rÃ¡pida
 
 Configure um arquivo `.env` com pelo menos:
 
@@ -73,19 +73,20 @@ No Windows, use o script oficial:
 ```
 No Linux, gere o `.exe` pelo workflow de CI que roda em ambiente Windows.
 
-## Documentação
+## DocumentaÃ§Ã£o
 
-Use o README principal como ponto de entrada e deixe os detalhes nos guias específicos. A pasta `docs/` fica reservada para estrutura principal e guides; documentação de novas features deve ir em `docs/features/`.
+Use o README principal como ponto de entrada e deixe os detalhes nos guias especÃ­ficos. A pasta `docs/` fica reservada para estrutura principal e guides; documentaÃ§Ã£o de novas features deve ir em `docs/features/`.
 
-- [Índice da documentação](docs/README.md)
-- [Guia de build do executável Windows](docs/BUILD_GUIDE.md)
+- [Ãndice da documentaÃ§Ã£o](docs/README.md)
+- [Guia de build do executÃ¡vel Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
 - [Guia do desktop app](docs/README_STANDALONE.md)
-- [Configuração de hotkeys](docs/HOTKEY_SETUP.md)
+- [ConfiguraÃ§Ã£o de hotkeys](docs/HOTKEY_SETUP.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-## Observações
+## ObservaÃ§Ãµes
 
-- Não versione o `DISCORD_TOKEN`
+- NÃ£o versione o `DISCORD_TOKEN`
 - O bot e o desktop app devem continuar funcionando de forma independente
 - Prefira consultar `docs/` para detalhes de arquitetura, setup e troubleshooting
+

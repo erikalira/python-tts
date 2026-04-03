@@ -1,4 +1,4 @@
-from types import SimpleNamespace
+﻿from types import SimpleNamespace
 from unittest.mock import Mock
 
 from src.application.tts_execution import (
@@ -8,10 +8,10 @@ from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_OK,
 )
 from src.application.tts_routing import build_tts_engine_chain
-from src.standalone.app.tts_runtime import DesktopAppTTSProcessor
-from src.standalone.config.desktop_config import DesktopAppConfig
-from src.standalone.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
-from src.standalone.services.tts_services import (
+from src.desktop.app.tts_runtime import DesktopAppTTSProcessor
+from src.desktop.config.desktop_config import DesktopAppConfig
+from src.desktop.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
+from src.desktop.services.tts_services import (
     DesktopAppTTSService,
     DiscordTTSService,
     FallbackTTSEngine,
@@ -87,7 +87,7 @@ def test_http_discord_bot_client_handles_http_error(monkeypatch):
     config.discord.bot_url = "http://localhost:10000"
 
     post = Mock(return_value=SimpleNamespace(ok=False, status_code=500))
-    monkeypatch.setattr("src.standalone.services.discord_bot_client.requests.post", post)
+    monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.post", post)
 
     client = HttpDiscordBotClient(config)
 
@@ -99,7 +99,7 @@ def test_http_discord_bot_client_check_connection_success(monkeypatch):
     config.discord.bot_url = "http://localhost:10000"
 
     get = Mock(return_value=SimpleNamespace(ok=True, status_code=200))
-    monkeypatch.setattr("src.standalone.services.discord_bot_client.requests.get", get)
+    monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.get", get)
 
     result = HttpDiscordBotClient(config).check_connection()
 
@@ -112,7 +112,7 @@ def test_http_discord_bot_client_check_connection_http_failure(monkeypatch):
     config.discord.bot_url = "http://localhost:10000"
 
     get = Mock(return_value=SimpleNamespace(ok=False, status_code=503))
-    monkeypatch.setattr("src.standalone.services.discord_bot_client.requests.get", get)
+    monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.get", get)
 
     result = HttpDiscordBotClient(config).check_connection()
 
@@ -268,7 +268,7 @@ def test_desktop_app_tts_processor_runs_cleanup_after_success(monkeypatch):
         def start(self):
             self._target()
 
-    monkeypatch.setattr("src.standalone.app.tts_runtime.threading.Thread", ImmediateThread)
+    monkeypatch.setattr("src.desktop.app.tts_runtime.threading.Thread", ImmediateThread)
 
     processor.process_text("hello", cleanup_count=3, on_complete=on_complete)
 
@@ -294,10 +294,11 @@ def test_desktop_app_tts_processor_skips_cleanup_when_execution_fails(monkeypatc
         def start(self):
             self._target()
 
-    monkeypatch.setattr("src.standalone.app.tts_runtime.threading.Thread", ImmediateThread)
+    monkeypatch.setattr("src.desktop.app.tts_runtime.threading.Thread", ImmediateThread)
 
     processor.process_text("hello", cleanup_count=3, on_complete=on_complete)
 
     execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_not_called()
     on_complete.assert_called_once_with({"success": False, "code": TTS_EXECUTION_RESULT_FAILED})
+

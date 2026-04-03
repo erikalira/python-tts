@@ -1,17 +1,17 @@
-from unittest.mock import Mock
+﻿from unittest.mock import Mock
 
 from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_FAILED,
     TTS_EXECUTION_RESULT_MISSING_TEXT,
     TTS_EXECUTION_RESULT_OK,
 )
-from src.standalone.app.desktop_app import DesktopApp
-from src.standalone.app.tts_runtime import (
+from src.desktop.app.desktop_app import DesktopApp
+from src.desktop.app.tts_runtime import (
     DesktopAppHotkeyHandler,
     DesktopAppTTSResultPresenter,
 )
-from src.standalone.config.desktop_config import DesktopAppConfig
-from src.standalone.services.hotkey_services import HotkeyEvent
+from src.desktop.config.desktop_config import DesktopAppConfig
+from src.desktop.services.hotkey_services import HotkeyEvent
 
 
 def test_desktop_app_hotkey_handler_processes_captured_text():
@@ -175,7 +175,7 @@ def test_desktop_app_test_bot_connection_uses_http_client(monkeypatch):
 
     fake_client = Mock()
     fake_client.check_connection.return_value = {"success": True, "message": "ok"}
-    monkeypatch.setattr("src.standalone.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
 
     result = app._test_bot_connection(config)
 
@@ -207,10 +207,11 @@ def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
     fake_client = Mock()
     fake_client.build_request.return_value = fake_request
     fake_client.send_speak_request.return_value = True
-    monkeypatch.setattr("src.standalone.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
 
     result = app._send_test_message(config)
 
     assert result == {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
     fake_client.build_request.assert_called_once_with("Teste rapido do Desktop App.")
     fake_client.send_speak_request.assert_called_once_with(fake_request)
+

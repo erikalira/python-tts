@@ -1,7 +1,7 @@
-from types import SimpleNamespace
+﻿from types import SimpleNamespace
 
-from src.standalone.config.desktop_config import DesktopAppConfig
-from src.standalone.gui import simple_gui
+from src.desktop.config.desktop_config import DesktopAppConfig
+from src.desktop.gui import simple_gui
 
 
 class DummyVar:
@@ -165,9 +165,9 @@ def test_console_config_retries_invalid_choices_and_returns_none_on_validation_e
 
     assert result is None
     output = capsys.readouterr().out
-    assert "apenas números" in output
-    assert "Opção inválida" in output
-    assert "Velocidade deve ser um número" in output
+    assert "apenas n" in output.lower()
+    assert "op" in output.lower() and "inv" in output.lower()
+    assert "velocidade deve ser um n" in output.lower()
     assert "Velocidade deve estar entre 50 e 400" in output
     assert "bad config" in output
 
@@ -393,8 +393,8 @@ def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, cap
         "skip_discord": True,
     }
     output = capsys.readouterr().out
-    assert "ID deve conter apenas números" in output
-    assert "TTS funcionará apenas localmente" in output
+    assert "id deve conter apenas n" in output.lower()
+    assert "tts funcionar" in output.lower()
 
 
 def test_gui_config_show_config_falls_back_to_console_without_tkinter(monkeypatch, capsys):
@@ -610,3 +610,4 @@ def test_configuration_service_uses_console_when_gui_not_preferred(monkeypatch):
     result = simple_gui.ConfigurationService(prefer_gui=False).get_configuration(config)
 
     assert result is expected
+

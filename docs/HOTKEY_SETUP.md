@@ -1,59 +1,59 @@
-# 🎤 TTS Hotkey - Configuração Avançada
+﻿# ðŸŽ¤ TTS Hotkey - ConfiguraÃ§Ã£o AvanÃ§ada
 
-## 🏆 Desktop App Atual
+## ðŸ† Desktop App Atual
 
 **Entry point**: `app.py`  
-**Executável**: `dist/tts_hotkey_clean.exe`
+**ExecutÃ¡vel**: `dist/tts_hotkey_clean.exe`
 
-### ✨ Discord ID Automático
+### âœ¨ Discord ID AutomÃ¡tico
 
-O Desktop App usa a configuração persistida para descobrir em qual canal você está.
+O Desktop App usa a configuraÃ§Ã£o persistida para descobrir em qual canal vocÃª estÃ¡.
 
-## 🔧 **Como Descobrir seu Discord ID**
+## ðŸ”§ **Como Descobrir seu Discord ID**
 
 ### Passo 1: Ativar Modo Desenvolvedor
 
-1. Discord → **Configurações do Usuário**
-2. **Avançado** → Ativar **Modo Desenvolvedor**
+1. Discord â†’ **ConfiguraÃ§Ãµes do UsuÃ¡rio**
+2. **AvanÃ§ado** â†’ Ativar **Modo Desenvolvedor**
 
 ### Passo 2: Copiar seu ID
 
 1. Clique direito no **seu nome** em qualquer chat
-2. **Copiar ID do Usuário**
-3. Cole na interface de configuração do app
+2. **Copiar ID do UsuÃ¡rio**
+3. Cole na interface de configuraÃ§Ã£o do app
 
-## 🎯 **Funcionamento Inteligente**
+## ðŸŽ¯ **Funcionamento Inteligente**
 
 O bot usa esta **ordem de prioridade**:
 
-1. 🎯 **Canal já conectado** (se usou `/join` antes)
-2. 📍 **Channel ID específico** (se configurou `DISCORD_CHANNEL_ID`)
-3. 👤 **Member ID** (encontra onde você está)
-4. ❌ **Erro** se nenhuma opção funcionar
+1. ðŸŽ¯ **Canal jÃ¡ conectado** (se usou `/join` antes)
+2. ðŸ“ **Channel ID especÃ­fico** (se configurou `DISCORD_CHANNEL_ID`)
+3. ðŸ‘¤ **Member ID** (encontra onde vocÃª estÃ¡)
+4. âŒ **Erro** se nenhuma opÃ§Ã£o funcionar
 
-## 🎮 **Configurações por Perfil**
+## ðŸŽ® **ConfiguraÃ§Ãµes por Perfil**
 
 ### Perfis sugeridos
 
-- Gaming: taxa de fala mais alta e menos notificações
+- Gaming: taxa de fala mais alta e menos notificaÃ§Ãµes
 - Office: taxa mais baixa e timeout maior
 - Streaming: canal fixo e menos logs visuais
 
-## ⚡ **Triggers Personalizáveis**
+## âš¡ **Triggers PersonalizÃ¡veis**
 
 Evite conflitos com outros programas:
 
-Escolha uma combinação de abertura/fechamento que não conflite com outros programas.
+Escolha uma combinaÃ§Ã£o de abertura/fechamento que nÃ£o conflite com outros programas.
 
-## 🔊 **Configuração de Áudio Avançada**
+## ðŸ”Š **ConfiguraÃ§Ã£o de Ãudio AvanÃ§ada**
 
-Configure engine, idioma, taxa e dispositivo de áudio pela interface do Desktop App.
+Configure engine, idioma, taxa e dispositivo de Ã¡udio pela interface do Desktop App.
 
-## 📊 Status
+## ðŸ“Š Status
 
-Quando executado, o app mostra logs de inicialização e status dos serviços do Desktop App.
+Quando executado, o app mostra logs de inicializaÃ§Ã£o e status dos serviÃ§os do Desktop App.
 
-## 🚀 **Compilar e Usar**
+## ðŸš€ **Compilar e Usar**
 
 ```powershell
 # 1. Rodar o app
@@ -66,7 +66,7 @@ python app.py
 dist/tts_hotkey_clean.exe
 ```
 
-## 🎯 **Modo de Uso**
+## ðŸŽ¯ **Modo de Uso**
 
 1. **Entre em um canal de voz** no Discord
 2. **Execute o app** (`python app.py` ou o `.exe`)
@@ -75,25 +75,26 @@ dist/tts_hotkey_clean.exe
 5. **Aperte a close key** (ex: `}`)
 6. **Bot fala automaticamente!**
 
-## 🛠️ **Troubleshooting Premium**
+## ðŸ› ï¸ **Troubleshooting Premium**
 
-### ❌ "Hotkey registration failed"
+### âŒ "Hotkey registration failed"
 
-Mude as hotkeys na interface de configuração do app.
+Mude as hotkeys na interface de configuraÃ§Ã£o do app.
 
-### ❌ "Discord not found"
+### âŒ "Discord not found"
 
-Verifique a URL do bot na configuração do app ou no `.env`.
+Verifique a URL do bot na configuraÃ§Ã£o do app ou no `.env`.
 
-### ❌ "Member not found"
+### âŒ "Member not found"
 
-Use o ID correto do usuário ou configure um canal fixo na interface do app.
+Use o ID correto do usuÃ¡rio ou configure um canal fixo na interface do app.
 
-## 💎 Vantagens da Versão Atual
+## ðŸ’Ž Vantagens da VersÃ£o Atual
 
-- 🎯 Um único runtime do Desktop App
-- 📊 Configuração persistida
-- ⚡ Build dedicado para Windows
-- 🔧 Menos caminhos paralelos de execução
+- ðŸŽ¯ Um Ãºnico runtime do Desktop App
+- ðŸ“Š ConfiguraÃ§Ã£o persistida
+- âš¡ Build dedicado para Windows
+- ðŸ”§ Menos caminhos paralelos de execuÃ§Ã£o
 
-**Resultado**: um único `.exe` baseado no runtime limpo de `src/standalone`.
+**Resultado**: um Ãºnico `.exe` baseado no runtime limpo de `src/desktop`.
+

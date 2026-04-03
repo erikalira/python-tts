@@ -1,8 +1,8 @@
-import json
+﻿import json
 import shutil
 from pathlib import Path
 
-from src.standalone.config.desktop_config import (
+from src.desktop.config.desktop_config import (
     ConfigurationRepository,
     ConfigurationValidator,
     DesktopAppConfig,
@@ -125,3 +125,4 @@ def test_configuration_validator_is_configured_requires_member_id():
 def test_hotkey_config_keys_property():
     hotkey = HotkeyConfig(trigger_open="<", trigger_close=">")
     assert hotkey.keys == "<text>"
+

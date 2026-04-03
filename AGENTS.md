@@ -8,7 +8,7 @@ This repository contains two separate applications:
 # Architecture rules
 
 - Target architecture is clean architecture
-- Avoid duplication between `standalone` and `src`
+- Avoid duplication between `desktop` and `src`
 - Prefer extracting interfaces/adapters instead of copying logic
 - Reuse use cases and services whenever possible
 - Preserve independent execution of both applications
@@ -17,7 +17,7 @@ This repository contains two separate applications:
 
 - `bot.py`
 - `app.py`
-- `standalone/`
+- `src/desktop/`
 - `src/application/`
 - `src/core/`
 - `src/infrastructure/`
@@ -50,7 +50,7 @@ Before finishing:
 
 # Strict rules
 
-- Never duplicate logic between `standalone` and `src`
+- Never duplicate logic between `desktop` and `src`
 - Never place business logic in presentation or infrastructure
 - Always prefer reuse over copy-paste
 - If duplication is found, refactor instead of extending it

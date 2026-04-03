@@ -1,7 +1,7 @@
-from unittest.mock import Mock
+﻿from unittest.mock import Mock
 
-from src.standalone.config.desktop_config import DesktopAppConfig
-from src.standalone.services.notification_services import (
+from src.desktop.config.desktop_config import DesktopAppConfig
+from src.desktop.services.notification_services import (
     ConsoleNotificationService,
     NullSystemTrayIcon,
     SystemTrayService,
@@ -77,3 +77,4 @@ def test_system_tray_service_get_status_reflects_runtime():
 
     assert status["tray_available"] is True
     assert status["notifications_enabled"] is True
+

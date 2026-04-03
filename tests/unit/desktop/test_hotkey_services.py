@@ -1,8 +1,8 @@
-from types import SimpleNamespace
+﻿from types import SimpleNamespace
 from unittest.mock import Mock
 
-from src.standalone.config.desktop_config import DesktopAppConfig
-from src.standalone.services.hotkey_services import (
+from src.desktop.config.desktop_config import DesktopAppConfig
+from src.desktop.services.hotkey_services import (
     HotkeyManager,
     StandardKeyboardMonitor,
 )
@@ -93,3 +93,4 @@ def test_hotkey_manager_status_before_initialization():
 
     assert status["initialized"] is False
     assert status["active"] is False
+

@@ -122,7 +122,7 @@ def test_file_structure():
     import os
 
     required_files = [
-        ('app.py', 'Entry point standalone com Clean Architecture'),
+        ('app.py', 'Entry point do Desktop App com Clean Architecture'),
         ('scripts/build/build_clean_architecture.ps1', 'Script de build Clean Architecture'),
     ]
 
