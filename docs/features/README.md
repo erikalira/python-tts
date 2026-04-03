@@ -8,4 +8,4 @@ Use `docs/` na raiz apenas para:
 - guias operacionais
 - setup, build e troubleshooting gerais
 
-Quando uma mudança introduzir ou evoluir uma feature, prefira documentá-la aqui e atualizar o índice em `docs/README.md`.
+Quando uma mudanca introduzir ou evoluir uma feature, prefira documenta-la aqui e atualizar o indice em `docs/README.md`.
