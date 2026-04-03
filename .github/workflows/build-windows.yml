@@ -29,7 +29,7 @@ jobs:
       - name: Build executable
         shell: pwsh
         run: |
-          Write-Host "Building current standalone executable from app.py..."
+          Write-Host "Building current Desktop App executable from app.py..."
           ./scripts/build/build_clean_architecture.ps1 -SkipTests
 
       - name: Test executable
@@ -62,7 +62,7 @@ jobs:
             ## 🎯 TTS Hotkey Clean Architecture - Windows Executable
 
             ### ✨ Recursos:
-            - 🎤 Runtime standalone atual baseado em `app.py`
+            - 🎤 Runtime atual do Desktop App baseado em `app.py`
             - ⌨️ Hotkeys configuráveis
             - 🔊 Multi-engine TTS com fallback
             - 📱 Interface gráfica integrada
@@ -72,7 +72,7 @@ jobs:
             1. Baixe `tts_hotkey_clean.exe` ou `run_tts_hotkey_clean.bat`
             2. Execute diretamente no Windows
             3. Configure Discord, TTS e hotkeys na primeira execução
-            4. Use o app standalone normalmente
+            4. Use o Desktop App normalmente
 
             **Tamanho**: ~30MB | **Compatibilidade**: Windows 10/11
           generate_release_notes: true

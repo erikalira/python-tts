@@ -5,8 +5,9 @@ Run with: python -m src.bot
 """
 import asyncio
 import logging
-from config.settings import Config
-from config.container import Container
+
+from src.bot_runtime.container import Container
+from src.bot_runtime.settings import Config
 from src.infrastructure.http.server import HTTPServer
 
 # Configure logging
@@ -34,6 +35,7 @@ async def main():
     # Start HTTP server
     http_server = HTTPServer(
         speak_controller=container.speak_controller,
+        voice_context_controller=container.voice_context_controller,
         port=config.http_port
     )
     await http_server.start()

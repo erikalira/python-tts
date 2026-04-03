@@ -10,7 +10,7 @@ TTS_EXECUTION_RESULT_FAILED = "failed"
 
 
 class SpeakTextExecutionUseCase:
-    """Execute standalone TTS and return a structured result payload."""
+    """Execute Desktop App TTS and return a structured result payload."""
 
     def __init__(self, tts_service: object):
         self._tts_service = tts_service

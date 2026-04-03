@@ -54,8 +54,18 @@ class IVoiceChannel(ABC):
         pass
 
     @abstractmethod
+    def get_channel_name(self) -> str:
+        """Get the channel name."""
+        pass
+
+    @abstractmethod
     def get_guild_id(self) -> int:
         """Get the guild ID for the voice channel."""
+        pass
+
+    @abstractmethod
+    def get_guild_name(self) -> str:
+        """Get the guild name for the voice channel."""
         pass
 
 

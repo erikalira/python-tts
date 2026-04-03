@@ -1,33 +1,32 @@
 ---
 name: shared-logic-extraction
-description: Identify duplicated logic between standalone and src and extract it into shared use cases or services.
+description: Identify duplicated logic between the Desktop App runtime and the shared layers in `src`, then extract it into shared use cases or services.
 ---
+
+# Canonical references
+
+Read these first:
+
+- `docs/ai/project-context.md`
+- `docs/ai/architecture-rules.md`
+- `docs/ai/change-playbooks.md`
+- `docs/ai/documentation-policy.md`
 
 # When to use
 
-Use when similar logic exists in multiple flows (Discord bot and Windows app).
+Use when similar logic exists in multiple flows, especially the Discord bot and desktop app.
 
-# Steps
+# Extraction flow
 
-1. Identify duplicated logic:
-   - same function behavior
-   - same business rules
-   - same external calls
-
-2. Classify logic:
-   - business → move to `core` or `application`
-   - integration → move to `infrastructure`
-   - UI/entrypoint → keep separate
-
-3. Extract shared module:
-   - create use case or service
-   - define interface if needed
-
-4. Replace duplicated code with shared usage
+1. Identify duplicated behavior, rules, or external-call orchestration
+2. Classify the target layer: `core`, `application`, or `infrastructure`
+3. Extract the shared module or interface
+4. Replace duplicate call sites incrementally
+5. Validate both entrypoints after the extraction
 
 # Output
 
 - duplicated areas
 - extraction plan
-- target location (core/application/infrastructure)
-- if documentation is added for the extracted feature or refactor outcome, use `docs/features/`
+- target location
+- validation notes

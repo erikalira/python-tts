@@ -1,7 +1,7 @@
 """HTTP server using aiohttp."""
 import logging
 from aiohttp import web
-from src.presentation.http_controllers import SpeakController
+from src.presentation.http_controllers import SpeakController, VoiceContextController
 from src.__version__ import __version__, __author__, __description__
 
 logger = logging.getLogger(__name__)
@@ -13,14 +13,21 @@ class HTTPServer:
     Follows Single Responsibility: only handles HTTP server setup.
     """
     
-    def __init__(self, speak_controller: SpeakController, port: int):
+    def __init__(
+        self,
+        speak_controller: SpeakController,
+        voice_context_controller: VoiceContextController,
+        port: int,
+    ):
         """Initialize HTTP server.
         
         Args:
             speak_controller: Controller for /speak endpoint
+            voice_context_controller: Controller for /voice-context endpoint
             port: Port to listen on
         """
         self._speak_controller = speak_controller
+        self._voice_context_controller = voice_context_controller
         self._port = port
         self._runner = None
         self._site = None
@@ -32,6 +39,7 @@ class HTTPServer:
         app.router.add_get('/health', self._health)
         app.router.add_get('/version', self._version)
         app.router.add_get('/about', self._about)
+        app.router.add_get('/voice-context', self._voice_context_controller.handle)
         app.router.add_post('/speak', self._speak_controller.handle)
         return app
 

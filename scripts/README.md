@@ -1,31 +1,31 @@
-# Scripts Directory
+﻿# Scripts Directory
 
 Esta pasta contem scripts de build, teste manual e utilitarios para o TTS Hotkey.
 
-## Compilação para Windows
+## CompilaÃ§Ã£o para Windows
 
 ```powershell
 # Build recomendado (Clean Architecture + SOLID principles)
 powershell scripts/build/build_clean_architecture.ps1
 ```
 
-O executável será criado em `dist/tts_hotkey_clean.exe`
+O executÃ¡vel serÃ¡ criado em `dist/tts_hotkey_clean.exe`
 
-## Características Incluídas
+## CaracterÃ­sticas IncluÃ­das
 
-- ✅ Clean Architecture completa
-- ✅ Interface gráfica Tkinter
-- ✅ System tray e notificações
-- ✅ Multi-engine TTS (gTTS + pyttsx3)
-- ✅ Configuração persistente em AppData/Local/TTS-Hotkey/
-- ✅ Hotkeys globais
-- ✅ Entry point standalone único
+- âœ… Clean Architecture completa
+- âœ… Interface grÃ¡fica Tkinter
+- âœ… System tray e notificaÃ§Ãµes
+- âœ… Multi-engine TTS (gTTS + pyttsx3)
+- âœ… ConfiguraÃ§Ã£o persistente em AppData/Local/TTS-Hotkey/
+- âœ… Hotkeys globais
+- âœ… Entry point do Desktop App Ãºnico
 
-### 🛠️ Utils
+### ðŸ› ï¸ Utils
 
-- **create_icon.py**: Gera ícones para os executáveis
+- **create_icon.py**: Gera Ã­cones para os executÃ¡veis
 
-### 🧪 Testes manuais
+### ðŸ§ª Testes manuais
 
 - **scripts/test/manual_integration_check.py**: smoke check manual de integracao e dependencias
 - **scripts/test/manual_security_check.py**: validacao manual do cenario de seguranca do bot
@@ -36,29 +36,32 @@ O executável será criado em `dist/tts_hotkey_clean.exe`
 
 - **PowerShell** (pwsh ou powershell)
 - **PyInstaller**: `pip install pyinstaller`
-- **Dependências**: Execute `pip install -r requirements.txt`
+- **DependÃªncias**: Execute `pip install -r requirements.txt`
 
 ### Para Scripts de Teste
 
-- **Pytest**: Para testes unitários
-- **Python 3.8+**: Versão mínima suportada
-- **Variáveis de ambiente**: Configure `.env` adequadamente
+- **Pytest**: Para testes unitÃ¡rios
+- **Python 3.8+**: VersÃ£o mÃ­nima suportada
+- **VariÃ¡veis de ambiente**: Configure `.env` adequadamente
 
-## Comandos Rápidos
+## Comandos RÃ¡pidos
 
 ```bash
-# Instalar dependências
+# Instalar dependÃªncias
 pip install -r requirements.txt
 pip install -r requirements-test.txt
 
-# Desenvolvimento diário
-python -m pytest tests
+# Desenvolvimento diÃ¡rio com o ambiente virtual do projeto
+./.venv/bin/python -m pytest tests
 
-# Build do executável no Windows
+# Foco no Desktop App
+./.venv/bin/python -m pytest tests/unit/desktop
+
+# Build do executÃ¡vel no Windows
 pwsh -File scripts/build/build_clean_architecture.ps1
 ```
 
-## Integração com CI/CD
+## IntegraÃ§Ã£o com CI/CD
 
 Os scripts foram projetados para funcionar tanto localmente quanto em ambientes de CI/CD:
 
@@ -69,7 +72,7 @@ Os scripts foram projetados para funcionar tanto localmente quanto em ambientes 
 
 ## Troubleshooting
 
-### PowerShell não encontrado
+### PowerShell nÃ£o encontrado
 
 ```bash
 # Ubuntu/Debian
@@ -79,18 +82,18 @@ sudo apt install powershell
 brew install powershell
 ```
 
-### Permissões no Linux
+### PermissÃµes no Linux
 
 ```bash
-# Tornar scripts executáveis
+# Tornar scripts executÃ¡veis
 chmod +x scripts.sh
 chmod +x scripts/test/*.sh
 ```
 
-### Erros de Dependências
+### Erros de DependÃªncias
 
 ```bash
-# Reinstalar dependências
+# Reinstalar dependÃªncias
 pip install -r requirements.txt
 pip install -r requirements-test.txt
 
@@ -99,19 +102,20 @@ source .venv/bin/activate
 pip list
 ```
 
-## Contribuição
+## ContribuiÃ§Ã£o
 
 Para adicionar novos scripts:
 
 1. **Build scripts**: Adicione em `scripts/build/`
 2. **Test scripts**: Adicione em `scripts/test/`
 3. **Utils**: Adicione em `scripts/utils/`
-4. **Atualize**: Modifique este README e a documentação relacionada
+4. **Atualize**: Modifique este README e a documentaÃ§Ã£o relacionada
 5. **Documente**: Atualize este README
 
-## Links Úteis
+## Links Ãšteis
 
-- [Documentação Principal](../README.md)
+- [DocumentaÃ§Ã£o Principal](../README.md)
 - [Arquitetura](../docs/ARCHITECTURE.md)
 - [Troubleshooting](../docs/TROUBLESHOOTING.md)
 - [Setup Hotkeys](../docs/HOTKEY_SETUP.md)
+

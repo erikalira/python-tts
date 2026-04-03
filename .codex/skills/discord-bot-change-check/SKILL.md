@@ -3,40 +3,35 @@ name: discord-bot-change-check
 description: Validate changes that may impact Discord bot behavior and execution flow.
 ---
 
+# Canonical references
+
+Read these first:
+
+- `docs/ai/project-context.md`
+- `docs/ai/architecture-rules.md`
+- `docs/ai/change-playbooks.md`
+- `docs/ai/documentation-policy.md`
+
 # When to use
 
 Use when modifying:
 
-- bot.py
-- services used by the bot
+- `src/bot.py`
+- presentation modules used by the bot
+- infrastructure modules used by the bot
 - shared logic used by the bot
 
-# Steps
+# Validation flow
 
-1. Identify bot entrypoints:
-   - bot.py
-   - command handlers
-   - event listeners
-
-2. Check dependencies:
-   - services used by bot
-   - external APIs (TTS, Discord API)
-
-3. Validate changes:
-   - commands still work
-   - events still trigger correctly
-   - async flow not broken
-
-4. Check shared logic impact:
-   - if moved to shared module, confirm compatibility
-
-5. Validate runtime:
-   - bot starts without errors
-   - no missing imports
+1. Identify bot entrypoints, commands, and event listeners touched by the change
+2. Check affected dependencies and async flow
+3. Confirm shared logic changes did not become Discord-specific
+4. Validate bot startup and the changed runtime path
+5. Flag docs that should move to `docs/features/` when the change is feature-specific
 
 # Output
 
 - potential break points
-- affected commands/events
-- validation steps to test bot manually
-- if the change adds feature documentation, place it in `docs/features/`
+- affected commands or events
+- manual validation steps
+- boundary or shared-logic risks

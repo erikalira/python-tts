@@ -81,7 +81,7 @@ if (-not $EnvFilePath) {
 $PyInstallerArgs = @(
     "--name", $AppName,
     "--onefile", 
-    "--console",
+    "--windowed",
     "--distpath", $DistPath,
     "--workpath", $BuildPath,
     "--specpath", $BuildPath
@@ -147,7 +147,7 @@ $ExeSize = (Get-Item $ExePath).Length / 1MB
 Write-Host "`nExecutable created successfully!" -ForegroundColor Green
 Write-Host "Size: $([math]::Round($ExeSize, 2)) MB" -ForegroundColor White
 
-# Create batch file for easy execution
+# Create batch file for optional troubleshooting
 $BatchContent = @"
 @echo off
 echo Starting TTS Hotkey Clean Architecture...
@@ -160,14 +160,15 @@ if errorlevel 1 (
 )
 "@
 
-$BatchPath = Join-Path $DistPath "run_$AppName.bat"
+$BatchPath = Join-Path $DistPath "run_${AppName}_debug.bat"
 $BatchContent | Out-File -FilePath $BatchPath -Encoding ascii
-Write-Host "Batch file: $BatchPath" -ForegroundColor White
+Write-Host "Debug batch file: $BatchPath" -ForegroundColor White
 
 Write-Host "`nBUILD COMPLETED!" -ForegroundColor Green
 Write-Host "=================================================="
 Write-Host "Executable: $ExePath" -ForegroundColor Cyan
-Write-Host "To run: $BatchPath" -ForegroundColor Cyan
+Write-Host "To run (recommended): $ExePath" -ForegroundColor Cyan
+Write-Host "Debug launcher: $BatchPath" -ForegroundColor Cyan
 
 Write-Host "`nINCLUDED FEATURES:" -ForegroundColor Yellow
 Write-Host "  Clean Architecture complete" -ForegroundColor Green

@@ -6,37 +6,51 @@
 Projeto com dois aplicativos independentes:
 
 - Bot do Discord para entrar em canal de voz e reproduzir TTS
-- App standalone com hotkeys para capturar texto e enviar ao bot
+- Desktop App Windows com hotkeys para capturar texto e enviar ao bot
 
-O repositório segue Clean Architecture e busca reutilizar lógica entre os dois fluxos, sem duplicação entre `standalone` e `src`.
+O repositorio segue Clean Architecture e busca reutilizar logica entre os dois fluxos, sem duplicacao entre o runtime interno do Desktop App em `src/desktop` e o restante de `src`.
 
-## Estrutura rápida
+## Estrutura rapida
 
 - `src/bot.py`: sobe o bot do Discord e o servidor HTTP
-- `app.py`: inicia o app standalone/hotkey
-- `src/`: camadas principais da aplicação
-- `docs/`: documentação complementar
-- `docs/BUILD_GUIDE.md`: guia de build do executável Windows
+- `app.py`: inicia o Desktop App Windows
+- `src/`: camadas principais da aplicacao
+- `docs/`: documentacao complementar
+- `docs/BUILD_GUIDE.md`: guia de build do executavel Windows
 
 ## Requisitos
 
 - Python 3.11+
 - `ffmpeg` para o fluxo de voz do Discord
-- Ambiente virtual recomendado
+- O ambiente virtual `.venv` faz parte da instalacao
 
-Instalação básica:
+Instalacao basica:
 
-```bash
+### Windows (PowerShell)
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Para voz no Discord localmente, também pode ser necessário:
+### Linux/macOS
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Para voz no Discord localmente, tambem pode ser necessario:
 
 ```bash
 pip install pynacl
 ```
 
-## Execução rápida
+Para o passo a passo completo, consulte [docs/SETUP.md](docs/SETUP.md).
+
+## Execucao rapida
 
 Configure um arquivo `.env` com pelo menos:
 
@@ -52,7 +66,7 @@ Suba o bot:
 python -m src.bot
 ```
 
-Em outro terminal, rode o app standalone:
+Em outro terminal, rode o Desktop App:
 
 ```bash
 python app.py
@@ -64,6 +78,8 @@ python app.py
 pytest
 ```
 
+Detalhes de estrutura e execucao estao em [docs/TESTING.md](docs/TESTING.md).
+
 ## Build do executavel Windows
 
 No Windows, use o script oficial:
@@ -71,21 +87,24 @@ No Windows, use o script oficial:
 ```powershell
 ./scripts/build/build_clean_architecture.ps1
 ```
+
 No Linux, gere o `.exe` pelo workflow de CI que roda em ambiente Windows.
 
-## Documentação
+## Documentacao
 
-Use o README principal como ponto de entrada e deixe os detalhes nos guias específicos. A pasta `docs/` fica reservada para estrutura principal e guides; documentação de novas features deve ir em `docs/features/`.
+Use o README principal como ponto de entrada e deixe os detalhes nos guias especificos. A pasta `docs/` fica reservada para estrutura principal e guias duraveis; documentacao de novas features deve ir em `docs/features/`.
 
-- [Índice da documentação](docs/README.md)
-- [Guia de build do executável Windows](docs/BUILD_GUIDE.md)
+- [Indice da documentacao](docs/README.md)
+- [Guia de setup do ambiente](docs/SETUP.md)
+- [Guia de testes](docs/TESTING.md)
+- [Governanca de IA e instrucoes canonicas](docs/ai/README.md)
+- [Guia de build do executavel Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
-- [Guia do app standalone](docs/README_STANDALONE.md)
-- [Configuração de hotkeys](docs/HOTKEY_SETUP.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Guia do Desktop App](docs/README_DESKTOP_APP.md)
+- [Configuracao de hotkeys](docs/HOTKEY_SETUP.md)
 
-## Observações
+## Observacoes
 
-- Não versione o `DISCORD_TOKEN`
-- O bot e o app standalone devem continuar funcionando de forma independente
+- Nao versione o `DISCORD_TOKEN`
+- O bot e o Desktop App devem continuar funcionando de forma independente
 - Prefira consultar `docs/` para detalhes de arquitetura, setup e troubleshooting

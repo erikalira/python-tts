@@ -11,13 +11,23 @@ from src.infrastructure.http.server import HTTPServer
 async def test_http_server_exposes_health_version_and_about_routes():
     controller = Mock()
     controller.handle = AsyncMock()
-    server = HTTPServer(speak_controller=controller, port=10000)
+    voice_context_controller = Mock()
+    voice_context_controller.handle = AsyncMock()
+    server = HTTPServer(
+        speak_controller=controller,
+        voice_context_controller=voice_context_controller,
+        port=10000,
+    )
 
     app = server._build_app()
-    for path in ("/health", "/version", "/about"):
+    for path in ("/health", "/version", "/about", "/voice-context"):
         request = make_mocked_request("GET", path, app=app)
         match_info = await app.router.resolve(request)
         response = await match_info.handler(request)
+
+        if path == "/voice-context":
+            voice_context_controller.handle.assert_awaited_once_with(request)
+            continue
 
         assert response.status == 200
 
@@ -35,7 +45,13 @@ async def test_http_server_exposes_health_version_and_about_routes():
 async def test_http_server_routes_speak_to_controller():
     controller = Mock()
     controller.handle = AsyncMock(return_value=web.Response(text="ok"))
-    server = HTTPServer(speak_controller=controller, port=10000)
+    voice_context_controller = Mock()
+    voice_context_controller.handle = AsyncMock()
+    server = HTTPServer(
+        speak_controller=controller,
+        voice_context_controller=voice_context_controller,
+        port=10000,
+    )
 
     app = server._build_app()
     request = make_mocked_request("POST", "/speak", app=app)

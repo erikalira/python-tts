@@ -3,39 +3,30 @@ name: safe-refactor-plan
 description: Generate a safe, step-by-step refactor plan minimizing risk and preserving functionality.
 ---
 
+# Canonical references
+
+Read these first:
+
+- `docs/ai/project-context.md`
+- `docs/ai/architecture-rules.md`
+- `docs/ai/engineering-standards.md`
+- `docs/ai/change-playbooks.md`
+
 # When to use
 
-Use when refactoring code that affects multiple modules, especially shared logic between standalone and src.
+Use when refactoring code that affects multiple modules, especially shared logic between the desktop runtime and the shared layers in `src`.
 
-# Steps
+# Planning flow
 
-1. Identify impacted areas:
-   - files being modified
-   - dependencies of these files
-   - entrypoints affected (bot.py, app.py)
-
-2. Classify changes:
-   - refactor (no behavior change)
-   - behavior change (requires validation)
-
-3. Break refactor into small steps:
-   - extract function
-   - create shared module
-   - replace usage incrementally
-
-4. Define validation per step:
-   - bot still runs
-   - standalone app still runs
-   - no import errors
-
-5. Order steps to minimize risk:
-   - extract first
-   - replace usage after
-   - remove old code last
+1. Identify impacted files, imports, and entrypoints
+2. Classify whether the work is structural only or behavior-changing
+3. Break the refactor into small reversible steps
+4. Define validation for each step
+5. Order the work to extract first, replace second, remove old code last
 
 # Output
 
 - step-by-step plan
 - affected files
 - validation checklist per step
-- documentation placement note when relevant: feature docs go in `docs/features/`, while top-level `docs/` stays for core guides
+- documentation note when relevant

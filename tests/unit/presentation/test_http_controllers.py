@@ -2,8 +2,8 @@
 import pytest
 from unittest.mock import Mock, AsyncMock
 from aiohttp import web
-from src.presentation.http_controllers import SpeakController
-from src.application.use_cases import SpeakTextUseCase
+from src.presentation.http_controllers import SpeakController, VoiceContextController
+from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 
 
 @pytest.mark.asyncio
@@ -176,3 +176,43 @@ class TestSpeakController:
         
         # Test float
         assert controller._parse_int(789.5) == 789
+
+
+@pytest.mark.asyncio
+class TestVoiceContextController:
+    async def test_handle_returns_current_voice_context(self, mock_channel_repository):
+        controller = VoiceContextController(
+            GetCurrentVoiceContextUseCase(mock_channel_repository)
+        )
+        request = Mock(spec=web.Request)
+        request.query = {"member_id": "345678"}
+
+        response = await controller.handle(request)
+
+        assert response.status == 200
+        assert "Mock Guild" in response.text
+        assert "Mock Voice" in response.text
+
+    async def test_handle_returns_not_found_when_member_not_in_voice(self):
+        from tests.conftest import MockVoiceChannelRepository
+
+        controller = VoiceContextController(
+            GetCurrentVoiceContextUseCase(MockVoiceChannelRepository(return_none=True))
+        )
+        request = Mock(spec=web.Request)
+        request.query = {"member_id": "345678"}
+
+        response = await controller.handle(request)
+
+        assert response.status == 404
+
+    async def test_handle_requires_member_id(self, mock_channel_repository):
+        controller = VoiceContextController(
+            GetCurrentVoiceContextUseCase(mock_channel_repository)
+        )
+        request = Mock(spec=web.Request)
+        request.query = {}
+
+        response = await controller.handle(request)
+
+        assert response.status == 400

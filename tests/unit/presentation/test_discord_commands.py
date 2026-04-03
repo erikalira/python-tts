@@ -73,6 +73,7 @@ class TestDiscordCommands:
         interaction.delete_original_response = AsyncMock()
         
         with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
+             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
              patch('src.presentation.discord_commands.HAS_FFMPEG', True):
             await commands_instance._handle_speak(interaction, "Test message")
         
@@ -107,6 +108,7 @@ class TestDiscordCommands:
         interaction.edit_original_response = AsyncMock()
         
         with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
+             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
              patch('src.presentation.discord_commands.HAS_FFMPEG', True):
             await commands_instance._handle_speak(interaction, "Test")
         

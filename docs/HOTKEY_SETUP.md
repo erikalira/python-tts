@@ -1,59 +1,61 @@
-# 🎤 TTS Hotkey - Configuração Avançada
+# TTS Hotkey - Configuracao Avancada
 
-## 🏆 App Standalone Atual
+## Desktop App Atual
 
 **Entry point**: `app.py`  
-**Executável**: `dist/tts_hotkey_clean.exe`
+**Executavel**: `dist/tts_hotkey_clean.exe`
 
-### ✨ Discord ID Automático
+### Discord ID Automatico
 
-O app standalone usa a configuração persistida para descobrir em qual canal você está.
+O Desktop App usa a configuracao persistida para descobrir em qual canal voce esta.
 
-## 🔧 **Como Descobrir seu Discord ID**
+## Como Descobrir seu Discord ID
 
 ### Passo 1: Ativar Modo Desenvolvedor
 
-1. Discord → **Configurações do Usuário**
-2. **Avançado** → Ativar **Modo Desenvolvedor**
+1. Discord -> **Configuracoes do Usuario**
+2. **Avancado** -> Ativar **Modo Desenvolvedor**
 
 ### Passo 2: Copiar seu ID
 
 1. Clique direito no **seu nome** em qualquer chat
-2. **Copiar ID do Usuário**
-3. Cole na interface de configuração do app
+2. **Copiar ID do Usuario**
+3. Cole na interface de configuracao do app
 
-## 🎯 **Funcionamento Inteligente**
+## Funcionamento Inteligente
 
-O bot usa esta **ordem de prioridade**:
+O bot usa esta ordem de prioridade:
 
-1. 🎯 **Canal já conectado** (se usou `/join` antes)
-2. 📍 **Channel ID específico** (se configurou `DISCORD_CHANNEL_ID`)
-3. 👤 **Member ID** (encontra onde você está)
-4. ❌ **Erro** se nenhuma opção funcionar
+1. Canal ja conectado, se voce usou `/join` antes
+2. Channel ID especifico, se configurou `DISCORD_CHANNEL_ID`
+3. Member ID, para encontrar onde voce esta
+4. Erro, se nenhuma opcao funcionar
 
-## 🎮 **Configurações por Perfil**
+## Configuracoes por Perfil
 
 ### Perfis sugeridos
 
-- Gaming: taxa de fala mais alta e menos notificações
+- Gaming: taxa de fala mais alta e menos notificacoes
 - Office: taxa mais baixa e timeout maior
 - Streaming: canal fixo e menos logs visuais
 
-## ⚡ **Triggers Personalizáveis**
+## Triggers Personalizaveis
 
 Evite conflitos com outros programas:
 
-Escolha uma combinação de abertura/fechamento que não conflite com outros programas.
+Escolha uma combinacao de abertura e fechamento que nao conflite com outros programas.
 
-## 🔊 **Configuração de Áudio Avançada**
+## Configuracao de Audio Avancada
 
-Configure engine, idioma, taxa e dispositivo de áudio pela interface do standalone.
+Configure engine, idioma, taxa e dispositivo de audio pela interface do Desktop App.
+Por padrao, o Desktop App envia o texto para o bot do Discord.
+Se voce quiser usar voz local no proprio Windows, ative a opcao de voz local manualmente na interface.
 
-## 📊 Status
+## Status
 
-Quando executado, o app mostra logs de inicialização e status dos serviços do standalone.
+Quando executado, o app mostra logs de inicializacao e status dos servicos do Desktop App.
 
-## 🚀 **Compilar e Usar**
+## Compilar e Usar
 
 ```powershell
 # 1. Rodar o app
@@ -66,34 +68,40 @@ python app.py
 dist/tts_hotkey_clean.exe
 ```
 
-## 🎯 **Modo de Uso**
+## Modo de Uso
 
-1. **Entre em um canal de voz** no Discord
-2. **Execute o app** (`python app.py` ou o `.exe`)
-3. **Aperte sua trigger key** (ex: `{`)
-4. **Digite o texto** que quer falar
-5. **Aperte a close key** (ex: `}`)
-6. **Bot fala automaticamente!**
+1. Entre em um canal de voz no Discord
+2. Execute o app com `python app.py` ou o `.exe`
+3. Aperte sua trigger key, por exemplo `{`
+4. Digite o texto que quer falar
+5. Aperte a close key, por exemplo `}`
+6. O bot fala automaticamente
 
-## 🛠️ **Troubleshooting Premium**
+## Voz local opcional
 
-### ❌ "Hotkey registration failed"
+Se o bot nao estiver disponivel e voce quiser usar o app como leitor local no Windows,
+ative explicitamente a voz local opcional na aba de interface do Desktop App.
+Esse modo usa `pyttsx3` e nao faz parte do fluxo padrao.
 
-Mude as hotkeys na interface de configuração do app.
+## Solucao de Problemas
 
-### ❌ "Discord not found"
+### "Hotkey registration failed"
 
-Verifique a URL do bot na configuração do app ou no `.env`.
+Mude as hotkeys na interface de configuracao do app.
 
-### ❌ "Member not found"
+### "Discord not found"
 
-Use o ID correto do usuário ou configure um canal fixo na interface do app.
+Verifique a URL do bot na configuracao do app ou no `.env`.
 
-## 💎 Vantagens da Versão Atual
+### "Member not found"
 
-- 🎯 Um único runtime standalone
-- 📊 Configuração persistida
-- ⚡ Build dedicado para Windows
-- 🔧 Menos caminhos paralelos de execução
+Use o ID correto do usuario ou configure um canal fixo na interface do app.
 
-**Resultado**: um único `.exe` baseado no runtime limpo de `src/standalone`.
+## Vantagens da Versao Atual
+
+- Um unico runtime do Desktop App
+- Configuracao persistida
+- Build dedicado para Windows
+- Menos caminhos paralelos de execucao
+
+**Resultado**: um unico `.exe` baseado no runtime limpo de `src/desktop`.

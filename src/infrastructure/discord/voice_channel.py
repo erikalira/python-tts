@@ -212,9 +212,17 @@ class DiscordVoiceChannel(IVoiceChannel):
         """Get the channel ID."""
         return self._channel.id
 
+    def get_channel_name(self) -> str:
+        """Get the channel name."""
+        return self._channel.name
+
     def get_guild_id(self) -> int:
         """Get guild ID."""
         return self._channel.guild.id
+
+    def get_guild_name(self) -> str:
+        """Get guild name."""
+        return self._channel.guild.name
     
     def _schedule_disconnect(self) -> None:
         """Schedule automatic disconnect after idle timeout."""

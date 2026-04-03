@@ -6,7 +6,7 @@ echo "Data: $(date)"
 echo ""
 
 echo "1. Verificando arquivos modificados..."
-echo "   - src/app.py: Timeout aumentado para 120s"  
+echo "   - src/infrastructure/http/server.py: Timeout aumentado para 120s"  
 echo "   - src/infrastructure/discord/voice_channel.py: Lógica de reconexão melhorada"
 echo "   - src/application/use_cases.py: Retry e timeout protection"
 echo ""

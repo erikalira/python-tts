@@ -1,56 +1,45 @@
 # Project overview
 
-This repository contains two separate applications:
+This repository contains two independent applications:
 
 - Discord bot
-- Windows hotkey app
+- Windows hotkey desktop app
 
-# Architecture rules
+Both must keep working independently after changes.
 
-- Target architecture is clean architecture
-- Avoid duplication between `standalone` and `src`
-- Prefer extracting interfaces/adapters instead of copying logic
-- Reuse use cases and services whenever possible
-- Preserve independent execution of both applications
+# Source of truth
+
+Use `docs/ai/` as the canonical source of project guidance:
+
+- `docs/ai/project-context.md`
+- `docs/ai/architecture-rules.md`
+- `docs/ai/engineering-standards.md`
+- `docs/ai/documentation-policy.md`
+- `docs/ai/change-playbooks.md`
+
+Tool-specific instructions should summarize and point to those docs instead of redefining policy.
+
+# Core operating rules
+
+1. Preserve clean architecture boundaries
+2. Avoid duplication between `src/desktop/` and shared modules in `src/`
+3. Prefer extracting shared interfaces, use cases, or services over copy-paste
+4. Keep business logic out of presentation and infrastructure layers
+5. Prefer small, incremental refactors
+6. Validate both application modes before finishing relevant changes
 
 # Important paths
 
-- `bot.py`
+- `src/bot.py`
 - `app.py`
-- `standalone/`
-- `src/application/`
 - `src/core/`
+- `src/application/`
 - `src/infrastructure/`
 - `src/presentation/`
+- `src/desktop/`
 
-# Change policy
+# Documentation rule
 
-When making changes:
-
-1. Keep both applications working independently
-2. Prefer small, incremental refactors
-3. Check impact on bot flow and Windows hotkey flow
-4. Avoid introducing logic into outer layers that belongs in core/application
-
-# Documentation policy
-
-- Keep `docs/` focused on main structure docs and operational guides
-- Add documentation for new features, feature iterations, and implementation notes under `docs/features/`
-- When adding or updating feature docs, update `docs/README.md` so the index reflects the new location
-- Prefer feature-specific filenames in `docs/features/` instead of expanding the top-level `docs/` directory
-
-# Validation
-
-Before finishing:
-
-- run relevant tests
-- verify imports did not break architecture boundaries
-- confirm bot startup still works
-- confirm Windows app startup still works
-
-# Strict rules
-
-- Never duplicate logic between `standalone` and `src`
-- Never place business logic in presentation or infrastructure
-- Always prefer reuse over copy-paste
-- If duplication is found, refactor instead of extending it
+- Use top-level `docs/` for durable guides and architecture material
+- Use `docs/features/` for feature docs, feature iterations, and implementation notes
+- Update `docs/README.md` when documentation structure or navigation changes

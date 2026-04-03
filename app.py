@@ -1,7 +1,8 @@
-"""Main entry point for the Windows standalone hotkey app."""
+﻿"""Main entry point for the Windows desktop app."""
 
-from src.standalone.app.standalone_app import main
+from src.desktop.app.desktop_app import main
 
 
 if __name__ == "__main__":
     main()
+

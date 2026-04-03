@@ -1,50 +1,17 @@
-# Organização da Documentação
+# Documentation Organization
 
-## Estrutura da Documentação
+Use `docs/ai/documentation-policy.md` as the canonical policy for documentation placement.
 
-Todos os arquivos de documentação do projeto (exceto o README.md principal) devem ser mantidos no diretório `/docs`.
+## Rules
 
-### Localização dos Arquivos
+- Keep the root `README.md` as the public entrypoint
+- Keep top-level `docs/` focused on architecture, operating guides, and durable reference material
+- Put new feature docs, feature iterations, and implementation notes in `docs/features/`
+- Update `docs/README.md` whenever documentation structure or navigation changes
+- Update root links if a documentation move affects `README.md`
 
-- **README.md** - Permanece na raiz do projeto
-- **Demais documentações** - Localizadas em `/docs/`
+## Quick examples
 
-### Arquivos na pasta `/docs/`:
-
-- `ARCHITECTURE.md` - Arquitetura do sistema
-- `CORREÇÕES_IMPLEMENTADAS.md` - Log de correções implementadas
-- `HOTKEY_SETUP.md` - Configuração de teclas de atalho
-- `HOTKEY_SETUP_OLD.md` - Configuração antiga de teclas (histórico)
-- `README_STANDALONE.md` - README para versão standalone
-- `TROUBLESHOOTING.md` - Guia de solução de problemas
-- `VOICE_TIMEOUT.md` - Documentação sobre timeout de voz
-
-## Diretrizes
-
-1. **Novos arquivos de documentação** devem ser criados diretamente na pasta `/docs/`
-2. **O README.md principal** deve permanecer na raiz para visibilidade no GitHub
-3. **Atualize links** quando mover arquivos de documentação
-4. **Mantenha a estrutura organizada** para facilitar a navegação
-
-## Exemplo de Estrutura
-
-```
-/
-├── README.md (principal)
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── HOTKEY_SETUP.md
-│   ├── TROUBLESHOOTING.md
-│   └── ...outros arquivos de documentação
-└── .github/
-    └── instructions/
-        └── documentation-organization.md (este arquivo)
-```
-
-## Atualização de Links
-
-Ao referenciar documentação em outros arquivos, use caminhos relativos:
-
-- `docs/ARCHITECTURE.md`
-- `docs/TROUBLESHOOTING.md`
-- etc.
+- Architecture decision or operational guide -> `docs/`
+- New feature behavior or implementation note -> `docs/features/`
+- AI policy or instruction governance -> `docs/ai/`
