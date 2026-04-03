@@ -11,6 +11,7 @@ from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
 from ..gui.simple_gui import ConfigurationService, DesktopAppMainWindow, TKINTER_AVAILABLE
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
+from .configuration_application import DesktopConfigurationApplicationService
 from .desktop_actions import DesktopBotActions, DesktopConfigurationCoordinator
 from .tts_runtime import DesktopAppHotkeyHandler, DesktopAppTTSProcessor, DesktopAppTTSResultPresenter
 
@@ -89,9 +90,11 @@ class DesktopApp:
             self._config_repository = ConfigurationRepository()
         if self._configuration_coordinator is None:
             self._configuration_coordinator = DesktopConfigurationCoordinator(
-                config_repository=self._config_repository,
                 config_service=self._config_service,
-                update_services=self._update_services_config,
+                configuration_application=DesktopConfigurationApplicationService(
+                    config_repository=self._config_repository,
+                    update_services=self._update_services_config,
+                ),
             )
 
     def _setup_integrations(self) -> None:
