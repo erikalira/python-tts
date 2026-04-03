@@ -179,8 +179,8 @@ class DesktopApp:
             self._show_main_window()
             return
 
-        tray_available = self._notification_service.is_available()
-        if tray_available:
+        tray_running = self._notification_service.is_running()
+        if tray_running:
             logger.info("[DESKTOP_APP] Executando com system tray em background...")
             while self._running and not self._shutdown_requested.is_set():
                 self._process_pending_ui_action(timeout=0.2)

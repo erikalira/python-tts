@@ -32,6 +32,9 @@ class SystemTrayIconAdapter:
     def is_available(self) -> bool:
         raise NotImplementedError
 
+    def is_running(self) -> bool:
+        raise NotImplementedError
+
 
 class NullSystemTrayIcon(SystemTrayIconAdapter):
     """Null object used when no tray implementation is available."""
@@ -46,6 +49,9 @@ class NullSystemTrayIcon(SystemTrayIconAdapter):
         pass
 
     def is_available(self) -> bool:
+        return False
+
+    def is_running(self) -> bool:
         return False
 
 
@@ -103,6 +109,10 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
     def is_available(self) -> bool:
         """pystray adapter is available when constructed."""
         return True
+
+    def is_running(self) -> bool:
+        """Return whether the tray event loop is running."""
+        return self._running
 
     def _create_icon(self) -> Icon:
         menu = Menu(
