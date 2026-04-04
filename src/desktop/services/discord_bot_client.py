@@ -21,17 +21,11 @@ class DiscordSpeakRequest:
     """Payload for the Discord bot speak endpoint."""
 
     text: str
-    guild_id: Optional[str] = None
-    channel_id: Optional[str] = None
     member_id: Optional[str] = None
 
     def to_payload(self) -> dict:
         """Serialize request to the JSON payload expected by the bot."""
         payload = {"text": self.text}
-        if self.guild_id:
-            payload["guild_id"] = self.guild_id
-        if self.channel_id:
-            payload["channel_id"] = self.channel_id
         if self.member_id:
             payload["member_id"] = self.member_id
         return payload
@@ -86,7 +80,6 @@ class HttpDiscordBotClient:
         """Build a speak request from Desktop App configuration."""
         return DiscordSpeakRequest(
             text=text,
-            channel_id=self._config.discord.channel_id,
             member_id=self._config.discord.member_id,
         )
 

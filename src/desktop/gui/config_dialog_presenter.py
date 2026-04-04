@@ -21,8 +21,6 @@ class ConfigDialogsPresenter:
     def build_skip_discord_result(self, *, bot_url: str) -> dict:
         return {
             "member_id": None,
-            "guild_id": None,
-            "channel_id": None,
             "bot_url": bot_url,
             "skip_discord": True,
         }
@@ -31,7 +29,6 @@ class ConfigDialogsPresenter:
         self,
         *,
         member_id: str,
-        channel_id: str,
         bot_url: str,
     ) -> DialogFeedback | None:
         member_error = validate_numeric_field(
@@ -43,15 +40,6 @@ class ConfigDialogsPresenter:
         if member_error:
             return DialogFeedback(title="Erro", message=member_error)
 
-        channel_error = validate_numeric_field(
-            channel_id,
-            required=False,
-            required_message="",
-            numeric_message="Channel ID deve conter apenas numeros!",
-        )
-        if channel_error:
-            return DialogFeedback(title="Erro", message=channel_error)
-
         if not bot_url.strip():
             return DialogFeedback(title="Erro", message="Bot URL e obrigatoria!")
         return None
@@ -60,13 +48,10 @@ class ConfigDialogsPresenter:
         self,
         *,
         member_id: str,
-        channel_id: str,
         bot_url: str,
     ) -> tuple[dict, DialogFeedback]:
         result = {
             "member_id": normalize_optional_text(member_id),
-            "guild_id": None,
-            "channel_id": normalize_optional_text(channel_id),
             "bot_url": bot_url,
             "skip_discord": False,
         }
@@ -84,13 +69,10 @@ class ConfigDialogsPresenter:
         self,
         *,
         member_id: str,
-        channel_id: str,
         bot_url: str,
     ) -> dict:
         return {
             "member_id": normalize_optional_text(member_id),
-            "guild_id": None,
-            "channel_id": normalize_optional_text(channel_id),
             "bot_url": bot_url,
             "skip_discord": not bool(normalize_optional_text(member_id)),
         }

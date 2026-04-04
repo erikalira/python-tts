@@ -147,7 +147,6 @@ def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch)
 
     assert result is not None
     assert result.discord.member_id == "123"
-    assert result.discord.guild_id is None
     assert result.discord.bot_url == "http://bot"
     assert result.tts.engine == "gtts"
     assert result.tts.rate == 180
@@ -165,7 +164,6 @@ def test_initial_setup_gui_create_widgets_populates_variables(monkeypatch):
     gui._create_initial_setup_widgets()
 
     assert gui.member_id_var.get() == ""
-    assert gui.channel_id_var.get() == ""
     assert gui.bot_url_var.get() == "http://env-bot"
 
 
@@ -179,8 +177,6 @@ def test_initial_setup_gui_skip_discord_sets_result_and_destroys_root(monkeypatc
 
     assert gui.result == {
         "member_id": None,
-        "guild_id": None,
-        "channel_id": None,
         "bot_url": "http://bot",
         "skip_discord": True,
     }
@@ -191,7 +187,6 @@ def test_initial_setup_gui_save_and_continue_validates_member_id(prevent_real_me
     gui = InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("abc")
-    gui.channel_id_var = DummyVar("")
     gui.bot_url_var = DummyVar("http://bot")
 
     gui._save_and_continue()
@@ -199,25 +194,10 @@ def test_initial_setup_gui_save_and_continue_validates_member_id(prevent_real_me
     assert gui.result is None
     assert prevent_real_messageboxes["error"] == [("Erro", "Discord User ID deve conter apenas numeros!")]
 
-
-def test_initial_setup_gui_save_and_continue_validates_channel_id(prevent_real_messageboxes):
-    gui = InitialSetupGUI()
-    gui.root = DummyRoot()
-    gui.member_id_var = DummyVar("123")
-    gui.channel_id_var = DummyVar("abc")
-    gui.bot_url_var = DummyVar("http://bot")
-
-    gui._save_and_continue()
-
-    assert gui.result is None
-    assert prevent_real_messageboxes["error"] == [("Erro", "Channel ID deve conter apenas numeros!")]
-
-
 def test_initial_setup_gui_save_and_continue_requires_bot_url(prevent_real_messageboxes):
     gui = InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("123")
-    gui.channel_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("   ")
 
     gui._save_and_continue()
@@ -230,15 +210,12 @@ def test_initial_setup_gui_save_and_continue_with_member_id(prevent_real_message
     gui = InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("123")
-    gui.channel_id_var = DummyVar("456")
     gui.bot_url_var = DummyVar("http://bot")
 
     gui._save_and_continue()
 
     assert gui.result == {
         "member_id": "123",
-        "guild_id": None,
-        "channel_id": "456",
         "bot_url": "http://bot",
         "skip_discord": False,
     }
@@ -250,15 +227,12 @@ def test_initial_setup_gui_save_and_continue_without_member_id(prevent_real_mess
     gui = InitialSetupGUI()
     gui.root = DummyRoot()
     gui.member_id_var = DummyVar("   ")
-    gui.channel_id_var = DummyVar("")
     gui.bot_url_var = DummyVar("http://bot")
 
     gui._save_and_continue()
 
     assert gui.result == {
         "member_id": None,
-        "guild_id": None,
-        "channel_id": None,
         "bot_url": "http://bot",
         "skip_discord": False,
     }
@@ -267,7 +241,7 @@ def test_initial_setup_gui_save_and_continue_without_member_id(prevent_real_mess
 
 def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, capsys):
     gui = InitialSetupGUI()
-    responses = iter(["abc", "qwe", ""])
+    responses = iter(["abc", ""])
 
     monkeypatch.setenv("DISCORD_BOT_URL", "http://default-bot")
     monkeypatch.setattr("builtins.input", lambda _prompt: next(responses))
@@ -276,8 +250,6 @@ def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, cap
 
     assert result == {
         "member_id": None,
-        "guild_id": None,
-        "channel_id": None,
         "bot_url": "http://default-bot",
         "skip_discord": True,
     }
@@ -359,7 +331,6 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
 
     assert gui.result is not None
     assert gui.result.discord.member_id == "123"
-    assert gui.result.discord.guild_id is None
     assert gui.result.tts.engine == "pyttsx3"
     assert gui.result.tts.rate == 210
     assert gui.result.interface.local_tts_enabled is True
@@ -397,14 +368,11 @@ def test_config_dialogs_presenter_builds_initial_setup_result():
 
     result, feedback = presenter.build_initial_setup_result(
         member_id="123",
-        channel_id="456",
         bot_url="http://bot",
     )
 
     assert result == {
         "member_id": "123",
-        "guild_id": None,
-        "channel_id": "456",
         "bot_url": "http://bot",
         "skip_discord": False,
     }
@@ -417,7 +385,6 @@ def test_config_dialogs_presenter_validates_initial_setup():
 
     error = presenter.validate_initial_setup(
         member_id="abc",
-        channel_id="",
         bot_url="http://bot",
     )
 

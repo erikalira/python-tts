@@ -45,13 +45,11 @@ def test_configuration_repository_save_and_load_roundtrip(tmp_path):
 
     saved_data = json.loads(config_file.read_text(encoding="utf-8"))
     assert saved_data["discord_member_id"] == "123"
-    assert saved_data["discord_guild_id"] is None
     assert saved_data["trigger_open"] == "["
     assert saved_data["local_tts_enabled"] is True
 
     loaded = repo.load()
     assert loaded.discord.member_id == "123"
-    assert loaded.discord.guild_id is None
     assert loaded.interface.local_tts_enabled is True
     assert loaded.hotkey.keys == "[text]"
 
@@ -71,13 +69,10 @@ def test_configuration_repository_returns_defaults_on_invalid_json(capsys, tmp_p
 def test_environment_updater_sets_expected_variables(monkeypatch):
     config = DesktopAppConfig.create_default()
     config.discord.bot_url = get_default_discord_bot_url()
-    config.discord.channel_id = "55"
     config.discord.member_id = "99"
     config.tts.output_device = "Speaker"
 
     monkeypatch.delenv("DISCORD_BOT_URL", raising=False)
-    monkeypatch.delenv("DISCORD_GUILD_ID", raising=False)
-    monkeypatch.delenv("DISCORD_CHANNEL_ID", raising=False)
     monkeypatch.delenv("DISCORD_MEMBER_ID", raising=False)
     monkeypatch.delenv("TTS_OUTPUT_DEVICE", raising=False)
 
@@ -85,28 +80,20 @@ def test_environment_updater_sets_expected_variables(monkeypatch):
 
     assert config.discord.bot_url == get_default_discord_bot_url()
     assert os.environ["DISCORD_BOT_URL"] == get_default_discord_bot_url()
-    assert "DISCORD_GUILD_ID" not in os.environ
-    assert os.environ["DISCORD_CHANNEL_ID"] == "55"
     assert os.environ["DISCORD_MEMBER_ID"] == "99"
 
 
 def test_environment_updater_removes_optional_identifiers_when_missing(monkeypatch):
     config = DesktopAppConfig.create_default()
     config.discord.bot_url = get_default_discord_bot_url()
-    config.discord.guild_id = None
-    config.discord.channel_id = None
     config.discord.member_id = None
     config.tts.output_device = None
 
-    monkeypatch.setenv("DISCORD_GUILD_ID", "guild")
-    monkeypatch.setenv("DISCORD_CHANNEL_ID", "channel")
     monkeypatch.setenv("DISCORD_MEMBER_ID", "member")
     monkeypatch.setenv("TTS_OUTPUT_DEVICE", "Speaker")
 
     EnvironmentUpdater.update_from_config(config)
 
-    assert "DISCORD_GUILD_ID" not in os.environ
-    assert "DISCORD_CHANNEL_ID" not in os.environ
     assert "DISCORD_MEMBER_ID" not in os.environ
 
 

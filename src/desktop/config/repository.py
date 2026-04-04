@@ -45,8 +45,6 @@ class ConfigurationRepository:
                 ),
                 discord=DiscordConfig(
                     bot_url=self._get_env_or_file_value(data, "discord_bot_url", "DISCORD_BOT_URL"),
-                    guild_id=self._get_env_or_file_value(data, "discord_guild_id", "DISCORD_GUILD_ID"),
-                    channel_id=self._get_env_or_file_value(data, "discord_channel_id", "DISCORD_CHANNEL_ID"),
                     member_id=self._get_env_or_file_value(data, "discord_member_id", "DISCORD_MEMBER_ID"),
                 ),
                 hotkey=HotkeyConfig(
@@ -91,8 +89,6 @@ class ConfigurationRepository:
                 "tts_rate": config.tts.rate,
                 "tts_output_device": config.tts.output_device,
                 "discord_bot_url": config.discord.bot_url,
-                "discord_guild_id": config.discord.guild_id,
-                "discord_channel_id": config.discord.channel_id,
                 "discord_member_id": config.discord.member_id,
                 "trigger_open": config.hotkey.trigger_open,
                 "trigger_close": config.hotkey.trigger_close,

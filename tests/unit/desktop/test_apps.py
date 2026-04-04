@@ -141,7 +141,6 @@ def test_desktop_app_handle_configure_pauses_hotkeys_while_gui_is_open():
     app._config_service = Mock()
     updated_config = DesktopAppConfig.create_default()
     updated_config.discord.member_id = "123"
-    updated_config.discord.guild_id = "456"
     app._config_service.get_configuration.return_value = updated_config
     app._config_repository = Mock()
     app._notification_service = Mock()
@@ -178,7 +177,6 @@ def test_desktop_app_save_configuration_from_ui_applies_changes():
     app = DesktopApp()
     updated_config = DesktopAppConfig.create_default()
     updated_config.discord.bot_url = get_default_discord_bot_url()
-    updated_config.discord.guild_id = "456"
     updated_config.discord.member_id = "123"
     app._config = DesktopAppConfig.create_default()
     app._config_repository = Mock()

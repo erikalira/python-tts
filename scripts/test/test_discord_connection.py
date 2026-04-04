@@ -33,11 +33,9 @@ def load_env_file():
     
     # Show current environment configuration
     discord_url = os.getenv('DISCORD_BOT_URL')
-    channel_id = os.getenv('DISCORD_CHANNEL_ID')
     member_id = os.getenv('DISCORD_MEMBER_ID')
     
     print(f"[test] DISCORD_BOT_URL = {discord_url!r}")
-    print(f"[test] DISCORD_CHANNEL_ID = {channel_id!r}")
     print(f"[test] DISCORD_MEMBER_ID = {member_id!r}")
     
     if discord_url:
@@ -59,12 +57,7 @@ def test_discord_request(text: str):
         print("[test] 🚀 Sending request to Discord bot...")
         try:
             payload = {'text': text}
-            # optionally send channel id if configured
-            ch = os.getenv('DISCORD_CHANNEL_ID')
-            if ch:
-                payload['channel_id'] = ch
-                print(f"[test] Added channel_id: {ch}")
-            # optionally send member id (where the user is connected)
+            # optionally send member id so the bot can infer the current guild/channel
             member = os.getenv('DISCORD_MEMBER_ID')
             if member:
                 payload['member_id'] = member

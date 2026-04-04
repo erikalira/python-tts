@@ -134,7 +134,6 @@ class InitialSetupGUI:
         self.root: Optional[object] = None
         self.result: Optional[dict] = None
         self.member_id_var: Optional[object] = None
-        self.channel_id_var: Optional[object] = None
         self.bot_url_var: Optional[object] = None
         self._presenter = ConfigDialogsPresenter()
 
@@ -177,8 +176,8 @@ class InitialSetupGUI:
         compat.ttk.Label(
             main_frame,
             text=(
-                "Para usar o TTS no Discord, voce precisa configurar seus IDs.\n"
-                "Estes campos sao obrigatorios para o funcionamento correto."
+                "Para usar o TTS no Discord, configure seu Discord User ID.\n"
+                "O bot vai inferir o servidor e o canal pela sua presenca em voz."
             ),
             justify=compat.tk.CENTER,
         ).pack(pady=(0, 20))
@@ -194,16 +193,6 @@ class InitialSetupGUI:
                 "Como encontrar: Discord -> Configuracoes -> Avancado -> Modo Desenvolvedor (ON)\n"
                 "   Botao direito no seu nome -> Copiar ID"
             ),
-            foreground="gray",
-            font=("Arial", 8),
-        ).pack(anchor=compat.tk.W, pady=(0, 10))
-
-        compat.ttk.Label(discord_frame, text="Channel ID (opcional):").pack(anchor=compat.tk.W)
-        self.channel_id_var = compat.tk.StringVar()
-        compat.ttk.Entry(discord_frame, textvariable=self.channel_id_var, width=30).pack(fill=compat.tk.X, pady=(5, 10))
-        compat.ttk.Label(
-            discord_frame,
-            text="Como encontrar: Botao direito no canal de voz -> Copiar ID",
             foreground="gray",
             font=("Arial", 8),
         ).pack(anchor=compat.tk.W, pady=(0, 10))
@@ -240,12 +229,10 @@ class InitialSetupGUI:
         from . import tk_support as compat
 
         member_id = self.member_id_var.get().strip()
-        channel_id = self.channel_id_var.get().strip()
         bot_url = self.bot_url_var.get().strip()
 
         validation_error = self._presenter.validate_initial_setup(
             member_id=member_id,
-            channel_id=channel_id,
             bot_url=bot_url,
         )
         if validation_error:
@@ -254,7 +241,6 @@ class InitialSetupGUI:
 
         self.result, feedback = self._presenter.build_initial_setup_result(
             member_id=member_id,
-            channel_id=channel_id,
             bot_url=bot_url,
         )
         compat.messagebox.showinfo(feedback.title, feedback.message)
@@ -264,7 +250,7 @@ class InitialSetupGUI:
         print("\n" + "=" * 60)
         print("Desktop App - Configuracao Inicial")
         print("=" * 60)
-        print("Para usar o TTS no Discord, configure seus IDs:")
+        print("Para usar o TTS no Discord, configure seu Discord User ID:")
         print("")
         print("1. Discord User ID (seu ID de usuario):")
         print("   Como encontrar: Discord -> Configuracoes -> Avancado -> Modo Desenvolvedor")
@@ -274,14 +260,7 @@ class InitialSetupGUI:
             print("ID deve conter apenas numeros!")
             member_id = ""
 
-        print("\n2. Channel ID (opcional):")
-        print("   Como encontrar: Botao direito no canal de voz -> Copiar ID")
-        channel_id = input("   Channel ID (opcional): ").strip()
-        if channel_id and not channel_id.isdigit():
-            print("ID deve conter apenas numeros!")
-            channel_id = ""
-
-        print("\n3. Bot URL:")
+        print("\n2. Bot URL:")
         default_url = get_default_discord_bot_url()
         bot_url = input(f"   Bot URL [{default_url}]: ").strip()
         if not bot_url:
@@ -294,7 +273,6 @@ class InitialSetupGUI:
 
         return self._presenter.build_console_initial_setup_result(
             member_id=member_id,
-            channel_id=channel_id,
             bot_url=bot_url,
         )
 

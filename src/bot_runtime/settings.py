@@ -28,7 +28,6 @@ class Config:
 
         # Discord settings
         self.discord_token = os.getenv("DISCORD_TOKEN")
-        self.discord_enabled = os.getenv("DISCORD_ENABLED", "true").lower() == "true"
 
         # HTTP settings shared by the bot runtime and Desktop App client.
         self.http_port = int(os.getenv("PORT", os.getenv("DISCORD_BOT_PORT", "10000")))

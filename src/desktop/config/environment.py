@@ -14,16 +14,6 @@ class EnvironmentUpdater:
         """Update environment variables from configuration."""
         os.environ["DISCORD_BOT_URL"] = config.discord.bot_url
 
-        if config.discord.guild_id:
-            os.environ["DISCORD_GUILD_ID"] = config.discord.guild_id
-        else:
-            os.environ.pop("DISCORD_GUILD_ID", None)
-
-        if config.discord.channel_id:
-            os.environ["DISCORD_CHANNEL_ID"] = config.discord.channel_id
-        else:
-            os.environ.pop("DISCORD_CHANNEL_ID", None)
-
         if config.discord.member_id:
             os.environ["DISCORD_MEMBER_ID"] = config.discord.member_id
         else:
@@ -37,7 +27,6 @@ class EnvironmentUpdater:
             os.environ["TTS_OUTPUT_DEVICE"] = config.tts.output_device
 
         print(
-            "[CONFIG] ✅ Variáveis de ambiente atualizadas - "
-            f"DISCORD_GUILD_ID: {config.discord.guild_id}, "
+            "[CONFIG] Variaveis de ambiente atualizadas - "
             f"DISCORD_MEMBER_ID: {config.discord.member_id}"
         )

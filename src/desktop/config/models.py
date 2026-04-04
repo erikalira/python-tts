@@ -28,8 +28,6 @@ class DiscordConfig:
     """Discord bot configuration."""
 
     bot_url: str = field(default_factory=get_default_discord_bot_url)
-    guild_id: Optional[str] = None
-    channel_id: Optional[str] = None
     member_id: Optional[str] = None
 
 
