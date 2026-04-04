@@ -14,7 +14,7 @@ from .ui_logging import UILogHandler
 logger = logging.getLogger(__name__)
 
 
-class DesktopAppMainWindow(GUIConfig):
+class DesktopAppMainWindow:
     """Main Desktop App window that keeps configuration, actions, and logs visible."""
 
     def __init__(
@@ -25,13 +25,14 @@ class DesktopAppMainWindow(GUIConfig):
         on_send_test: Callable[[DesktopAppConfig], dict],
         on_refresh_voice_context: Callable[[DesktopAppConfig], dict],
     ):
-        super().__init__()
+        self.root: Optional[object] = None
         self.config = config
         self._on_save = on_save
         self._on_test_connection = on_test_connection
         self._on_send_test = on_send_test
         self._on_refresh_voice_context = on_refresh_voice_context
         self._presenter = DesktopAppMainWindowPresenter()
+        self._config_form = GUIConfig()
         self._log_queue: "queue.Queue[str]" = queue.Queue()
         self._log_handler = UILogHandler(self._log_queue)
         self._status_var: Optional[object] = None
@@ -80,6 +81,7 @@ class DesktopAppMainWindow(GUIConfig):
     def _create_main_layout(self) -> None:
         from . import tk_support as compat
 
+        self._sync_config_form()
         main_frame = compat.ttk.Frame(self.root, padding="16")
         main_frame.pack(fill="both", expand=True)
         self._status_var = compat.tk.StringVar(value=self._presenter.initial_status().text)
@@ -264,6 +266,18 @@ class DesktopAppMainWindow(GUIConfig):
             self._config_label,
             self._presenter.build_local_config_status(self.config),
         )
+
+    def _sync_config_form(self) -> None:
+        self._config_form.root = self.root
+        self._config_form.config = self.config
+
+    def _build_config_notebook(self, parent):
+        self._sync_config_form()
+        return self._config_form._build_config_notebook(parent)
+
+    def _build_config_from_form(self) -> Optional[DesktopAppConfig]:
+        self._sync_config_form()
+        return self._config_form._build_config_from_form()
 
     def _apply_message(self, variable: Optional[object], label, message: MainWindowMessage) -> None:
         if variable is not None and hasattr(variable, "set"):
