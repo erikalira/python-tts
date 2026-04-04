@@ -30,6 +30,7 @@ class Container:
 
     def __init__(self, config: Config):
         self.config = config
+        self._commands_synced = False
         intents = discord.Intents.default()
         intents.voice_states = True
         self.discord_client = discord.Client(intents=intents)
@@ -88,12 +89,21 @@ class Container:
             print(f"   Connected to {len(self.discord_client.guilds)} guild(s)")
             for guild in self.discord_client.guilds:
                 print(f"   - {guild.name} (ID: {guild.id})")
-            try:
-                await self.command_tree.sync()
-                print("Slash commands synced")
-            except Exception as exc:
-                print(f"Failed to sync commands: {exc}")
+            await self._sync_commands_once()
 
         @self.discord_client.event
         async def on_voice_state_update(member, before, after):
             self.voice_channel_repository.update_member_cache(member.id, after.channel)
+
+    async def _sync_commands_once(self) -> None:
+        """Sync slash commands only once per process to avoid reconnect churn."""
+        if self._commands_synced:
+            print("Slash commands already synced for this process")
+            return
+
+        try:
+            await self.command_tree.sync()
+            self._commands_synced = True
+            print("Slash commands synced")
+        except Exception as exc:
+            print(f"Failed to sync commands: {exc}")
