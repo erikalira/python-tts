@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import importlib.metadata
 import json
-import subprocess
+import subprocess  # nosec B404 - used with fixed argument lists and explicit command validation
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +22,8 @@ from typing import Iterable
 
 
 DEFAULT_REQUIREMENT_FILES = ("requirements.txt", "requirements-test.txt")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+REPOSITORY_PYTHON = str(Path(sys.executable).resolve())
 
 
 @dataclass(frozen=True)
@@ -91,15 +93,46 @@ def get_installed_version(package_name: str) -> str | None:
         return None
 
 
-def get_outdated_versions(python_executable: str) -> dict[str, str]:
-    command = [python_executable, "-m", "pip", "list", "--outdated", "--format=json"]
+def is_safe_python_executable(executable: str) -> bool:
+    try:
+        resolved = Path(executable).resolve(strict=False)
+    except OSError:
+        return False
+
+    return str(resolved) == REPOSITORY_PYTHON
+
+
+def validate_command(command: list[str]) -> None:
+    if not command:
+        raise ValueError("Command cannot be empty.")
+
+    executable = command[0]
+    if not is_safe_python_executable(executable):
+        raise ValueError("Only the current repository Python interpreter may be executed.")
+
+    allowed_patterns = (
+        [REPOSITORY_PYTHON, "-m", "pip", "list", "--outdated", "--format=json"],
+        [REPOSITORY_PYTHON, "-m", "pytest", "tests/unit"],
+        [REPOSITORY_PYTHON, "-m", "pytest", "tests/integration"],
+        [REPOSITORY_PYTHON, "-c", "import app; import src.bot"],
+    )
+
+    if command not in allowed_patterns:
+        raise ValueError(f"Unsafe command rejected: {command!r}")
+
+
+def get_outdated_versions() -> dict[str, str]:
+    command = [REPOSITORY_PYTHON, "-m", "pip", "list", "--outdated", "--format=json"]
+    validate_command(command)
     try:
         result = subprocess.run(
             command,
             capture_output=True,
             check=True,
             text=True,
-        )
+            shell=False,
+            cwd=PROJECT_ROOT,
+        )  # nosec B603 - command validated against a strict allowlist
     except subprocess.CalledProcessError:
         return {}
 
@@ -119,10 +152,9 @@ def get_outdated_versions(python_executable: str) -> dict[str, str]:
 
 def build_requirement_report(
     requirement_files: Iterable[Path],
-    python_executable: str,
     include_outdated: bool,
 ) -> str:
-    outdated_versions = get_outdated_versions(python_executable) if include_outdated else {}
+    outdated_versions = get_outdated_versions() if include_outdated else {}
     lines = []
 
     for path in requirement_files:
@@ -197,8 +229,13 @@ def rewrite_requirement_lines(
 
 
 def run_command(command: list[str]) -> int:
+    validate_command(command)
     print(f"$ {' '.join(command)}")
-    completed = subprocess.run(command)
+    completed = subprocess.run(
+        command,
+        shell=False,
+        cwd=PROJECT_ROOT,
+    )  # nosec B603 - command validated against a strict allowlist
     return completed.returncode
 
 
@@ -206,7 +243,6 @@ def command_report(args: argparse.Namespace) -> int:
     files = [Path(item) for item in args.files]
     report = build_requirement_report(
         requirement_files=files,
-        python_executable=args.python,
         include_outdated=args.outdated,
     )
     print(report)
@@ -240,13 +276,13 @@ def command_validate(args: argparse.Namespace) -> int:
     commands: list[list[str]] = []
 
     if not args.skip_unit:
-        commands.append([args.python, "-m", "pytest", "tests/unit"])
+        commands.append([REPOSITORY_PYTHON, "-m", "pytest", "tests/unit"])
 
     if args.integration:
-        commands.append([args.python, "-m", "pytest", "tests/integration"])
+        commands.append([REPOSITORY_PYTHON, "-m", "pytest", "tests/integration"])
 
     if not args.skip_import_smoke:
-        commands.append([args.python, "-c", "import app; import src.bot"])
+        commands.append([REPOSITORY_PYTHON, "-c", "import app; import src.bot"])
 
     for command in commands:
         exit_code = run_command(command)
@@ -274,11 +310,6 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         default=list(DEFAULT_REQUIREMENT_FILES),
         help="Requirement files to inspect.",
-    )
-    report_parser.add_argument(
-        "--python",
-        default=sys.executable,
-        help="Python interpreter used to query pip.",
     )
     report_parser.add_argument(
         "--outdated",
@@ -313,11 +344,6 @@ def build_parser() -> argparse.ArgumentParser:
     validate_parser = subparsers.add_parser(
         "validate",
         help="Run the repository validation flow after a dependency upgrade.",
-    )
-    validate_parser.add_argument(
-        "--python",
-        default=sys.executable,
-        help="Python interpreter used to execute the validation commands.",
     )
     validate_parser.add_argument(
         "--integration",
