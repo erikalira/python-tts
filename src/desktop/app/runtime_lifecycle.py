@@ -6,8 +6,6 @@ import logging
 import queue
 from typing import Callable
 
-from ..adapters.keyboard_backend import KeyboardHookBackend
-
 logger = logging.getLogger(__name__)
 
 
