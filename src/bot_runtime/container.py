@@ -52,11 +52,8 @@ class Container:
         )
 
         self.speak_use_case = SpeakTextUseCase(
-            tts_engine=self.tts_engine,
             channel_repository=self.voice_channel_repository,
-            config_repository=self.config_repository,
             audio_queue=self.audio_queue,
-            audio_cleanup=self.audio_cleanup,
             max_text_length=config.max_text_length,
             voice_channel_resolution=self.voice_channel_resolution,
             queue_orchestrator=self.tts_queue_orchestrator,

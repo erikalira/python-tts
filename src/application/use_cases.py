@@ -16,9 +16,15 @@ from src.application.results import (
     LEAVE_RESULT_OK,
     LEAVE_RESULT_VOICE_CONNECTION_FAILED,
     SPEAK_RESULT_MISSING_TEXT,
+    SPEAK_RESULT_OK,
+    SPEAK_RESULT_PLAYBACK_TIMEOUT,
     SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_QUEUE_FULL,
+    SPEAK_RESULT_UNKNOWN_ERROR,
     SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+    SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
+    SPEAK_RESULT_VOICE_CONNECTION_FAILED,
+    SPEAK_RESULT_VOICE_PERMISSION_DENIED,
     VOICE_CONTEXT_RESULT_MEMBER_REQUIRED,
     VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL,
     VOICE_CONTEXT_RESULT_OK,
@@ -31,13 +37,7 @@ from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.tts_text import prepare_tts_text
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.core.entities import AudioQueueItem, TTSRequest
-from src.core.interfaces import (
-    IAudioFileCleanup,
-    IAudioQueue,
-    IConfigRepository,
-    ITTSEngine,
-    IVoiceChannelRepository,
-)
+from src.core.interfaces import IAudioQueue, IConfigRepository, IVoiceChannelRepository
 
 logger = logging.getLogger(__name__)
 
@@ -130,29 +130,17 @@ class SpeakTextUseCase:
 
     def __init__(
         self,
-        tts_engine: ITTSEngine,
         channel_repository: IVoiceChannelRepository,
-        config_repository: IConfigRepository,
         audio_queue: IAudioQueue,
-        audio_cleanup: IAudioFileCleanup,
+        voice_channel_resolution: VoiceChannelResolutionService,
+        queue_orchestrator: TTSQueueOrchestrator,
         max_text_length: Optional[int] = None,
-        voice_channel_resolution: Optional[VoiceChannelResolutionService] = None,
-        queue_orchestrator: Optional[TTSQueueOrchestrator] = None,
     ):
         self._channel_repository = channel_repository
         self._audio_queue = audio_queue
         self._max_text_length = max_text_length
-        self._voice_channel_resolution = voice_channel_resolution or VoiceChannelResolutionService(
-            channel_repository
-        )
-        self._audio_cleanup = audio_cleanup
-        self._queue_orchestrator = queue_orchestrator or TTSQueueOrchestrator(
-            tts_engine=tts_engine,
-            config_repository=config_repository,
-            audio_queue=audio_queue,
-            voice_channel_resolution=self._voice_channel_resolution,
-            audio_cleanup=self._audio_cleanup,
-        )
+        self._voice_channel_resolution = voice_channel_resolution
+        self._queue_orchestrator = queue_orchestrator
 
     async def execute(self, request: TTSRequest) -> SpeakTextResult:
         prepared_text = prepare_tts_text(request.text, self._max_text_length)
