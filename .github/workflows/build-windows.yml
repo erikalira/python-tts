@@ -6,7 +6,7 @@ on:
     tags: ["v*"]
   pull_request:
     branches: [main]
-  workflow_dispatch: # Permite executar manualmente
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -35,46 +35,49 @@ jobs:
       - name: Test executable
         shell: pwsh
         run: |
-          if (-not (Test-Path "dist/tts_hotkey_clean.exe")) {
-            Write-Error "dist/tts_hotkey_clean.exe was not generated"
+          if (-not (Test-Path "dist/HotkeyTTS.exe")) {
+            Write-Error "dist/HotkeyTTS.exe was not generated"
           }
           Get-ChildItem dist
-          Write-Host "Executable size: $([math]::Round((Get-Item 'dist/tts_hotkey_clean.exe').Length / 1MB, 2)) MB"
+          Write-Host "Executable size: $([math]::Round((Get-Item 'dist/HotkeyTTS.exe').Length / 1MB, 2)) MB"
 
-      - name: Upload Artifact (sempre)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tts-hotkey-windows-exe
+          name: desktop-app-windows-exe
           path: |
-            dist/tts_hotkey_clean.exe
-            dist/run_tts_hotkey_clean.bat
+            dist/HotkeyTTS.exe
+            dist/run_HotkeyTTS_debug.bat
           retention-days: 30
 
-      - name: Create Release (só em tags)
+      - name: Create release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            dist/tts_hotkey_clean.exe
-            dist/run_tts_hotkey_clean.bat
-          name: "TTS Hotkey ${{ github.ref_name }}"
-          body: |
-            ## 🎯 TTS Hotkey Clean Architecture - Windows Executable
+        shell: pwsh
+        run: |
+          $releaseNotes = @"
+          ## Desktop App - Windows Executable
 
-            ### ✨ Recursos:
-            - 🎤 Runtime atual do Desktop App baseado em `app.py`
-            - ⌨️ Hotkeys configuráveis
-            - 🔊 Multi-engine TTS com fallback
-            - 📱 Interface gráfica integrada
-            - 🚀 Build atual de Clean Architecture
+          ### Resources:
+          - Current Desktop App runtime based on `app.py`
+          - Configurable hotkeys
+          - Multi-engine TTS with fallback
+          - Integrated GUI
+          - Current clean architecture build
 
-            ### 📥 Como usar:
-            1. Baixe `tts_hotkey_clean.exe` ou `run_tts_hotkey_clean.bat`
-            2. Execute diretamente no Windows
-            3. Configure Discord, TTS e hotkeys na primeira execução
-            4. Use o Desktop App normalmente
+          ### How to use:
+          1. Download `HotkeyTTS.exe` or `run_HotkeyTTS_debug.bat`
+          2. Run it directly on Windows
+          3. Configure Discord, TTS, and hotkeys on first launch
+          4. Use the Desktop App normally
 
-            **Tamanho**: ~30MB | **Compatibilidade**: Windows 10/11
-          generate_release_notes: true
+          **Compatibility**: Windows 10/11
+          "@
+
+          gh release create "${{ github.ref_name }}" `
+            "dist/HotkeyTTS.exe" `
+            "dist/run_HotkeyTTS_debug.bat" `
+            --title "Desktop App ${{ github.ref_name }}" `
+            --notes $releaseNotes `
+            --generate-notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

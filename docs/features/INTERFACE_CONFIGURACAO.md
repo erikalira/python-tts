@@ -4,27 +4,29 @@
 
 ### 1. Interface grafica de configuracao inicial
 
-- Aparece automaticamente na primeira execucao
-- Solicita Discord User ID e Channel ID
-- Instrucoes visuais de como encontrar os IDs
-- Validacao de entrada, apenas numeros
-- Opcao `Continuar Sem Discord` para uso apenas local
+- aparece automaticamente na primeira execucao
+- solicita Discord User ID e Channel ID
+- instrucoes visuais de como encontrar os IDs
+- validacao de entrada, apenas numeros
+- opcao `Continuar Sem Discord` para uso apenas local
 
 ### 2. Fallback console
 
-- Se a GUI nao funcionar, usa interface de console
-- Mesma funcionalidade, mas em modo texto
+- se a GUI nao funcionar, usa interface de console
+- mesma funcionalidade, mas em modo texto
 
-### 3. Integracao na Clean Architecture
+### 3. Integracao na arquitetura
 
-- `InitialSetupGUI` em `src/desktop/gui/simple_gui.py`
-- Integrada ao runtime atual do Desktop App
-- Salva automaticamente no repositorio de configuracao
+- `InitialSetupGUI` em `src/desktop/gui/config_dialogs.py`
+- `ConfigurationService` em `src/desktop/gui/configuration_service.py`
+- suporte compartilhado de Tk em `src/desktop/gui/tk_support.py`
+- integrada ao runtime atual do Desktop App
+- salva automaticamente no repositorio de configuracao
 
 ### 4. Integracao no runtime atual
 
-- Interface integrada ao runtime do Desktop App em `src/desktop`
-- Um unico caminho de execucao para configuracao e startup
+- interface integrada ao runtime do Desktop App em `src/desktop`
+- um unico caminho de execucao para configuracao e startup
 
 ## Como funciona
 
@@ -39,8 +41,8 @@
 ### Uso normal
 
 - `{testando}` vai direto para o Discord, se configurado
-- O fallback local funciona se o Discord nao estiver disponivel
-- O sistema reconhece o usuario corretamente
+- o fallback local funciona se o Discord nao estiver disponivel
+- o sistema reconhece o usuario corretamente
 
 ## Para testar
 

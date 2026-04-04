@@ -1,5 +1,5 @@
 #!/usr/bin/env powershell
-# Build TTS Hotkey with Clean Architecture for Windows
+# Build Desktop App with Clean Architecture for Windows
 # Simplified version that handles Windows paths correctly
 
 param(
@@ -7,11 +7,11 @@ param(
     [switch]$SkipTests = $false
 )
 
-Write-Host "Building TTS Hotkey with Clean Architecture..." -ForegroundColor Cyan
+Write-Host "Building Desktop App with Clean Architecture..." -ForegroundColor Cyan
 Write-Host "=================================================="
 
 # Configuration
-$AppName = "tts_hotkey_clean"
+$AppName = "HotkeyTTS"
 $MainScript = "app.py"
 $DistPath = "dist"
 $BuildPath = "build"
@@ -150,7 +150,7 @@ Write-Host "Size: $([math]::Round($ExeSize, 2)) MB" -ForegroundColor White
 # Create batch file for optional troubleshooting
 $BatchContent = @"
 @echo off
-echo Starting TTS Hotkey Clean Architecture...
+echo Starting Desktop App...
 echo ==========================================
 "$AppName.exe"
 if errorlevel 1 (

@@ -2,17 +2,22 @@
 """Main runtime orchestration for the Windows Desktop App."""
 
 import logging
-import queue
 import threading
 from typing import Callable, Optional
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
-from ..gui.simple_gui import ConfigurationService, DesktopAppMainWindow, TKINTER_AVAILABLE
+from ..gui.configuration_service import ConfigurationService
+from ..gui.tk_support import TKINTER_AVAILABLE
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
+from .configuration_application import DesktopConfigurationApplicationService
 from .desktop_actions import DesktopBotActions, DesktopConfigurationCoordinator
+from .runtime_lifecycle import DesktopAppLifecycleCoordinator
+from .runtime_status import DesktopAppStatusBuilder
 from .tts_runtime import DesktopAppHotkeyHandler, DesktopAppTTSProcessor, DesktopAppTTSResultPresenter
+from .ui_tray_actions import DesktopAppUIActionsCoordinator
+from .ui_runtime import DesktopAppUIRuntimeCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +49,14 @@ class DesktopApp:
 
         self._bot_actions: Optional[DesktopBotActions] = None
         self._configuration_coordinator: Optional[DesktopConfigurationCoordinator] = None
+        self._lifecycle_coordinator = DesktopAppLifecycleCoordinator(TKINTER_AVAILABLE)
+        self._ui_actions_coordinator = DesktopAppUIActionsCoordinator()
+        self._ui_runtime_coordinator = DesktopAppUIRuntimeCoordinator()
+        self._status_builder = DesktopAppStatusBuilder()
 
         self._initialized = False
         self._running = False
-        self._main_loop_actions: "queue.Queue[Callable[[], None]]" = queue.Queue()
         self._shutdown_requested = threading.Event()
-        self._main_window: Optional[DesktopAppMainWindow] = None
 
     def initialize(self) -> bool:
         """Initialize all Desktop App components."""
@@ -89,19 +96,25 @@ class DesktopApp:
             self._config_repository = ConfigurationRepository()
         if self._configuration_coordinator is None:
             self._configuration_coordinator = DesktopConfigurationCoordinator(
-                config_repository=self._config_repository,
                 config_service=self._config_service,
-                update_services=self._update_services_config,
+                configuration_application=DesktopConfigurationApplicationService(
+                    config_repository=self._config_repository,
+                    update_services=self._update_services_config,
+                ),
             )
 
     def _setup_integrations(self) -> None:
         """Wire tray callbacks and hotkey processing to the current services."""
-        self._notification_service.initialize(
+        self._initialize_notification_service(self._notification_service)
+        self._rebuild_hotkey_manager()
+
+    def _initialize_notification_service(self, notification_service: SystemTrayService) -> None:
+        """Wire tray callbacks to the provided notification service."""
+        notification_service.initialize(
             status_click=self._handle_status_click_request,
             configure=self._handle_configure_request,
             quit_handler=self._handle_quit_request,
         )
-        self._rebuild_hotkey_manager()
 
     def _rebuild_hotkey_manager(self, start_if_active: bool = False) -> None:
         """Recreate the hotkey manager so it points at the latest services."""
@@ -159,63 +172,40 @@ class DesktopApp:
 
     def _start_services(self) -> bool:
         """Start all runtime services."""
-        logger.info("[DESKTOP_APP] Iniciando servicos...")
-
-        if not self._hotkey_manager.start():
-            logger.error("[DESKTOP_APP] Falha ao iniciar monitoramento de hotkey")
-            return False
-
-        tray_started = self._notification_service.start()
-        if not tray_started:
-            logger.warning("[DESKTOP_APP] System tray nao disponivel, executando em modo console")
-
-        self._running = True
-        logger.info("[DESKTOP_APP] Todos os servicos iniciados")
-        return True
+        started = self._lifecycle_coordinator.start_services(
+            self._hotkey_manager,
+            self._notification_service,
+        )
+        self._running = started
+        return started
 
     def _run_main_loop(self) -> None:
         """Run the main Desktop App loop."""
-        if TKINTER_AVAILABLE:
-            self._show_main_window()
-            return
-
-        tray_running = self._notification_service.is_running()
-        if tray_running:
-            logger.info("[DESKTOP_APP] Executando com system tray em background...")
-            while self._running and not self._shutdown_requested.is_set():
-                self._process_pending_ui_action(timeout=0.2)
-            return
-
-        logger.info("[DESKTOP_APP] Modo console ativo. Pressione Ctrl+C para sair...")
-        wait_backend = self._console_wait_factory()
-        if hasattr(wait_backend, "is_available") and wait_backend.is_available():
-            try:
-                import keyboard
-
-                keyboard.wait()
-                return
-            except ImportError:
-                pass
-        input("Pressione Enter para sair...")
+        self._lifecycle_coordinator.run_main_loop(
+            show_main_window=self._show_main_window,
+            notification_service=self._notification_service,
+            process_pending_ui_action=self._process_pending_ui_action,
+            is_running=lambda: self._running,
+            shutdown_requested=self._shutdown_requested,
+            console_wait_factory=self._console_wait_factory,
+        )
 
     def _process_pending_ui_action(self, timeout: float) -> None:
         """Execute queued UI actions on the main thread."""
-        try:
-            action = self._main_loop_actions.get(timeout=timeout)
-        except queue.Empty:
-            return
-        action()
+        self._lifecycle_coordinator.process_pending_ui_action(
+            action_queue=self._ui_runtime_coordinator.action_queue,
+            timeout=timeout,
+        )
 
     def _show_main_window(self) -> None:
         """Show the main Desktop App panel when Tkinter is available."""
-        self._main_window = DesktopAppMainWindow(
-            self._config,
+        self._ui_runtime_coordinator.show_main_window(
+            config=self._config,
             on_save=self._save_configuration_from_ui,
             on_test_connection=self._test_bot_connection,
             on_send_test=self._send_test_message,
             on_refresh_voice_context=self._refresh_voice_context,
         )
-        self._main_window.show()
 
     def _save_configuration_from_ui(self, updated_config: DesktopAppConfig) -> dict:
         """Validate, persist, and apply config changes from the main window."""
@@ -249,9 +239,8 @@ class DesktopApp:
             return
 
         logger.info(
-            "[DESKTOP_APP] Config atual: bot_url=%s, guild_id=%s, member_id=%s, engine=%s, local_tts_enabled=%s, hotkey=%s",
+            "[DESKTOP_APP] Config atual: bot_url=%s, member_id=%s, engine=%s, local_tts_enabled=%s, hotkey=%s",
             self._config.discord.bot_url,
-            self._config.discord.guild_id,
             self._config.discord.member_id,
             self._config.tts.engine,
             self._config.interface.local_tts_enabled,
@@ -260,107 +249,63 @@ class DesktopApp:
 
     def _update_services_config(self) -> None:
         """Update dependent services after configuration changes."""
-        hotkeys_were_active = bool(self._hotkey_manager and self._hotkey_manager.is_active())
-        if hotkeys_were_active:
-            self._hotkey_manager.stop()
-
-        if self._tts_processor:
-            self._tts_processor = self._tts_processor_factory(self._config)
-
-        if self._notification_service:
-            tray_should_restart = self._running and self._notification_service.is_available()
-            self._notification_service.stop()
-            self._notification_service = self._notification_service_factory(self._config)
-            self._notification_service.initialize(
-                status_click=self._handle_status_click_request,
-                configure=self._handle_configure_request,
-                quit_handler=self._handle_quit_request,
-            )
-            if tray_should_restart:
-                self._notification_service.start()
-
-        self._rebuild_hotkey_manager(start_if_active=hotkeys_were_active)
+        (
+            self._tts_processor,
+            self._notification_service,
+        ) = self._lifecycle_coordinator.update_services_config(
+            running=self._running,
+            config=self._config,
+            hotkey_manager=self._hotkey_manager,
+            tts_processor=self._tts_processor,
+            notification_service=self._notification_service,
+            tts_processor_factory=self._tts_processor_factory,
+            notification_service_factory=self._notification_service_factory,
+            initialize_notification_service=self._initialize_notification_service,
+            rebuild_hotkey_manager=self._rebuild_hotkey_manager,
+        )
 
     def _shutdown(self) -> None:
         """Gracefully shut down runtime services."""
-        logger.info("[DESKTOP_APP] Encerrando aplicacao...")
-        self._shutdown_requested.set()
-
-        if self._running:
-            if self._hotkey_manager:
-                self._hotkey_manager.stop()
-            if self._notification_service:
-                self._notification_service.stop()
-            self._running = False
-
-        if self._main_window and self._main_window.root:
-            try:
-                self._main_window.root.quit()
-            except Exception:
-                logger.debug(
-                    "[DESKTOP_APP] Falha ao encerrar loop da janela principal",
-                    exc_info=True,
-                )
-
-        logger.info("[DESKTOP_APP] Aplicacao encerrada")
+        self._running = self._lifecycle_coordinator.shutdown(
+            running=self._running,
+            hotkey_manager=self._hotkey_manager,
+            notification_service=self._notification_service,
+            shutdown_requested=self._shutdown_requested,
+            main_window=self._ui_runtime_coordinator.main_window,
+        )
 
     def _handle_status_click_request(self) -> None:
         """Queue status display on the main thread."""
-        self._main_loop_actions.put(self._handle_status_click)
+        self._ui_runtime_coordinator.queue(self._handle_status_click)
 
     def _handle_status_click(self) -> None:
         """Handle system tray status click."""
-        if self._main_window:
-            self._main_window.focus()
-            self._main_window.push_log("Janela principal trazida para frente via tray")
-            return
-
-        status = self._get_application_status()
-        mode = "Discord" if status["discord_configured"] else "Local"
-        hotkeys = "ativas" if status["hotkey_active"] else "inativas"
-        tts = "disponivel" if status["tts_available"] else "indisponivel"
-        summary = f"Modo {mode} | Hotkeys {hotkeys} | TTS {tts}"
-        logger.info("[DESKTOP_APP] Status solicitado: %s", summary)
-        if self._notification_service:
-            self._notification_service.notify_info("Desktop App", summary)
+        self._ui_actions_coordinator.show_status(
+            main_window=self._ui_runtime_coordinator.main_window,
+            get_status=self._get_application_status,
+            notification_service=self._notification_service,
+        )
 
     def _handle_configure_request(self) -> None:
         """Queue configuration dialog on the main thread."""
-        self._main_loop_actions.put(self._handle_configure)
+        self._ui_runtime_coordinator.queue(self._handle_configure)
 
     def _handle_configure(self) -> None:
         """Handle system tray configure action."""
-        if self._main_window:
-            self._main_window.focus()
-            self._main_window.push_log("Acao de configuracao solicitada via tray")
-            return
-
-        logger.info("[DESKTOP_APP] Abrindo configuracoes...")
-        self._ensure_action_coordinators()
-
-        hotkeys_were_active = bool(self._hotkey_manager and self._hotkey_manager.is_active())
-        if hotkeys_were_active:
-            self._hotkey_manager.stop()
-
-        if self._configuration_coordinator is None:
-            logger.error("[DESKTOP_APP] Coordenador de configuracao indisponivel")
-            return
-
-        updated_config, applied = self._configuration_coordinator.reconfigure(
+        updated_config, applied = self._ui_actions_coordinator.handle_configure(
+            main_window=self._ui_runtime_coordinator.main_window,
+            ensure_action_coordinators=self._ensure_action_coordinators,
+            hotkey_manager=self._hotkey_manager,
+            get_configuration_coordinator=lambda: self._configuration_coordinator,
             current_config=self._config,
-            hotkeys_were_active=hotkeys_were_active,
-            pause_hotkeys=lambda: self._hotkey_manager.stop() if self._hotkey_manager else None,
-            resume_hotkeys=lambda: self._hotkey_manager.start() if self._hotkey_manager else None,
-            notify_error=self._notification_service.notify_error if self._notification_service else None,
-            notify_success=self._notification_service.notify_success if self._notification_service else None,
-            are_hotkeys_active=self._hotkey_manager.is_active if self._hotkey_manager else None,
+            notification_service=self._notification_service,
         )
         if applied and updated_config:
             self._config = updated_config
 
     def _handle_quit_request(self) -> None:
         """Queue shutdown on the main thread."""
-        self._main_loop_actions.put(self._handle_quit)
+        self._ui_runtime_coordinator.queue(self._handle_quit)
 
     def _handle_quit(self) -> None:
         """Handle system tray quit action."""
@@ -369,23 +314,14 @@ class DesktopApp:
 
     def _get_application_status(self) -> dict:
         """Get a compact view of current runtime status."""
-        return {
-            "initialized": self._initialized,
-            "running": self._running,
-            "discord_configured": (
-                self._config
-                and self._config.discord.bot_url
-                and self._config.discord.member_id
-            ),
-            "hotkey_active": (self._hotkey_manager and self._hotkey_manager.is_active()),
-            "tts_available": (
-                self._tts_processor
-                and self._tts_processor.get_service_status()["tts_available"]
-            ),
-            "tray_available": (
-                self._notification_service and self._notification_service.is_available()
-            ),
-        }
+        return self._status_builder.build(
+            initialized=self._initialized,
+            running=self._running,
+            config=self._config,
+            hotkey_manager=self._hotkey_manager,
+            tts_processor=self._tts_processor,
+            notification_service=self._notification_service,
+        )
 
 
 def create_desktop_application() -> DesktopApp:

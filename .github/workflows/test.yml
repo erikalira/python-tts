@@ -67,10 +67,3 @@ jobs:
             echo "CODACY_PROJECT_TOKEN not set, skipping coverage upload"
           fi
 
-      - name: Upload coverage to Codecov (alternative)
-        if: always()
-        uses: codecov/codecov-action@v4
-        continue-on-error: true
-        with:
-          file: ./coverage.xml
-          fail_ci_if_error: false

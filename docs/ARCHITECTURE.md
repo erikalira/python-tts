@@ -1,4 +1,4 @@
-# Arquitetura do Projeto - TTS Hotkey Windows
+# Arquitetura do Projeto - Desktop App Windows e Bot Discord
 
 ## Visao geral
 
@@ -27,6 +27,7 @@ Ambos seguem Clean Architecture e os principios SOLID para manter:
 
 - entry point oficial: `src/bot.py`
 - servidor HTTP: `src/infrastructure/http/server.py`
+- bind HTTP local por padrao em `127.0.0.1`; para expor externamente em deploy, configure `DISCORD_BOT_HOST=0.0.0.0`
 
 ## Estrutura principal
 

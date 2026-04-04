@@ -53,12 +53,20 @@ The local test environment uses `.env` as a source of variables.
 - When reproducing failures locally, verify that `.env` is present and matches the expected scenario.
 - When a test overrides variables with `monkeypatch`, that override applies only to that test.
 - The VS Code Testing panel should use `.env.test` as its dedicated test env file so proxy variables from the host session do not leak into integration tests.
+- Pytest temporary files and cache are redirected to `.test-artifacts/` so the repository root stays clean during local runs.
 
 ## Running Tests
 
+Prefer using the repository virtual environment directly instead of relying on a globally installed `pytest`.
+
 ```powershell
-pip install -r requirements-test.txt
-python -m pytest tests/unit
+.\.venv\Scripts\python.exe -m pytest tests/unit
+```
+
+If the `.venv` has not been prepared yet, install the test dependencies there first:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-test.txt
 ```
 
 ## Running Integration Tests
@@ -66,7 +74,7 @@ python -m pytest tests/unit
 Use integration tests explicitly when you want to validate real providers, OS bindings, or network-backed flows.
 
 ```powershell
-python -m pytest tests/integration
+.\.venv\Scripts\python.exe -m pytest tests/integration
 ```
 
 ## Recommended Execution Flow
@@ -103,7 +111,7 @@ The `.env.test` file clears proxy variables used by some isolated agent sessions
 To run the desktop app test suite using the local virtual environment:
 
 ```powershell
-.\.venv\Scripts\python -m pytest tests/unit/desktop -q
+.\.venv\Scripts\python.exe -m pytest tests/unit/desktop -q
 ```
 
 ## Good Practices

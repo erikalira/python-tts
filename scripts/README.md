@@ -1,6 +1,6 @@
 ﻿# Scripts Directory
 
-Esta pasta contem scripts de build, teste manual e utilitarios para o TTS Hotkey.
+Esta pasta contem scripts de build, teste manual e utilitarios para o Desktop App.
 
 ## CompilaÃ§Ã£o para Windows
 
@@ -9,7 +9,7 @@ Esta pasta contem scripts de build, teste manual e utilitarios para o TTS Hotkey
 powershell scripts/build/build_clean_architecture.ps1
 ```
 
-O executÃ¡vel serÃ¡ criado em `dist/tts_hotkey_clean.exe`
+O executÃ¡vel serÃ¡ criado em `dist/HotkeyTTS.exe`
 
 ## CaracterÃ­sticas IncluÃ­das
 
@@ -17,13 +17,14 @@ O executÃ¡vel serÃ¡ criado em `dist/tts_hotkey_clean.exe`
 - âœ… Interface grÃ¡fica Tkinter
 - âœ… System tray e notificaÃ§Ãµes
 - âœ… Multi-engine TTS (gTTS + pyttsx3)
-- âœ… ConfiguraÃ§Ã£o persistente em AppData/Local/TTS-Hotkey/
+- âœ… ConfiguraÃ§Ã£o persistente em AppData/Local/DesktopApp/
 - âœ… Hotkeys globais
 - âœ… Entry point do Desktop App Ãºnico
 
 ### ðŸ› ï¸ Utils
 
 - **create_icon.py**: Gera Ã­cones para os executÃ¡veis
+- **dependency_maintenance.py**: inspeciona versoes, reescreve constraints de `requirements*.txt` e executa validacao pos-migracao
 
 ### ðŸ§ª Testes manuais
 

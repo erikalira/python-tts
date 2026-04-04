@@ -39,8 +39,8 @@ Use a **Solução 1** e rode o script oficial único de build:
 
 Após recriar o ícone e executar `./scripts/build/build_clean_architecture.ps1`:
 
-1. ✅ O executável será criado em `dist/tts_hotkey_clean.exe`
-2. ✅ Execute `dist/run_tts_hotkey_clean.bat` para testar
+1. ✅ O executável será criado em `dist/HotkeyTTS.exe`
+2. ✅ Execute `dist/run_HotkeyTTS_debug.bat` para testar
 3. ✅ Configure o programa através da interface gráfica
 4. ✅ Use os hotkeys configurados para TTS
 

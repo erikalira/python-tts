@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Teste de Integracao - TTS Hotkey
+Teste de Integracao - Desktop App
 Verifica se todas as funcionalidades estao operacionais antes da compilacao.
 """
 

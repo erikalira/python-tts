@@ -6,6 +6,8 @@ This directory contains the repository's supporting documentation. The root `REA
 
 - [SETUP.md](SETUP.md): ambiente virtual, instalacao e ativacao no Windows e Linux
 - [TESTING.md](TESTING.md): automated test structure and local execution
+- [ENVIRONMENTS.md](ENVIRONMENTS.md): local and production environment variables for bot and Desktop App
+- [DEPENDENCY_MAINTENANCE.md](DEPENDENCY_MAINTENANCE.md): dependency upgrade workflow, tooling, and validation checklist
 - [BUILD_GUIDE.md](BUILD_GUIDE.md): Windows executable build flow
 - [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview and layer map
 - [README_DESKTOP_APP.md](README_DESKTOP_APP.md): desktop app guide
@@ -24,11 +26,13 @@ This directory contains the repository's supporting documentation. The root `REA
 
 - `docs/` contains durable architecture and operational guides
 - `docs/features/` contains feature docs, feature iterations, and implementation notes
+- `docs/refactors/` contains incremental refactor plans and execution-oriented architecture improvements
 - `docs/ai/` contains canonical project guidance for AI tools and instruction files
 
 ## Features
 
 - [features/README.md](features/README.md): feature documentation index
+- [features/DESKTOP_APP_ARCHITECTURE_REFACTOR_PLAN.md](features/DESKTOP_APP_ARCHITECTURE_REFACTOR_PLAN.md): desktop architecture review and refactor execution log
 - [features/DESKTOP_APP_GUI_UX.md](features/DESKTOP_APP_GUI_UX.md): desktop GUI UX and responsiveness
 - [features/DESKTOP_APP_MAIN_PANEL.md](features/DESKTOP_APP_MAIN_PANEL.md): desktop main panel flow and manual checks
 - [features/INTERFACE_CONFIGURACAO.md](features/INTERFACE_CONFIGURACAO.md): configuration interface details

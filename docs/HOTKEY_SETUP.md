@@ -1,9 +1,9 @@
-# TTS Hotkey - Configuracao Avancada
+# Desktop App - Configuracao Avancada
 
 ## Desktop App Atual
 
 **Entry point**: `app.py`  
-**Executavel**: `dist/tts_hotkey_clean.exe`
+**Executavel**: `dist/HotkeyTTS.exe`
 
 ### Discord ID Automatico
 
@@ -27,9 +27,8 @@ O Desktop App usa a configuracao persistida para descobrir em qual canal voce es
 O bot usa esta ordem de prioridade:
 
 1. Canal ja conectado, se voce usou `/join` antes
-2. Channel ID especifico, se configurou `DISCORD_CHANNEL_ID`
-3. Member ID, para encontrar onde voce esta
-4. Erro, se nenhuma opcao funcionar
+2. Member ID, para encontrar onde voce esta no momento
+3. Erro, se nenhuma opcao funcionar
 
 ## Configuracoes por Perfil
 
@@ -37,7 +36,7 @@ O bot usa esta ordem de prioridade:
 
 - Gaming: taxa de fala mais alta e menos notificacoes
 - Office: taxa mais baixa e timeout maior
-- Streaming: canal fixo e menos logs visuais
+- Streaming: menos logs visuais e voz local desativada
 
 ## Triggers Personalizaveis
 
@@ -65,7 +64,7 @@ python app.py
 ./scripts/build/build_clean_architecture.ps1
 
 # 3. Usar
-dist/tts_hotkey_clean.exe
+dist/HotkeyTTS.exe
 ```
 
 ## Modo de Uso
@@ -95,7 +94,7 @@ Verifique a URL do bot na configuracao do app ou no `.env`.
 
 ### "Member not found"
 
-Use o ID correto do usuario ou configure um canal fixo na interface do app.
+Use o ID correto do usuario e confirme que voce esta em um canal de voz.
 
 ## Vantagens da Versao Atual
 

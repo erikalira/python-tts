@@ -28,8 +28,6 @@ class DiscordConfig:
     """Discord bot configuration."""
 
     bot_url: str = field(default_factory=get_default_discord_bot_url)
-    guild_id: Optional[str] = None
-    channel_id: Optional[str] = None
     member_id: Optional[str] = None
 
 
@@ -60,7 +58,7 @@ class NetworkConfig:
     """Network configuration."""
 
     request_timeout: int = 10
-    user_agent: str = "TTS-Hotkey/2.0"
+    user_agent: str = "DesktopApp/2.0"
     max_text_length: int = 500
 
 

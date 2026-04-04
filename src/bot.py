@@ -36,7 +36,8 @@ async def main():
     http_server = HTTPServer(
         speak_controller=container.speak_controller,
         voice_context_controller=container.voice_context_controller,
-        port=config.http_port
+        port=config.http_port,
+        host=config.http_host,
     )
     await http_server.start()
     

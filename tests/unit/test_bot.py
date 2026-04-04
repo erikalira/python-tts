@@ -17,6 +17,7 @@ class TestBot:
             mock_config = Mock()
             mock_config.validate.return_value = (True, None)
             mock_config.http_port = 10000
+            mock_config.http_host = "127.0.0.1"
             MockConfig.return_value = mock_config
             
             # Mock HTTP server
@@ -27,6 +28,7 @@ class TestBot:
             # Mock container
             mock_container = Mock()
             mock_container.speak_controller = Mock()
+            mock_container.voice_context_controller = Mock()
             mock_container.discord_client = Mock()
             # Make start raise an exception to stop the bot from running
             mock_container.discord_client.start = AsyncMock(
@@ -45,6 +47,12 @@ class TestBot:
             
             # Verify container was created
             MockContainer.assert_called_once()
+            MockHTTPServer.assert_called_once_with(
+                speak_controller=mock_container.speak_controller,
+                voice_context_controller=mock_container.voice_context_controller,
+                port=10000,
+                host="127.0.0.1",
+            )
             # Verify HTTP server was started
             mock_http_server.start.assert_called_once()
     

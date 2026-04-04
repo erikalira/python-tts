@@ -2,7 +2,6 @@
 
 import os
 import requests
-import threading
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -34,11 +33,9 @@ def load_env_file():
     
     # Show current environment configuration
     discord_url = os.getenv('DISCORD_BOT_URL')
-    channel_id = os.getenv('DISCORD_CHANNEL_ID')
     member_id = os.getenv('DISCORD_MEMBER_ID')
     
     print(f"[test] DISCORD_BOT_URL = {discord_url!r}")
-    print(f"[test] DISCORD_CHANNEL_ID = {channel_id!r}")
     print(f"[test] DISCORD_MEMBER_ID = {member_id!r}")
     
     if discord_url:
@@ -47,7 +44,7 @@ def load_env_file():
         print("[test] ⚠️ No Discord bot URL - will use local TTS only")
 
 def test_discord_request(text: str):
-    """Test sending a request to Discord bot like tts_hotkey does."""
+    """Test sending a request to Discord bot like the Desktop App does."""
     print("\n" + "="*50)
     print("🧪 TESTE DE CONEXÃO COM DISCORD BOT")
     print("="*50)
@@ -60,12 +57,7 @@ def test_discord_request(text: str):
         print("[test] 🚀 Sending request to Discord bot...")
         try:
             payload = {'text': text}
-            # optionally send channel id if configured
-            ch = os.getenv('DISCORD_CHANNEL_ID')
-            if ch:
-                payload['channel_id'] = ch
-                print(f"[test] Added channel_id: {ch}")
-            # optionally send member id (where the user is connected)
+            # optionally send member id so the bot can infer the current guild/channel
             member = os.getenv('DISCORD_MEMBER_ID')
             if member:
                 payload['member_id'] = member
@@ -103,7 +95,7 @@ def test_discord_request(text: str):
         return False
 
 def main():
-    print("🧪 Teste de Conexão do TTS Hotkey com Discord")
+    print("🧪 Teste de Conexão do Desktop App com Discord")
     print()
     
     # Load environment
