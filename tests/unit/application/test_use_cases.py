@@ -2,6 +2,7 @@
 import asyncio
 
 import pytest
+from src.application.results import SpeakTextResult
 from src.application.use_cases import (
     ConfigureTTSUseCase,
     JoinVoiceChannelUseCase,
@@ -46,6 +47,7 @@ class TestSpeakTextUseCase:
         assert result["success"] is True
         assert result["code"] == SPEAK_RESULT_OK
         assert "queued" in result
+        assert result.to_dict()["code"] == SPEAK_RESULT_OK
         assert len(mock_tts_engine.calls) == 1
         assert len(mock_channel_repository.channel.played_audio) == 1
     
@@ -192,14 +194,14 @@ class TestSpeakTextUseCase:
                 second_started.set()
                 await second_release.wait()
 
-            return {
-                "success": True,
-                "code": SPEAK_RESULT_OK,
-                "queued": False,
-                "item_id": item.item_id,
-            }
+            return SpeakTextResult(
+                success=True,
+                code=SPEAK_RESULT_OK,
+                queued=False,
+                item_id=item.item_id,
+            )
 
-        use_case._process_audio = fake_process_audio
+        use_case._queue_orchestrator._process_item = fake_process_audio
 
         first_request = TTSRequest(text="first", channel_id=123456, guild_id=789012, member_id=345678)
         second_request = TTSRequest(text="second", channel_id=123456, guild_id=789012, member_id=345678)

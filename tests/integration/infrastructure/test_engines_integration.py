@@ -6,6 +6,7 @@ import platform
 import pytest
 
 from src.core.entities import TTSConfig
+from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
 from src.infrastructure.tts.engines import GTTSEngine, Pyttsx3Engine
 
 
@@ -21,28 +22,30 @@ class TestGTTSEngineIntegration:
         config = TTSConfig(engine="gtts", language="en")
 
         audio = await engine.generate_audio("Hello", config)
+        cleanup = FileAudioCleanup()
 
         assert audio is not None
         assert audio.path is not None
         assert os.path.exists(audio.path)
         assert audio.path.endswith(".wav")
 
-        audio.cleanup()
+        await cleanup.cleanup(audio)
         assert not os.path.exists(audio.path)
 
     async def test_generate_audio_different_languages(self):
         """Test generating audio in different languages."""
         engine = GTTSEngine()
+        cleanup = FileAudioCleanup()
 
         config_en = TTSConfig(engine="gtts", language="en")
         audio_en = await engine.generate_audio("Hi", config_en)
         assert os.path.exists(audio_en.path)
-        audio_en.cleanup()
+        await cleanup.cleanup(audio_en)
 
         config_pt = TTSConfig(engine="gtts", language="pt")
         audio_pt = await engine.generate_audio("Oi", config_pt)
         assert os.path.exists(audio_pt.path)
-        audio_pt.cleanup()
+        await cleanup.cleanup(audio_pt)
 
 
 @pytest.mark.asyncio
@@ -64,13 +67,14 @@ class TestPyttsx3EngineIntegration:
         config = TTSConfig(engine="pyttsx3", language="en", rate=150)
 
         audio = await engine.generate_audio("Test", config)
+        cleanup = FileAudioCleanup()
 
         assert audio is not None
         assert audio.path is not None
         assert os.path.exists(audio.path)
         assert audio.path.endswith(".wav")
 
-        audio.cleanup()
+        await cleanup.cleanup(audio)
         assert not os.path.exists(audio.path)
 
     async def test_engine_initialization(self):
@@ -81,7 +85,8 @@ class TestPyttsx3EngineIntegration:
 
         config = TTSConfig(engine="pyttsx3", language="en")
         audio = await engine.generate_audio("Hi", config)
+        cleanup = FileAudioCleanup()
 
         assert engine._engine is not None
 
-        audio.cleanup()
+        await cleanup.cleanup(audio)

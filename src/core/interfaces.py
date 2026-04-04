@@ -207,3 +207,12 @@ class IAudioQueue(ABC):
             older_than_seconds: Remove items older than this duration
         """
         pass
+
+
+class IAudioFileCleanup(ABC):
+    """Interface for cleaning up generated audio artifacts."""
+
+    @abstractmethod
+    async def cleanup(self, audio: AudioFile) -> None:
+        """Delete or release generated audio resources."""
+        pass

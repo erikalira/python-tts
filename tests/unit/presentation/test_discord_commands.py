@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from discord import app_commands
+from src.application.results import JoinVoiceChannelResult, LeaveVoiceChannelResult, SpeakTextResult
 from src.presentation.discord_commands import DiscordCommands
 from src.application.use_cases import (
     ConfigureTTSUseCase,
@@ -61,7 +62,7 @@ class TestDiscordCommands:
     ):
         """Test successful /speak command."""
         commands_instance._speak_use_case.execute = AsyncMock(
-            return_value={"success": True, "code": "ok", "queued": False}
+            return_value=SpeakTextResult(success=True, code="ok", queued=False)
         )
         
         interaction = Mock()
@@ -96,7 +97,7 @@ class TestDiscordCommands:
     async def test_handle_speak_failure(self, commands_instance):
         """Test /speak command failure."""
         commands_instance._speak_use_case.execute = AsyncMock(
-            return_value={"success": False, "code": "unknown_error", "queued": False}
+            return_value=SpeakTextResult(success=False, code="unknown_error", queued=False)
         )
         
         interaction = Mock()
@@ -212,7 +213,7 @@ class TestDiscordCommands:
     async def test_handle_join_no_voice_channel(self, commands_instance):
         """Test /join when user is not in voice channel."""
         commands_instance._join_use_case.execute = AsyncMock(
-            return_value={"success": False, "code": "user_not_in_channel"}
+            return_value=JoinVoiceChannelResult(success=False, code="user_not_in_channel")
         )
         interaction = Mock()
         interaction.user = Mock()
@@ -229,8 +230,8 @@ class TestDiscordCommands:
         
         interaction.response.defer.assert_called_once()
         interaction.edit_original_response.assert_called_once()
-        call_args = interaction.edit_original_response.call_args
-        assert "not connected" in call_args[0][0].lower()
+        call_kwargs = interaction.edit_original_response.call_args.kwargs
+        assert "not connected" in call_kwargs["content"].lower()
     
     @pytest.mark.asyncio
     async def test_handle_join_missing_pynacl(self, commands_instance):
@@ -247,7 +248,7 @@ class TestDiscordCommands:
     async def test_handle_join_success(self, commands_instance):
         """Test /join delegates success handling to the use case."""
         commands_instance._join_use_case.execute = AsyncMock(
-            return_value={"success": True, "code": "ok"}
+            return_value=JoinVoiceChannelResult(success=True, code="ok")
         )
 
         interaction = Mock()
@@ -270,7 +271,7 @@ class TestDiscordCommands:
     async def test_handle_leave(self, commands_instance):
         """Test /leave command."""
         commands_instance._leave_use_case.execute = AsyncMock(
-            return_value={"success": True, "code": "ok"}
+            return_value=LeaveVoiceChannelResult(success=True, code="ok")
         )
         interaction = Mock()
         interaction.guild = Mock()
@@ -285,7 +286,7 @@ class TestDiscordCommands:
     async def test_handle_leave_not_connected(self, commands_instance):
         """Test /leave when bot is not connected."""
         commands_instance._leave_use_case.execute = AsyncMock(
-            return_value={"success": False, "code": "not_connected"}
+            return_value=LeaveVoiceChannelResult(success=False, code="not_connected")
         )
         interaction = Mock()
         interaction.guild = Mock()
