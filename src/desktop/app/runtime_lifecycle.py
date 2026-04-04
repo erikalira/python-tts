@@ -4,9 +4,52 @@ from __future__ import annotations
 
 import logging
 import queue
-from typing import Callable
+from threading import Event
+from typing import Callable, Protocol
 
 logger = logging.getLogger(__name__)
+
+
+class HotkeyManagerLike(Protocol):
+    """Runtime contract for Desktop App hotkey management."""
+
+    def start(self) -> bool:
+        ...
+
+    def stop(self) -> None:
+        ...
+
+    def is_active(self) -> bool:
+        ...
+
+
+class NotificationServiceLike(Protocol):
+    """Runtime contract for Desktop App notification and tray services."""
+
+    def start(self) -> bool:
+        ...
+
+    def stop(self) -> None:
+        ...
+
+    def is_running(self) -> bool:
+        ...
+
+    def is_available(self) -> bool:
+        ...
+
+
+class MainWindowRootLike(Protocol):
+    """Contract for the underlying UI root object."""
+
+    def quit(self) -> None:
+        ...
+
+
+class MainWindowLike(Protocol):
+    """Runtime contract for the Desktop App main window."""
+
+    root: MainWindowRootLike | None
 
 
 class DesktopAppLifecycleCoordinator:
@@ -15,7 +58,11 @@ class DesktopAppLifecycleCoordinator:
     def __init__(self, tkinter_available: bool):
         self._tkinter_available = tkinter_available
 
-    def start_services(self, hotkey_manager: object, notification_service: object) -> bool:
+    def start_services(
+        self,
+        hotkey_manager: HotkeyManagerLike,
+        notification_service: NotificationServiceLike,
+    ) -> bool:
         """Start runtime services and return whether startup succeeded."""
         logger.info("[DESKTOP_APP] Iniciando servicos...")
 
@@ -34,10 +81,10 @@ class DesktopAppLifecycleCoordinator:
         self,
         *,
         show_main_window: Callable[[], None],
-        notification_service: object,
+        notification_service: NotificationServiceLike,
         process_pending_ui_action: Callable[[float], None],
         is_running: Callable[[], bool],
-        shutdown_requested: object,
+        shutdown_requested: Event,
         console_wait_factory: Callable[[], object],
     ) -> None:
         """Run the appropriate main loop for the current environment."""
@@ -69,14 +116,14 @@ class DesktopAppLifecycleCoordinator:
         *,
         running: bool,
         config: object,
-        hotkey_manager: object,
+        hotkey_manager: HotkeyManagerLike | None,
         tts_processor: object,
-        notification_service: object,
+        notification_service: NotificationServiceLike | None,
         tts_processor_factory: Callable[[object], object],
-        notification_service_factory: Callable[[object], object],
-        initialize_notification_service: Callable[[object], None],
+        notification_service_factory: Callable[[object], NotificationServiceLike],
+        initialize_notification_service: Callable[[NotificationServiceLike], None],
         rebuild_hotkey_manager: Callable[[bool], None],
-    ) -> tuple[object, object]:
+    ) -> tuple[object, NotificationServiceLike | None]:
         """Rebuild dependent services after a configuration change."""
         hotkeys_were_active = bool(hotkey_manager and hotkey_manager.is_active())
         if hotkeys_were_active:
@@ -100,10 +147,10 @@ class DesktopAppLifecycleCoordinator:
         self,
         *,
         running: bool,
-        hotkey_manager: object,
-        notification_service: object,
-        shutdown_requested: object,
-        main_window: object,
+        hotkey_manager: HotkeyManagerLike | None,
+        notification_service: NotificationServiceLike | None,
+        shutdown_requested: Event,
+        main_window: MainWindowLike | None,
     ) -> bool:
         """Shutdown runtime services and return the new running flag."""
         logger.info("[DESKTOP_APP] Encerrando aplicacao...")
