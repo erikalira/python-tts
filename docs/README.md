@@ -6,6 +6,7 @@ This directory contains the repository's supporting documentation. The root `REA
 
 - [SETUP.md](SETUP.md): ambiente virtual, instalacao e ativacao no Windows e Linux
 - [TESTING.md](TESTING.md): automated test structure and local execution
+- [DEPENDENCY_MAINTENANCE.md](DEPENDENCY_MAINTENANCE.md): dependency upgrade workflow, tooling, and validation checklist
 - [BUILD_GUIDE.md](BUILD_GUIDE.md): Windows executable build flow
 - [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview and layer map
 - [README_DESKTOP_APP.md](README_DESKTOP_APP.md): desktop app guide

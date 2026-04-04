@@ -24,6 +24,7 @@ O executÃ¡vel serÃ¡ criado em `dist/tts_hotkey_clean.exe`
 ### ðŸ› ï¸ Utils
 
 - **create_icon.py**: Gera Ã­cones para os executÃ¡veis
+- **dependency_maintenance.py**: inspeciona versoes, reescreve constraints de `requirements*.txt` e executa validacao pos-migracao
 
 ### ðŸ§ª Testes manuais
 
