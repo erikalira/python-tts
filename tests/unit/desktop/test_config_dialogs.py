@@ -5,6 +5,7 @@ import pytest
 
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.gui import tk_support
+from src.desktop.gui.config_dialog_presenter import ConfigDialogsPresenter
 from src.desktop.gui.config_dialogs import ConsoleConfig, GUIConfig, InitialSetupGUI
 from src.desktop.gui.ui_logging import UILogHandler
 
@@ -196,7 +197,7 @@ def test_initial_setup_gui_save_and_continue_validates_member_id(prevent_real_me
     gui._save_and_continue()
 
     assert gui.result is None
-    assert prevent_real_messageboxes["error"] == [("Erro", "Discord User ID deve conter apenas números!")]
+    assert prevent_real_messageboxes["error"] == [("Erro", "Discord User ID deve conter apenas numeros!")]
 
 
 def test_initial_setup_gui_save_and_continue_validates_channel_id(prevent_real_messageboxes):
@@ -209,7 +210,7 @@ def test_initial_setup_gui_save_and_continue_validates_channel_id(prevent_real_m
     gui._save_and_continue()
 
     assert gui.result is None
-    assert prevent_real_messageboxes["error"] == [("Erro", "Channel ID deve conter apenas números!")]
+    assert prevent_real_messageboxes["error"] == [("Erro", "Channel ID deve conter apenas numeros!")]
 
 
 def test_initial_setup_gui_save_and_continue_requires_bot_url(prevent_real_messageboxes):
@@ -222,7 +223,7 @@ def test_initial_setup_gui_save_and_continue_requires_bot_url(prevent_real_messa
     gui._save_and_continue()
 
     assert gui.result is None
-    assert prevent_real_messageboxes["error"] == [("Erro", "Bot URL é obrigatória!")]
+    assert prevent_real_messageboxes["error"] == [("Erro", "Bot URL e obrigatoria!")]
 
 
 def test_initial_setup_gui_save_and_continue_with_member_id(prevent_real_messageboxes):
@@ -241,7 +242,7 @@ def test_initial_setup_gui_save_and_continue_with_member_id(prevent_real_message
         "bot_url": "http://bot",
         "skip_discord": False,
     }
-    assert prevent_real_messageboxes["info"] == [("Sucesso", "Configuração salva! O TTS funcionará no Discord.")]
+    assert prevent_real_messageboxes["info"] == [("Sucesso", "Configuracao salva! O TTS funcionara no Discord.")]
     assert gui.root.destroy_called is True
 
 
@@ -261,7 +262,7 @@ def test_initial_setup_gui_save_and_continue_without_member_id(prevent_real_mess
         "bot_url": "http://bot",
         "skip_discord": False,
     }
-    assert prevent_real_messageboxes["info"] == [("Aviso", "Sem Discord User ID, o TTS funcionará apenas localmente.")]
+    assert prevent_real_messageboxes["info"] == [("Aviso", "Sem Discord User ID, o TTS funcionara apenas localmente.")]
 
 
 def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, capsys):
@@ -295,7 +296,7 @@ def test_gui_config_show_config_creates_window_and_returns_result(monkeypatch):
     result = gui.show_config(config)
 
     assert result is config
-    assert gui.root.title_value == "🎤 Desktop App - Configuração"
+    assert gui.root.title_value == "Desktop App - Configuracao"
     assert gui.root.resizable_args == (True, True)
     assert gui.root.protocol_calls
     assert gui.root.update_idletasks_called is True
@@ -388,7 +389,41 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch, prevent_rea
     gui._save_config()
 
     assert gui.result is None
-    assert prevent_real_messageboxes["error"] == [("Erro de Validação", "Erros encontrados:\n\nbad rate")]
+    assert prevent_real_messageboxes["error"] == [("Erro de Validacao", "Erros encontrados:\n\nbad rate")]
+
+
+def test_config_dialogs_presenter_builds_initial_setup_result():
+    presenter = ConfigDialogsPresenter()
+
+    result, feedback = presenter.build_initial_setup_result(
+        member_id="123",
+        channel_id="456",
+        bot_url="http://bot",
+    )
+
+    assert result == {
+        "member_id": "123",
+        "guild_id": None,
+        "channel_id": "456",
+        "bot_url": "http://bot",
+        "skip_discord": False,
+    }
+    assert feedback.title == "Sucesso"
+    assert "Discord" in feedback.message
+
+
+def test_config_dialogs_presenter_validates_initial_setup():
+    presenter = ConfigDialogsPresenter()
+
+    error = presenter.validate_initial_setup(
+        member_id="abc",
+        channel_id="",
+        bot_url="http://bot",
+    )
+
+    assert error is not None
+    assert error.title == "Erro"
+    assert "numeros" in error.message
 
 
 def test_ui_log_handler_reports_queue_errors(monkeypatch):

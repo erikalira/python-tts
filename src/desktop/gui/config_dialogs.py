@@ -10,9 +10,9 @@ from ..config.desktop_config import (
     DesktopAppConfig,
     get_default_discord_bot_url,
 )
+from .config_dialog_presenter import ConfigDialogsPresenter
 from .config_helpers import (
     build_updated_config,
-    normalize_optional_text,
     prompt_numeric_input,
     resolve_text_value,
 )
@@ -31,18 +31,18 @@ class ConsoleConfig(ConfigInterface):
 
     def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         print("\n" + "=" * 50)
-        print("🎤 Desktop App - Configuração")
+        print("Desktop App - Configuracao")
         print("=" * 50)
 
         current_id = config.discord.member_id or ""
         member_id = prompt_numeric_input(
             f"Discord User ID [{current_id}]: ",
             current_id,
-            "Discord User ID deve conter apenas números!",
+            "Discord User ID deve conter apenas numeros!",
         )
         bot_url = resolve_text_value(input(f"Bot URL [{config.discord.bot_url}]: "), config.discord.bot_url)
 
-        print("\n🎵 Engines TTS disponíveis:")
+        print("\nEngines TTS disponiveis:")
         print("1. gtts (Google TTS)")
         print("2. pyttsx3 (local)")
         while True:
@@ -56,7 +56,7 @@ class ConsoleConfig(ConfigInterface):
             if choice == "2":
                 engine = "pyttsx3"
                 break
-            print("Opção inválida!")
+            print("Opcao invalida!")
 
         language = resolve_text_value(input(f"Idioma [{config.tts.language}]: "), config.tts.language)
         voice_id = resolve_text_value(input(f"Voice ID [{config.tts.voice_id}]: "), config.tts.voice_id)
@@ -72,7 +72,7 @@ class ConsoleConfig(ConfigInterface):
                     break
                 print("Velocidade deve estar entre 50 e 400!")
             except ValueError:
-                print("Velocidade deve ser um número!")
+                print("Velocidade deve ser um numero!")
 
         print("\nLocal voice in the Windows app:")
         print("1. Disabled (recommended: use only the Discord bot)")
@@ -93,7 +93,7 @@ class ConsoleConfig(ConfigInterface):
                 break
             print("Invalid option!")
 
-        print("\n⌨️ Configuração de Triggers")
+        print("\nConfiguracao de Triggers")
         trigger_open = resolve_text_value(
             input(f"Trigger abrir [{config.hotkey.trigger_open}]: "),
             config.hotkey.trigger_open,
@@ -118,10 +118,10 @@ class ConsoleConfig(ConfigInterface):
 
         is_valid, errors = ConfigurationValidator.validate(new_config)
         if is_valid:
-            print("Configuração salva com sucesso!")
+            print("Configuracao salva com sucesso!")
             return new_config
 
-        print("Erros na configuração:")
+        print("Erros na configuracao:")
         for error in errors:
             print(f"   - {error}")
         return None
@@ -136,6 +136,7 @@ class InitialSetupGUI:
         self.member_id_var: Optional[object] = None
         self.channel_id_var: Optional[object] = None
         self.bot_url_var: Optional[object] = None
+        self._presenter = ConfigDialogsPresenter()
 
     def show_initial_setup(self) -> Optional[dict]:
         from . import tk_support as compat
@@ -144,7 +145,7 @@ class InitialSetupGUI:
             return self._console_initial_setup()
         try:
             self.root = compat.tk.Tk()
-            self.root.title("Desktop App - Configuração Inicial")
+            self.root.title("Desktop App - Configuracao Inicial")
             self.root.geometry("550x500")
             self.root.resizable(False, False)
             self.root.geometry(
@@ -160,7 +161,7 @@ class InitialSetupGUI:
             self.root.mainloop()
             return self.result
         except Exception as exc:
-            print(f"Erro na interface gráfica: {exc}")
+            print(f"Erro na interface grafica: {exc}")
             return self._console_initial_setup()
 
     def _create_initial_setup_widgets(self):
@@ -170,14 +171,14 @@ class InitialSetupGUI:
         main_frame.pack(fill=compat.tk.BOTH, expand=True)
         compat.ttk.Label(
             main_frame,
-            text="🎤 Desktop App - Configuração Inicial",
+            text="Desktop App - Configuracao Inicial",
             font=("Arial", 16, "bold"),
         ).pack(pady=(0, 20))
         compat.ttk.Label(
             main_frame,
             text=(
-                "Para usar o TTS no Discord, você precisa configurar seus IDs.\n"
-                "Estes campos são obrigatórios para o funcionamento correto."
+                "Para usar o TTS no Discord, voce precisa configurar seus IDs.\n"
+                "Estes campos sao obrigatorios para o funcionamento correto."
             ),
             justify=compat.tk.CENTER,
         ).pack(pady=(0, 20))
@@ -190,8 +191,8 @@ class InitialSetupGUI:
         compat.ttk.Label(
             discord_frame,
             text=(
-                "💡 Como encontrar: Discord → Configurações → Avançado → Modo Desenvolvedor (ON)\n"
-                "   Botão direito no seu nome → Copiar ID"
+                "Como encontrar: Discord -> Configuracoes -> Avancado -> Modo Desenvolvedor (ON)\n"
+                "   Botao direito no seu nome -> Copiar ID"
             ),
             foreground="gray",
             font=("Arial", 8),
@@ -202,7 +203,7 @@ class InitialSetupGUI:
         compat.ttk.Entry(discord_frame, textvariable=self.channel_id_var, width=30).pack(fill=compat.tk.X, pady=(5, 10))
         compat.ttk.Label(
             discord_frame,
-            text="💡 Como encontrar: Botão direito no canal de voz → Copiar ID",
+            text="Como encontrar: Botao direito no canal de voz -> Copiar ID",
             foreground="gray",
             font=("Arial", 8),
         ).pack(anchor=compat.tk.W, pady=(0, 10))
@@ -215,7 +216,7 @@ class InitialSetupGUI:
         warning_frame.pack(fill=compat.tk.X, pady=(0, 20))
         compat.ttk.Label(
             warning_frame,
-            text="⚠️ Sem o Discord User ID, o TTS funcionará apenas localmente",
+            text="Sem o Discord User ID, o TTS funcionara apenas localmente",
             foreground="orange",
             font=("Arial", 9, "italic"),
         ).pack()
@@ -230,13 +231,9 @@ class InitialSetupGUI:
         )
 
     def _skip_discord(self):
-        self.result = {
-            "member_id": None,
-            "guild_id": None,
-            "channel_id": None,
-            "bot_url": get_default_discord_bot_url(),
-            "skip_discord": True,
-        }
+        self.result = self._presenter.build_skip_discord_result(
+            bot_url=get_default_discord_bot_url()
+        )
         self.root.destroy()
 
     def _save_and_continue(self):
@@ -246,48 +243,42 @@ class InitialSetupGUI:
         channel_id = self.channel_id_var.get().strip()
         bot_url = self.bot_url_var.get().strip()
 
-        if member_id and not member_id.isdigit():
-            compat.messagebox.showerror("Erro", "Discord User ID deve conter apenas números!")
-            return
-        if channel_id and not channel_id.isdigit():
-            compat.messagebox.showerror("Erro", "Channel ID deve conter apenas números!")
-            return
-        if not bot_url:
-            compat.messagebox.showerror("Erro", "Bot URL é obrigatória!")
+        validation_error = self._presenter.validate_initial_setup(
+            member_id=member_id,
+            channel_id=channel_id,
+            bot_url=bot_url,
+        )
+        if validation_error:
+            compat.messagebox.showerror(validation_error.title, validation_error.message)
             return
 
-        self.result = {
-            "member_id": normalize_optional_text(member_id),
-            "guild_id": None,
-            "channel_id": normalize_optional_text(channel_id),
-            "bot_url": bot_url,
-            "skip_discord": False,
-        }
-        if member_id:
-            compat.messagebox.showinfo("Sucesso", "Configuração salva! O TTS funcionará no Discord.")
-        else:
-            compat.messagebox.showinfo("Aviso", "Sem Discord User ID, o TTS funcionará apenas localmente.")
+        self.result, feedback = self._presenter.build_initial_setup_result(
+            member_id=member_id,
+            channel_id=channel_id,
+            bot_url=bot_url,
+        )
+        compat.messagebox.showinfo(feedback.title, feedback.message)
         self.root.destroy()
 
     def _console_initial_setup(self) -> Optional[dict]:
         print("\n" + "=" * 60)
-        print("🎤 Desktop App - Configuração Inicial")
+        print("Desktop App - Configuracao Inicial")
         print("=" * 60)
         print("Para usar o TTS no Discord, configure seus IDs:")
         print("")
-        print("1. Discord User ID (seu ID de usuário):")
-        print("   Como encontrar: Discord → Configurações → Avançado → Modo Desenvolvedor")
-        print("   Depois: Botão direito no seu nome → Copiar ID")
+        print("1. Discord User ID (seu ID de usuario):")
+        print("   Como encontrar: Discord -> Configuracoes -> Avancado -> Modo Desenvolvedor")
+        print("   Depois: Botao direito no seu nome -> Copiar ID")
         member_id = input("   Discord User ID (deixe vazio para pular): ").strip()
         if member_id and not member_id.isdigit():
-            print("ID deve conter apenas números!")
+            print("ID deve conter apenas numeros!")
             member_id = ""
 
         print("\n2. Channel ID (opcional):")
-        print("   Como encontrar: Botão direito no canal de voz → Copiar ID")
+        print("   Como encontrar: Botao direito no canal de voz -> Copiar ID")
         channel_id = input("   Channel ID (opcional): ").strip()
         if channel_id and not channel_id.isdigit():
-            print("ID deve conter apenas números!")
+            print("ID deve conter apenas numeros!")
             channel_id = ""
 
         print("\n3. Bot URL:")
@@ -297,17 +288,15 @@ class InitialSetupGUI:
             bot_url = default_url
 
         if member_id:
-            print("\nConfiguração salva! TTS funcionará no Discord.")
+            print("\nConfiguracao salva! TTS funcionara no Discord.")
         else:
-            print("\nSem Discord User ID, TTS funcionará apenas localmente.")
+            print("\nSem Discord User ID, TTS funcionara apenas localmente.")
 
-        return {
-            "member_id": normalize_optional_text(member_id),
-            "guild_id": None,
-            "channel_id": normalize_optional_text(channel_id),
-            "bot_url": bot_url,
-            "skip_discord": not bool(member_id),
-        }
+        return self._presenter.build_console_initial_setup_result(
+            member_id=member_id,
+            channel_id=channel_id,
+            bot_url=bot_url,
+        )
 
 
 class GUIConfig(ConfigInterface):
@@ -317,6 +306,7 @@ class GUIConfig(ConfigInterface):
         self.root: Optional[object] = None
         self.config: Optional[DesktopAppConfig] = None
         self.result: Optional[DesktopAppConfig] = None
+        self._presenter = ConfigDialogsPresenter()
         self.member_id_var: Optional[object] = None
         self.bot_url_var: Optional[object] = None
         self.engine_var: Optional[object] = None
@@ -333,12 +323,12 @@ class GUIConfig(ConfigInterface):
         from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
-            print("Tkinter não disponível, usando console...")
+            print("Tkinter nao disponivel, usando console...")
             return ConsoleConfig().show_config(config)
         self.config = config
         self.result = None
         self.root = compat.tk.Tk()
-        self.root.title("🎤 Desktop App - Configuração")
+        self.root.title("Desktop App - Configuracao")
         self.root.geometry("600x500")
         self.root.resizable(True, True)
         self.root.protocol("WM_DELETE_WINDOW", self._cancel)
@@ -357,7 +347,7 @@ class GUIConfig(ConfigInterface):
             return
         main_frame = compat.ttk.Frame(self.root, padding="10")
         main_frame.pack(fill="both", expand=True)
-        compat.ttk.Label(main_frame, text="🎤 Desktop App Configuration", font=("Arial", 14, "bold")).pack(pady=(0, 20))
+        compat.ttk.Label(main_frame, text="Desktop App Configuration", font=("Arial", 14, "bold")).pack(pady=(0, 20))
         self._build_config_notebook(main_frame)
         button_frame = compat.ttk.Frame(main_frame)
         button_frame.pack(fill="x", pady=(10, 0))
@@ -404,7 +394,7 @@ class GUIConfig(ConfigInterface):
         compat.ttk.Label(
             parent,
             text=(
-                "Dica: Clique com botão direito no seu nome no Discord, "
+                "Dica: Clique com botao direito no seu nome no Discord, "
                 "depois 'Copiar ID' para obter seu User ID. "
                 "O bot vai descobrir o servidor pelo seu canal de voz atual."
             ),
@@ -424,7 +414,7 @@ class GUIConfig(ConfigInterface):
             parent,
             text=(
                 "O caminho principal do app e enviar o texto para o bot do Discord. "
-                "A voz local do Windows é opcional e fica nas preferencias da interface."
+                "A voz local do Windows e opcional e fica nas preferencias da interface."
             ),
             wraplength=420,
             justify="left",
@@ -454,8 +444,8 @@ class GUIConfig(ConfigInterface):
         compat.ttk.Label(
             parent,
             text=(
-                f"Exemplo: Digite '{self.config.hotkey.trigger_open}olá mundo"
-                f"{self.config.hotkey.trigger_close}' para falar 'olá mundo'"
+                f"Exemplo: Digite '{self.config.hotkey.trigger_open}ola mundo"
+                f"{self.config.hotkey.trigger_close}' para falar 'ola mundo'"
             ),
             wraplength=400,
             font=("Arial", 8),
@@ -469,7 +459,7 @@ class GUIConfig(ConfigInterface):
         self.show_notifications_var = compat.tk.BooleanVar(value=self.config.interface.show_notifications)
         self.console_logs_var = compat.tk.BooleanVar(value=self.config.interface.console_logs)
         self.local_tts_enabled_var = compat.tk.BooleanVar(value=self.config.interface.local_tts_enabled)
-        compat.ttk.Checkbutton(parent, text="Exibir notificações do app", variable=self.show_notifications_var).pack(anchor="w", pady=(0, 10))
+        compat.ttk.Checkbutton(parent, text="Exibir notificacoes do app", variable=self.show_notifications_var).pack(anchor="w", pady=(0, 10))
         compat.ttk.Checkbutton(parent, text="Manter logs detalhados na interface", variable=self.console_logs_var).pack(anchor="w", pady=(0, 10))
         compat.ttk.Checkbutton(
             parent,
@@ -479,8 +469,8 @@ class GUIConfig(ConfigInterface):
         compat.ttk.Label(
             parent,
             text=(
-                "Comportamento padrão: ao abrir o executável, a janela principal permanece visível. "
-                "A bandeja funciona como acesso rápido e não faz verificações automáticas de conexão."
+                "Comportamento padrao: ao abrir o executavel, a janela principal permanece visivel. "
+                "A bandeja funciona como acesso rapido e nao faz verificacoes automaticas de conexao."
             ),
             wraplength=420,
             justify="left",
@@ -500,9 +490,12 @@ class GUIConfig(ConfigInterface):
                 if self.root:
                     self.root.destroy()
             else:
-                compat.messagebox.showerror("Erro de Validação", f"Erros encontrados:\n\n{chr(10).join(errors)}")
+                compat.messagebox.showerror(
+                    "Erro de Validacao",
+                    self._presenter.format_validation_errors(errors),
+                )
         except ValueError as exc:
-            compat.messagebox.showerror("Erro", f"Valor inválido: {exc}")
+            compat.messagebox.showerror("Erro", f"Valor invalido: {exc}")
         except Exception as exc:
             compat.messagebox.showerror("Erro", f"Erro inesperado: {exc}")
 
