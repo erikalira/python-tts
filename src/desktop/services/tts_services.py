@@ -151,6 +151,31 @@ class DesktopAppTTSService:
         """Get status information about available engines."""
         return DesktopTTSStatusUseCase(_DesktopAppTTSStatusGateway(self)).execute()
 
+    def is_remote_available(self) -> bool:
+        """Return whether the Discord bot transport is currently usable."""
+        return self._bot_client.is_available()
+
+    def is_local_enabled(self) -> bool:
+        """Return whether local voice is enabled in Desktop App configuration."""
+        return self._config.interface.local_tts_enabled
+
+    def is_local_available(self) -> bool:
+        """Return whether the configured local engine is available."""
+        if not self.is_local_enabled():
+            return False
+        return self._local_engine_factory(self._config).is_available()
+
+    def has_transport(self) -> bool:
+        """Return whether the bot client transport dependency is installed."""
+        requests_installed = getattr(self._bot_client, "has_transport", lambda: None)()
+        if requests_installed is None:
+            return self._bot_client.is_available()
+        return requests_installed
+
+    def has_bot_url(self) -> bool:
+        """Return whether a Discord bot URL is configured."""
+        return bool(self._config.discord.bot_url)
+
 
 class KeyboardCleanupService:
     """Service for handling keyboard cleanup after TTS."""
@@ -187,24 +212,19 @@ class _DesktopAppTTSStatusGateway:
         self._service = service
 
     def is_remote_available(self) -> bool:
-        return self._service._bot_client.is_available()
+        return self._service.is_remote_available()
 
     def is_local_enabled(self) -> bool:
-        return self._service._config.interface.local_tts_enabled
+        return self._service.is_local_enabled()
 
     def is_local_available(self) -> bool:
-        if not self.is_local_enabled():
-            return False
-        return LocalPyTTSX3Engine(self._service._config).is_available()
+        return self._service.is_local_available()
 
     def is_local_dependency_installed(self) -> bool:
         return is_pyttsx3_available()
 
     def has_transport(self) -> bool:
-        requests_installed = getattr(self._service._bot_client, "has_transport", lambda: None)()
-        if requests_installed is None:
-            return self._service._bot_client.is_available()
-        return requests_installed
+        return self._service.has_transport()
 
     def has_bot_url(self) -> bool:
-        return bool(self._service._config.discord.bot_url)
+        return self._service.has_bot_url()

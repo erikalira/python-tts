@@ -309,6 +309,26 @@ def test_desktop_app_tts_service_reports_local_voice_as_disabled_by_default():
     assert status["local_available"] is False
 
 
+def test_desktop_app_tts_service_exposes_status_contract_without_private_access():
+    config = DesktopAppConfig.create_default()
+    config.discord.bot_url = get_default_discord_bot_url()
+    config.interface.local_tts_enabled = True
+    bot_client = FakeDiscordBotClient(available=True, result=True)
+    bot_client.has_transport = Mock(return_value=True)
+    local_engine = FakeEngine(available=True, result=True)
+    service = DesktopAppTTSService(
+        config,
+        bot_client=bot_client,
+        local_engine_factory=lambda cfg: local_engine,
+    )
+
+    assert service.is_remote_available() is True
+    assert service.is_local_enabled() is True
+    assert service.is_local_available() is True
+    assert service.has_transport() is True
+    assert service.has_bot_url() is True
+
+
 def test_desktop_tts_status_use_case_builds_status_payload():
     gateway = Mock()
     gateway.is_remote_available.return_value = True
