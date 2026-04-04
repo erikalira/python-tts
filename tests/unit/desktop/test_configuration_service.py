@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.gui import configuration_service, tk_support
 
@@ -5,56 +7,56 @@ from src.desktop.gui import configuration_service, tk_support
 def test_configuration_service_uses_gui_when_preferred_and_available(monkeypatch):
     expected = DesktopAppConfig.create_default()
     current_config = DesktopAppConfig.create_default()
-    called = {}
-
-    def fake_show_config(self, config):
-        called["config"] = config
-        return expected
+    gui = Mock()
+    gui.show_config.return_value = expected
 
     monkeypatch.setattr(tk_support, "TKINTER_AVAILABLE", True)
-    monkeypatch.setattr(configuration_service.GUIConfig, "show_config", fake_show_config)
+    service = configuration_service.ConfigurationService(
+        prefer_gui=True,
+        gui_factory=lambda: gui,
+    )
 
-    result = configuration_service.ConfigurationService(prefer_gui=True).get_configuration(current_config)
+    result = service.get_configuration(current_config)
 
     assert result is expected
-    assert called["config"] is current_config
+    gui.show_config.assert_called_once_with(current_config)
 
 
 def test_configuration_service_falls_back_to_console_when_gui_is_disabled(monkeypatch):
     expected = DesktopAppConfig.create_default()
     current_config = DesktopAppConfig.create_default()
-    called = {}
-
-    def fake_show_config(self, config):
-        called["config"] = config
-        return expected
+    console = Mock()
+    console.show_config.return_value = expected
 
     monkeypatch.setattr(tk_support, "TKINTER_AVAILABLE", True)
-    monkeypatch.setattr(configuration_service.ConsoleConfig, "show_config", fake_show_config)
+    service = configuration_service.ConfigurationService(
+        prefer_gui=False,
+        console_factory=lambda: console,
+    )
 
-    result = configuration_service.ConfigurationService(prefer_gui=False).get_configuration(current_config)
+    result = service.get_configuration(current_config)
 
     assert result is expected
-    assert called["config"] is current_config
+    console.show_config.assert_called_once_with(current_config)
 
 
 def test_configuration_service_falls_back_to_console_when_gui_raises(monkeypatch):
     expected = DesktopAppConfig.create_default()
     current_config = DesktopAppConfig.create_default()
-    called = {}
-
-    def fail_show_config(self, _config):
-        raise RuntimeError("boom")
-
-    def fake_console_show_config(self, config):
-        called["config"] = config
-        return expected
+    gui = Mock()
+    gui.show_config.side_effect = RuntimeError("boom")
+    console = Mock()
+    console.show_config.return_value = expected
 
     monkeypatch.setattr(tk_support, "TKINTER_AVAILABLE", True)
-    monkeypatch.setattr(configuration_service.GUIConfig, "show_config", fail_show_config)
-    monkeypatch.setattr(configuration_service.ConsoleConfig, "show_config", fake_console_show_config)
+    service = configuration_service.ConfigurationService(
+        prefer_gui=True,
+        gui_factory=lambda: gui,
+        console_factory=lambda: console,
+    )
 
-    result = configuration_service.ConfigurationService(prefer_gui=True).get_configuration(current_config)
+    result = service.get_configuration(current_config)
 
     assert result is expected
-    assert called["config"] is current_config
+    gui.show_config.assert_called_once_with(current_config)
+    console.show_config.assert_called_once_with(current_config)
