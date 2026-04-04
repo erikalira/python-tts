@@ -324,9 +324,9 @@ class DiscordCommands:
                     await interaction.edit_original_response(content='❌ Bot está inativo ou desligando.')
                 else:
                     await interaction.edit_original_response(content='❌ Erro inesperado')
-            except discord.HTTPException:
-                # If we can't send error message, just log it
-                logger.debug("[SPEAK] Could not send error message")
+            except Exception as send_error:
+                # Shutdown/teardown can surface non-HTTP errors here as the loop disappears.
+                logger.debug(f"[SPEAK] Could not send error message: {send_error}")
 
     def _build_speak_message(self, result: dict) -> str:
         """Map a neutral application result to a Discord-facing message."""

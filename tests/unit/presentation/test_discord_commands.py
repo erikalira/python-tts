@@ -113,6 +113,35 @@ class TestDiscordCommands:
             await commands_instance._handle_speak(interaction, "Test")
         
         interaction.edit_original_response.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_speak_shutdown_fallback_ignores_non_http_send_errors(self, commands_instance):
+        """Test /speak suppresses non-HTTP interaction update failures during shutdown."""
+        commands_instance._speak_use_case.execute = AsyncMock(
+            side_effect=RuntimeError("interpreter shutdown")
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 11111
+        interaction.user.name = "TestUser"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock(
+            side_effect=RuntimeError("cannot schedule new futures after interpreter shutdown")
+        )
+
+        with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
+             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
+             patch('src.presentation.discord_commands.HAS_FFMPEG', True):
+            await commands_instance._handle_speak(interaction, "Test")
+
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
+        sent_content = interaction.edit_original_response.call_args.kwargs["content"]
+        assert "Bot est" in sent_content
+        assert "inativo" in sent_content
     
     @pytest.mark.asyncio
     async def test_handle_config_get(self, commands_instance):
