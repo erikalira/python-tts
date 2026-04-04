@@ -44,6 +44,23 @@ class VoiceChannelResolutionService:
                 logger.warning("[VOICE_RESOLUTION] Member %s is not in any voice channel", request.member_id)
                 return None
 
+        if request.channel_id:
+            if not request.member_id:
+                logger.warning("[VOICE_RESOLUTION] Refusing explicit channel without member context")
+                return None
+
+            target_channel = await self._channel_repository.find_by_channel_id(request.channel_id)
+            if not target_channel or not user_current_channel:
+                logger.warning("[VOICE_RESOLUTION] Explicit channel %s could not be resolved safely", request.channel_id)
+                return None
+
+            if target_channel.get_channel_id() != user_current_channel.get_channel_id():
+                logger.warning(
+                    "[VOICE_RESOLUTION] Explicit channel %s does not match member current location",
+                    request.channel_id,
+                )
+                return None
+
         connected_channel = await self._channel_repository.find_connected_channel()
         if connected_channel:
             if user_current_channel and request.member_id and await self.is_member_in_channel(
@@ -62,23 +79,6 @@ class VoiceChannelResolutionService:
         if user_current_channel:
             logger.info("[VOICE_RESOLUTION] Using member current channel for initial connection")
             return VoiceChannelResolution(channel=user_current_channel, channel_changed=False)
-
-        if request.channel_id and not request.member_id:
-            logger.warning("[VOICE_RESOLUTION] Refusing explicit channel without member context")
-            return None
-
-        if request.channel_id and user_current_channel:
-            target_channel = await self._channel_repository.find_by_channel_id(request.channel_id)
-            if target_channel and request.member_id and await self.is_member_in_channel(
-                request.member_id, target_channel
-            ):
-                logger.info("[VOICE_RESOLUTION] Explicit channel matches member current channel")
-                return VoiceChannelResolution(channel=target_channel, channel_changed=False)
-
-            logger.warning(
-                "[VOICE_RESOLUTION] Explicit channel %s does not match member current location",
-                request.channel_id,
-            )
 
         logger.warning("[VOICE_RESOLUTION] No safe voice channel could be resolved")
         return None

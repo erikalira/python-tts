@@ -18,6 +18,8 @@ Use unit tests when validating:
 
 - pure business logic
 - orchestration and branching
+- extracted application collaborators such as resolvers and orchestrators
+- presenter and mapper behavior per transport
 - repository and adapter behavior with mocks or fakes
 - error handling that can be simulated locally
 
@@ -83,7 +85,8 @@ For everyday development:
 
 1. Run `tests/unit` first.
 2. Run only the relevant desktop or bot slice when iterating on one runtime.
-3. Run `tests/integration` only when the change touches real integrations or when you want a higher-confidence validation pass before shipping.
+3. Prefer the narrowest layer-focused suite when refactoring shared code, for example `tests/unit/application/` or `tests/unit/presentation/`.
+4. Run `tests/integration` only when the change touches real integrations or when you want a higher-confidence validation pass before shipping.
 
 For CI or automation:
 
@@ -118,10 +121,12 @@ To run the desktop app test suite using the local virtual environment:
 
 - Prefer isolated tests that do not depend on leftovers from previous runs.
 - Keep setup explicit and local to the test or to shared fixtures in `tests/conftest.py`.
+- Use shared builders in `tests/conftest.py` for composition-heavy flows so refactors update one place instead of every test.
 - Favor temporary or mocked resources over persistent local artifacts when a test needs filesystem, environment, or network-related setup.
 - Assert behavior and outcomes that matter to the user or the application flow, not internal implementation details that make refactors harder.
 - Keep tests focused and readable so failures explain what regressed quickly.
 - When changing shared logic, verify the affected runtime path and consider whether both the Discord bot and Desktop app need coverage.
+- When logic is extracted into a dedicated application or presentation collaborator, add or move tests so that collaborator has its own focused test file.
 - Do not place environment-dependent integration tests under `tests/unit/`.
 - Prefer moving an unstable test into `tests/integration/` over weakening the guarantees of the unit suite.
 - When introducing a new test category in the future, document its intent, trigger conditions, and execution command in this guide.
@@ -129,6 +134,8 @@ To run the desktop app test suite using the local virtual environment:
 ## Structure
 
 - `tests/unit/`: unit tests grouped by layer
+- `tests/unit/application/`: use cases plus extracted shared collaborators such as resolvers and queue orchestrators
+- `tests/unit/presentation/`: controllers, commands, and transport presenters
 - `tests/integration/`: environment-dependent integration tests
 - `tests/unit/desktop/`: tests for the desktop app internal runtime
 - `tests/conftest.py`: shared fixtures and helpers
