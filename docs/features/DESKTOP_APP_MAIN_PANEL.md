@@ -15,7 +15,7 @@ Dar ao usuario final uma experiencia clara ao abrir o executavel:
 
 ## Fluxo esperado
 
-1. O usuario abre `tts_hotkey_clean.exe`
+1. O usuario abre `HotkeyTTS.exe`
 2. O painel principal aparece e permanece visivel
 3. O usuario preenche `Bot URL` e `User ID`
 4. O usuario clica em `Testar conexao`

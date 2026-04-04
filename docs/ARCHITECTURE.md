@@ -1,4 +1,4 @@
-# Arquitetura do Projeto - TTS Hotkey Windows
+# Arquitetura do Projeto - Desktop App Windows e Bot Discord
 
 ## Visao geral
 

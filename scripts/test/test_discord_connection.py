@@ -44,7 +44,7 @@ def load_env_file():
         print("[test] ⚠️ No Discord bot URL - will use local TTS only")
 
 def test_discord_request(text: str):
-    """Test sending a request to Discord bot like tts_hotkey does."""
+    """Test sending a request to Discord bot like the Desktop App does."""
     print("\n" + "="*50)
     print("🧪 TESTE DE CONEXÃO COM DISCORD BOT")
     print("="*50)
@@ -95,7 +95,7 @@ def test_discord_request(text: str):
         return False
 
 def main():
-    print("🧪 Teste de Conexão do TTS Hotkey com Discord")
+    print("🧪 Teste de Conexão do Desktop App com Discord")
     print()
     
     # Load environment

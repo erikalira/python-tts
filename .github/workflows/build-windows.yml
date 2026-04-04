@@ -35,19 +35,19 @@ jobs:
       - name: Test executable
         shell: pwsh
         run: |
-          if (-not (Test-Path "dist/tts_hotkey_clean.exe")) {
-            Write-Error "dist/tts_hotkey_clean.exe was not generated"
+          if (-not (Test-Path "dist/HotkeyTTS.exe")) {
+            Write-Error "dist/HotkeyTTS.exe was not generated"
           }
           Get-ChildItem dist
-          Write-Host "Executable size: $([math]::Round((Get-Item 'dist/tts_hotkey_clean.exe').Length / 1MB, 2)) MB"
+          Write-Host "Executable size: $([math]::Round((Get-Item 'dist/HotkeyTTS.exe').Length / 1MB, 2)) MB"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tts-hotkey-windows-exe
+          name: desktop-app-windows-exe
           path: |
-            dist/tts_hotkey_clean.exe
-            dist/run_tts_hotkey_clean.bat
+            dist/HotkeyTTS.exe
+            dist/run_HotkeyTTS_debug.bat
           retention-days: 30
 
       - name: Create release
@@ -55,7 +55,7 @@ jobs:
         shell: pwsh
         run: |
           $releaseNotes = @"
-          ## TTS Hotkey Clean Architecture - Windows Executable
+          ## Desktop App - Windows Executable
 
           ### Resources:
           - Current Desktop App runtime based on `app.py`
@@ -65,7 +65,7 @@ jobs:
           - Current clean architecture build
 
           ### How to use:
-          1. Download `tts_hotkey_clean.exe` or `run_tts_hotkey_clean.bat`
+          1. Download `HotkeyTTS.exe` or `run_HotkeyTTS_debug.bat`
           2. Run it directly on Windows
           3. Configure Discord, TTS, and hotkeys on first launch
           4. Use the Desktop App normally
@@ -74,9 +74,9 @@ jobs:
           "@
 
           gh release create "${{ github.ref_name }}" `
-            "dist/tts_hotkey_clean.exe" `
-            "dist/run_tts_hotkey_clean.bat" `
-            --title "TTS Hotkey ${{ github.ref_name }}" `
+            "dist/HotkeyTTS.exe" `
+            "dist/run_HotkeyTTS_debug.bat" `
+            --title "Desktop App ${{ github.ref_name }}" `
             --notes $releaseNotes `
             --generate-notes
         env:

@@ -38,7 +38,7 @@ async def test_http_server_exposes_health_version_and_about_routes():
             assert "author" in response.text
         else:
             assert '"status": "online"' in response.text
-            assert '"name": "TTS Hotkey Windows"' in response.text
+            assert '"name": "Discord Bot and Desktop App"' in response.text
 
 
 @pytest.mark.asyncio

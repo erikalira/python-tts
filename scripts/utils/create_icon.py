@@ -1,4 +1,4 @@
-"""Generate system tray icon for TTS Hotkey."""
+"""Generate system tray icon for the Desktop App."""
 from PIL import Image, ImageDraw
 from pathlib import Path
 

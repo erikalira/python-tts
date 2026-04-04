@@ -58,7 +58,7 @@ class ConfigurationRepository:
                 ),
                 network=NetworkConfig(
                     request_timeout=data.get("request_timeout", 10),
-                    user_agent=data.get("user_agent", "TTS-Hotkey/2.0"),
+                    user_agent=data.get("user_agent", "DesktopApp/2.0"),
                     max_text_length=data.get("max_text_length", 500),
                 ),
             )

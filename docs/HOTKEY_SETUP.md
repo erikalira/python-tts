@@ -1,9 +1,9 @@
-# TTS Hotkey - Configuracao Avancada
+# Desktop App - Configuracao Avancada
 
 ## Desktop App Atual
 
 **Entry point**: `app.py`  
-**Executavel**: `dist/tts_hotkey_clean.exe`
+**Executavel**: `dist/HotkeyTTS.exe`
 
 ### Discord ID Automatico
 
@@ -64,7 +64,7 @@ python app.py
 ./scripts/build/build_clean_architecture.ps1
 
 # 3. Usar
-dist/tts_hotkey_clean.exe
+dist/HotkeyTTS.exe
 ```
 
 ## Modo de Uso

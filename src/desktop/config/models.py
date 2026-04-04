@@ -58,7 +58,7 @@ class NetworkConfig:
     """Network configuration."""
 
     request_timeout: int = 10
-    user_agent: str = "TTS-Hotkey/2.0"
+    user_agent: str = "DesktopApp/2.0"
     max_text_length: int = 500
 
 

@@ -17,7 +17,18 @@ def test_get_config_directory_windows(monkeypatch, tmp_path):
 
     config_dir = get_config_directory()
 
-    assert config_dir == tmp_path / "TTS-Hotkey"
+    assert config_dir == tmp_path / "DesktopApp"
+    assert config_dir.exists()
+
+
+def test_get_config_directory_windows_reuses_legacy_directory(monkeypatch, tmp_path):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    legacy_dir = tmp_path / "TTS-Hotkey"
+    legacy_dir.mkdir()
+
+    config_dir = get_config_directory()
+
+    assert config_dir == legacy_dir
     assert config_dir.exists()
 
 

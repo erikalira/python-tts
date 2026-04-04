@@ -1,6 +1,6 @@
-# Como Criar Executavel do TTS Hotkey para Windows
+# Como Criar Executavel do Desktop App para Windows
 
-Este guia explica como criar o executavel do Desktop App TTS Hotkey para Windows com Clean Architecture.
+Este guia explica como criar o executavel do Desktop App para Windows com Clean Architecture.
 
 ## Pre-requisitos
 
@@ -16,7 +16,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## TTS Hotkey Clean Architecture
+## Desktop App Clean Architecture
 
 - Arquivo: `app.py`
 - Arquitetura: Clean Architecture
@@ -38,8 +38,8 @@ Apos a compilacao:
 
 ```text
 dist/
-|-- tts_hotkey_clean.exe
-`-- run_tts_hotkey_clean_debug.bat
+|-- HotkeyTTS.exe
+`-- run_HotkeyTTS_debug.bat
 ```
 
 ## Como Usar o Executavel
@@ -48,7 +48,7 @@ Depois do build:
 
 ```powershell
 cd dist
-.\tts_hotkey_clean.exe
+.\HotkeyTTS.exe
 ```
 
 Na primeira execucao:
@@ -72,6 +72,6 @@ Na primeira execucao:
 
 O executavel do Desktop App e portatil:
 
-- Copie `dist/tts_hotkey_clean.exe`
+- Copie `dist/HotkeyTTS.exe`
 - Funciona em Windows 10/11
-- Salva configuracao em `AppData/Local/TTS-Hotkey/`
+- Salva configuracao em `AppData/Local/DesktopApp/`

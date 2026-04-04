@@ -62,7 +62,7 @@ class HTTPServer:
 
     async def _about(self, request: web.Request) -> web.Response:
         return web.json_response({
-            "name": "TTS Hotkey Windows",
+            "name": "Discord Bot and Desktop App",
             "version": __version__,
             "author": __author__,
             "description": __description__,
