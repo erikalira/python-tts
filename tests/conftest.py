@@ -1,7 +1,7 @@
 """Test fixtures and mocks shared across tests."""
 import pytest
 from unittest.mock import AsyncMock, Mock
-from src.core.interfaces import ITTSEngine, IVoiceChannel, IVoiceChannelRepository, IConfigRepository, IAudioQueue
+from src.core.interfaces import ITTSEngine, IVoiceChannel, IVoiceChannelRepository, IConfigRepository, IAudioQueue, IAudioFileCleanup
 from src.core.entities import TTSConfig, AudioFile, TTSRequest, AudioQueueItem
 
 
@@ -177,6 +177,16 @@ class MockAudioQueue(IAudioQueue):
         self.completed.clear()
 
 
+class MockAudioCleanup(IAudioFileCleanup):
+    """Mock audio cleanup adapter for testing."""
+
+    def __init__(self):
+        self.cleaned_paths = []
+
+    async def cleanup(self, audio: AudioFile) -> None:
+        self.cleaned_paths.append(audio.path)
+
+
 class MockAudioQueue(IAudioQueue):
     """Mock audio queue for testing."""
     
@@ -244,6 +254,12 @@ def mock_config_repository():
 def mock_audio_queue():
     """Fixture for mock audio queue."""
     return MockAudioQueue()
+
+
+@pytest.fixture
+def mock_audio_cleanup():
+    """Fixture for mock audio cleanup."""
+    return MockAudioCleanup()
 
 
 @pytest.fixture

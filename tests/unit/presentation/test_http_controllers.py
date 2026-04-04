@@ -15,14 +15,16 @@ class TestSpeakController:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        mock_audio_cleanup,
     ):
         """Test handling valid speak request."""
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=mock_channel_repository,
             config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+            audio_queue=mock_audio_queue,
+            audio_cleanup=mock_audio_cleanup,
         )
         controller = SpeakController(use_case)
         
@@ -44,14 +46,16 @@ class TestSpeakController:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        mock_audio_cleanup,
     ):
         """Test handling request without text."""
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=mock_channel_repository,
             config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+            audio_queue=mock_audio_queue,
+            audio_cleanup=mock_audio_cleanup,
         )
         controller = SpeakController(use_case)
         
@@ -69,14 +73,16 @@ class TestSpeakController:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        mock_audio_cleanup,
     ):
         """Test handling request with invalid JSON."""
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=mock_channel_repository,
             config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+            audio_queue=mock_audio_queue,
+            audio_cleanup=mock_audio_cleanup,
         )
         controller = SpeakController(use_case)
         
@@ -94,14 +100,16 @@ class TestSpeakController:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        mock_audio_cleanup,
     ):
         """Test handling request with all fields."""
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=mock_channel_repository,
             config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+            audio_queue=mock_audio_queue,
+            audio_cleanup=mock_audio_cleanup,
         )
         controller = SpeakController(use_case)
         
@@ -123,14 +131,16 @@ class TestSpeakController:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        mock_audio_cleanup,
     ):
         """Test handling request with user_id instead of member_id."""
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=mock_channel_repository,
             config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+            audio_queue=mock_audio_queue,
+            audio_cleanup=mock_audio_cleanup,
         )
         controller = SpeakController(use_case)
         
@@ -151,14 +161,16 @@ class TestSpeakController:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        mock_audio_cleanup,
     ):
         """Test _parse_int with various invalid values."""
         use_case = SpeakTextUseCase(
             tts_engine=mock_tts_engine,
             channel_repository=mock_channel_repository,
             config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+            audio_queue=mock_audio_queue,
+            audio_cleanup=mock_audio_cleanup,
         )
         controller = SpeakController(use_case)
         

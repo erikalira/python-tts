@@ -5,6 +5,8 @@ import importlib.util
 import discord
 from discord import app_commands
 
+from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
+from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.application.use_cases import (
     ConfigureTTSUseCase,
     GetCurrentVoiceContextUseCase,
@@ -40,14 +42,24 @@ class Container:
         self.audio_cleanup = FileAudioCleanup()
         self.tts_engine_factory = TTSEngineFactory()
         self.tts_engine = self.tts_engine_factory.create(config.tts_config)
+        self.voice_channel_resolution = VoiceChannelResolutionService(self.voice_channel_repository)
+        self.tts_queue_orchestrator = TTSQueueOrchestrator(
+            tts_engine=self.tts_engine,
+            config_repository=self.config_repository,
+            audio_queue=self.audio_queue,
+            voice_channel_resolution=self.voice_channel_resolution,
+            audio_cleanup=self.audio_cleanup,
+        )
 
         self.speak_use_case = SpeakTextUseCase(
             tts_engine=self.tts_engine,
             channel_repository=self.voice_channel_repository,
             config_repository=self.config_repository,
             audio_queue=self.audio_queue,
-            max_text_length=config.max_text_length,
             audio_cleanup=self.audio_cleanup,
+            max_text_length=config.max_text_length,
+            voice_channel_resolution=self.voice_channel_resolution,
+            queue_orchestrator=self.tts_queue_orchestrator,
         )
         self.config_use_case = ConfigureTTSUseCase(config_repository=self.config_repository)
         self.join_use_case = JoinVoiceChannelUseCase(channel_repository=self.voice_channel_repository)

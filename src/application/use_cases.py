@@ -5,7 +5,28 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from src.application.results import *
+from src.application.results import (
+    JOIN_RESULT_MISSING_GUILD_ID,
+    JOIN_RESULT_OK,
+    JOIN_RESULT_USER_NOT_IN_CHANNEL,
+    JOIN_RESULT_VOICE_CHANNEL_NOT_FOUND,
+    JOIN_RESULT_VOICE_CONNECTION_FAILED,
+    LEAVE_RESULT_MISSING_GUILD_ID,
+    LEAVE_RESULT_NOT_CONNECTED,
+    LEAVE_RESULT_OK,
+    LEAVE_RESULT_VOICE_CONNECTION_FAILED,
+    SPEAK_RESULT_MISSING_TEXT,
+    SPEAK_RESULT_QUEUED,
+    SPEAK_RESULT_QUEUE_FULL,
+    SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+    VOICE_CONTEXT_RESULT_MEMBER_REQUIRED,
+    VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL,
+    VOICE_CONTEXT_RESULT_OK,
+    JoinVoiceChannelResult,
+    LeaveVoiceChannelResult,
+    SpeakTextResult,
+    VoiceContextResult,
+)
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.tts_text import prepare_tts_text
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
@@ -17,7 +38,6 @@ from src.core.interfaces import (
     ITTSEngine,
     IVoiceChannelRepository,
 )
-from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
 
 logger = logging.getLogger(__name__)
 
@@ -114,10 +134,10 @@ class SpeakTextUseCase:
         channel_repository: IVoiceChannelRepository,
         config_repository: IConfigRepository,
         audio_queue: IAudioQueue,
+        audio_cleanup: IAudioFileCleanup,
         max_text_length: Optional[int] = None,
         voice_channel_resolution: Optional[VoiceChannelResolutionService] = None,
         queue_orchestrator: Optional[TTSQueueOrchestrator] = None,
-        audio_cleanup: Optional[IAudioFileCleanup] = None,
     ):
         self._channel_repository = channel_repository
         self._audio_queue = audio_queue
@@ -125,7 +145,7 @@ class SpeakTextUseCase:
         self._voice_channel_resolution = voice_channel_resolution or VoiceChannelResolutionService(
             channel_repository
         )
-        self._audio_cleanup = audio_cleanup or FileAudioCleanup()
+        self._audio_cleanup = audio_cleanup
         self._queue_orchestrator = queue_orchestrator or TTSQueueOrchestrator(
             tts_engine=tts_engine,
             config_repository=config_repository,

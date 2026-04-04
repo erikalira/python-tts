@@ -21,14 +21,16 @@ class TestDiscordCommands:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        mock_audio_cleanup,
     ):
         """Create a DiscordCommands instance for testing."""
         speak_use_case = SpeakTextUseCase(
             mock_tts_engine,
             mock_channel_repository,
             mock_config_repository,
-            mock_audio_queue
+            mock_audio_queue,
+            mock_audio_cleanup,
         )
         config_use_case = ConfigureTTSUseCase(mock_config_repository)
         join_use_case = JoinVoiceChannelUseCase(mock_channel_repository)
