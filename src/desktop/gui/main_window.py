@@ -8,6 +8,7 @@ from typing import Callable, Optional
 
 from ..config.desktop_config import ConfigurationValidator, DesktopAppConfig
 from .config_dialogs import GUIConfig
+from .main_window_presenter import DesktopAppMainWindowPresenter, MainWindowMessage
 from .ui_logging import UILogHandler
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ class DesktopAppMainWindow(GUIConfig):
         self._on_test_connection = on_test_connection
         self._on_send_test = on_send_test
         self._on_refresh_voice_context = on_refresh_voice_context
+        self._presenter = DesktopAppMainWindowPresenter()
         self._log_queue: "queue.Queue[str]" = queue.Queue()
         self._log_handler = UILogHandler(self._log_queue)
         self._status_var: Optional[object] = None
@@ -46,7 +48,7 @@ class DesktopAppMainWindow(GUIConfig):
         from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
-            raise RuntimeError("Tkinter nÃ£o disponÃ­vel para a janela principal")
+            raise RuntimeError("Tkinter nao disponivel para a janela principal")
         self.root = compat.tk.Tk()
         self.root.title("Desktop App - Painel Principal")
         self.root.geometry("980x760")
@@ -80,19 +82,17 @@ class DesktopAppMainWindow(GUIConfig):
 
         main_frame = compat.ttk.Frame(self.root, padding="16")
         main_frame.pack(fill="both", expand=True)
-        self._status_var = compat.tk.StringVar(
-            value="Preencha os campos, teste a conexÃ£o e mantenha a janela aberta durante o uso."
-        )
+        self._status_var = compat.tk.StringVar(value=self._presenter.initial_status().text)
         self._config_var = compat.tk.StringVar(value="")
-        self._connection_var = compat.tk.StringVar(value="ConexÃ£o ainda nÃ£o testada")
-        self._voice_context_var = compat.tk.StringVar(value="Canal detectado ainda nao consultado")
+        self._connection_var = compat.tk.StringVar(value=self._presenter.initial_connection().text)
+        self._voice_context_var = compat.tk.StringVar(value=self._presenter.initial_voice_context().text)
 
         compat.ttk.Label(main_frame, text="Desktop App", font=("Arial", 18, "bold")).pack(anchor="w")
         compat.ttk.Label(
             main_frame,
             text=(
-                "Use esta janela como painel principal do app. Aqui vocÃª configura o Desktop App, "
-                "valida a conexÃ£o com o bot e acompanha a atividade sem depender do terminal."
+                "Use esta janela como painel principal do app. Aqui voce configura o Desktop App, "
+                "valida a conexao com o bot e acompanha a atividade sem depender do terminal."
             ),
             wraplength=900,
             justify="left",
@@ -100,23 +100,41 @@ class DesktopAppMainWindow(GUIConfig):
 
         status_frame = compat.ttk.LabelFrame(main_frame, text="Status do app", padding="10")
         status_frame.pack(fill="x", pady=(0, 12))
-        self._status_label = compat.tk.Label(status_frame, textvariable=self._status_var, anchor="w", justify="left", fg="#155724")
+        self._status_label = compat.tk.Label(
+            status_frame,
+            textvariable=self._status_var,
+            anchor="w",
+            justify="left",
+            fg=self._presenter.initial_status().color,
+        )
         self._status_label.pack(anchor="w")
-        self._config_label = compat.tk.Label(status_frame, textvariable=self._config_var, anchor="w", justify="left", fg="#856404")
+        self._config_label = compat.tk.Label(status_frame, textvariable=self._config_var, anchor="w", justify="left")
         self._config_label.pack(anchor="w", pady=(8, 0))
-        self._connection_label = compat.tk.Label(status_frame, textvariable=self._connection_var, anchor="w", justify="left", fg="#856404")
+        self._connection_label = compat.tk.Label(
+            status_frame,
+            textvariable=self._connection_var,
+            anchor="w",
+            justify="left",
+            fg=self._presenter.initial_connection().color,
+        )
         self._connection_label.pack(anchor="w", pady=(8, 0))
-        self._voice_context_label = compat.tk.Label(status_frame, textvariable=self._voice_context_var, anchor="w", justify="left", fg="#856404")
+        self._voice_context_label = compat.tk.Label(
+            status_frame,
+            textvariable=self._voice_context_var,
+            anchor="w",
+            justify="left",
+            fg=self._presenter.initial_voice_context().color,
+        )
         self._voice_context_label.pack(anchor="w", pady=(8, 0))
 
-        form_frame = compat.ttk.LabelFrame(main_frame, text="ConfiguraÃ§Ã£o", padding="10")
+        form_frame = compat.ttk.LabelFrame(main_frame, text="Configuracao", padding="10")
         form_frame.pack(fill="both", expand=True, pady=(0, 12))
         self._build_config_notebook(form_frame)
 
         action_frame = compat.ttk.Frame(main_frame)
         action_frame.pack(fill="x", pady=(0, 12))
-        compat.ttk.Button(action_frame, text="Salvar configuraÃ§Ã£o", command=self._handle_save).pack(side="left")
-        compat.ttk.Button(action_frame, text="Testar conexÃ£o", command=self._handle_test_connection).pack(side="left", padx=(10, 0))
+        compat.ttk.Button(action_frame, text="Salvar configuracao", command=self._handle_save).pack(side="left")
+        compat.ttk.Button(action_frame, text="Testar conexao", command=self._handle_test_connection).pack(side="left", padx=(10, 0))
         compat.ttk.Button(action_frame, text="Recarregar canal detectado", command=self._handle_refresh_voice_context).pack(side="left", padx=(10, 0))
         compat.ttk.Button(action_frame, text="Enviar teste de voz", command=self._handle_send_test).pack(side="left", padx=(10, 0))
         compat.ttk.Button(action_frame, text="Limpar logs", command=self._clear_logs).pack(side="left", padx=(10, 0))
@@ -127,9 +145,9 @@ class DesktopAppMainWindow(GUIConfig):
         compat.ttk.Label(
             help_frame,
             text=(
-                "1. Preencha os dados do bot e clique em 'Testar conexÃ£o'. "
+                "1. Preencha os dados do bot e clique em 'Testar conexao'. "
                 "2. Use 'Recarregar canal detectado' para verificar o servidor e canal de voz encontrados para seu usuario. "
-                "3. Salve a configuraÃ§Ã£o. "
+                "3. Salve a configuracao. "
                 f"4. Use {self.config.hotkey.trigger_open}texto{self.config.hotkey.trigger_close} para enviar fala no uso normal. "
                 "5. Se quiser, use 'Enviar teste de voz' para validar o fluxo manualmente."
             ),
@@ -155,25 +173,25 @@ class DesktopAppMainWindow(GUIConfig):
             if new_config is None:
                 return
         except ValueError as exc:
-            compat.messagebox.showerror("Erro", f"Valor invÃ¡lido: {exc}")
+            compat.messagebox.showerror("Erro", f"Valor invalido: {exc}")
             return
         except Exception as exc:
-            compat.messagebox.showerror("Erro", f"Erro ao montar configuraÃ§Ã£o: {exc}")
+            compat.messagebox.showerror("Erro", f"Erro ao montar configuracao: {exc}")
             return
 
         is_valid, errors = ConfigurationValidator.validate(new_config)
         if not is_valid:
-            compat.messagebox.showerror("Erro de ValidaÃ§Ã£o", "Erros encontrados:\n\n" + "\n".join(errors))
-            self._set_status("ConfiguraÃ§Ã£o invÃ¡lida. Corrija os campos destacados nas mensagens.", success=False)
+            compat.messagebox.showerror("Erro de Validacao", "Erros encontrados:\n\n" + "\n".join(errors))
+            self._set_status("Configuracao invalida. Corrija os campos destacados nas mensagens.", success=False)
             return
 
         result = self._on_save(new_config)
         if result.get("success"):
             self.config = new_config
-            self._set_status(result.get("message", "ConfiguraÃ§Ã£o salva com sucesso"), success=True)
+            self._set_status(result.get("message", "Configuracao salva com sucesso"), success=True)
             self._refresh_local_status()
         else:
-            self._set_status(result.get("message", "Falha ao salvar configuraÃ§Ã£o"), success=False)
+            self._set_status(result.get("message", "Falha ao salvar configuracao"), success=False)
 
     def _handle_test_connection(self) -> None:
         try:
@@ -181,12 +199,20 @@ class DesktopAppMainWindow(GUIConfig):
             if config is None:
                 return
         except ValueError as exc:
-            self._connection_var.set(f"Teste falhou: valor invÃ¡lido ({exc})")
+            self._apply_message(
+                self._connection_var,
+                self._connection_label,
+                self._presenter.build_invalid_value_message("Teste", exc),
+            )
             return
+
         result = self._on_test_connection(config)
-        self._connection_var.set(result.get("message", "Sem resposta do teste"))
-        self._set_label_color(self._connection_label, "#155724" if result.get("success") else "#721c24")
-        self.push_log(f"Teste de conexÃ£o: {self._connection_var.get()}")
+        self._apply_message(
+            self._connection_var,
+            self._connection_label,
+            self._presenter.build_connection_result(result, "Sem resposta do teste"),
+        )
+        self.push_log(f"Teste de conexao: {self._connection_var.get()}")
 
     def _handle_send_test(self) -> None:
         try:
@@ -194,14 +220,17 @@ class DesktopAppMainWindow(GUIConfig):
             if config is None:
                 return
         except ValueError as exc:
-            self._connection_var.set(f"Envio de teste falhou: valor invÃ¡lido ({exc})")
-            self._set_label_color(self._connection_label, "#721c24")
+            self._apply_message(
+                self._connection_var,
+                self._connection_label,
+                self._presenter.build_invalid_value_message("Envio de teste", exc),
+            )
             return
+
         result = self._on_send_test(config)
-        message = result.get("message", "Sem resposta do envio de teste")
-        self._connection_var.set(message)
-        self._set_label_color(self._connection_label, "#155724" if result.get("success") else "#721c24")
-        self.push_log(f"Envio de teste: {message}")
+        feedback = self._presenter.build_connection_result(result, "Sem resposta do envio de teste")
+        self._apply_message(self._connection_var, self._connection_label, feedback)
+        self.push_log(f"Envio de teste: {feedback.text}")
 
     def _handle_refresh_voice_context(self) -> None:
         try:
@@ -209,38 +238,37 @@ class DesktopAppMainWindow(GUIConfig):
             if config is None:
                 return
         except ValueError as exc:
-            if self._voice_context_var:
-                self._voice_context_var.set(f"Deteccao falhou: valor invalido ({exc})")
-            self._set_label_color(self._voice_context_label, "#721c24")
+            self._apply_message(
+                self._voice_context_var,
+                self._voice_context_label,
+                self._presenter.build_invalid_value_message("Deteccao", exc),
+            )
             return
+
         result = self._on_refresh_voice_context(config)
-        message = result.get("message", "Sem resposta da deteccao de canal")
-        if self._voice_context_var:
-            self._voice_context_var.set(message)
-        self._set_label_color(self._voice_context_label, "#155724" if result.get("success") else "#721c24")
-        self.push_log(f"Canal detectado: {message}")
+        feedback = self._presenter.build_connection_result(result, "Sem resposta da deteccao de canal")
+        self._apply_message(self._voice_context_var, self._voice_context_label, feedback)
+        self.push_log(f"Canal detectado: {feedback.text}")
 
     def _set_status(self, message: str, success: bool) -> None:
-        if self._status_var:
-            prefix = "OK:" if success else "AtenÃ§Ã£o:"
-            self._status_var.set(f"{prefix} {message}")
-        self._set_label_color(self._status_label, "#155724" if success else "#721c24")
+        self._apply_message(
+            self._status_var,
+            self._status_label,
+            self._presenter.build_status(message, success),
+        )
         self.push_log(message)
 
     def _refresh_local_status(self) -> None:
-        is_discord_ready = bool(self.config and self.config.discord.bot_url and self.config.discord.member_id)
-        config_message = (
-            "Bot configurado: URL e User ID preenchidos."
-            if is_discord_ready
-            else "ConfiguraÃ§Ã£o incompleta: preencha Bot URL e User ID para usar o bot."
+        self._apply_message(
+            self._config_var,
+            self._config_label,
+            self._presenter.build_local_config_status(self.config),
         )
-        if self.config and not is_discord_ready and self.config.interface.local_tts_enabled:
-            config_message += " Voz local opcional ativada como fallback."
-        elif self.config and not is_discord_ready:
-            config_message += " Voz local opcional desativada."
-        if self._config_var:
-            self._config_var.set(config_message)
-        self._set_label_color(self._config_label, "#155724" if is_discord_ready else "#856404")
+
+    def _apply_message(self, variable: Optional[object], label, message: MainWindowMessage) -> None:
+        if variable is not None and hasattr(variable, "set"):
+            variable.set(message.text)
+        self._set_label_color(label, message.color)
 
     def _set_label_color(self, label, color: str) -> None:
         if label is not None and hasattr(label, "configure"):
@@ -254,7 +282,7 @@ class DesktopAppMainWindow(GUIConfig):
         self._logs_widget.configure(state="normal")
         self._logs_widget.delete("1.0", compat.tk.END)
         self._logs_widget.configure(state="disabled")
-        self.push_log("Logs limpos pelo usuÃ¡rio")
+        self.push_log("Logs limpos pelo usuario")
 
     def _append_log(self, message: str) -> None:
         from . import tk_support as compat

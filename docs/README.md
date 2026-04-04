@@ -24,6 +24,7 @@ This directory contains the repository's supporting documentation. The root `REA
 
 - `docs/` contains durable architecture and operational guides
 - `docs/features/` contains feature docs, feature iterations, and implementation notes
+- `docs/refactors/` contains incremental refactor plans and execution-oriented architecture improvements
 - `docs/ai/` contains canonical project guidance for AI tools and instruction files
 
 ## Features
