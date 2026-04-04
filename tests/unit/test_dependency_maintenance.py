@@ -6,7 +6,7 @@ from scripts.utils import dependency_maintenance
 
 
 def test_validate_command_allows_known_pytest_command():
-    command = [dependency_maintenance.REPOSITORY_PYTHON, "-m", "pytest", "tests/unit"]
+    command = list(dependency_maintenance.UNIT_TEST_COMMAND)
 
     dependency_maintenance.validate_command(command)
 
@@ -24,3 +24,21 @@ def test_validate_command_rejects_unapproved_arguments():
 
     with pytest.raises(ValueError, match="Unsafe command rejected"):
         dependency_maintenance.validate_command(command)
+
+
+def test_run_command_dispatches_unit_tests(monkeypatch: pytest.MonkeyPatch):
+    observed: list[list[str]] = []
+
+    class Completed:
+        returncode = 0
+
+    def fake_run() -> Completed:
+        observed.append(list(dependency_maintenance.UNIT_TEST_COMMAND))
+        return Completed()
+
+    monkeypatch.setattr(dependency_maintenance, "run_unit_tests_command", fake_run)
+
+    exit_code = dependency_maintenance.run_command(list(dependency_maintenance.UNIT_TEST_COMMAND))
+
+    assert exit_code == 0
+    assert observed == [list(dependency_maintenance.UNIT_TEST_COMMAND)]

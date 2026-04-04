@@ -24,6 +24,10 @@ from typing import Iterable
 DEFAULT_REQUIREMENT_FILES = ("requirements.txt", "requirements-test.txt")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 REPOSITORY_PYTHON = str(Path(sys.executable).resolve())
+OUTDATED_COMMAND = (REPOSITORY_PYTHON, "-m", "pip", "list", "--outdated", "--format=json")
+UNIT_TEST_COMMAND = (REPOSITORY_PYTHON, "-m", "pytest", "tests/unit")
+INTEGRATION_TEST_COMMAND = (REPOSITORY_PYTHON, "-m", "pytest", "tests/integration")
+IMPORT_SMOKE_COMMAND = (REPOSITORY_PYTHON, "-c", "import app; import src.bot")
 
 
 @dataclass(frozen=True)
@@ -111,28 +115,55 @@ def validate_command(command: list[str]) -> None:
         raise ValueError("Only the current repository Python interpreter may be executed.")
 
     allowed_patterns = (
-        [REPOSITORY_PYTHON, "-m", "pip", "list", "--outdated", "--format=json"],
-        [REPOSITORY_PYTHON, "-m", "pytest", "tests/unit"],
-        [REPOSITORY_PYTHON, "-m", "pytest", "tests/integration"],
-        [REPOSITORY_PYTHON, "-c", "import app; import src.bot"],
+        list(OUTDATED_COMMAND),
+        list(UNIT_TEST_COMMAND),
+        list(INTEGRATION_TEST_COMMAND),
+        list(IMPORT_SMOKE_COMMAND),
     )
 
     if command not in allowed_patterns:
         raise ValueError(f"Unsafe command rejected: {command!r}")
 
 
+def run_outdated_command() -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        list(OUTDATED_COMMAND),
+        capture_output=True,
+        check=True,
+        text=True,
+        shell=False,
+        cwd=PROJECT_ROOT,
+    )  # nosec B603 - fixed safe command without shell expansion
+
+
+def run_unit_tests_command() -> subprocess.CompletedProcess[None]:
+    return subprocess.run(
+        list(UNIT_TEST_COMMAND),
+        shell=False,
+        cwd=PROJECT_ROOT,
+    )  # nosec B603 - fixed safe command without shell expansion
+
+
+def run_integration_tests_command() -> subprocess.CompletedProcess[None]:
+    return subprocess.run(
+        list(INTEGRATION_TEST_COMMAND),
+        shell=False,
+        cwd=PROJECT_ROOT,
+    )  # nosec B603 - fixed safe command without shell expansion
+
+
+def run_import_smoke_command() -> subprocess.CompletedProcess[None]:
+    return subprocess.run(
+        list(IMPORT_SMOKE_COMMAND),
+        shell=False,
+        cwd=PROJECT_ROOT,
+    )  # nosec B603 - fixed safe command without shell expansion
+
+
 def get_outdated_versions() -> dict[str, str]:
-    command = [REPOSITORY_PYTHON, "-m", "pip", "list", "--outdated", "--format=json"]
-    validate_command(command)
+    validate_command(list(OUTDATED_COMMAND))
     try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            check=True,
-            text=True,
-            shell=False,
-            cwd=PROJECT_ROOT,
-        )  # nosec B603 - command validated against a strict allowlist
+        result = run_outdated_command()
     except subprocess.CalledProcessError:
         return {}
 
@@ -231,11 +262,15 @@ def rewrite_requirement_lines(
 def run_command(command: list[str]) -> int:
     validate_command(command)
     print(f"$ {' '.join(command)}")
-    completed = subprocess.run(
-        command,
-        shell=False,
-        cwd=PROJECT_ROOT,
-    )  # nosec B603 - command validated against a strict allowlist
+    command_tuple = tuple(command)
+    if command_tuple == UNIT_TEST_COMMAND:
+        completed = run_unit_tests_command()
+    elif command_tuple == INTEGRATION_TEST_COMMAND:
+        completed = run_integration_tests_command()
+    elif command_tuple == IMPORT_SMOKE_COMMAND:
+        completed = run_import_smoke_command()
+    else:
+        raise ValueError(f"Unsafe command rejected: {command!r}")
     return completed.returncode
 
 
@@ -276,13 +311,13 @@ def command_validate(args: argparse.Namespace) -> int:
     commands: list[list[str]] = []
 
     if not args.skip_unit:
-        commands.append([REPOSITORY_PYTHON, "-m", "pytest", "tests/unit"])
+        commands.append(list(UNIT_TEST_COMMAND))
 
     if args.integration:
-        commands.append([REPOSITORY_PYTHON, "-m", "pytest", "tests/integration"])
+        commands.append(list(INTEGRATION_TEST_COMMAND))
 
     if not args.skip_import_smoke:
-        commands.append([REPOSITORY_PYTHON, "-c", "import app; import src.bot"])
+        commands.append(list(IMPORT_SMOKE_COMMAND))
 
     for command in commands:
         exit_code = run_command(command)
