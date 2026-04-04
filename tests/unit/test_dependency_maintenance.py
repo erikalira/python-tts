@@ -29,12 +29,9 @@ def test_validate_command_rejects_unapproved_arguments():
 def test_run_command_dispatches_unit_tests(monkeypatch: pytest.MonkeyPatch):
     observed: list[list[str]] = []
 
-    class Completed:
-        returncode = 0
-
-    def fake_run() -> Completed:
+    def fake_run() -> int:
         observed.append(list(dependency_maintenance.UNIT_TEST_COMMAND))
-        return Completed()
+        return 0
 
     monkeypatch.setattr(dependency_maintenance, "run_unit_tests_command", fake_run)
 
@@ -81,3 +78,11 @@ def test_rewrite_requirement_lines_preserves_environment_marker(tmp_path: Path):
         requirements_file.read_text(encoding="utf-8")
         == 'pywin32>=307; platform_system == "Windows"\n'
     )
+
+
+def test_get_outdated_versions_returns_empty_dict_for_invalid_json(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(dependency_maintenance, "run_outdated_command", lambda: "not-json")
+
+    assert dependency_maintenance.get_outdated_versions() == {}

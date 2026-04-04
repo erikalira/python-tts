@@ -11,9 +11,11 @@ This script helps with three recurring tasks:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib.metadata
+import importlib
+import io
 import json
-import subprocess  # nosec B404 - used with fixed argument lists and explicit command validation
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -125,50 +127,65 @@ def validate_command(command: list[str]) -> None:
         raise ValueError(f"Unsafe command rejected: {command!r}")
 
 
-def run_outdated_command() -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        list(OUTDATED_COMMAND),
-        capture_output=True,
-        check=True,
-        text=True,
-        shell=False,
-        cwd=PROJECT_ROOT,
-    )  # nosec B603 - fixed safe command without shell expansion
+def run_outdated_command() -> str:
+    try:
+        from pip._internal.cli.main import main as pip_main
+    except ImportError:
+        return ""
+
+    stdout_buffer = io.StringIO()
+    stderr_buffer = io.StringIO()
+    with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):
+        exit_code = int(pip_main(["list", "--outdated", "--format=json"]))
+    if exit_code != 0:
+        return ""
+
+    return stdout_buffer.getvalue()
 
 
-def run_unit_tests_command() -> subprocess.CompletedProcess[None]:
-    return subprocess.run(
-        list(UNIT_TEST_COMMAND),
-        shell=False,
-        cwd=PROJECT_ROOT,
-    )  # nosec B603 - fixed safe command without shell expansion
+def run_pytest_command(args: list[str]) -> int:
+    try:
+        import pytest
+    except ImportError:
+        print("pytest is not installed in the current interpreter.", file=sys.stderr)
+        return 1
+
+    original_cwd = Path.cwd()
+    try:
+        if original_cwd != PROJECT_ROOT:
+            import os
+
+            os.chdir(PROJECT_ROOT)
+        return int(pytest.main(args))
+    finally:
+        if Path.cwd() != original_cwd:
+            import os
+
+            os.chdir(original_cwd)
 
 
-def run_integration_tests_command() -> subprocess.CompletedProcess[None]:
-    return subprocess.run(
-        list(INTEGRATION_TEST_COMMAND),
-        shell=False,
-        cwd=PROJECT_ROOT,
-    )  # nosec B603 - fixed safe command without shell expansion
+def run_unit_tests_command() -> int:
+    return run_pytest_command(["tests/unit"])
 
 
-def run_import_smoke_command() -> subprocess.CompletedProcess[None]:
-    return subprocess.run(
-        list(IMPORT_SMOKE_COMMAND),
-        shell=False,
-        cwd=PROJECT_ROOT,
-    )  # nosec B603 - fixed safe command without shell expansion
+def run_integration_tests_command() -> int:
+    return run_pytest_command(["tests/integration"])
+
+
+def run_import_smoke_command() -> int:
+    try:
+        importlib.import_module("app")
+        importlib.import_module("src.bot")
+    except Exception as exc:
+        print(f"Import smoke check failed: {exc}", file=sys.stderr)
+        return 1
+    return 0
 
 
 def get_outdated_versions() -> dict[str, str]:
     validate_command(list(OUTDATED_COMMAND))
     try:
-        result = run_outdated_command()
-    except subprocess.CalledProcessError:
-        return {}
-
-    try:
-        payload = json.loads(result.stdout or "[]")
+        payload = json.loads(run_outdated_command() or "[]")
     except json.JSONDecodeError:
         return {}
 
@@ -283,14 +300,12 @@ def run_command(command: list[str]) -> int:
     print(f"$ {' '.join(command)}")
     command_tuple = tuple(command)
     if command_tuple == UNIT_TEST_COMMAND:
-        completed = run_unit_tests_command()
+        return run_unit_tests_command()
     elif command_tuple == INTEGRATION_TEST_COMMAND:
-        completed = run_integration_tests_command()
+        return run_integration_tests_command()
     elif command_tuple == IMPORT_SMOKE_COMMAND:
-        completed = run_import_smoke_command()
-    else:
-        raise ValueError(f"Unsafe command rejected: {command!r}")
-    return completed.returncode
+        return run_import_smoke_command()
+    raise ValueError(f"Unsafe command rejected: {command!r}")
 
 
 def command_report(args: argparse.Namespace) -> int:
