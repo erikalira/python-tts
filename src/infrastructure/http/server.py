@@ -18,6 +18,7 @@ class HTTPServer:
         speak_controller: SpeakController,
         voice_context_controller: VoiceContextController,
         port: int,
+        host: str = "127.0.0.1",
     ):
         """Initialize HTTP server.
         
@@ -25,10 +26,12 @@ class HTTPServer:
             speak_controller: Controller for /speak endpoint
             voice_context_controller: Controller for /voice-context endpoint
             port: Port to listen on
+            host: Host interface to bind to
         """
         self._speak_controller = speak_controller
         self._voice_context_controller = voice_context_controller
         self._port = port
+        self._host = host
         self._runner = None
         self._site = None
 
@@ -73,10 +76,10 @@ class HTTPServer:
         self._runner = web.AppRunner(app)
         await self._runner.setup()
         
-        self._site = web.TCPSite(self._runner, '0.0.0.0', self._port)
+        self._site = web.TCPSite(self._runner, self._host, self._port)
         await self._site.start()
         
-        logger.info(f"🌐 HTTP server started on port {self._port}")
+        logger.info("HTTP server started on %s:%s", self._host, self._port)
     
     async def stop(self):
         """Stop HTTP server."""

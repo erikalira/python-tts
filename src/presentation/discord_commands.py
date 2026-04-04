@@ -1,5 +1,7 @@
 """Discord bot commands."""
 import logging
+from importlib.util import find_spec
+
 import discord
 from discord import app_commands
 from src.application.use_cases import (
@@ -37,11 +39,7 @@ logger = logging.getLogger(__name__)
 
 # Check dependencies
 HAS_FFMPEG = shutil.which('ffmpeg') is not None
-try:
-    import nacl
-    HAS_PYNACL = True
-except ImportError:
-    HAS_PYNACL = False
+HAS_PYNACL = find_spec("nacl") is not None
 
 try:
     import davey  # noqa: F401
@@ -312,7 +310,7 @@ class DiscordCommands:
                         content=self._build_speak_message(result)
                     )
                     
-            except Exception as msg_error:
+            except discord.HTTPException as msg_error:
                 # Ignore message update errors - audio already played or failed
                 logger.debug(f"[SPEAK] Could not update interaction message: {msg_error}")
                 
@@ -326,7 +324,7 @@ class DiscordCommands:
                     await interaction.edit_original_response(content='❌ Bot está inativo ou desligando.')
                 else:
                     await interaction.edit_original_response(content='❌ Erro inesperado')
-            except:
+            except discord.HTTPException:
                 # If we can't send error message, just log it
                 logger.debug("[SPEAK] Could not send error message")
 

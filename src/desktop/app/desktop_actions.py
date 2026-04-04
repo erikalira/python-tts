@@ -95,7 +95,7 @@ class DesktopConfigurationCoordinator:
         if not updated_config:
             return False, current_config
 
-        self._persist_and_apply(updated_config)
+        self._configuration_application.apply(updated_config)
         return True, updated_config
 
     def save_from_ui(self, updated_config: DesktopAppConfig) -> dict:

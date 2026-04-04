@@ -34,7 +34,7 @@ class AudioFile:
         import os
         try:
             os.unlink(self.path)
-        except Exception:
+        except OSError:
             pass
 
 

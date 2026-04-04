@@ -6,6 +6,7 @@ from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_MISSING_TEXT,
     TTS_EXECUTION_RESULT_OK,
 )
+from src.desktop.app.desktop_actions import DesktopConfigurationCoordinator
 from src.desktop.app.desktop_app import DesktopApp
 from src.desktop.app.tts_runtime import (
     DesktopAppHotkeyHandler,
@@ -93,6 +94,27 @@ def test_desktop_app_handle_configure_updates_services():
     app._config_repository.save.assert_called_once_with(updated_config)
     app._update_services_config.assert_called_once()
     app._notification_service.notify_success.assert_called_once()
+
+
+def test_handle_initial_configuration_applies_updated_config_through_application_service():
+    current_config = DesktopAppConfig.create_default()
+    updated_config = DesktopAppConfig.create_default()
+    updated_config.discord.member_id = "123"
+    config_service = Mock()
+    config_service.get_configuration.return_value = updated_config
+    configuration_application = Mock()
+    configuration_application.is_configured.return_value = False
+    coordinator = DesktopConfigurationCoordinator(
+        config_service=config_service,
+        configuration_application=configuration_application,
+    )
+
+    should_continue, returned_config = coordinator.handle_initial_configuration(current_config)
+
+    assert should_continue is True
+    assert returned_config is updated_config
+    config_service.get_configuration.assert_called_once_with(current_config)
+    configuration_application.apply.assert_called_once_with(updated_config)
 
 
 def test_desktop_app_handle_configure_rejects_invalid_config():
