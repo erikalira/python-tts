@@ -42,3 +42,42 @@ def test_run_command_dispatches_unit_tests(monkeypatch: pytest.MonkeyPatch):
 
     assert exit_code == 0
     assert observed == [list(dependency_maintenance.UNIT_TEST_COMMAND)]
+
+
+def test_rewrite_requirement_lines_preserves_inline_comment(tmp_path: Path):
+    requirements_file = tmp_path / "requirements.txt"
+    requirements_file.write_text("requests>=2.31.0  # pinned for desktop flow\n", encoding="utf-8")
+
+    changed = dependency_maintenance.rewrite_requirement_lines(
+        requirements_file,
+        "requests",
+        "2.32.0",
+        ">=",
+    )
+
+    assert changed is True
+    assert (
+        requirements_file.read_text(encoding="utf-8")
+        == "requests>=2.32.0  # pinned for desktop flow\n"
+    )
+
+
+def test_rewrite_requirement_lines_preserves_environment_marker(tmp_path: Path):
+    requirements_file = tmp_path / "requirements.txt"
+    requirements_file.write_text(
+        'pywin32>=306; platform_system == "Windows"\n',
+        encoding="utf-8",
+    )
+
+    changed = dependency_maintenance.rewrite_requirement_lines(
+        requirements_file,
+        "pywin32",
+        "307",
+        ">=",
+    )
+
+    assert changed is True
+    assert (
+        requirements_file.read_text(encoding="utf-8")
+        == 'pywin32>=307; platform_system == "Windows"\n'
+    )

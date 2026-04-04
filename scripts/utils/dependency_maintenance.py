@@ -231,6 +231,25 @@ def resolve_target_version(package: str, explicit_version: str | None) -> str:
     return installed
 
 
+def render_rewritten_requirement_line(
+    entry: RequirementEntry,
+    version: str,
+    operator: str,
+) -> str:
+    base_line = entry.original_line.rstrip("\r\n")
+    requirement_pattern = re.compile(
+        rf"^(?P<leading>\s*){re.escape(entry.rendered_name)}\s*"
+        rf"{re.escape(entry.operator)}\s*{re.escape(entry.version)}(?P<suffix>.*)$"
+    )
+    match = requirement_pattern.match(base_line)
+    if not match:
+        return f"{entry.rendered_name}{operator}{version}"
+
+    leading = match.group("leading")
+    suffix = match.group("suffix")
+    return f"{leading}{entry.rendered_name}{operator}{version}{suffix}"
+
+
 def rewrite_requirement_lines(
     path: Path,
     package: str,
@@ -251,7 +270,7 @@ def rewrite_requirement_lines(
             rewritten_lines.append(line)
             continue
 
-        rewritten_lines.append(f"{entry.rendered_name}{operator}{version}")
+        rewritten_lines.append(render_rewritten_requirement_line(entry, version, operator))
         changed = True
 
     if changed:
