@@ -2,14 +2,12 @@
 """Main runtime orchestration for the Windows Desktop App."""
 
 import logging
-import queue
 import threading
 from typing import Callable, Optional
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
 from ..gui.configuration_service import ConfigurationService
-from ..gui.main_window import DesktopAppMainWindow
 from ..gui.tk_support import TKINTER_AVAILABLE
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
@@ -19,6 +17,7 @@ from .runtime_lifecycle import DesktopAppLifecycleCoordinator
 from .runtime_status import DesktopAppStatusBuilder
 from .tts_runtime import DesktopAppHotkeyHandler, DesktopAppTTSProcessor, DesktopAppTTSResultPresenter
 from .ui_tray_actions import DesktopAppUIActionsCoordinator
+from .ui_runtime import DesktopAppUIRuntimeCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -52,13 +51,12 @@ class DesktopApp:
         self._configuration_coordinator: Optional[DesktopConfigurationCoordinator] = None
         self._lifecycle_coordinator = DesktopAppLifecycleCoordinator(TKINTER_AVAILABLE)
         self._ui_actions_coordinator = DesktopAppUIActionsCoordinator()
+        self._ui_runtime_coordinator = DesktopAppUIRuntimeCoordinator()
         self._status_builder = DesktopAppStatusBuilder()
 
         self._initialized = False
         self._running = False
-        self._main_loop_actions: "queue.Queue[Callable[[], None]]" = queue.Queue()
         self._shutdown_requested = threading.Event()
-        self._main_window: Optional[DesktopAppMainWindow] = None
 
     def initialize(self) -> bool:
         """Initialize all Desktop App components."""
@@ -195,20 +193,19 @@ class DesktopApp:
     def _process_pending_ui_action(self, timeout: float) -> None:
         """Execute queued UI actions on the main thread."""
         self._lifecycle_coordinator.process_pending_ui_action(
-            action_queue=self._main_loop_actions,
+            action_queue=self._ui_runtime_coordinator.action_queue,
             timeout=timeout,
         )
 
     def _show_main_window(self) -> None:
         """Show the main Desktop App panel when Tkinter is available."""
-        self._main_window = DesktopAppMainWindow(
-            self._config,
+        self._ui_runtime_coordinator.show_main_window(
+            config=self._config,
             on_save=self._save_configuration_from_ui,
             on_test_connection=self._test_bot_connection,
             on_send_test=self._send_test_message,
             on_refresh_voice_context=self._refresh_voice_context,
         )
-        self._main_window.show()
 
     def _save_configuration_from_ui(self, updated_config: DesktopAppConfig) -> dict:
         """Validate, persist, and apply config changes from the main window."""
@@ -275,29 +272,29 @@ class DesktopApp:
             hotkey_manager=self._hotkey_manager,
             notification_service=self._notification_service,
             shutdown_requested=self._shutdown_requested,
-            main_window=self._main_window,
+            main_window=self._ui_runtime_coordinator.main_window,
         )
 
     def _handle_status_click_request(self) -> None:
         """Queue status display on the main thread."""
-        self._main_loop_actions.put(self._handle_status_click)
+        self._ui_runtime_coordinator.queue(self._handle_status_click)
 
     def _handle_status_click(self) -> None:
         """Handle system tray status click."""
         self._ui_actions_coordinator.show_status(
-            main_window=self._main_window,
+            main_window=self._ui_runtime_coordinator.main_window,
             get_status=self._get_application_status,
             notification_service=self._notification_service,
         )
 
     def _handle_configure_request(self) -> None:
         """Queue configuration dialog on the main thread."""
-        self._main_loop_actions.put(self._handle_configure)
+        self._ui_runtime_coordinator.queue(self._handle_configure)
 
     def _handle_configure(self) -> None:
         """Handle system tray configure action."""
         updated_config, applied = self._ui_actions_coordinator.handle_configure(
-            main_window=self._main_window,
+            main_window=self._ui_runtime_coordinator.main_window,
             ensure_action_coordinators=self._ensure_action_coordinators,
             hotkey_manager=self._hotkey_manager,
             get_configuration_coordinator=lambda: self._configuration_coordinator,
@@ -309,7 +306,7 @@ class DesktopApp:
 
     def _handle_quit_request(self) -> None:
         """Queue shutdown on the main thread."""
-        self._main_loop_actions.put(self._handle_quit)
+        self._ui_runtime_coordinator.queue(self._handle_quit)
 
     def _handle_quit(self) -> None:
         """Handle system tray quit action."""
