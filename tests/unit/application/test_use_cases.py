@@ -285,7 +285,7 @@ class TestConfigureTTSUseCase:
                 engine="gtts",
                 language="pt",
                 voice_id="roa/pt-br",
-                rate=150,
+                rate=180,
             ),
         )
         assert "config" in result
