@@ -74,9 +74,7 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.delete_original_response = AsyncMock()
         
-        with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
-             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
-             patch('src.presentation.discord_commands.HAS_FFMPEG', True):
+        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
             await commands_instance._handle_speak(interaction, "Test message")
         
         interaction.response.defer.assert_called_once()
@@ -89,10 +87,11 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.edit_original_response = AsyncMock()
         
-        with patch('src.presentation.discord_commands.HAS_PYNACL', False):
+        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=False):
             await commands_instance._handle_speak(interaction, "Test")
-        
+
         interaction.edit_original_response.assert_called_once()
+        assert "indispon" in interaction.edit_original_response.call_args.kwargs["content"].lower()
     
     @pytest.mark.asyncio
     async def test_handle_speak_failure(self, commands_instance):
@@ -109,9 +108,7 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.edit_original_response = AsyncMock()
         
-        with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
-             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
-             patch('src.presentation.discord_commands.HAS_FFMPEG', True):
+        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
             await commands_instance._handle_speak(interaction, "Test")
         
         interaction.edit_original_response.assert_called_once()
@@ -134,9 +131,7 @@ class TestDiscordCommands:
             side_effect=RuntimeError("cannot schedule new futures after interpreter shutdown")
         )
 
-        with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
-             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
-             patch('src.presentation.discord_commands.HAS_FFMPEG', True):
+        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
             await commands_instance._handle_speak(interaction, "Test")
 
         interaction.response.defer.assert_called_once()
@@ -224,9 +219,7 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.edit_original_response = AsyncMock()
         
-        with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
-             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
-             patch('src.presentation.discord_commands.HAS_FFMPEG', True):
+        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
             await commands_instance._handle_join(interaction)
         
         interaction.response.defer.assert_called_once()
@@ -240,10 +233,11 @@ class TestDiscordCommands:
         interaction = Mock()
         interaction.response = AsyncMock()
         
-        with patch('src.presentation.discord_commands.HAS_PYNACL', False):
+        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=False):
             await commands_instance._handle_join(interaction)
-        
+
         interaction.response.send_message.assert_called_once()
+        assert "indispon" in interaction.response.send_message.call_args.args[0].lower()
 
     @pytest.mark.asyncio
     async def test_handle_join_success(self, commands_instance):
@@ -260,9 +254,7 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.edit_original_response = AsyncMock()
 
-        with patch('src.presentation.discord_commands.HAS_PYNACL', True), \
-             patch('src.presentation.discord_commands.HAS_DAVEY', True), \
-             patch('src.presentation.discord_commands.HAS_FFMPEG', True):
+        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
             await commands_instance._handle_join(interaction)
 
         interaction.response.defer.assert_called_once()
