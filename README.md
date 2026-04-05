@@ -32,6 +32,7 @@ Instalacao basica:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+winget install ffmpeg
 ```
 
 ### Linux/macOS
