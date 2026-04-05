@@ -4,6 +4,7 @@ Notification and System Tray Services - Clean Architecture (Fixed)
 Provides system tray icon and notification services.
 """
 
+import logging
 from abc import ABC, abstractmethod
 import threading
 import time
@@ -17,6 +18,7 @@ from ..adapters.system_tray import (
 from ..config.desktop_config import DesktopAppConfig
 
 NullSystemTrayIcon = _NullSystemTrayIcon
+logger = logging.getLogger(__name__)
 
 
 class NotificationService(ABC):
@@ -43,13 +45,13 @@ class ConsoleNotificationService(NotificationService):
     """Console-based notification service."""
 
     def show_info(self, title: str, message: str) -> None:
-        print(f"[INFO] {title}: {message}")
+        logger.info("[INFO] %s: %s", title, message)
 
     def show_success(self, title: str, message: str) -> None:
-        print(f"[OK] {title}: {message}")
+        logger.info("[OK] %s: %s", title, message)
 
     def show_error(self, title: str, message: str) -> None:
-        print(f"[ERROR] {title}: {message}")
+        logger.error("[ERROR] %s: %s", title, message)
 
     def is_available(self) -> bool:
         return True
@@ -113,7 +115,7 @@ class SystemTrayService:
     def start(self) -> bool:
         """Start system tray service only after startup is confirmed."""
         if not self._tray_icon.is_available():
-            print("[TRAY] System tray nao disponivel, executando em modo console")
+            logger.info("[TRAY] System tray nao disponivel, executando em modo console")
             return False
 
         if self.is_running():
@@ -134,7 +136,7 @@ class SystemTrayService:
                 break
             time.sleep(self._TRAY_START_POLL_INTERVAL_SECONDS)
 
-        print("[TRAY] System tray nao confirmou inicializacao, continuando sem tray")
+        logger.warning("[TRAY] System tray nao confirmou inicializacao, continuando sem tray")
         self._tray_thread = None
         return False
 
@@ -143,7 +145,7 @@ class SystemTrayService:
         if self._tray_icon.is_available():
             self._tray_icon.show()
         else:
-            print("[TRAY] System tray nao disponivel, continuando em modo console...")
+            logger.info("[TRAY] System tray nao disponivel, continuando em modo console...")
             try:
                 while True:
                     time.sleep(0.1)

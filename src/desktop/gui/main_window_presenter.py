@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from src.application.desktop_bot import DesktopBotActionResult
@@ -49,17 +48,10 @@ class DesktopAppMainWindowPresenter:
             color=SUCCESS_COLOR if success else ERROR_COLOR,
         )
 
-    def build_connection_result(self, result: DesktopBotActionResult | Mapping[str, object], default_message: str) -> MainWindowMessage:
-        if isinstance(result, Mapping):
-            message = result.get("message", default_message)
-            success = bool(result.get("success"))
-        else:
-            message = result.message or default_message
-            success = result.success
-
+    def build_connection_result(self, result: DesktopBotActionResult, default_message: str) -> MainWindowMessage:
         return MainWindowMessage(
-            text=str(message),
-            color=SUCCESS_COLOR if success else ERROR_COLOR,
+            text=result.message or default_message,
+            color=SUCCESS_COLOR if result.success else ERROR_COLOR,
         )
 
     def build_invalid_value_message(self, action_name: str, exc: ValueError) -> MainWindowMessage:

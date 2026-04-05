@@ -1,6 +1,7 @@
 """Dependency injection container."""
 
 import importlib.util
+import logging
 
 import discord
 from discord import app_commands
@@ -24,6 +25,8 @@ from src.presentation.discord_commands import DiscordCommands
 from src.presentation.http_controllers import SpeakController, VoiceContextController
 
 from .settings import Config
+
+logger = logging.getLogger(__name__)
 
 
 class Container:
@@ -83,15 +86,15 @@ class Container:
     def _log_voice_runtime_status(self) -> None:
         has_davey = importlib.util.find_spec("davey") is not None
         if not has_davey:
-            print("Warning: voice support requires the `davey` package with newer discord.py versions.")
+            logger.warning("Voice support requires the `davey` package with newer discord.py versions.")
 
     def _register_events(self):
         @self.discord_client.event
         async def on_ready():
-            print(f"Discord bot ready as {self.discord_client.user}")
-            print(f"   Connected to {len(self.discord_client.guilds)} guild(s)")
+            logger.info("Discord bot ready as %s", self.discord_client.user)
+            logger.info("Connected to %s guild(s)", len(self.discord_client.guilds))
             for guild in self.discord_client.guilds:
-                print(f"   - {guild.name} (ID: {guild.id})")
+                logger.info("Guild connected: %s (ID: %s)", guild.name, guild.id)
             await self._sync_commands_once()
 
         @self.discord_client.event
@@ -101,12 +104,12 @@ class Container:
     async def _sync_commands_once(self) -> None:
         """Sync slash commands only once per process to avoid reconnect churn."""
         if self._commands_synced:
-            print("Slash commands already synced for this process")
+            logger.info("Slash commands already synced for this process")
             return
 
         try:
             await self.command_tree.sync()
             self._commands_synced = True
-            print("Slash commands synced")
+            logger.info("Slash commands synced")
         except Exception as exc:
-            print(f"Failed to sync commands: {exc}")
+            logger.error("Failed to sync commands: %s", exc)

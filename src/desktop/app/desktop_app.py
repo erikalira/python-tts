@@ -142,13 +142,13 @@ class DesktopApp:
 
         try:
             if not self._handle_initial_configuration():
-                print("[DESKTOP_APP] Configuracao cancelada. Encerrando.")
+                logger.info("[DESKTOP_APP] Configuracao cancelada. Encerrando.")
                 return
 
             self._show_current_configuration()
 
             if not self._start_services():
-                print("[DESKTOP_APP] Falha ao iniciar servicos. Encerrando.")
+                logger.error("[DESKTOP_APP] Falha ao iniciar servicos. Encerrando.")
                 return
 
             self._run_main_loop()

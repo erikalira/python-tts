@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Callable, Optional
 
 from ..config.desktop_config import DesktopAppConfig
 from . import tk_support
 from .config_dialogs import ConfigInterface, ConsoleConfig, GUIConfig
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigurationService:
@@ -28,6 +31,6 @@ class ConfigurationService:
             try:
                 return self._gui_factory().show_config(current_config)
             except Exception as exc:
-                print(f"[CONFIG] GUI error: {exc}")
-                print("[CONFIG] Falling back to console...")
+                logger.error("[CONFIG] GUI error: %s", exc)
+                logger.info("[CONFIG] Falling back to console...")
         return self._console_factory().show_config(current_config)

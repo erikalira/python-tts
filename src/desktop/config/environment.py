@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Environment synchronization for Desktop App configuration."""
 
+import logging
 import os
 
 from .models import DesktopAppConfig
+
+logger = logging.getLogger(__name__)
 
 
 class EnvironmentUpdater:
@@ -26,7 +29,7 @@ class EnvironmentUpdater:
         if config.tts.output_device:
             os.environ["TTS_OUTPUT_DEVICE"] = config.tts.output_device
 
-        print(
-            "[CONFIG] Variaveis de ambiente atualizadas - "
-            f"DISCORD_MEMBER_ID: {config.discord.member_id}"
+        logger.info(
+            "[CONFIG] Variaveis de ambiente atualizadas - DISCORD_MEMBER_ID: %s",
+            config.discord.member_id,
         )

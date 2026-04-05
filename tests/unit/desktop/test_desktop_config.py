@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from src.desktop.config.desktop_config import (
@@ -65,16 +66,17 @@ def test_configuration_repository_save_and_load_roundtrip(tmp_path):
     assert loaded.hotkey.keys == "[text]"
 
 
-def test_configuration_repository_returns_defaults_on_invalid_json(capsys, tmp_path):
+def test_configuration_repository_returns_defaults_on_invalid_json(caplog, tmp_path):
     config_file = tmp_path / "config.json"
     config_file.write_text("{invalid", encoding="utf-8")
 
     repo = ConfigurationRepository(config_file)
-    config = repo.load()
+    with caplog.at_level(logging.ERROR):
+        config = repo.load()
 
     assert config.tts.engine == "gtts"
     assert config.interface.local_tts_enabled is False
-    assert "Erro ao carregar configura" in capsys.readouterr().out
+    assert "Erro ao carregar configura" in caplog.text
 
 
 def test_environment_updater_sets_expected_variables(monkeypatch):

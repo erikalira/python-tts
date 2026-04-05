@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.gui.main_window import DesktopAppMainWindow
 from src.desktop.gui.main_window_presenter import ERROR_COLOR, SUCCESS_COLOR, WARNING_COLOR
@@ -72,7 +73,9 @@ def test_main_window_handle_test_connection_uses_presenter_feedback():
     window = build_main_window()
     config = DesktopAppConfig.create_default()
     window._build_config_from_form = Mock(return_value=config)
-    window._on_test_connection = Mock(return_value={"success": True, "message": "Bot online"})
+    window._on_test_connection = Mock(
+        return_value=DesktopBotActionResult(success=True, message="Bot online")
+    )
     window._connection_var = DummyVar()
     window._connection_label = DummyLabel()
 
@@ -98,7 +101,12 @@ def test_main_window_handle_refresh_voice_context_updates_voice_context_message(
     window = build_main_window()
     config = DesktopAppConfig.create_default()
     window._build_config_from_form = Mock(return_value=config)
-    window._on_refresh_voice_context = Mock(return_value={"success": False, "message": "Usuario fora do canal"})
+    window._on_refresh_voice_context = Mock(
+        return_value=DesktopBotVoiceContextResult(
+            success=False,
+            message="Usuario fora do canal",
+        )
+    )
     window._voice_context_var = DummyVar()
     window._voice_context_label = DummyLabel()
 
