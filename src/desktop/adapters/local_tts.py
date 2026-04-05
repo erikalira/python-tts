@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Local text-to-speech adapters for Desktop App services."""
 
+import logging
+
+from src.core.entities import TTSConfig
+from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
+
 try:
     import pyttsx3
     _pyttsx3_available = True
@@ -21,6 +26,12 @@ class Pyttsx3Adapter:
         if pyttsx3 is None:
             raise RuntimeError("pyttsx3 unavailable")
         return pyttsx3.init()
+
+    def create_configured_engine(self, config: TTSConfig, logger: logging.Logger) -> object:
+        """Create and configure a pyttsx3 engine instance."""
+        engine = self.create_engine()
+        configure_pyttsx3_engine(engine, config, logger)
+        return engine
 
 
 def is_pyttsx3_available() -> bool:

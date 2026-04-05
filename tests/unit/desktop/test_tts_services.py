@@ -286,7 +286,10 @@ def test_desktop_app_tts_service_delegates_to_flow_service():
 
 
 def test_desktop_app_tts_service_returns_false_for_blank_text():
-    service = DesktopAppTTSService(DesktopAppConfig.create_default())
+    service = DesktopAppTTSService(
+        DesktopAppConfig.create_default(),
+        bot_client=FakeDiscordBotClient(),
+    )
     flow_service = Mock()
     flow_service.speak_text.return_value = False
     service._flow_service = flow_service
