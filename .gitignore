@@ -42,6 +42,10 @@ build/
 
 # Log Files
 *.log
+deploy/winsw/logs/
+
+# Local Windows service runtime artifacts
+deploy/winsw/tts-discord-bot.exe
 
 # Generated icons (keep in repo)
 # icon.ico
