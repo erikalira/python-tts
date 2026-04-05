@@ -97,6 +97,24 @@ def test_http_discord_bot_client_handles_http_error(monkeypatch):
     assert client.get_last_error_message() == "Bot respondeu HTTP 500: playback failed"
 
 
+def test_http_discord_bot_client_simplifies_service_suspended_error(monkeypatch):
+    config = DesktopAppConfig.create_default()
+    config.discord.bot_url = get_default_discord_bot_url()
+
+    response = SimpleNamespace(
+        ok=False,
+        status_code=503,
+        text="<!DOCTYPE html><html><body>Service Suspended</body></html>",
+    )
+    post = Mock(return_value=response)
+    monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.post", post)
+
+    client = HttpDiscordBotClient(config)
+
+    assert client.send_speak_request(client.build_request("hello")) is False
+    assert client.get_last_error_message() == "Bot respondeu HTTP 503: servico suspenso ou indisponivel"
+
+
 def test_http_discord_bot_client_check_connection_success(monkeypatch):
     config = DesktopAppConfig.create_default()
     config.discord.bot_url = get_default_discord_bot_url()
@@ -389,11 +407,16 @@ def test_speak_text_execution_use_case_returns_missing_text_without_calling_serv
 def test_speak_text_execution_use_case_returns_failure_when_tts_service_fails():
     tts_service = Mock()
     tts_service.speak_text.return_value = False
+    tts_service.get_last_error_message.return_value = "Bot respondeu HTTP 503: servico suspenso ou indisponivel"
     execution = SpeakTextExecutionUseCase(tts_service)
 
     result = execution.execute("hello")
 
-    assert result == {"success": False, "code": TTS_EXECUTION_RESULT_FAILED}
+    assert result == {
+        "success": False,
+        "code": TTS_EXECUTION_RESULT_FAILED,
+        "message": "Bot respondeu HTTP 503: servico suspenso ou indisponivel",
+    }
 
 
 def test_desktop_app_tts_processor_runs_cleanup_after_success(monkeypatch):

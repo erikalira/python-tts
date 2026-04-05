@@ -64,9 +64,18 @@ def test_desktop_app_tts_result_presenter_notifies_failure():
     notifier = Mock()
     presenter = DesktopAppTTSResultPresenter(notifier)
 
-    presenter.present({"success": False, "code": TTS_EXECUTION_RESULT_FAILED})
+    presenter.present(
+        {
+            "success": False,
+            "code": TTS_EXECUTION_RESULT_FAILED,
+            "message": "Bot respondeu HTTP 503: servico suspenso ou indisponivel",
+        }
+    )
 
-    notifier.notify_error.assert_called_once_with("Desktop App", "Falha ao reproduzir o texto")
+    notifier.notify_error.assert_called_once_with(
+        "Desktop App",
+        "Bot respondeu HTTP 503: servico suspenso ou indisponivel",
+    )
 
 
 def test_desktop_app_tts_result_presenter_shows_processing_message():

@@ -245,6 +245,9 @@ class HttpDiscordBotClient:
 
     def _build_http_error_message(self, status_code: int, response_text: str) -> str:
         """Build a user-facing error message from an HTTP failure."""
+        normalized_text = response_text.lower()
+        if status_code == 503 and "service suspended" in normalized_text:
+            return "Bot respondeu HTTP 503: servico suspenso ou indisponivel"
         if response_text:
             return f"Bot respondeu HTTP {status_code}: {response_text}"
         return f"Bot respondeu HTTP {status_code}"

@@ -31,9 +31,15 @@ class SpeakTextExecutionUseCase:
                 "code": TTS_EXECUTION_RESULT_OK,
             }
 
+        error_message_getter = getattr(self._tts_service, "get_last_error_message", None)
+        error_message = None
+        if callable(error_message_getter):
+            error_message = error_message_getter()
+
         return {
             "success": False,
             "code": TTS_EXECUTION_RESULT_FAILED,
+            "message": error_message or "Falha ao reproduzir o texto",
         }
 
     def is_available(self) -> bool:

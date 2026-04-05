@@ -41,6 +41,11 @@ class TTSEngine(ABC):
         """Check if the TTS engine is available."""
         pass
 
+    @abstractmethod
+    def get_last_error_message(self) -> str | None:
+        """Return the last human-readable error for the engine."""
+        pass
+
 
 class LocalPyTTSX3Engine(TTSEngine):
     """Local TTS engine using pyttsx3."""
@@ -50,10 +55,12 @@ class LocalPyTTSX3Engine(TTSEngine):
         self._adapter = adapter or Pyttsx3Adapter()
         self._engine: Optional[object] = None
         self._lock = threading.Lock()
+        self._last_error_message: str | None = None
 
     def _initialize_engine(self) -> bool:
         """Initialize the pyttsx3 engine."""
         if not self._adapter.is_available():
+            self._last_error_message = "pyttsx3 nao esta disponivel"
             return False
 
         try:
@@ -61,9 +68,11 @@ class LocalPyTTSX3Engine(TTSEngine):
                 self._engine = self._adapter.create_engine()
                 configure_pyttsx3_engine(self._engine, self._config.tts, logger)
 
+            self._last_error_message = None
             return True
         except Exception as exc:
             logger.error("[TTS] Erro ao inicializar pyttsx3: %s", exc)
+            self._last_error_message = f"Erro ao inicializar pyttsx3: {exc}"
             return False
 
     def speak(self, text: str) -> bool:
@@ -75,14 +84,20 @@ class LocalPyTTSX3Engine(TTSEngine):
             try:
                 self._engine.say(text)
                 self._engine.runAndWait()
+                self._last_error_message = None
                 return True
             except Exception as exc:
                 logger.error("[TTS] Erro ao reproduzir com pyttsx3: %s", exc)
+                self._last_error_message = f"Erro ao reproduzir com pyttsx3: {exc}"
                 return False
 
     def is_available(self) -> bool:
         """Check if pyttsx3 is available."""
         return self._adapter.is_available()
+
+    def get_last_error_message(self) -> str | None:
+        """Return the latest local TTS error, when any."""
+        return self._last_error_message
 
 
 class DiscordTTSService(TTSEngine):
@@ -104,6 +119,10 @@ class DiscordTTSService(TTSEngine):
     def is_available(self) -> bool:
         """Check if Discord TTS is available."""
         return self._bot_client.is_available()
+
+    def get_last_error_message(self) -> str | None:
+        """Return the latest error reported by the bot client."""
+        return self._bot_client.get_last_error_message()
 
 class DesktopAppTTSService:
     """Main Desktop App TTS service that coordinates available engines."""
@@ -175,6 +194,10 @@ class DesktopAppTTSService:
     def has_bot_url(self) -> bool:
         """Return whether a Discord bot URL is configured."""
         return bool(self._config.discord.bot_url)
+
+    def get_last_error_message(self) -> str | None:
+        """Return the latest error from the shared Desktop App TTS flow."""
+        return self._flow_service.get_last_error_message()
 
 
 class KeyboardCleanupService:
