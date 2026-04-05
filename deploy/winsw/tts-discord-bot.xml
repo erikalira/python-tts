@@ -1,0 +1,34 @@
+<service>
+  <id>tts-discord-bot</id>
+  <name>TTS Discord Bot</name>
+  <description>Runs the Discord bot and HTTP server for the tts-hotkey-windows repository.</description>
+
+  <executable>%BASE%\..\..\.venv\Scripts\python.exe</executable>
+  <arguments>-m src.bot</arguments>
+  <workingdirectory>%BASE%\..\..</workingdirectory>
+
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <stoptimeout>15sec</stoptimeout>
+  <onfailure action="restart" delay="10 sec" />
+  <resetfailure>1 hour</resetfailure>
+
+  <env name="PYTHONUNBUFFERED" value="1" />
+  <env name="PYTHONIOENCODING" value="utf-8" />
+
+  <logpath>%BASE%\logs</logpath>
+  <log mode="roll" />
+
+  <hidewindow>true</hidewindow>
+
+  <!--
+  Recommended: run the service with a dedicated low-privilege Windows account
+  that has read/execute access to the repository, the .venv, and ffmpeg in PATH.
+
+  <serviceaccount>
+    <username>.\svc_tts_bot</username>
+    <password>CHANGE_ME</password>
+    <allowservicelogon>true</allowservicelogon>
+  </serviceaccount>
+  -->
+</service>
