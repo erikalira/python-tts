@@ -28,14 +28,6 @@ class TTSConfig:
 class AudioFile:
     """Represents an audio file path."""
     path: str
-    
-    def cleanup(self):
-        """Clean up the audio file."""
-        import os
-        try:
-            os.unlink(self.path)
-        except OSError:
-            pass
 
 
 class AudioQueueItemStatus(str, Enum):

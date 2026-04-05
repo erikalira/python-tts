@@ -102,14 +102,7 @@ class TestAudioFile:
         audio = AudioFile(path="/tmp/test.wav")
         
         assert audio.path == "/tmp/test.wav"
-    
-    def test_cleanup_nonexistent_file(self):
-        """Test cleanup of nonexistent file doesn't raise error."""
-        audio = AudioFile(path="/nonexistent/file.wav")
-        
-        # Should not raise exception
-        audio.cleanup()
-    
+
     def test_equality(self):
         """Test AudioFile equality comparison."""
         audio1 = AudioFile(path='/tmp/test.mp3')

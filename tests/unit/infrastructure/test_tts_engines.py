@@ -1,6 +1,7 @@
 """Tests for TTS engines."""
 import pytest
 from src.infrastructure.tts.engines import TTSEngineFactory
+from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
 from src.core.entities import TTSConfig
 
 
@@ -46,9 +47,10 @@ class TestGTTSEngine:
         config = TTSConfig(engine='gtts', language='en')
         
         audio = await engine.generate_audio("Hello world", config)
+        cleanup = FileAudioCleanup()
         
         assert audio is not None
         assert audio.path.endswith('.wav')
         
         # Cleanup
-        audio.cleanup()
+        await cleanup.cleanup(audio)

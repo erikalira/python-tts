@@ -1,0 +1,88 @@
+name: Deploy Discord Bot to Windows Server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-bot-windows-main
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Validate before deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            espeak-ng \
+            ffmpeg
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-test.txt
+
+      - name: Run tests
+        env:
+          CI: true
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          pytest --tb=short -v --cov --cov-report=xml
+
+  deploy-bot:
+    name: Deploy to self-hosted Windows runner
+    needs: test
+    runs-on: [self-hosted, windows, bot-server]
+
+    steps:
+      - name: Ensure repository path exists
+        shell: pwsh
+        run: |
+          $repoPath = "C:\services\tts-hotkey-windows"
+          if (-not (Test-Path $repoPath)) {
+            throw "Expected repository path '$repoPath' does not exist on the Windows server runner."
+          }
+
+      - name: Update repository to origin/main
+        shell: pwsh
+        run: |
+          Set-Location "C:\services\tts-hotkey-windows"
+          git fetch origin main
+          git pull --ff-only origin main
+
+      - name: Install or refresh WinSW service
+        shell: pwsh
+        run: |
+          Set-Location "C:\services\tts-hotkey-windows"
+          powershell -ExecutionPolicy Bypass -File .\deploy\winsw\install-or-update-service.ps1
+
+      - name: Verify Windows service status
+        shell: pwsh
+        run: |
+          $service = Get-Service -Name "tts-discord-bot" -ErrorAction Stop
+          if ($service.Status -ne "Running") {
+            throw "Windows service 'tts-discord-bot' is not running. Current status: $($service.Status)"
+          }
+          Write-Host "Windows service status: $($service.Status)"

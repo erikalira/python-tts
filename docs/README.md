@@ -7,6 +7,7 @@ This directory contains the repository's supporting documentation. The root `REA
 - [SETUP.md](SETUP.md): ambiente virtual, instalacao e ativacao no Windows e Linux
 - [TESTING.md](TESTING.md): automated test structure and local execution
 - [ENVIRONMENTS.md](ENVIRONMENTS.md): local and production environment variables for bot and Desktop App
+- [WINDOWS_BOT_SERVICE.md](WINDOWS_BOT_SERVICE.md): WinSW deployment guide for keeping the Discord bot running as a Windows service
 - [DEPENDENCY_MAINTENANCE.md](DEPENDENCY_MAINTENANCE.md): dependency upgrade workflow, tooling, and validation checklist
 - [BUILD_GUIDE.md](BUILD_GUIDE.md): Windows executable build flow
 - [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview and layer map

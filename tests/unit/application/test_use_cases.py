@@ -2,20 +2,23 @@
 import asyncio
 
 import pytest
-from src.application.use_cases import (
-    ConfigureTTSUseCase,
-    JoinVoiceChannelUseCase,
-    LeaveVoiceChannelUseCase,
+from src.application.results import (
     JOIN_RESULT_OK,
     JOIN_RESULT_USER_NOT_IN_CHANNEL,
     LEAVE_RESULT_NOT_CONNECTED,
     LEAVE_RESULT_OK,
-    SpeakTextUseCase,
     SPEAK_RESULT_MISSING_TEXT,
     SPEAK_RESULT_OK,
     SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_QUEUE_FULL,
     SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+    SpeakTextResult,
+)
+from src.application.use_cases import (
+    ConfigureTTSUseCase,
+    JoinVoiceChannelUseCase,
+    LeaveVoiceChannelUseCase,
+    SpeakTextUseCase,
 )
 from src.core.entities import TTSRequest, TTSConfig
 from src.infrastructure.audio_queue import InMemoryAudioQueue
@@ -31,14 +34,15 @@ class TestSpeakTextUseCase:
         mock_channel_repository,
         mock_config_repository,
         mock_audio_queue,
+        build_speak_use_case,
         sample_tts_request
     ):
         """Test successful execution of speak use case."""
-        use_case = SpeakTextUseCase(
-            tts_engine=mock_tts_engine,
-            channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
         )
         
         result = await use_case.execute(sample_tts_request)
@@ -46,6 +50,7 @@ class TestSpeakTextUseCase:
         assert result["success"] is True
         assert result["code"] == SPEAK_RESULT_OK
         assert "queued" in result
+        assert result.to_dict()["code"] == SPEAK_RESULT_OK
         assert len(mock_tts_engine.calls) == 1
         assert len(mock_channel_repository.channel.played_audio) == 1
     
@@ -54,14 +59,15 @@ class TestSpeakTextUseCase:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        build_speak_use_case,
     ):
         """Test execution with missing text."""
-        use_case = SpeakTextUseCase(
-            tts_engine=mock_tts_engine,
-            channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
         )
         
         request = TTSRequest(text="")
@@ -75,6 +81,7 @@ class TestSpeakTextUseCase:
         mock_tts_engine,
         mock_config_repository,
         mock_audio_queue,
+        build_speak_use_case,
         sample_tts_request
     ):
         """Test execution when no voice channel is found."""
@@ -83,11 +90,11 @@ class TestSpeakTextUseCase:
         # Repository that returns None
         repo = MockVoiceChannelRepository(return_none=True)
         
-        use_case = SpeakTextUseCase(
-            tts_engine=mock_tts_engine,
-            channel_repository=repo,
-            config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=repo,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
         )
         
         result = await use_case.execute(sample_tts_request)
@@ -101,14 +108,15 @@ class TestSpeakTextUseCase:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        build_speak_use_case,
     ):
         """Speak use case should reuse the shared TTS text preparation rules."""
-        use_case = SpeakTextUseCase(
-            tts_engine=mock_tts_engine,
-            channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue,
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
             max_text_length=5,
         )
 
@@ -124,13 +132,14 @@ class TestSpeakTextUseCase:
         mock_channel_repository,
         mock_config_repository,
         mock_audio_queue,
+        build_speak_use_case,
     ):
         """Speak use case should derive the guild from the member's current voice channel."""
-        use_case = SpeakTextUseCase(
-            tts_engine=mock_tts_engine,
-            channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue,
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
         )
 
         request = TTSRequest(text="test", member_id=345678)
@@ -145,14 +154,15 @@ class TestSpeakTextUseCase:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
-        mock_audio_queue
+        mock_audio_queue,
+        build_speak_use_case,
     ):
         """Test that use case finds channel by channel_id first."""
-        use_case = SpeakTextUseCase(
-            tts_engine=mock_tts_engine,
-            channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository,
-            audio_queue=mock_audio_queue
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
         )
         
         request = TTSRequest(text="test", channel_id=123456, guild_id=789012, member_id=345678)
@@ -166,15 +176,16 @@ class TestSpeakTextUseCase:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
+        build_speak_use_case,
         sample_tts_request
     ):
         """A new request must stay queued while a background item is still playing."""
         audio_queue = InMemoryAudioQueue()
-        use_case = SpeakTextUseCase(
-            tts_engine=mock_tts_engine,
-            channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository,
-            audio_queue=audio_queue
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=audio_queue,
         )
 
         first_started = asyncio.Event()
@@ -192,14 +203,14 @@ class TestSpeakTextUseCase:
                 second_started.set()
                 await second_release.wait()
 
-            return {
-                "success": True,
-                "code": SPEAK_RESULT_OK,
-                "queued": False,
-                "item_id": item.item_id,
-            }
+            return SpeakTextResult(
+                success=True,
+                code=SPEAK_RESULT_OK,
+                queued=False,
+                item_id=item.item_id,
+            )
 
-        use_case._process_audio = fake_process_audio
+        use_case._queue_orchestrator._process_item = fake_process_audio
 
         first_request = TTSRequest(text="first", channel_id=123456, guild_id=789012, member_id=345678)
         second_request = TTSRequest(text="second", channel_id=123456, guild_id=789012, member_id=345678)
@@ -236,15 +247,16 @@ class TestSpeakTextUseCase:
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
+        build_speak_use_case,
         sample_tts_request
     ):
         """Queue overflow should reject the request instead of faking a queued success."""
         audio_queue = InMemoryAudioQueue(max_queue_size=0)
-        use_case = SpeakTextUseCase(
-            tts_engine=mock_tts_engine,
-            channel_repository=mock_channel_repository,
-            config_repository=mock_config_repository,
-            audio_queue=audio_queue
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=audio_queue,
         )
 
         result = await use_case.execute(sample_tts_request)

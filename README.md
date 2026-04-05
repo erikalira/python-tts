@@ -32,6 +32,7 @@ Instalacao basica:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+winget install ffmpeg
 ```
 
 ### Linux/macOS
@@ -97,6 +98,7 @@ Use o README principal como ponto de entrada e deixe os detalhes nos guias espec
 - [Indice da documentacao](docs/README.md)
 - [Guia de setup do ambiente](docs/SETUP.md)
 - [Guia de testes](docs/TESTING.md)
+- [Deploy do bot como servico Windows com WinSW](docs/WINDOWS_BOT_SERVICE.md)
 - [Governanca de IA e instrucoes canonicas](docs/ai/README.md)
 - [Guia de build do executavel Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)

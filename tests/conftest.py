@@ -1,7 +1,9 @@
 """Test fixtures and mocks shared across tests."""
 import pytest
-from unittest.mock import AsyncMock, Mock
-from src.core.interfaces import ITTSEngine, IVoiceChannel, IVoiceChannelRepository, IConfigRepository, IAudioQueue
+from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
+from src.application.use_cases import SpeakTextUseCase
+from src.application.voice_channel_resolution import VoiceChannelResolutionService
+from src.core.interfaces import ITTSEngine, IVoiceChannel, IVoiceChannelRepository, IConfigRepository, IAudioQueue, IAudioFileCleanup
 from src.core.entities import TTSConfig, AudioFile, TTSRequest, AudioQueueItem
 
 
@@ -139,43 +141,14 @@ class MockConfigRepository(IConfigRepository):
         return True
 
 
-class MockAudioQueue(IAudioQueue):
-    """Mock audio queue for testing."""
-    
-    def __init__(self):
-        self.items = []
-        self.completed = []
-    
-    async def enqueue(self, item: AudioQueueItem) -> str | None:
-        """Add item to queue."""
-        self.items.append(item)
-        return item.item_id
-    
-    async def dequeue(self, guild_id):
-        """Remove and return next item."""
-        if self.items:
-            return self.items.pop(0)
-        return None
-    
-    async def peek_next(self, guild_id):
-        """Look at next item."""
-        return self.items[0] if self.items else None
-    
-    async def get_queue_status(self, guild_id):
-        """Get queue status."""
-        return {"size": len(self.items), "items": []}
-    
-    async def get_item_position(self, item_id: str) -> int:
-        """Get item position."""
-        for i, item in enumerate(self.items):
-            if item.item_id == item_id:
-                return i
-        return -1
-    
-    async def clear_completed(self, guild_id, older_than_seconds: int = 3600):
-        """Clear completed items."""
-        self.completed.clear()
+class MockAudioCleanup(IAudioFileCleanup):
+    """Mock audio cleanup adapter for testing."""
 
+    def __init__(self):
+        self.cleaned_paths = []
+
+    async def cleanup(self, audio: AudioFile) -> None:
+        self.cleaned_paths.append(audio.path)
 
 class MockAudioQueue(IAudioQueue):
     """Mock audio queue for testing."""
@@ -244,6 +217,43 @@ def mock_config_repository():
 def mock_audio_queue():
     """Fixture for mock audio queue."""
     return MockAudioQueue()
+
+
+@pytest.fixture
+def mock_audio_cleanup():
+    """Fixture for mock audio cleanup."""
+    return MockAudioCleanup()
+
+
+@pytest.fixture
+def build_speak_use_case(mock_audio_cleanup):
+    """Factory for SpeakTextUseCase with explicit collaborators."""
+
+    def _build(
+        *,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        max_text_length=None,
+    ):
+        voice_channel_resolution = VoiceChannelResolutionService(mock_channel_repository)
+        queue_orchestrator = TTSQueueOrchestrator(
+            tts_engine=mock_tts_engine,
+            config_repository=mock_config_repository,
+            audio_queue=mock_audio_queue,
+            voice_channel_resolution=voice_channel_resolution,
+            audio_cleanup=mock_audio_cleanup,
+        )
+        return SpeakTextUseCase(
+            channel_repository=mock_channel_repository,
+            audio_queue=mock_audio_queue,
+            voice_channel_resolution=voice_channel_resolution,
+            queue_orchestrator=queue_orchestrator,
+            max_text_length=max_text_length,
+        )
+
+    return _build
 
 
 @pytest.fixture
