@@ -15,6 +15,7 @@ from src.application.use_cases import (
     SpeakTextUseCase,
 )
 from src.infrastructure.audio_queue import InMemoryAudioQueue
+from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvailability
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
 from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
@@ -66,12 +67,14 @@ class Container:
 
         self.speak_controller = SpeakController(self.speak_use_case)
         self.voice_context_controller = VoiceContextController(self.voice_context_use_case)
+        self.voice_runtime_availability = DependencyVoiceRuntimeAvailability()
         self.discord_commands = DiscordCommands(
             tree=self.command_tree,
             speak_use_case=self.speak_use_case,
             config_use_case=self.config_use_case,
             join_use_case=self.join_use_case,
             leave_use_case=self.leave_use_case,
+            voice_runtime_availability=self.voice_runtime_availability,
         )
 
         self._log_voice_runtime_status()

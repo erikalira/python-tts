@@ -1,7 +1,6 @@
 """Discord bot commands."""
 
 import logging
-from importlib.util import find_spec
 
 import discord
 from discord import app_commands
@@ -13,8 +12,8 @@ from src.application.use_cases import (
     LeaveVoiceChannelUseCase,
     SpeakTextUseCase,
 )
+from src.application.voice_runtime import VoiceRuntimeAvailability, VoiceRuntimeStatus
 from src.core.entities import TTSRequest
-from src.infrastructure.discord.ffmpeg_runtime import has_ffmpeg_runtime
 from src.presentation.discord_presenters import (
     DiscordJoinPresenter,
     DiscordLeavePresenter,
@@ -23,31 +22,9 @@ from src.presentation.discord_presenters import (
 
 logger = logging.getLogger(__name__)
 
-def _has_pynacl() -> bool:
-    return find_spec("nacl") is not None
-
-
-def _has_davey() -> bool:
-    return find_spec("davey") is not None
-
-
-def _has_voice_runtime_support() -> bool:
-    return _has_pynacl() and _has_davey() and has_ffmpeg_runtime()
-
-
-def _get_missing_voice_dependencies() -> list[str]:
-    missing = []
-    if not _has_pynacl():
-        missing.append("PyNaCl")
-    if not _has_davey():
-        missing.append("davey")
-    if not has_ffmpeg_runtime():
-        missing.append("FFmpeg")
-    return missing
-
 
 def _get_voice_runtime_unavailable_message() -> str:
-    return "❌ O recurso de voz do bot está indisponível no momento. Tente novamente mais tarde."
+    return "\u274c O recurso de voz do bot est\u00e1 indispon\u00edvel no momento. Tente novamente mais tarde."
 
 
 class DiscordCommands:
@@ -60,12 +37,14 @@ class DiscordCommands:
         config_use_case: ConfigureTTSUseCase,
         join_use_case: JoinVoiceChannelUseCase,
         leave_use_case: LeaveVoiceChannelUseCase,
+        voice_runtime_availability: VoiceRuntimeAvailability,
     ):
         self._tree = tree
         self._speak_use_case = speak_use_case
         self._config_use_case = config_use_case
         self._join_use_case = join_use_case
         self._leave_use_case = leave_use_case
+        self._voice_runtime_availability = voice_runtime_availability
         self._join_presenter = DiscordJoinPresenter()
         self._leave_presenter = DiscordLeavePresenter()
         self._speak_presenter = DiscordSpeakPresenter()
@@ -94,29 +73,29 @@ class DiscordCommands:
         @app_commands.choices(
             voz=[
                 app_commands.Choice(name="Mulher do Google (melhor qualidade)", value="gtts"),
-                app_commands.Choice(name="R.E.P.O. (robótico, mais rápido)", value="pyttsx3"),
+                app_commands.Choice(name="R.E.P.O. (rob\u00f3tico, mais r\u00e1pido)", value="pyttsx3"),
             ]
         )
         @app_commands.choices(
             idioma=[
-                app_commands.Choice(name="Português", value="pt"),
-                app_commands.Choice(name="Inglês", value="en"),
+                app_commands.Choice(name="Portugu\u00eas", value="pt"),
+                app_commands.Choice(name="Ingl\u00eas", value="en"),
                 app_commands.Choice(name="Espanhol", value="es"),
-                app_commands.Choice(name="Francês", value="fr"),
-                app_commands.Choice(name="Alemão", value="de"),
+                app_commands.Choice(name="Franc\u00eas", value="fr"),
+                app_commands.Choice(name="Alem\u00e3o", value="de"),
                 app_commands.Choice(name="Italiano", value="it"),
-                app_commands.Choice(name="Japonês", value="ja"),
+                app_commands.Choice(name="Japon\u00eas", value="ja"),
                 app_commands.Choice(name="Coreano", value="ko"),
-                app_commands.Choice(name="Chinês", value="zh"),
+                app_commands.Choice(name="Chin\u00eas", value="zh"),
             ]
         )
         @app_commands.choices(
             sotaque=[
-                app_commands.Choice(name="Português (Brasil)", value="roa/pt-br"),
-                app_commands.Choice(name="Inglês (EUA)", value="en-us"),
-                app_commands.Choice(name="Inglês (Reino Unido)", value="en-gb"),
+                app_commands.Choice(name="Portugu\u00eas (Brasil)", value="roa/pt-br"),
+                app_commands.Choice(name="Ingl\u00eas (EUA)", value="en-us"),
+                app_commands.Choice(name="Ingl\u00eas (Reino Unido)", value="en-gb"),
                 app_commands.Choice(name="Espanhol", value="roa/es"),
-                app_commands.Choice(name="Francês", value="roa/fr"),
+                app_commands.Choice(name="Franc\u00eas", value="roa/fr"),
             ]
         )
         async def config(interaction: discord.Interaction, voz: str = None, idioma: str = None, sotaque: str = None):
@@ -126,8 +105,11 @@ class DiscordCommands:
         async def about(interaction: discord.Interaction):
             await self._handle_about(interaction)
 
+    def _get_voice_runtime_status(self) -> VoiceRuntimeStatus:
+        return self._voice_runtime_availability.get_status()
+
     def _log_voice_runtime_unavailable(self, command_name: str) -> None:
-        missing = _get_missing_voice_dependencies()
+        missing = self._get_voice_runtime_status().missing_dependencies()
         logger.error(
             "[VOICE_RUNTIME] Command '%s' blocked because required server dependencies are missing: %s",
             command_name,
@@ -137,10 +119,10 @@ class DiscordCommands:
     async def _send_bot_inactive_message(self, interaction: discord.Interaction) -> bool:
         try:
             await interaction.edit_original_response(
-                content="❌ **Bot está desligando ou inativo!**\n\n"
-                "🔄 Para reativar o bot, acesse:\n"
+                content="\u274c **Bot est\u00e1 desligando ou inativo!**\n\n"
+                "\U0001f504 Para reativar o bot, acesse:\n"
                 "**https://python-tts-s3z8.onrender.com/**\n\n"
-                "_(O servidor gratuito do Render desliga após inatividade)_"
+                "_(O servidor gratuito do Render desliga ap\u00f3s inatividade)_"
             )
             return True
         except Exception as exc:
@@ -148,7 +130,7 @@ class DiscordCommands:
             return False
 
     async def _handle_join(self, interaction: discord.Interaction):
-        if not _has_voice_runtime_support():
+        if not self._get_voice_runtime_status().is_available:
             self._log_voice_runtime_unavailable("join")
             await interaction.response.send_message(_get_voice_runtime_unavailable_message(), ephemeral=True)
             return
@@ -180,14 +162,14 @@ class DiscordCommands:
         )
         await interaction.response.defer(ephemeral=True, thinking=True)
 
-        if not _has_voice_runtime_support():
+        if not self._get_voice_runtime_status().is_available:
             self._log_voice_runtime_unavailable("speak")
             await interaction.edit_original_response(content=_get_voice_runtime_unavailable_message())
             return
 
         try:
             if not interaction.guild or not interaction.guild.id:
-                await interaction.edit_original_response(content="❌ Erro: Não foi possível determinar o servidor.")
+                await interaction.edit_original_response(content="\u274c Erro: N\u00e3o foi poss\u00edvel determinar o servidor.")
                 return
 
             tts_request = TTSRequest(text=text, guild_id=interaction.guild.id, member_id=interaction.user.id)
@@ -207,9 +189,9 @@ class DiscordCommands:
             try:
                 error_msg = str(exc).lower()
                 if "interpreter shutdown" in error_msg or "cannot schedule new futures" in error_msg:
-                    await interaction.edit_original_response(content="❌ Bot está inativo ou desligando.")
+                    await interaction.edit_original_response(content="\u274c Bot est\u00e1 inativo ou desligando.")
                 else:
-                    await interaction.edit_original_response(content="❌ Erro inesperado")
+                    await interaction.edit_original_response(content="\u274c Erro inesperado")
             except Exception as send_error:
                 logger.debug("[SPEAK] Could not send error message: %s", send_error)
 
@@ -218,7 +200,7 @@ class DiscordCommands:
 
     async def _handle_config(self, interaction: discord.Interaction, voz: str | None, idioma: str | None, sotaque: str | None):
         if not interaction.guild or not interaction.guild.id:
-            await interaction.response.send_message("❌ Este comando só pode ser usado em um servidor.", ephemeral=True)
+            await interaction.response.send_message("\u274c Este comando s\u00f3 pode ser usado em um servidor.", ephemeral=True)
             return
 
         guild_id = interaction.guild.id
@@ -234,14 +216,14 @@ class DiscordCommands:
         if voz is None and idioma is None and sotaque is None:
             result = self._config_use_case.get_config(guild_id)
             if not result["success"]:
-                await interaction.response.send_message(f"❌ {result['message']}", ephemeral=True)
+                await interaction.response.send_message(f"\u274c {result['message']}", ephemeral=True)
                 return
 
             config = result["config"]
-            voz_nome = "Mulher do Google" if config["engine"] == "gtts" else "R.E.P.O. (robótico)"
+            voz_nome = "Mulher do Google" if config["engine"] == "gtts" else "R.E.P.O. (rob\u00f3tico)"
             embed = discord.Embed(
-                title="🎤 Configuração de Voz do Servidor",
-                description=f"Configurações de {interaction.guild.name}",
+                title="\U0001f3a4 Configura\u00e7\u00e3o de Voz do Servidor",
+                description=f"Configura\u00e7\u00f5es de {interaction.guild.name}",
                 color=discord.Color.blue(),
             )
             embed.add_field(name="Voz", value=voz_nome, inline=True)
@@ -261,14 +243,14 @@ class DiscordCommands:
                 voice_id=sotaque,
             )
             if not result["success"]:
-                await interaction.edit_original_response(content=f"❌ {result['message']}")
+                await interaction.edit_original_response(content=f"\u274c {result['message']}")
                 return
 
             config = result["config"]
-            voz_nome = "Mulher do Google" if config["engine"] == "gtts" else "R.E.P.O. (robótico)"
+            voz_nome = "Mulher do Google" if config["engine"] == "gtts" else "R.E.P.O. (rob\u00f3tico)"
             embed = discord.Embed(
-                title="✅ Configuração Atualizada",
-                description=f"Configurações do servidor {interaction.guild.name} atualizadas",
+                title="\u2705 Configura\u00e7\u00e3o Atualizada",
+                description=f"Configura\u00e7\u00f5es do servidor {interaction.guild.name} atualizadas",
                 color=discord.Color.green(),
             )
             embed.add_field(name="Voz", value=voz_nome, inline=True)
@@ -278,26 +260,24 @@ class DiscordCommands:
             await interaction.edit_original_response(embed=embed)
         except Exception as exc:
             logger.error("[CONFIG] Error updating config for guild %s: %s", guild_id, exc, exc_info=True)
-            await interaction.edit_original_response(content="❌ Erro ao atualizar configuração")
+            await interaction.edit_original_response(content="\u274c Erro ao atualizar configura\u00e7\u00e3o")
 
     async def _handle_about(self, interaction: discord.Interaction):
         from src.__version__ import __author__, __description__, __version__
         import platform
 
-        has_ffmpeg = has_ffmpeg_runtime()
-        has_pynacl = _has_pynacl()
-        has_davey = _has_davey()
+        runtime_status = self._get_voice_runtime_status()
 
-        embed = discord.Embed(title="🤖 TTS Bot Information", description=__description__, color=discord.Color.blue())
+        embed = discord.Embed(title="\U0001f916 TTS Bot Information", description=__description__, color=discord.Color.blue())
         embed.add_field(name="Version", value=f"`{__version__}`", inline=True)
         embed.add_field(name="Author", value=__author__, inline=True)
-        embed.add_field(name="FFmpeg", value="✅ Available" if has_ffmpeg else "❌ Not found", inline=True)
-        embed.add_field(name="PyNaCl", value="✅ Installed" if has_pynacl else "❌ Not installed", inline=True)
-        embed.add_field(name="davey", value="✅ Installed" if has_davey else "❌ Not installed", inline=True)
+        embed.add_field(name="FFmpeg", value="\u2705 Available" if runtime_status.ffmpeg_available else "\u274c Not found", inline=True)
+        embed.add_field(name="PyNaCl", value="\u2705 Installed" if runtime_status.pynacl_installed else "\u274c Not installed", inline=True)
+        embed.add_field(name="davey", value="\u2705 Installed" if runtime_status.davey_installed else "\u274c Not installed", inline=True)
         embed.add_field(
             name="Commands",
-            value="• `/join` - Join your voice channel\n• `/leave` - Leave voice channel\n"
-            "• `/speak` - Speak text\n• `/config` - Configure TTS settings\n• `/about` - Show this info",
+            value="\u2022 `/join` - Join your voice channel\n\u2022 `/leave` - Leave voice channel\n"
+            "\u2022 `/speak` - Speak text\n\u2022 `/config` - Configure TTS settings\n\u2022 `/about` - Show this info",
             inline=False,
         )
         embed.set_footer(text=f"Running on {platform.system()} {platform.release()}")
