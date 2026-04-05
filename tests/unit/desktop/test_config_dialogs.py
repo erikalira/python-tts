@@ -5,7 +5,7 @@ import pytest
 
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.gui import tk_support
-from src.desktop.gui.config_dialog_presenter import ConfigDialogsPresenter
+from src.desktop.gui.config_dialog_presenter import ConfigDialogsPresenter, InitialSetupResult
 from src.desktop.gui.config_dialogs import ConsoleConfig, GUIConfig, InitialSetupGUI
 from src.desktop.gui.ui_logging import UILogHandler
 
@@ -175,11 +175,11 @@ def test_initial_setup_gui_skip_discord_sets_result_and_destroys_root(monkeypatc
 
     gui._skip_discord()
 
-    assert gui.result == {
-        "member_id": None,
-        "bot_url": "http://bot",
-        "skip_discord": True,
-    }
+    assert gui.result == InitialSetupResult(
+        member_id=None,
+        bot_url="http://bot",
+        skip_discord=True,
+    )
     assert gui.root.destroy_called is True
 
 
@@ -214,11 +214,11 @@ def test_initial_setup_gui_save_and_continue_with_member_id(prevent_real_message
 
     gui._save_and_continue()
 
-    assert gui.result == {
-        "member_id": "123",
-        "bot_url": "http://bot",
-        "skip_discord": False,
-    }
+    assert gui.result == InitialSetupResult(
+        member_id="123",
+        bot_url="http://bot",
+        skip_discord=False,
+    )
     assert prevent_real_messageboxes["info"] == [("Sucesso", "Configuracao salva! O TTS funcionara no Discord.")]
     assert gui.root.destroy_called is True
 
@@ -231,11 +231,11 @@ def test_initial_setup_gui_save_and_continue_without_member_id(prevent_real_mess
 
     gui._save_and_continue()
 
-    assert gui.result == {
-        "member_id": None,
-        "bot_url": "http://bot",
-        "skip_discord": False,
-    }
+    assert gui.result == InitialSetupResult(
+        member_id=None,
+        bot_url="http://bot",
+        skip_discord=False,
+    )
     assert prevent_real_messageboxes["info"] == [("Aviso", "Sem Discord User ID, o TTS funcionara apenas localmente.")]
 
 
@@ -248,11 +248,11 @@ def test_console_initial_setup_handles_invalid_ids_and_defaults(monkeypatch, cap
 
     result = gui._console_initial_setup()
 
-    assert result == {
-        "member_id": None,
-        "bot_url": "http://default-bot",
-        "skip_discord": True,
-    }
+    assert result == InitialSetupResult(
+        member_id=None,
+        bot_url="http://default-bot",
+        skip_discord=True,
+    )
     output = capsys.readouterr().out
     assert "id deve conter apenas n" in output.lower()
 
@@ -371,11 +371,11 @@ def test_config_dialogs_presenter_builds_initial_setup_result():
         bot_url="http://bot",
     )
 
-    assert result == {
-        "member_id": "123",
-        "bot_url": "http://bot",
-        "skip_discord": False,
-    }
+    assert result == InitialSetupResult(
+        member_id="123",
+        bot_url="http://bot",
+        skip_discord=False,
+    )
     assert feedback.title == "Sucesso"
     assert "Discord" in feedback.message
 

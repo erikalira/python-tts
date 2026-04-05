@@ -10,7 +10,7 @@ from ..config.desktop_config import (
     DesktopAppConfig,
     get_default_discord_bot_url,
 )
-from .config_dialog_presenter import ConfigDialogsPresenter
+from .config_dialog_presenter import ConfigDialogsPresenter, InitialSetupResult
 from .config_helpers import (
     build_updated_config,
     prompt_numeric_input,
@@ -132,12 +132,12 @@ class InitialSetupGUI:
 
     def __init__(self):
         self.root: Optional[object] = None
-        self.result: Optional[dict] = None
+        self.result: Optional[InitialSetupResult] = None
         self.member_id_var: Optional[object] = None
         self.bot_url_var: Optional[object] = None
         self._presenter = ConfigDialogsPresenter()
 
-    def show_initial_setup(self) -> Optional[dict]:
+    def show_initial_setup(self) -> Optional[InitialSetupResult]:
         from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
@@ -246,7 +246,7 @@ class InitialSetupGUI:
         compat.messagebox.showinfo(feedback.title, feedback.message)
         self.root.destroy()
 
-    def _console_initial_setup(self) -> Optional[dict]:
+    def _console_initial_setup(self) -> Optional[InitialSetupResult]:
         print("\n" + "=" * 60)
         print("Desktop App - Configuracao Inicial")
         print("=" * 60)
