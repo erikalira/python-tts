@@ -2,7 +2,9 @@ from src.application.desktop_bot import (
     CheckDesktopBotConnectionUseCase,
     DESKTOP_BOT_TEST_MESSAGE,
     DesktopBotActionResult,
+    DesktopBotConnectionStatus,
     DesktopBotVoiceContextResult,
+    DesktopBotVoiceContextStatus,
     FetchDesktopBotVoiceContextUseCase,
     SendDesktopBotTestMessageUseCase,
 )
@@ -21,12 +23,15 @@ class FakeDesktopBotGateway:
     ):
         self._has_bot_url = has_bot_url
         self._has_member_id = has_member_id
-        self._check_connection_result = check_connection_result or {"success": True, "message": "ok"}
+        self._check_connection_result = check_connection_result or DesktopBotConnectionStatus(
+            success=True,
+            message="ok",
+        )
         self._send_text_result = send_text_result
-        self._fetch_voice_context_result = fetch_voice_context_result or {
-            "success": True,
-            "message": "Canal detectado: Guild A / Sala 1",
-        }
+        self._fetch_voice_context_result = fetch_voice_context_result or DesktopBotVoiceContextStatus(
+            success=True,
+            message="Canal detectado: Guild A / Sala 1",
+        )
         self._last_error_message = last_error_message
         self.sent_texts = []
 
@@ -36,14 +41,14 @@ class FakeDesktopBotGateway:
     def has_member_id(self) -> bool:
         return self._has_member_id
 
-    def check_connection(self) -> dict:
+    def check_connection(self) -> DesktopBotConnectionStatus:
         return self._check_connection_result
 
     def send_text(self, text: str) -> bool:
         self.sent_texts.append(text)
         return self._send_text_result
 
-    def fetch_voice_context(self) -> dict:
+    def fetch_voice_context(self) -> DesktopBotVoiceContextStatus:
         return self._fetch_voice_context_result
 
     def get_last_error_message(self):

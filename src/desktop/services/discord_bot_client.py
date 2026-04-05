@@ -4,8 +4,11 @@ import logging
 from dataclasses import dataclass
 from typing import Optional, Protocol
 
+from src.application.desktop_bot import DesktopBotConnectionStatus, DesktopBotVoiceContextStatus
+
 try:
     import requests
+
     _requests_available = True
 except ImportError:  # pragma: no cover - exercised via availability checks
     requests = None
@@ -43,10 +46,10 @@ class DiscordBotClient(Protocol):
     def send_speak_request(self, request: DiscordSpeakRequest) -> bool:
         """Send a speak request to the Discord bot."""
 
-    def check_connection(self) -> dict:
+    def check_connection(self) -> DesktopBotConnectionStatus:
         """Check whether the bot runtime is reachable."""
 
-    def fetch_voice_context(self) -> dict:
+    def fetch_voice_context(self) -> DesktopBotVoiceContextStatus:
         """Fetch the current voice context for the configured member."""
 
     def get_last_error_message(self) -> Optional[str]:
@@ -121,7 +124,7 @@ class HttpDiscordBotClient:
             self._last_error_message = "Timeout ao conectar no bot"
             return False
         except Exception as exc:
-            logger.error(f"[DISCORD_BOT_CLIENT] Failed to connect to Discord bot: {exc}")
+            logger.error("[DISCORD_BOT_CLIENT] Failed to connect to Discord bot: %s", exc)
             self._last_error_message = f"Falha ao conectar no bot: {exc}"
             return False
 
@@ -142,13 +145,16 @@ class HttpDiscordBotClient:
         )
         return False
 
-    def check_connection(self) -> dict:
+    def check_connection(self) -> DesktopBotConnectionStatus:
         """Check whether the bot runtime is reachable and healthy."""
         if not self.has_transport():
-            return {"success": False, "message": "Biblioteca requests não está disponível"}
+            return DesktopBotConnectionStatus(
+                success=False,
+                message="Biblioteca requests nao esta disponivel",
+            )
 
         if not self._config.discord.bot_url:
-            return {"success": False, "message": "Bot URL não configurada"}
+            return DesktopBotConnectionStatus(success=False, message="Bot URL nao configurada")
 
         try:
             response = requests.get(
@@ -158,29 +164,35 @@ class HttpDiscordBotClient:
             )
         except requests.exceptions.Timeout:
             logger.warning("[DISCORD_BOT_CLIENT] Timeout while checking bot health")
-            return {"success": False, "message": "Timeout ao conectar no bot"}
+            return DesktopBotConnectionStatus(success=False, message="Timeout ao conectar no bot")
         except Exception as exc:
-            logger.error(f"[DISCORD_BOT_CLIENT] Failed to check bot health: {exc}")
-            return {"success": False, "message": f"Falha ao conectar: {exc}"}
+            logger.error("[DISCORD_BOT_CLIENT] Failed to check bot health: %s", exc)
+            return DesktopBotConnectionStatus(success=False, message=f"Falha ao conectar: {exc}")
 
         if response.ok:
-            return {"success": True, "message": "Conexão com o bot validada com sucesso"}
+            return DesktopBotConnectionStatus(
+                success=True,
+                message="Conexao com o bot validada com sucesso",
+            )
 
-        return {
-            "success": False,
-            "message": f"Bot respondeu HTTP {response.status_code}",
-        }
+        return DesktopBotConnectionStatus(
+            success=False,
+            message=f"Bot respondeu HTTP {response.status_code}",
+        )
 
-    def fetch_voice_context(self) -> dict:
+    def fetch_voice_context(self) -> DesktopBotVoiceContextStatus:
         """Fetch the current guild/channel detected for the configured member."""
         if not self.has_transport():
-            return {"success": False, "message": "Biblioteca requests nao esta disponivel"}
+            return DesktopBotVoiceContextStatus(
+                success=False,
+                message="Biblioteca requests nao esta disponivel",
+            )
 
         if not self._config.discord.bot_url:
-            return {"success": False, "message": "Bot URL nao configurada"}
+            return DesktopBotVoiceContextStatus(success=False, message="Bot URL nao configurada")
 
         if not self._config.discord.member_id:
-            return {"success": False, "message": "User ID nao configurado"}
+            return DesktopBotVoiceContextStatus(success=False, message="User ID nao configurado")
 
         try:
             response = requests.get(
@@ -191,10 +203,16 @@ class HttpDiscordBotClient:
             )
         except requests.exceptions.Timeout:
             logger.warning("[DISCORD_BOT_CLIENT] Timeout while fetching voice context")
-            return {"success": False, "message": "Timeout ao consultar canal de voz"}
+            return DesktopBotVoiceContextStatus(
+                success=False,
+                message="Timeout ao consultar canal de voz",
+            )
         except Exception as exc:
-            logger.error(f"[DISCORD_BOT_CLIENT] Failed to fetch voice context: {exc}")
-            return {"success": False, "message": f"Falha ao consultar canal de voz: {exc}"}
+            logger.error("[DISCORD_BOT_CLIENT] Failed to fetch voice context: %s", exc)
+            return DesktopBotVoiceContextStatus(
+                success=False,
+                message=f"Falha ao consultar canal de voz: {exc}",
+            )
 
         try:
             payload = response.json()
@@ -206,31 +224,31 @@ class HttpDiscordBotClient:
             channel_name = payload.get("channel_name") or "Canal desconhecido"
             guild_id = payload.get("guild_id")
             channel_id = payload.get("channel_id")
-            return {
-                "success": True,
-                "message": f"Canal detectado: {guild_name} / {channel_name}",
-                "guild_name": guild_name,
-                "guild_id": guild_id,
-                "channel_name": channel_name,
-                "channel_id": channel_id,
-            }
+            return DesktopBotVoiceContextStatus(
+                success=True,
+                message=f"Canal detectado: {guild_name} / {channel_name}",
+                guild_name=guild_name,
+                guild_id=guild_id,
+                channel_name=channel_name,
+                channel_id=channel_id,
+            )
 
         if response.status_code == 404 and payload.get("code") == "not_in_channel":
-            return {
-                "success": False,
-                "message": "Usuario nao esta conectado a nenhum canal de voz",
-            }
+            return DesktopBotVoiceContextStatus(
+                success=False,
+                message="Usuario nao esta conectado a nenhum canal de voz",
+            )
 
         if response.status_code == 404:
-            return {
-                "success": False,
-                "message": "Endpoint de deteccao de canal nao esta disponivel no bot. Atualize o bot.",
-            }
+            return DesktopBotVoiceContextStatus(
+                success=False,
+                message="Endpoint de deteccao de canal nao esta disponivel no bot. Atualize o bot.",
+            )
 
         message = payload.get("message") if isinstance(payload, dict) else None
         if not message:
             message = f"Bot respondeu HTTP {response.status_code}"
-        return {"success": False, "message": message}
+        return DesktopBotVoiceContextStatus(success=False, message=message)
 
     def get_last_error_message(self) -> Optional[str]:
         """Return the latest human-readable error from the bot client."""

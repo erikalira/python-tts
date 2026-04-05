@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
+from src.application.desktop_bot import DesktopBotConnectionStatus, DesktopBotVoiceContextStatus
 from src.application.tts_execution import (
     SpeakTextExecutionUseCase,
     TTS_EXECUTION_RESULT_FAILED,
@@ -124,8 +125,8 @@ def test_http_discord_bot_client_check_connection_success(monkeypatch):
 
     result = HttpDiscordBotClient(config).check_connection()
 
-    assert result["success"] is True
-    assert "sucesso" in result["message"].lower()
+    assert result.success is True
+    assert "sucesso" in result.message.lower()
 
 
 def test_http_discord_bot_client_check_connection_http_failure(monkeypatch):
@@ -137,7 +138,7 @@ def test_http_discord_bot_client_check_connection_http_failure(monkeypatch):
 
     result = HttpDiscordBotClient(config).check_connection()
 
-    assert result == {"success": False, "message": "Bot respondeu HTTP 503"}
+    assert result == DesktopBotConnectionStatus(success=False, message="Bot respondeu HTTP 503")
 
 
 def test_http_discord_bot_client_fetches_voice_context(monkeypatch):
@@ -162,14 +163,14 @@ def test_http_discord_bot_client_fetches_voice_context(monkeypatch):
 
     result = HttpDiscordBotClient(config).fetch_voice_context()
 
-    assert result == {
-        "success": True,
-        "message": "Canal detectado: Guild A / Sala 1",
-        "guild_name": "Guild A",
-        "guild_id": 30,
-        "channel_name": "Sala 1",
-        "channel_id": 10,
-    }
+    assert result == DesktopBotVoiceContextStatus(
+        success=True,
+        message="Canal detectado: Guild A / Sala 1",
+        guild_name="Guild A",
+        guild_id=30,
+        channel_name="Sala 1",
+        channel_id=10,
+    )
 
 
 def test_http_discord_bot_client_reports_when_user_not_in_voice(monkeypatch):
@@ -188,10 +189,10 @@ def test_http_discord_bot_client_reports_when_user_not_in_voice(monkeypatch):
 
     result = HttpDiscordBotClient(config).fetch_voice_context()
 
-    assert result == {
-        "success": False,
-        "message": "Usuario nao esta conectado a nenhum canal de voz",
-    }
+    assert result == DesktopBotVoiceContextStatus(
+        success=False,
+        message="Usuario nao esta conectado a nenhum canal de voz",
+    )
 
 
 def test_http_discord_bot_client_reports_when_voice_context_endpoint_is_missing(monkeypatch):
@@ -210,10 +211,10 @@ def test_http_discord_bot_client_reports_when_voice_context_endpoint_is_missing(
 
     result = HttpDiscordBotClient(config).fetch_voice_context()
 
-    assert result == {
-        "success": False,
-        "message": "Endpoint de deteccao de canal nao esta disponivel no bot. Atualize o bot.",
-    }
+    assert result == DesktopBotVoiceContextStatus(
+        success=False,
+        message="Endpoint de deteccao de canal nao esta disponivel no bot. Atualize o bot.",
+    )
 
 
 def test_desktop_tts_flow_service_tries_next_available_engine():

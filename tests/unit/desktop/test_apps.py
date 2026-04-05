@@ -3,7 +3,9 @@ from unittest.mock import Mock
 from src.application.desktop_bot import (
     DESKTOP_BOT_TEST_MESSAGE,
     DesktopBotActionResult,
+    DesktopBotConnectionStatus,
     DesktopBotVoiceContextResult,
+    DesktopBotVoiceContextStatus,
 )
 from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_FAILED,
@@ -209,7 +211,10 @@ def test_desktop_app_test_bot_connection_uses_http_client(monkeypatch):
 
     fake_client = Mock()
     fake_client.has_bot_url.return_value = True
-    fake_client.check_connection.return_value = {"success": True, "message": "ok"}
+    fake_client.check_connection.return_value = DesktopBotConnectionStatus(
+        success=True,
+        message="ok",
+    )
     monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
 
     result = app._test_bot_connection(config)
@@ -282,10 +287,10 @@ def test_desktop_app_refresh_voice_context_uses_http_client(monkeypatch):
     fake_client = Mock()
     fake_client.has_bot_url.return_value = True
     fake_client.has_member_id.return_value = True
-    fake_client.fetch_voice_context.return_value = {
-        "success": True,
-        "message": "Canal detectado: Guild A / Sala 1",
-    }
+    fake_client.fetch_voice_context.return_value = DesktopBotVoiceContextStatus(
+        success=True,
+        message="Canal detectado: Guild A / Sala 1",
+    )
     monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
 
     result = app._refresh_voice_context(config)
