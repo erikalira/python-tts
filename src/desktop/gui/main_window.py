@@ -24,6 +24,7 @@ class DesktopAppMainWindow:
         on_test_connection: Callable[[DesktopAppConfig], dict],
         on_send_test: Callable[[DesktopAppConfig], dict],
         on_refresh_voice_context: Callable[[DesktopAppConfig], dict],
+        on_process_ui_actions: Optional[Callable[[], None]] = None,
     ):
         self.root: Optional[object] = None
         self.config = config
@@ -31,6 +32,7 @@ class DesktopAppMainWindow:
         self._on_test_connection = on_test_connection
         self._on_send_test = on_send_test
         self._on_refresh_voice_context = on_refresh_voice_context
+        self._on_process_ui_actions = on_process_ui_actions
         self._presenter = DesktopAppMainWindowPresenter()
         self._config_form = GUIConfig()
         self._log_queue: "queue.Queue[str]" = queue.Queue()
@@ -58,6 +60,7 @@ class DesktopAppMainWindow:
         self._attach_logging()
         self._create_main_layout()
         self._drain_logs()
+        self._drain_ui_actions()
         self.root.mainloop()
 
     def focus(self) -> None:
@@ -67,6 +70,15 @@ class DesktopAppMainWindow:
 
     def push_log(self, message: str) -> None:
         self._log_queue.put(message)
+
+    def hide_to_tray(self) -> None:
+        if not self.root:
+            return
+        try:
+            self.root.withdraw()
+            self.push_log("Janela principal minimizada para a bandeja")
+        except Exception:
+            logger.debug("[GUI] Falha ao minimizar janela principal para a bandeja", exc_info=True)
 
     def _focus_now(self) -> None:
         if not self.root:
@@ -140,7 +152,11 @@ class DesktopAppMainWindow:
         compat.ttk.Button(action_frame, text="Recarregar canal detectado", command=self._handle_refresh_voice_context).pack(side="left", padx=(10, 0))
         compat.ttk.Button(action_frame, text="Enviar teste de voz", command=self._handle_send_test).pack(side="left", padx=(10, 0))
         compat.ttk.Button(action_frame, text="Limpar logs", command=self._clear_logs).pack(side="left", padx=(10, 0))
-        compat.ttk.Button(action_frame, text="Fechar app", command=self._close).pack(side="right")
+        compat.ttk.Button(
+            action_frame,
+            text="Minimizar para bandeja",
+            command=self.hide_to_tray,
+        ).pack(side="right")
 
         help_frame = compat.ttk.LabelFrame(main_frame, text="Como usar", padding="10")
         help_frame.pack(fill="x", pady=(0, 12))
@@ -317,6 +333,12 @@ class DesktopAppMainWindow:
             self._append_log(message)
         if self.root:
             self.root.after(250, self._drain_logs)
+
+    def _drain_ui_actions(self) -> None:
+        if self._on_process_ui_actions is not None:
+            self._on_process_ui_actions()
+        if self.root:
+            self.root.after(100, self._drain_ui_actions)
 
     def _attach_logging(self) -> None:
         root_logger = logging.getLogger()

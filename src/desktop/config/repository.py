@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Optional
 
 from .models import (
+    DesktopAppConfig,
     DiscordConfig,
     HotkeyConfig,
     InterfaceConfig,
     NetworkConfig,
-    DesktopAppConfig,
     TTSConfig,
 )
 from .paths import get_config_directory
@@ -63,7 +63,7 @@ class ConfigurationRepository:
                 ),
             )
         except Exception as exc:
-            print(f"[CONFIG] ⚠️ Erro ao carregar configuração: {exc}")
+            print(f"[CONFIG] Erro ao carregar configuracao: {exc}")
             return DesktopAppConfig.create_default()
 
     @staticmethod
@@ -103,8 +103,8 @@ class ConfigurationRepository:
             with open(self._config_file, "w", encoding="utf-8") as file:
                 json.dump(data, file, indent=2, ensure_ascii=False)
 
-            print(f"[CONFIG] ✅ Configuração salva em: {self._config_file}")
+            print(f"[CONFIG] Configuracao salva em: {self._config_file}")
             return True
         except Exception as exc:
-            print(f"[CONFIG] ❌ Erro ao salvar configuração: {exc}")
+            print(f"[CONFIG] Erro ao salvar configuracao: {exc}")
             return False

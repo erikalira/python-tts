@@ -51,7 +51,7 @@ class DesktopAppTTSResultPresenter:
 
         if code == TTS_EXECUTION_RESULT_FAILED:
             self._notification_service.notify_error(
-                "Desktop App", "Falha ao reproduzir o texto"
+                "Desktop App", result.get("message", "Falha ao reproduzir o texto")
             )
             return
 

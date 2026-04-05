@@ -7,7 +7,7 @@
       "request": "launch",
       "module": "src.bot",
       "cwd": "${workspaceFolder}",
-      "envFile": "${workspaceFolder}\\.env",
+      "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
       "justMyCode": true
     },
@@ -15,9 +15,9 @@
       "name": "Python: Desktop App",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}\\app.py",
+      "program": "${workspaceFolder}/app.py",
       "cwd": "${workspaceFolder}",
-      "envFile": "${workspaceFolder}\\.env",
+      "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
       "justMyCode": true
     }

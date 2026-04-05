@@ -158,3 +158,52 @@ def test_py_system_tray_icon_quit_with_handler_delegates_without_hiding():
     quit_handler.assert_called_once_with()
     tray.hide.assert_not_called()
 
+
+def test_py_system_tray_icon_status_click_delegates_to_open_handler():
+    from src.desktop.adapters.system_tray import PySystemTrayIcon
+
+    tray = PySystemTrayIcon(DesktopAppConfig.create_default())
+    status_click = Mock()
+    tray.set_handlers(status_click=status_click)
+
+    tray._handle_status_click(None, None)
+
+    status_click.assert_called_once_with()
+
+
+def test_py_system_tray_icon_uses_open_as_default_menu_action(monkeypatch):
+    from src.desktop.adapters import system_tray
+    from src.desktop.adapters.system_tray import PySystemTrayIcon
+
+    class FakeMenuItem:
+        def __init__(self, text, action, default=False, enabled=True):
+            self.text = text
+            self.action = action
+            self.default = default
+            self.enabled = enabled
+
+    class FakeMenu:
+        SEPARATOR = object()
+
+        def __init__(self, *items):
+            self.items = items
+
+    class FakeIcon:
+        def __init__(self, name, image, title, menu):
+            self.name = name
+            self.image = image
+            self.title = title
+            self.menu = menu
+
+    monkeypatch.setattr(system_tray, "MenuItem", FakeMenuItem)
+    monkeypatch.setattr(system_tray, "Menu", FakeMenu)
+    monkeypatch.setattr(system_tray, "Icon", FakeIcon)
+
+    tray = PySystemTrayIcon(DesktopAppConfig.create_default())
+    tray._create_icon_image = Mock(return_value=object())
+    icon = tray._create_icon()
+    items = list(icon.menu.items)
+
+    assert items[0].text == "Abrir Desktop App"
+    assert items[0].default is True
+

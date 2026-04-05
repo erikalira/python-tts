@@ -18,6 +18,9 @@ class TTSEnginePort(Protocol):
     def is_available(self) -> bool:
         """Return whether the engine can be used."""
 
+    def get_last_error_message(self) -> str | None:
+        """Return the last human-readable engine error when available."""
+
 
 class DesktopTTSStatusGateway(Protocol):
     """Port for status data needed by Desktop App TTS views."""
@@ -80,6 +83,10 @@ class DesktopTTSFlowService:
     def is_available(self) -> bool:
         """Return whether at least one configured TTS engine is available."""
         return self._engine.is_available()
+
+    def get_last_error_message(self) -> str | None:
+        """Expose the latest error captured by the fallback chain."""
+        return self._engine.get_last_error_message()
 
 
 class DesktopTTSStatusUseCase:

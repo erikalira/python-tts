@@ -32,3 +32,17 @@ def test_ui_runtime_coordinator_queues_actions():
 
     queued_action = coordinator.action_queue.get_nowait()
     assert queued_action is action
+
+
+def test_ui_runtime_coordinator_drains_queued_actions():
+    coordinator = DesktopAppUIRuntimeCoordinator()
+    action_one = Mock()
+    action_two = Mock()
+    coordinator.queue(action_one)
+    coordinator.queue(action_two)
+
+    coordinator.drain_queued_actions()
+
+    action_one.assert_called_once_with()
+    action_two.assert_called_once_with()
+    assert coordinator.action_queue.empty()

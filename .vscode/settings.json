@@ -1,5 +1,5 @@
 {
-  "python.envFile": "${workspaceFolder}\\.env.test",
+  "python.envFile": "${workspaceFolder}/.env.test",
   "python.testing.cwd": "${workspaceFolder}",
   "python.testing.pytestArgs": [
     "tests"
