@@ -34,8 +34,8 @@ async def main():
     
     # Start HTTP server
     http_server = HTTPServer(
-        speak_controller=container.speak_controller,
-        voice_context_controller=container.voice_context_controller,
+        speak_handler=container.speak_controller.handle,
+        voice_context_handler=container.voice_context_controller.handle,
         port=config.http_port,
         host=config.http_host,
     )

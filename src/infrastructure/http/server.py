@@ -1,10 +1,16 @@
 """HTTP server using aiohttp."""
+from __future__ import annotations
+
 import logging
+from collections.abc import Awaitable, Callable
+
 from aiohttp import web
-from src.presentation.http_controllers import SpeakController, VoiceContextController
+
 from src.__version__ import __version__, __author__, __description__
 
 logger = logging.getLogger(__name__)
+
+RequestHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
 
 class HTTPServer:
@@ -15,21 +21,21 @@ class HTTPServer:
     
     def __init__(
         self,
-        speak_controller: SpeakController,
-        voice_context_controller: VoiceContextController,
+        speak_handler: RequestHandler,
+        voice_context_handler: RequestHandler,
         port: int,
         host: str = "127.0.0.1",
     ):
         """Initialize HTTP server.
         
         Args:
-            speak_controller: Controller for /speak endpoint
-            voice_context_controller: Controller for /voice-context endpoint
+            speak_handler: Handler for /speak endpoint
+            voice_context_handler: Handler for /voice-context endpoint
             port: Port to listen on
             host: Host interface to bind to
         """
-        self._speak_controller = speak_controller
-        self._voice_context_controller = voice_context_controller
+        self._speak_handler = speak_handler
+        self._voice_context_handler = voice_context_handler
         self._port = port
         self._host = host
         self._runner = None
@@ -42,8 +48,8 @@ class HTTPServer:
         app.router.add_get('/health', self._health)
         app.router.add_get('/version', self._version)
         app.router.add_get('/about', self._about)
-        app.router.add_get('/voice-context', self._voice_context_controller.handle)
-        app.router.add_post('/speak', self._speak_controller.handle)
+        app.router.add_get('/voice-context', self._voice_context_handler)
+        app.router.add_post('/speak', self._speak_handler)
         return app
 
     async def _home(self, request: web.Request) -> web.Response:
