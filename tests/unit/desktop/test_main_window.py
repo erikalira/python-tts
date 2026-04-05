@@ -49,9 +49,13 @@ class DummyTextWidget:
 class DummyRoot:
     def __init__(self):
         self.after_calls = []
+        self.withdraw_calls = 0
 
     def after(self, delay_ms, callback):
         self.after_calls.append((delay_ms, callback))
+
+    def withdraw(self):
+        self.withdraw_calls += 1
 
 
 def build_main_window():
@@ -156,3 +160,31 @@ def test_main_window_drain_logs_appends_messages_and_reschedules():
     assert window._append_log.call_count == 2
     assert [call.args[0] for call in window._append_log.call_args_list] == ["linha 1", "linha 2"]
     assert window.root.after_calls == [(250, window._drain_logs)]
+
+
+def test_main_window_hide_to_tray_withdraws_root_and_logs_action():
+    window = build_main_window()
+    window.root = DummyRoot()
+
+    window.hide_to_tray()
+
+    assert window.root.withdraw_calls == 1
+    assert window._log_queue.get_nowait() == "Janela principal minimizada para a bandeja"
+
+
+def test_main_window_drain_ui_actions_runs_callback_and_reschedules():
+    callback = Mock()
+    window = DesktopAppMainWindow(
+        config=DesktopAppConfig.create_default(),
+        on_save=Mock(),
+        on_test_connection=Mock(),
+        on_send_test=Mock(),
+        on_refresh_voice_context=Mock(),
+        on_process_ui_actions=callback,
+    )
+    window.root = DummyRoot()
+
+    window._drain_ui_actions()
+
+    callback.assert_called_once_with()
+    assert window.root.after_calls == [(100, window._drain_ui_actions)]

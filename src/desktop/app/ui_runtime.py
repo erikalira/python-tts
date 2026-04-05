@@ -40,9 +40,19 @@ class DesktopAppUIRuntimeCoordinator:
             on_test_connection=on_test_connection,
             on_send_test=on_send_test,
             on_refresh_voice_context=on_refresh_voice_context,
+            on_process_ui_actions=self.drain_queued_actions,
         )
         self._main_window.show()
 
     def queue(self, action: Callable[[], None]) -> None:
         """Queue a UI action to run on the main thread."""
         self._main_loop_actions.put(action)
+
+    def drain_queued_actions(self) -> None:
+        """Run all queued UI actions without blocking the Tk main loop."""
+        while True:
+            try:
+                action = self._main_loop_actions.get_nowait()
+            except queue.Empty:
+                return
+            action()

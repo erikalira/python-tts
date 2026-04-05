@@ -115,7 +115,9 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
 
     def _create_icon(self) -> Icon:
         menu = Menu(
-            MenuItem("Desktop App", self._handle_status_click, default=True),
+            # On Windows, pystray maps left click to the default menu item and
+            # right click to the context menu. Keep the default action explicit.
+            MenuItem("Abrir Desktop App", self._handle_status_click, default=True),
             MenuItem(
                 f"Digite {self._config.hotkey.trigger_open}texto{self._config.hotkey.trigger_close} para falar",
                 lambda: None,
