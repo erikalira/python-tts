@@ -2,21 +2,23 @@
 import asyncio
 
 import pytest
-from src.application.results import SpeakTextResult
-from src.application.use_cases import (
-    ConfigureTTSUseCase,
-    JoinVoiceChannelUseCase,
-    LeaveVoiceChannelUseCase,
+from src.application.results import (
     JOIN_RESULT_OK,
     JOIN_RESULT_USER_NOT_IN_CHANNEL,
     LEAVE_RESULT_NOT_CONNECTED,
     LEAVE_RESULT_OK,
-    SpeakTextUseCase,
     SPEAK_RESULT_MISSING_TEXT,
     SPEAK_RESULT_OK,
     SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_QUEUE_FULL,
     SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+    SpeakTextResult,
+)
+from src.application.use_cases import (
+    ConfigureTTSUseCase,
+    JoinVoiceChannelUseCase,
+    LeaveVoiceChannelUseCase,
+    SpeakTextUseCase,
 )
 from src.core.entities import TTSRequest, TTSConfig
 from src.infrastructure.audio_queue import InMemoryAudioQueue
