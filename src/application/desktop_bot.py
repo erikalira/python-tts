@@ -2,9 +2,26 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Optional, Protocol
 
 DESKTOP_BOT_TEST_MESSAGE = "Teste rapido do Desktop App."
+
+
+@dataclass(frozen=True)
+class DesktopBotActionResult:
+    """Structured result for Desktop App actions against the bot runtime."""
+
+    success: bool
+    message: str
+
+
+@dataclass(frozen=True)
+class DesktopBotVoiceContextResult(DesktopBotActionResult):
+    """Structured result for Desktop App voice-context detection."""
+
+    guild_name: str | None = None
+    channel_name: str | None = None
 
 
 class DesktopBotGateway(Protocol):
@@ -35,11 +52,16 @@ class CheckDesktopBotConnectionUseCase:
     def __init__(self, gateway: DesktopBotGateway):
         self._gateway = gateway
 
-    def execute(self) -> dict:
+    def execute(self) -> DesktopBotActionResult:
         """Execute the bot health check flow."""
         if not self._gateway.has_bot_url():
-            return {"success": False, "message": "Bot URL nao configurada"}
-        return self._gateway.check_connection()
+            return DesktopBotActionResult(success=False, message="Bot URL nao configurada")
+
+        payload = self._gateway.check_connection()
+        return DesktopBotActionResult(
+            success=bool(payload.get("success")),
+            message=payload.get("message", "Sem resposta do bot"),
+        )
 
 
 class SendDesktopBotTestMessageUseCase:
@@ -49,22 +71,31 @@ class SendDesktopBotTestMessageUseCase:
         self._gateway = gateway
         self._test_message = test_message
 
-    def execute(self) -> dict:
+    def execute(self) -> DesktopBotActionResult:
         """Send the configured test message and return a neutral result."""
         if not self._gateway.has_bot_url():
-            return {"success": False, "message": "Bot URL nao configurada para envio de teste"}
+            return DesktopBotActionResult(
+                success=False,
+                message="Bot URL nao configurada para envio de teste",
+            )
         if not self._gateway.has_member_id():
-            return {"success": False, "message": "User ID e necessario para enviar o teste"}
+            return DesktopBotActionResult(
+                success=False,
+                message="User ID e necessario para enviar o teste",
+            )
 
         success = self._gateway.send_text(self._test_message)
         if success:
-            return {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
+            return DesktopBotActionResult(
+                success=True,
+                message="Mensagem de teste enviada ao bot com sucesso",
+            )
 
         error_message = (
             self._gateway.get_last_error_message()
             or "Nao foi possivel enviar a mensagem de teste ao bot"
         )
-        return {"success": False, "message": error_message}
+        return DesktopBotActionResult(success=False, message=error_message)
 
 
 class FetchDesktopBotVoiceContextUseCase:
@@ -73,10 +104,23 @@ class FetchDesktopBotVoiceContextUseCase:
     def __init__(self, gateway: DesktopBotGateway):
         self._gateway = gateway
 
-    def execute(self) -> dict:
+    def execute(self) -> DesktopBotVoiceContextResult:
         """Fetch the current voice context using the injected gateway."""
         if not self._gateway.has_bot_url():
-            return {"success": False, "message": "Bot URL nao configurada para detectar o canal"}
+            return DesktopBotVoiceContextResult(
+                success=False,
+                message="Bot URL nao configurada para detectar o canal",
+            )
         if not self._gateway.has_member_id():
-            return {"success": False, "message": "User ID e necessario para detectar o canal"}
-        return self._gateway.fetch_voice_context()
+            return DesktopBotVoiceContextResult(
+                success=False,
+                message="User ID e necessario para detectar o canal",
+            )
+
+        payload = self._gateway.fetch_voice_context()
+        return DesktopBotVoiceContextResult(
+            success=bool(payload.get("success")),
+            message=payload.get("message", "Sem resposta da deteccao de canal"),
+            guild_name=payload.get("guild_name"),
+            channel_name=payload.get("channel_name"),
+        )

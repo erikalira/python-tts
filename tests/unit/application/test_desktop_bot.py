@@ -1,6 +1,8 @@
 from src.application.desktop_bot import (
     CheckDesktopBotConnectionUseCase,
     DESKTOP_BOT_TEST_MESSAGE,
+    DesktopBotActionResult,
+    DesktopBotVoiceContextResult,
     FetchDesktopBotVoiceContextUseCase,
     SendDesktopBotTestMessageUseCase,
 )
@@ -53,7 +55,7 @@ def test_check_desktop_bot_connection_requires_bot_url():
 
     result = CheckDesktopBotConnectionUseCase(gateway).execute()
 
-    assert result == {"success": False, "message": "Bot URL nao configurada"}
+    assert result == DesktopBotActionResult(success=False, message="Bot URL nao configurada")
 
 
 def test_send_desktop_bot_test_message_requires_member_id():
@@ -61,7 +63,10 @@ def test_send_desktop_bot_test_message_requires_member_id():
 
     result = SendDesktopBotTestMessageUseCase(gateway).execute()
 
-    assert result == {"success": False, "message": "User ID e necessario para enviar o teste"}
+    assert result == DesktopBotActionResult(
+        success=False,
+        message="User ID e necessario para enviar o teste",
+    )
 
 
 def test_send_desktop_bot_test_message_delegates_to_gateway():
@@ -69,7 +74,10 @@ def test_send_desktop_bot_test_message_delegates_to_gateway():
 
     result = SendDesktopBotTestMessageUseCase(gateway).execute()
 
-    assert result == {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
+    assert result == DesktopBotActionResult(
+        success=True,
+        message="Mensagem de teste enviada ao bot com sucesso",
+    )
     assert gateway.sent_texts == [DESKTOP_BOT_TEST_MESSAGE]
 
 
@@ -81,7 +89,10 @@ def test_send_desktop_bot_test_message_returns_last_error_message():
 
     result = SendDesktopBotTestMessageUseCase(gateway).execute()
 
-    assert result == {"success": False, "message": "Bot respondeu HTTP 400: playback failed"}
+    assert result == DesktopBotActionResult(
+        success=False,
+        message="Bot respondeu HTTP 400: playback failed",
+    )
 
 
 def test_fetch_desktop_bot_voice_context_requires_member_id():
@@ -89,4 +100,7 @@ def test_fetch_desktop_bot_voice_context_requires_member_id():
 
     result = FetchDesktopBotVoiceContextUseCase(gateway).execute()
 
-    assert result == {"success": False, "message": "User ID e necessario para detectar o canal"}
+    assert result == DesktopBotVoiceContextResult(
+        success=False,
+        message="User ID e necessario para detectar o canal",
+    )

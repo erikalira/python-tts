@@ -6,6 +6,7 @@ import logging
 import queue
 from typing import Callable, Optional
 
+from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
 from ..config.desktop_config import ConfigurationValidator, DesktopAppConfig
 from .config_dialogs import GUIConfig
 from .main_window_presenter import DesktopAppMainWindowPresenter, MainWindowMessage
@@ -21,9 +22,9 @@ class DesktopAppMainWindow:
         self,
         config: DesktopAppConfig,
         on_save: Callable[[DesktopAppConfig], dict],
-        on_test_connection: Callable[[DesktopAppConfig], dict],
-        on_send_test: Callable[[DesktopAppConfig], dict],
-        on_refresh_voice_context: Callable[[DesktopAppConfig], dict],
+        on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResult],
+        on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResult],
+        on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResult],
         on_process_ui_actions: Optional[Callable[[], None]] = None,
     ):
         self.root: Optional[object] = None

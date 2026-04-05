@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from src.application.desktop_bot import DesktopBotActionResult
 from ..config.desktop_config import DesktopAppConfig
 
 SUCCESS_COLOR = "#155724"
@@ -47,10 +48,10 @@ class DesktopAppMainWindowPresenter:
             color=SUCCESS_COLOR if success else ERROR_COLOR,
         )
 
-    def build_connection_result(self, result: dict, default_message: str) -> MainWindowMessage:
+    def build_connection_result(self, result: DesktopBotActionResult, default_message: str) -> MainWindowMessage:
         return MainWindowMessage(
-            text=result.get("message", default_message),
-            color=SUCCESS_COLOR if result.get("success") else ERROR_COLOR,
+            text=result.message or default_message,
+            color=SUCCESS_COLOR if result.success else ERROR_COLOR,
         )
 
     def build_invalid_value_message(self, action_name: str, exc: ValueError) -> MainWindowMessage:

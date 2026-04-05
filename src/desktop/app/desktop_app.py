@@ -5,6 +5,7 @@ import logging
 import threading
 from typing import Callable, Optional
 
+from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
 from ..gui.configuration_service import ConfigurationService
@@ -218,17 +219,17 @@ class DesktopApp:
             self._config = updated_config
         return result
 
-    def _test_bot_connection(self, config: DesktopAppConfig) -> dict:
+    def _test_bot_connection(self, config: DesktopAppConfig) -> DesktopBotActionResult:
         """Test connectivity against the bot health endpoint."""
         self._ensure_action_coordinators()
         return self._bot_actions.test_bot_connection(config)
 
-    def _send_test_message(self, config: DesktopAppConfig) -> dict:
+    def _send_test_message(self, config: DesktopAppConfig) -> DesktopBotActionResult:
         """Send a short manual test message through the bot."""
         self._ensure_action_coordinators()
         return self._bot_actions.send_test_message(config)
 
-    def _refresh_voice_context(self, config: DesktopAppConfig) -> dict:
+    def _refresh_voice_context(self, config: DesktopAppConfig) -> DesktopBotVoiceContextResult:
         """Refresh the currently detected Discord voice context."""
         self._ensure_action_coordinators()
         return self._bot_actions.fetch_current_voice_context(config)

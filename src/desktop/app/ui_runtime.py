@@ -5,6 +5,7 @@ from __future__ import annotations
 import queue
 from typing import Callable, Optional
 
+from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
 from ..config.desktop_config import DesktopAppConfig
 from ..gui.main_window import DesktopAppMainWindow
 
@@ -29,9 +30,9 @@ class DesktopAppUIRuntimeCoordinator:
         *,
         config: DesktopAppConfig,
         on_save: Callable[[DesktopAppConfig], dict],
-        on_test_connection: Callable[[DesktopAppConfig], dict],
-        on_send_test: Callable[[DesktopAppConfig], dict],
-        on_refresh_voice_context: Callable[[DesktopAppConfig], dict],
+        on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResult],
+        on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResult],
+        on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResult],
     ) -> None:
         """Create and show the main Desktop App window."""
         self._main_window = DesktopAppMainWindow(

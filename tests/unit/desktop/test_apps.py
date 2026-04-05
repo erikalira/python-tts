@@ -1,6 +1,10 @@
 from unittest.mock import Mock
 
-from src.application.desktop_bot import DESKTOP_BOT_TEST_MESSAGE
+from src.application.desktop_bot import (
+    DESKTOP_BOT_TEST_MESSAGE,
+    DesktopBotActionResult,
+    DesktopBotVoiceContextResult,
+)
 from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_FAILED,
     TTS_EXECUTION_RESULT_MISSING_TEXT,
@@ -210,7 +214,7 @@ def test_desktop_app_test_bot_connection_uses_http_client(monkeypatch):
 
     result = app._test_bot_connection(config)
 
-    assert result == {"success": True, "message": "ok"}
+    assert result == DesktopBotActionResult(success=True, message="ok")
     fake_client.check_connection.assert_called_once_with()
 
 
@@ -222,8 +226,8 @@ def test_desktop_app_send_test_message_requires_discord_identifiers():
 
     result = app._send_test_message(config)
 
-    assert result["success"] is False
-    assert "User ID" in result["message"]
+    assert result.success is False
+    assert "User ID" in result.message
 
 
 def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
@@ -240,7 +244,10 @@ def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
 
     result = app._send_test_message(config)
 
-    assert result == {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
+    assert result == DesktopBotActionResult(
+        success=True,
+        message="Mensagem de teste enviada ao bot com sucesso",
+    )
     fake_client.send_text.assert_called_once_with(DESKTOP_BOT_TEST_MESSAGE)
 
 
@@ -259,10 +266,10 @@ def test_desktop_app_send_test_message_returns_bot_error_details(monkeypatch):
 
     result = app._send_test_message(config)
 
-    assert result == {
-        "success": False,
-        "message": "Bot respondeu HTTP 400: user is not connected to a voice channel",
-    }
+    assert result == DesktopBotActionResult(
+        success=False,
+        message="Bot respondeu HTTP 400: user is not connected to a voice channel",
+    )
     fake_client.send_text.assert_called_once_with(DESKTOP_BOT_TEST_MESSAGE)
 
 
@@ -283,8 +290,8 @@ def test_desktop_app_refresh_voice_context_uses_http_client(monkeypatch):
 
     result = app._refresh_voice_context(config)
 
-    assert result == {
-        "success": True,
-        "message": "Canal detectado: Guild A / Sala 1",
-    }
+    assert result == DesktopBotVoiceContextResult(
+        success=True,
+        message="Canal detectado: Guild A / Sala 1",
+    )
     fake_client.fetch_voice_context.assert_called_once_with()
