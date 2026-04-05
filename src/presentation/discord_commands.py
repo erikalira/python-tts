@@ -1,7 +1,6 @@
 """Discord bot commands."""
 
 import logging
-import shutil
 from importlib.util import find_spec
 
 import discord
@@ -15,6 +14,7 @@ from src.application.use_cases import (
     SpeakTextUseCase,
 )
 from src.core.entities import TTSRequest
+from src.infrastructure.discord.ffmpeg_runtime import has_ffmpeg_runtime
 from src.presentation.discord_presenters import (
     DiscordJoinPresenter,
     DiscordLeavePresenter,
@@ -23,36 +23,31 @@ from src.presentation.discord_presenters import (
 
 logger = logging.getLogger(__name__)
 
-HAS_FFMPEG = shutil.which("ffmpeg") is not None
-HAS_PYNACL = find_spec("nacl") is not None
+def _has_pynacl() -> bool:
+    return find_spec("nacl") is not None
 
-try:
-    import davey  # noqa: F401
 
-    HAS_DAVEY = True
-except ImportError:
-    HAS_DAVEY = False
+def _has_davey() -> bool:
+    return find_spec("davey") is not None
 
 
 def _has_voice_runtime_support() -> bool:
-    return HAS_PYNACL and HAS_DAVEY and HAS_FFMPEG
+    return _has_pynacl() and _has_davey() and has_ffmpeg_runtime()
 
 
-def _get_voice_dependency_message() -> str:
+def _get_missing_voice_dependencies() -> list[str]:
     missing = []
-    if not HAS_PYNACL:
+    if not _has_pynacl():
         missing.append("PyNaCl")
-    if not HAS_DAVEY:
+    if not _has_davey():
         missing.append("davey")
-    if not HAS_FFMPEG:
+    if not has_ffmpeg_runtime():
         missing.append("FFmpeg")
-    if not missing:
-        return ""
-    missing_text = ", ".join(missing)
-    return (
-        f"{missing_text} são necessários para suporte a voz nesta versão do Discord. "
-        "Instale as dependências e tente novamente."
-    )
+    return missing
+
+
+def _get_voice_runtime_unavailable_message() -> str:
+    return "❌ O recurso de voz do bot está indisponível no momento. Tente novamente mais tarde."
 
 
 class DiscordCommands:
@@ -131,6 +126,14 @@ class DiscordCommands:
         async def about(interaction: discord.Interaction):
             await self._handle_about(interaction)
 
+    def _log_voice_runtime_unavailable(self, command_name: str) -> None:
+        missing = _get_missing_voice_dependencies()
+        logger.error(
+            "[VOICE_RUNTIME] Command '%s' blocked because required server dependencies are missing: %s",
+            command_name,
+            ", ".join(missing) if missing else "unknown",
+        )
+
     async def _send_bot_inactive_message(self, interaction: discord.Interaction) -> bool:
         try:
             await interaction.edit_original_response(
@@ -146,7 +149,8 @@ class DiscordCommands:
 
     async def _handle_join(self, interaction: discord.Interaction):
         if not _has_voice_runtime_support():
-            await interaction.response.send_message(_get_voice_dependency_message(), ephemeral=True)
+            self._log_voice_runtime_unavailable("join")
+            await interaction.response.send_message(_get_voice_runtime_unavailable_message(), ephemeral=True)
             return
 
         guild_id = interaction.guild.id if interaction.guild else None
@@ -177,7 +181,8 @@ class DiscordCommands:
         await interaction.response.defer(ephemeral=True, thinking=True)
 
         if not _has_voice_runtime_support():
-            await interaction.edit_original_response(content=_get_voice_dependency_message())
+            self._log_voice_runtime_unavailable("speak")
+            await interaction.edit_original_response(content=_get_voice_runtime_unavailable_message())
             return
 
         try:
@@ -279,12 +284,16 @@ class DiscordCommands:
         from src.__version__ import __author__, __description__, __version__
         import platform
 
+        has_ffmpeg = has_ffmpeg_runtime()
+        has_pynacl = _has_pynacl()
+        has_davey = _has_davey()
+
         embed = discord.Embed(title="🤖 TTS Bot Information", description=__description__, color=discord.Color.blue())
         embed.add_field(name="Version", value=f"`{__version__}`", inline=True)
         embed.add_field(name="Author", value=__author__, inline=True)
-        embed.add_field(name="FFmpeg", value="✅ Available" if HAS_FFMPEG else "❌ Not found", inline=True)
-        embed.add_field(name="PyNaCl", value="✅ Installed" if HAS_PYNACL else "❌ Not installed", inline=True)
-        embed.add_field(name="davey", value="✅ Installed" if HAS_DAVEY else "❌ Not installed", inline=True)
+        embed.add_field(name="FFmpeg", value="✅ Available" if has_ffmpeg else "❌ Not found", inline=True)
+        embed.add_field(name="PyNaCl", value="✅ Installed" if has_pynacl else "❌ Not installed", inline=True)
+        embed.add_field(name="davey", value="✅ Installed" if has_davey else "❌ Not installed", inline=True)
         embed.add_field(
             name="Commands",
             value="• `/join` - Join your voice channel\n• `/leave` - Leave voice channel\n"

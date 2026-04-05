@@ -5,6 +5,7 @@ from typing import Optional, Dict
 import discord
 from src.core.interfaces import IVoiceChannel, IVoiceChannelRepository
 from src.core.entities import AudioFile
+from src.infrastructure.discord.ffmpeg_runtime import resolve_ffmpeg_executable
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,11 @@ class DiscordVoiceChannel(IVoiceChannel):
                 playback_done.set()
             
             # Start audio playback with callback
-            source = discord.FFmpegPCMAudio(audio.path)
+            ffmpeg_executable = resolve_ffmpeg_executable()
+            if not ffmpeg_executable:
+                raise RuntimeError("FFmpeg executable not available for the current process")
+
+            source = discord.FFmpegPCMAudio(audio.path, executable=ffmpeg_executable)
             if not voice_client:
                 raise RuntimeError("Voice client unavailable after connection")
 

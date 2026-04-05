@@ -63,6 +63,12 @@ DISCORD_BOT_HOST=0.0.0.0
 DISCORD_BOT_PORT=10000
 ```
 
+If the Windows service account cannot resolve `ffmpeg` from `PATH`, set an explicit path in `.env`:
+
+```env
+FFMPEG_PATH=C:\ffmpeg\bin\ffmpeg.exe
+```
+
 If the Desktop App will connect to this server from another machine, make sure:
 
 - the Windows firewall allows inbound access to the configured bot port
@@ -310,6 +316,8 @@ This usually points to an environment difference between your shell and the serv
 - different file permissions
 - missing access to `.env`
 - missing access to `ffmpeg`
+
+If `ffmpeg` works in your user terminal but not in the service, set `FFMPEG_PATH` in the repository root `.env` and restart the service.
 
 ### Bot HTTP API is not reachable from another machine
 
