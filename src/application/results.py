@@ -86,3 +86,19 @@ class SpeakTextResult(ResultBase):
     queue_size: Optional[int] = None
     item_id: Optional[str] = None
     error_detail: Optional[str] = None
+
+
+@dataclass(slots=True)
+class TTSConfigurationData(ResultBase):
+    engine: str
+    language: str
+    voice_id: str
+    rate: int
+
+
+@dataclass(slots=True)
+class ConfigureTTSResult(ResultBase):
+    success: bool
+    guild_id: Optional[int] = None
+    config: Optional[TTSConfigurationData] = None
+    message: Optional[str] = None

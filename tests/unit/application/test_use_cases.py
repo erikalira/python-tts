@@ -3,6 +3,7 @@ import asyncio
 
 import pytest
 from src.application.results import (
+    ConfigureTTSResult,
     JOIN_RESULT_OK,
     JOIN_RESULT_USER_NOT_IN_CHANNEL,
     LEAVE_RESULT_NOT_CONNECTED,
@@ -13,6 +14,7 @@ from src.application.results import (
     SPEAK_RESULT_QUEUE_FULL,
     SPEAK_RESULT_USER_NOT_IN_CHANNEL,
     SpeakTextResult,
+    TTSConfigurationData,
 )
 from src.application.use_cases import (
     ConfigureTTSUseCase,
@@ -276,7 +278,16 @@ class TestConfigureTTSUseCase:
         
         result = use_case.get_config(guild_id=123)
         
-        assert result["success"] is True
+        assert result == ConfigureTTSResult(
+            success=True,
+            guild_id=123,
+            config=TTSConfigurationData(
+                engine="gtts",
+                language="pt",
+                voice_id="roa/pt-br",
+                rate=150,
+            ),
+        )
         assert "config" in result
         assert result["config"]["engine"] == "gtts"
         assert result["config"]["language"] == "pt"
@@ -322,7 +333,10 @@ class TestConfigureTTSUseCase:
         
         result = await use_case.update_config_async(guild_id=123, engine="invalid")
         
-        assert result["success"] is False
+        assert result == ConfigureTTSResult(
+            success=False,
+            message="Invalid engine. Use 'gtts' or 'pyttsx3'",
+        )
         assert "Invalid engine" in result["message"]
 
 
