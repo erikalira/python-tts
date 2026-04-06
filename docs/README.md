@@ -13,6 +13,7 @@ This directory contains the repository's supporting documentation. The root `REA
 - [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview and layer map
 - [RUNTIME_FLOWS.md](RUNTIME_FLOWS.md): bot and Desktop App entrypoints, composition roots, and main runtime flows
 - [ARCHITECTURE_TRANSITIONS.md](ARCHITECTURE_TRANSITIONS.md): guidance for temporary facades, compatibility paths, and steady-state cleanup
+- [CHANGE_MAP.md](CHANGE_MAP.md): where to start for bot, desktop, shared, refactor, and documentation changes
 - [README_DESKTOP_APP.md](README_DESKTOP_APP.md): desktop app guide
 - [HOTKEY_SETUP.md](HOTKEY_SETUP.md): hotkey setup and usage
 

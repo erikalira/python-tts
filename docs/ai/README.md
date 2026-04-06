@@ -17,6 +17,14 @@ Use these files as the shared foundation for:
 - `documentation-policy.md`: where docs belong and how to maintain the index
 - `change-playbooks.md`: step-by-step guidance for common change types
 
+## Recommended companion docs
+
+These are not canonical policy files, but they are useful when reasoning about concrete changes:
+
+- `../RUNTIME_FLOWS.md`: entrypoints, composition roots, and main runtime paths
+- `../ARCHITECTURE_TRANSITIONS.md`: temporary compatibility and steady-state guidance
+- `../CHANGE_MAP.md`: where to start for each kind of change
+
 ## Working rule
 
 Keep stable policy here. Tool-specific files should summarize and point here instead of duplicating long policy blocks.
