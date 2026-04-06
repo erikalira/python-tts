@@ -102,6 +102,8 @@ Use o README principal como ponto de entrada e deixe os detalhes nos guias espec
 - [Governanca de IA e instrucoes canonicas](docs/ai/README.md)
 - [Guia de build do executavel Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
+- [Fluxos de runtime e composition roots](docs/RUNTIME_FLOWS.md)
+- [Guia de transicoes arquiteturais e compatibilidade temporaria](docs/ARCHITECTURE_TRANSITIONS.md)
 - [Guia do Desktop App](docs/README_DESKTOP_APP.md)
 - [Configuracao de hotkeys](docs/HOTKEY_SETUP.md)
 
