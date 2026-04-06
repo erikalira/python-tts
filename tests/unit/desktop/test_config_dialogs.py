@@ -308,7 +308,7 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
 
 
 def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
-    from src.desktop.gui import config_dialogs
+    from src.desktop.gui import settings_gui_dialog
 
     gui = GUIConfig()
     gui.root = DummyRoot()
@@ -325,7 +325,7 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
     gui.console_logs_var = DummyVar(True)
     gui.local_tts_enabled_var = DummyVar(True)
 
-    monkeypatch.setattr(config_dialogs.ConfigurationValidator, "validate", lambda config: (True, []))
+    monkeypatch.setattr(settings_gui_dialog.ConfigurationValidator, "validate", lambda config: (True, []))
 
     gui._save_config()
 
@@ -339,7 +339,7 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
 
 
 def test_gui_config_save_config_shows_validation_errors(monkeypatch, prevent_real_messageboxes):
-    from src.desktop.gui import config_dialogs
+    from src.desktop.gui import settings_gui_dialog
 
     gui = GUIConfig()
     gui.config = DesktopAppConfig.create_default()
@@ -355,7 +355,7 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch, prevent_rea
     gui.console_logs_var = DummyVar(True)
     gui.local_tts_enabled_var = DummyVar(False)
 
-    monkeypatch.setattr(config_dialogs.ConfigurationValidator, "validate", lambda config: (False, ["bad rate"]))
+    monkeypatch.setattr(settings_gui_dialog.ConfigurationValidator, "validate", lambda config: (False, ["bad rate"]))
 
     gui._save_config()
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import Callable, Optional
 
 from src.application.desktop_bot import (
@@ -17,19 +16,12 @@ from src.application.desktop_bot import (
 from ..config.desktop_config import (
     DesktopAppConfig,
 )
+from ..results import DesktopConfigurationSaveResult
 from ..gui.configuration_service import ConfigurationService
 from ..services.discord_bot_client import HttpDiscordBotClient
 from .configuration_application import DesktopConfigurationApplicationService
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class DesktopConfigurationSaveResult:
-    """Structured result for Desktop App configuration saves from the main window."""
-
-    success: bool
-    message: str
 
 
 class DesktopBotActions:

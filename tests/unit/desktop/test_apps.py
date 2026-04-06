@@ -12,7 +12,8 @@ from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_MISSING_TEXT,
     TTS_EXECUTION_RESULT_OK,
 )
-from src.desktop.app.desktop_actions import DesktopConfigurationCoordinator, DesktopConfigurationSaveResult
+from src.desktop.app.desktop_actions import DesktopConfigurationCoordinator
+from src.desktop.results import DesktopConfigurationSaveResult
 from src.desktop.app.desktop_app import DesktopApp
 from src.desktop.app.tts_runtime import (
     DesktopAppHotkeyHandler,

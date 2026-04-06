@@ -10,10 +10,11 @@ from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
 from ..gui.configuration_service import ConfigurationService
 from ..gui.tk_support import TKINTER_AVAILABLE
+from ..results import DesktopConfigurationSaveResult
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
 from .configuration_application import DesktopConfigurationApplicationService
-from .desktop_actions import DesktopBotActions, DesktopConfigurationCoordinator, DesktopConfigurationSaveResult
+from .desktop_actions import DesktopBotActions, DesktopConfigurationCoordinator
 from .runtime_lifecycle import DesktopAppLifecycleCoordinator
 from .runtime_status import DesktopAppStatusBuilder
 from .tts_runtime import DesktopAppHotkeyHandler, DesktopAppTTSProcessor, DesktopAppTTSResultPresenter

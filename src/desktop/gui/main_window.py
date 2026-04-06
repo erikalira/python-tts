@@ -7,8 +7,8 @@ import queue
 from typing import Callable, Optional
 
 from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
-from ..app.desktop_actions import DesktopConfigurationSaveResult
 from ..config.desktop_config import ConfigurationValidator, DesktopAppConfig
+from ..results import DesktopConfigurationSaveResult
 from .config_dialogs import GUIConfig
 from .main_window_presenter import DesktopAppMainWindowPresenter, MainWindowMessage
 from .ui_logging import UILogHandler

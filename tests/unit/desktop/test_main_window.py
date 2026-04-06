@@ -2,10 +2,10 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
-from src.desktop.app.desktop_actions import DesktopConfigurationSaveResult
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.gui.main_window import DesktopAppMainWindow
 from src.desktop.gui.main_window_presenter import ERROR_COLOR, SUCCESS_COLOR, WARNING_COLOR
+from src.desktop.results import DesktopConfigurationSaveResult
 
 
 class DummyVar:
