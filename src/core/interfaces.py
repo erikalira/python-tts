@@ -94,26 +94,26 @@ class IVoiceChannelRepository(ABC):
 
 
 class IConfigRepository(ABC):
-    """Interface for configuration management."""
+    """Interface for guild-scoped TTS configuration management."""
     
     @abstractmethod
-    def get_config(self, user_id: Optional[int] = None) -> TTSConfig:
-        """Get TTS configuration for user or global default."""
+    def get_config(self, guild_id: Optional[int] = None) -> TTSConfig:
+        """Get TTS configuration for a guild or the global default."""
         pass
 
     @abstractmethod
-    async def load_config_async(self, user_id: Optional[int] = None) -> TTSConfig:
-        """Load TTS configuration asynchronously for user or global default."""
+    async def load_config_async(self, guild_id: Optional[int] = None) -> TTSConfig:
+        """Load TTS configuration asynchronously for a guild or the global default."""
         pass
     
     @abstractmethod
-    def set_config(self, user_id: int, config: TTSConfig) -> None:
-        """Set TTS configuration for a specific user."""
+    def set_config(self, guild_id: int, config: TTSConfig) -> None:
+        """Set TTS configuration for a specific guild."""
         pass
 
     @abstractmethod
-    async def save_config_async(self, user_id: int, config: TTSConfig) -> bool:
-        """Persist TTS configuration asynchronously for a specific user."""
+    async def save_config_async(self, guild_id: int, config: TTSConfig) -> bool:
+        """Persist TTS configuration asynchronously for a specific guild."""
         pass
 
 
