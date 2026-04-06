@@ -7,6 +7,7 @@ import queue
 from typing import Callable, Optional
 
 from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
+from ..app.desktop_actions import DesktopConfigurationSaveResult
 from ..config.desktop_config import ConfigurationValidator, DesktopAppConfig
 from .config_dialogs import GUIConfig
 from .main_window_presenter import DesktopAppMainWindowPresenter, MainWindowMessage
@@ -21,7 +22,7 @@ class DesktopAppMainWindow:
     def __init__(
         self,
         config: DesktopAppConfig,
-        on_save: Callable[[DesktopAppConfig], dict],
+        on_save: Callable[[DesktopAppConfig], DesktopConfigurationSaveResult],
         on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResult],
         on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResult],
         on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResult],
@@ -205,12 +206,12 @@ class DesktopAppMainWindow:
             return
 
         result = self._on_save(new_config)
-        if result.get("success"):
+        if result.success:
             self.config = new_config
-            self._set_status(result.get("message", "Configuracao salva com sucesso"), success=True)
+            self._set_status(result.message, success=True)
             self._refresh_local_status()
         else:
-            self._set_status(result.get("message", "Falha ao salvar configuracao"), success=False)
+            self._set_status(result.message, success=False)
 
     def _handle_test_connection(self) -> None:
         try:

@@ -13,7 +13,7 @@ from ..gui.tk_support import TKINTER_AVAILABLE
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
 from .configuration_application import DesktopConfigurationApplicationService
-from .desktop_actions import DesktopBotActions, DesktopConfigurationCoordinator
+from .desktop_actions import DesktopBotActions, DesktopConfigurationCoordinator, DesktopConfigurationSaveResult
 from .runtime_lifecycle import DesktopAppLifecycleCoordinator
 from .runtime_status import DesktopAppStatusBuilder
 from .tts_runtime import DesktopAppHotkeyHandler, DesktopAppTTSProcessor, DesktopAppTTSResultPresenter
@@ -208,14 +208,17 @@ class DesktopApp:
             on_refresh_voice_context=self._refresh_voice_context,
         )
 
-    def _save_configuration_from_ui(self, updated_config: DesktopAppConfig) -> dict:
+    def _save_configuration_from_ui(self, updated_config: DesktopAppConfig) -> DesktopConfigurationSaveResult:
         """Validate, persist, and apply config changes from the main window."""
         self._ensure_action_coordinators()
         if self._configuration_coordinator is None:
-            return {"success": False, "message": "Coordenador de configuracao indisponivel"}
+            return DesktopConfigurationSaveResult(
+                success=False,
+                message="Coordenador de configuracao indisponivel",
+            )
 
         result = self._configuration_coordinator.save_from_ui(updated_config)
-        if result.get("success"):
+        if result.success:
             self._config = updated_config
         return result
 

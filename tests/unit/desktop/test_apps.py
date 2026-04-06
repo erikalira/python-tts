@@ -12,7 +12,7 @@ from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_MISSING_TEXT,
     TTS_EXECUTION_RESULT_OK,
 )
-from src.desktop.app.desktop_actions import DesktopConfigurationCoordinator
+from src.desktop.app.desktop_actions import DesktopConfigurationCoordinator, DesktopConfigurationSaveResult
 from src.desktop.app.desktop_app import DesktopApp
 from src.desktop.app.tts_runtime import (
     DesktopAppHotkeyHandler,
@@ -199,7 +199,10 @@ def test_desktop_app_save_configuration_from_ui_applies_changes():
 
     result = app._save_configuration_from_ui(updated_config)
 
-    assert result["success"] is True
+    assert result == DesktopConfigurationSaveResult(
+        success=True,
+        message="Configuracao aplicada com sucesso",
+    )
     app._config_repository.save.assert_called_once_with(updated_config)
     app._update_services_config.assert_called_once()
 

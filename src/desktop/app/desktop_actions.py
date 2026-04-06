@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 from src.application.desktop_bot import (
@@ -21,6 +22,14 @@ from ..services.discord_bot_client import HttpDiscordBotClient
 from .configuration_application import DesktopConfigurationApplicationService
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class DesktopConfigurationSaveResult:
+    """Structured result for Desktop App configuration saves from the main window."""
+
+    success: bool
+    message: str
 
 
 class DesktopBotActions:
@@ -100,24 +109,24 @@ class DesktopConfigurationCoordinator:
         self._configuration_application.apply(updated_config)
         return True, updated_config
 
-    def save_from_ui(self, updated_config: DesktopAppConfig) -> dict:
+    def save_from_ui(self, updated_config: DesktopAppConfig) -> DesktopConfigurationSaveResult:
         """Validate, persist, and apply configuration changes from the main window."""
         is_valid, errors = self._configuration_application.validate(updated_config)
         if not is_valid:
             message = "; ".join(errors)
             logger.error("[DESKTOP_APP] Configuracao invalida recebida da interface: %s", message)
-            return {"success": False, "message": message}
+            return DesktopConfigurationSaveResult(success=False, message=message)
 
         save_success = self._configuration_application.apply(updated_config)
         logger.info("[DESKTOP_APP] Configuracao salva pelo painel principal")
-        return {
-            "success": True,
-            "message": (
+        return DesktopConfigurationSaveResult(
+            success=True,
+            message=(
                 "Configuracao aplicada com sucesso"
                 if save_success
                 else "Configuracao aplicada, mas nao foi possivel persistir o arquivo"
             ),
-        }
+        )
 
     def reconfigure(
         self,
