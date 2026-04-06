@@ -14,6 +14,10 @@ from src.application.use_cases import (
 )
 from src.application.voice_runtime import VoiceRuntimeAvailability, VoiceRuntimeStatus
 from src.core.entities import TTSRequest
+from src.presentation.discord_command_handlers import (
+    DiscordAboutCommandHandler,
+    DiscordConfigCommandHandler,
+)
 from src.presentation.discord_presenters import (
     DiscordJoinPresenter,
     DiscordLeavePresenter,
@@ -48,6 +52,8 @@ class DiscordCommands:
         self._join_presenter = DiscordJoinPresenter()
         self._leave_presenter = DiscordLeavePresenter()
         self._speak_presenter = DiscordSpeakPresenter()
+        self._config_handler = DiscordConfigCommandHandler(config_use_case)
+        self._about_handler = DiscordAboutCommandHandler()
         self._register_commands()
 
     def _register_commands(self):
@@ -199,86 +205,7 @@ class DiscordCommands:
         return self._speak_presenter.build_message(result)
 
     async def _handle_config(self, interaction: discord.Interaction, voz: str | None, idioma: str | None, sotaque: str | None):
-        if not interaction.guild or not interaction.guild.id:
-            await interaction.response.send_message("\u274c Este comando s\u00f3 pode ser usado em um servidor.", ephemeral=True)
-            return
-
-        guild_id = interaction.guild.id
-        logger.info(
-            "[CONFIG] User %s in guild %s updating config: voz=%s, idioma=%s, sotaque=%s",
-            interaction.user.id,
-            guild_id,
-            voz,
-            idioma,
-            sotaque,
-        )
-
-        if voz is None and idioma is None and sotaque is None:
-            result = self._config_use_case.get_config(guild_id)
-            if not result["success"]:
-                await interaction.response.send_message(f"\u274c {result['message']}", ephemeral=True)
-                return
-
-            config = result["config"]
-            voz_nome = "Mulher do Google" if config["engine"] == "gtts" else "R.E.P.O. (rob\u00f3tico)"
-            embed = discord.Embed(
-                title="\U0001f3a4 Configura\u00e7\u00e3o de Voz do Servidor",
-                description=f"Configura\u00e7\u00f5es de {interaction.guild.name}",
-                color=discord.Color.blue(),
-            )
-            embed.add_field(name="Voz", value=voz_nome, inline=True)
-            embed.add_field(name="Idioma", value=config["language"].upper(), inline=True)
-            embed.add_field(name="Sotaque", value=config["voice_id"], inline=True)
-            embed.add_field(name="Taxa de Fala", value=str(config["rate"]), inline=True)
-            embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        try:
-            result = await self._config_use_case.update_config_async(
-                guild_id=guild_id,
-                engine=voz,
-                language=idioma,
-                voice_id=sotaque,
-            )
-            if not result["success"]:
-                await interaction.edit_original_response(content=f"\u274c {result['message']}")
-                return
-
-            config = result["config"]
-            voz_nome = "Mulher do Google" if config["engine"] == "gtts" else "R.E.P.O. (rob\u00f3tico)"
-            embed = discord.Embed(
-                title="\u2705 Configura\u00e7\u00e3o Atualizada",
-                description=f"Configura\u00e7\u00f5es do servidor {interaction.guild.name} atualizadas",
-                color=discord.Color.green(),
-            )
-            embed.add_field(name="Voz", value=voz_nome, inline=True)
-            embed.add_field(name="Idioma", value=config["language"].upper(), inline=True)
-            embed.add_field(name="Sotaque", value=config["voice_id"], inline=True)
-            embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
-            await interaction.edit_original_response(embed=embed)
-        except Exception as exc:
-            logger.error("[CONFIG] Error updating config for guild %s: %s", guild_id, exc, exc_info=True)
-            await interaction.edit_original_response(content="\u274c Erro ao atualizar configura\u00e7\u00e3o")
+        await self._config_handler.handle(interaction, voz, idioma, sotaque)
 
     async def _handle_about(self, interaction: discord.Interaction):
-        from src.__version__ import __author__, __description__, __version__
-        import platform
-
-        runtime_status = self._get_voice_runtime_status()
-
-        embed = discord.Embed(title="\U0001f916 TTS Bot Information", description=__description__, color=discord.Color.blue())
-        embed.add_field(name="Version", value=f"`{__version__}`", inline=True)
-        embed.add_field(name="Author", value=__author__, inline=True)
-        embed.add_field(name="FFmpeg", value="\u2705 Available" if runtime_status.ffmpeg_available else "\u274c Not found", inline=True)
-        embed.add_field(name="PyNaCl", value="\u2705 Installed" if runtime_status.pynacl_installed else "\u274c Not installed", inline=True)
-        embed.add_field(name="davey", value="\u2705 Installed" if runtime_status.davey_installed else "\u274c Not installed", inline=True)
-        embed.add_field(
-            name="Commands",
-            value="\u2022 `/join` - Join your voice channel\n\u2022 `/leave` - Leave voice channel\n"
-            "\u2022 `/speak` - Speak text\n\u2022 `/config` - Configure TTS settings\n\u2022 `/about` - Show this info",
-            inline=False,
-        )
-        embed.set_footer(text=f"Running on {platform.system()} {platform.release()}")
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await self._about_handler.handle(interaction, self._get_voice_runtime_status())

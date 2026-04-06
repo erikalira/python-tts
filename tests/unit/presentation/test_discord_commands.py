@@ -2,7 +2,12 @@
 import pytest
 from unittest.mock import Mock, AsyncMock
 from discord import app_commands
-from src.application.results import JoinVoiceChannelResult, LeaveVoiceChannelResult, SpeakTextResult
+from src.application.results import (
+    ConfigureTTSResult,
+    JoinVoiceChannelResult,
+    LeaveVoiceChannelResult,
+    SpeakTextResult,
+)
 from src.application.voice_runtime import VoiceRuntimeStatus
 from src.presentation.discord_commands import DiscordCommands
 from src.application.use_cases import (
@@ -211,7 +216,7 @@ class TestDiscordCommands:
         
         # Mock update to fail
         commands_instance._config_use_case.update_config_async = AsyncMock(
-            return_value={"success": False, "message": "Config error"}
+            return_value=ConfigureTTSResult(success=False, message="Config error")
         )
         
         await commands_instance._handle_config(interaction, "invalid", None, None)
