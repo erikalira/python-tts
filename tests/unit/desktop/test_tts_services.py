@@ -388,6 +388,7 @@ def test_speak_text_execution_use_case_delegates_to_tts_service():
     tts_service.speak_text.return_value = True
     tts_service.is_available.return_value = True
     tts_service.get_status_info.return_value = {"local_available": True}
+    tts_service.get_last_error_message.return_value = None
 
     execution = SpeakTextExecutionUseCase(tts_service)
 
@@ -396,6 +397,21 @@ def test_speak_text_execution_use_case_delegates_to_tts_service():
     assert result == TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK)
     assert execution.is_available() is True
     assert execution.get_status_info() == {"local_available": True}
+    tts_service.speak_text.assert_called_once_with("hello")
+
+
+def test_speak_text_execution_use_case_normalizes_text_before_delegating():
+    tts_service = Mock()
+    tts_service.speak_text.return_value = True
+    tts_service.is_available.return_value = True
+    tts_service.get_status_info.return_value = {}
+    tts_service.get_last_error_message.return_value = None
+
+    execution = SpeakTextExecutionUseCase(tts_service)
+
+    result = execution.execute("  hello  ")
+
+    assert result == TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK)
     tts_service.speak_text.assert_called_once_with("hello")
 
 
