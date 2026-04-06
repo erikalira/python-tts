@@ -11,6 +11,7 @@ from ..config.desktop_config import ConfigurationValidator, DesktopAppConfig
 from ..results import DesktopConfigurationSaveResult
 from .config_dialogs import GUIConfig
 from .main_window_presenter import DesktopAppMainWindowPresenter, MainWindowMessage
+from .main_window_sections import build_action_buttons, build_header, build_help_section
 from .ui_logging import UILogHandler
 
 logger = logging.getLogger(__name__)
@@ -103,16 +104,14 @@ class DesktopAppMainWindow:
         self._connection_var = compat.tk.StringVar(value=self._presenter.initial_connection().text)
         self._voice_context_var = compat.tk.StringVar(value=self._presenter.initial_voice_context().text)
 
-        compat.ttk.Label(main_frame, text="Desktop App", font=("Arial", 18, "bold")).pack(anchor="w")
-        compat.ttk.Label(
+        build_header(
+            compat.ttk,
             main_frame,
-            text=(
+            help_text=(
                 "Use esta janela como painel principal do app. Aqui voce configura o Desktop App, "
                 "valida a conexao com o bot e acompanha a atividade sem depender do terminal."
             ),
-            wraplength=900,
-            justify="left",
-        ).pack(anchor="w", pady=(6, 12))
+        )
 
         status_frame = compat.ttk.LabelFrame(main_frame, text="Status do app", padding="10")
         status_frame.pack(fill="x", pady=(0, 12))
@@ -147,23 +146,20 @@ class DesktopAppMainWindow:
         form_frame.pack(fill="both", expand=True, pady=(0, 12))
         self._build_config_notebook(form_frame)
 
-        action_frame = compat.ttk.Frame(main_frame)
-        action_frame.pack(fill="x", pady=(0, 12))
-        compat.ttk.Button(action_frame, text="Salvar configuracao", command=self._handle_save).pack(side="left")
-        compat.ttk.Button(action_frame, text="Testar conexao", command=self._handle_test_connection).pack(side="left", padx=(10, 0))
-        compat.ttk.Button(action_frame, text="Recarregar canal detectado", command=self._handle_refresh_voice_context).pack(side="left", padx=(10, 0))
-        compat.ttk.Button(action_frame, text="Enviar teste de voz", command=self._handle_send_test).pack(side="left", padx=(10, 0))
-        compat.ttk.Button(action_frame, text="Limpar logs", command=self._clear_logs).pack(side="left", padx=(10, 0))
-        compat.ttk.Button(
-            action_frame,
-            text="Minimizar para bandeja",
-            command=self.hide_to_tray,
-        ).pack(side="right")
+        build_action_buttons(
+            compat.ttk,
+            main_frame,
+            on_save=self._handle_save,
+            on_test_connection=self._handle_test_connection,
+            on_refresh_voice_context=self._handle_refresh_voice_context,
+            on_send_test=self._handle_send_test,
+            on_clear_logs=self._clear_logs,
+            on_minimize=self.hide_to_tray,
+        )
 
-        help_frame = compat.ttk.LabelFrame(main_frame, text="Como usar", padding="10")
-        help_frame.pack(fill="x", pady=(0, 12))
-        compat.ttk.Label(
-            help_frame,
+        build_help_section(
+            compat.ttk,
+            main_frame,
             text=(
                 "1. Preencha os dados do bot e clique em 'Testar conexao'. "
                 "2. Use 'Recarregar canal detectado' para verificar o servidor e canal de voz encontrados para seu usuario. "
@@ -171,9 +167,7 @@ class DesktopAppMainWindow:
                 f"4. Use {self.config.hotkey.trigger_open}texto{self.config.hotkey.trigger_close} para enviar fala no uso normal. "
                 "5. Se quiser, use 'Enviar teste de voz' para validar o fluxo manualmente."
             ),
-            wraplength=900,
-            justify="left",
-        ).pack(anchor="w")
+        )
 
         logs_frame = compat.ttk.LabelFrame(main_frame, text="Atividade", padding="10")
         logs_frame.pack(fill="both", expand=True)
