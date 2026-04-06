@@ -11,6 +11,7 @@ from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_FAILED,
     TTS_EXECUTION_RESULT_MISSING_TEXT,
     TTS_EXECUTION_RESULT_OK,
+    TTSExecutionResult,
 )
 from src.desktop.app.desktop_actions import DesktopConfigurationCoordinator
 from src.desktop.results import DesktopConfigurationSaveResult
@@ -53,7 +54,7 @@ def test_desktop_app_tts_result_presenter_notifies_success_after_tts():
     notifier = Mock()
     presenter = DesktopAppTTSResultPresenter(notifier)
 
-    presenter.present({"success": True, "code": TTS_EXECUTION_RESULT_OK})
+    presenter.present(TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK))
 
     notifier.notify_success.assert_called_once_with("Desktop App", "Texto reproduzido com sucesso")
 
@@ -62,7 +63,7 @@ def test_desktop_app_tts_result_presenter_notifies_missing_text_error():
     notifier = Mock()
     presenter = DesktopAppTTSResultPresenter(notifier)
 
-    presenter.present({"success": False, "code": TTS_EXECUTION_RESULT_MISSING_TEXT})
+    presenter.present(TTSExecutionResult(success=False, code=TTS_EXECUTION_RESULT_MISSING_TEXT))
 
     notifier.notify_error.assert_called_once_with("Desktop App", "Nenhum texto valido foi capturado")
 
@@ -72,11 +73,11 @@ def test_desktop_app_tts_result_presenter_notifies_failure():
     presenter = DesktopAppTTSResultPresenter(notifier)
 
     presenter.present(
-        {
-            "success": False,
-            "code": TTS_EXECUTION_RESULT_FAILED,
-            "message": "Bot respondeu HTTP 503: servico suspenso ou indisponivel",
-        }
+        TTSExecutionResult(
+            success=False,
+            code=TTS_EXECUTION_RESULT_FAILED,
+            message="Bot respondeu HTTP 503: servico suspenso ou indisponivel",
+        )
     )
 
     notifier.notify_error.assert_called_once_with(

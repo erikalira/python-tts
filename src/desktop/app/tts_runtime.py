@@ -11,6 +11,7 @@ from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_MISSING_TEXT,
     TTS_EXECUTION_RESULT_OK,
     SpeakTextExecutionUseCase,
+    TTSExecutionResult,
 )
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
@@ -34,9 +35,9 @@ class DesktopAppTTSResultPresenter:
             f"Processando: '{text[:50]}{'...' if len(text) > 50 else ''}'",
         )
 
-    def present(self, result: dict) -> None:
+    def present(self, result: TTSExecutionResult) -> None:
         """Show user-facing feedback after TTS execution completes."""
-        code = result.get("code")
+        code = result.code
         if code == TTS_EXECUTION_RESULT_OK:
             self._notification_service.notify_success(
                 "Desktop App", "Texto reproduzido com sucesso"
@@ -51,7 +52,7 @@ class DesktopAppTTSResultPresenter:
 
         if code == TTS_EXECUTION_RESULT_FAILED:
             self._notification_service.notify_error(
-                "Desktop App", result.get("message", "Falha ao reproduzir o texto")
+                "Desktop App", result.message or "Falha ao reproduzir o texto"
             )
             return
 
@@ -86,14 +87,14 @@ class DesktopAppTTSProcessor:
         self,
         text: str,
         cleanup_count: int = 0,
-        on_complete: Optional[Callable[[dict], None]] = None,
+        on_complete: Optional[Callable[[TTSExecutionResult], None]] = None,
     ) -> None:
         """Process text for TTS and perform cleanup in a separate thread."""
 
         def _process() -> None:
             result = self._execution_service.execute(text)
 
-            if result.get("success") and cleanup_count > 0:
+            if result.success and cleanup_count > 0:
                 self._cleanup_service.cleanup_typed_text(cleanup_count)
 
             if on_complete is not None:

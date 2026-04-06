@@ -8,6 +8,7 @@ from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_FAILED,
     TTS_EXECUTION_RESULT_MISSING_TEXT,
     TTS_EXECUTION_RESULT_OK,
+    TTSExecutionResult,
 )
 from src.application.tts_routing import build_tts_engine_chain
 from src.desktop.app.tts_runtime import DesktopAppTTSProcessor
@@ -392,7 +393,7 @@ def test_speak_text_execution_use_case_delegates_to_tts_service():
 
     result = execution.execute("hello")
 
-    assert result == {"success": True, "code": TTS_EXECUTION_RESULT_OK}
+    assert result == TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK)
     assert execution.is_available() is True
     assert execution.get_status_info() == {"local_available": True}
     tts_service.speak_text.assert_called_once_with("hello")
@@ -404,7 +405,7 @@ def test_speak_text_execution_use_case_returns_missing_text_without_calling_serv
 
     result = execution.execute("   ")
 
-    assert result == {"success": False, "code": TTS_EXECUTION_RESULT_MISSING_TEXT}
+    assert result == TTSExecutionResult(success=False, code=TTS_EXECUTION_RESULT_MISSING_TEXT)
     tts_service.speak_text.assert_not_called()
 
 
@@ -416,16 +417,19 @@ def test_speak_text_execution_use_case_returns_failure_when_tts_service_fails():
 
     result = execution.execute("hello")
 
-    assert result == {
-        "success": False,
-        "code": TTS_EXECUTION_RESULT_FAILED,
-        "message": "Bot respondeu HTTP 503: servico suspenso ou indisponivel",
-    }
+    assert result == TTSExecutionResult(
+        success=False,
+        code=TTS_EXECUTION_RESULT_FAILED,
+        message="Bot respondeu HTTP 503: servico suspenso ou indisponivel",
+    )
 
 
 def test_desktop_app_tts_processor_runs_cleanup_after_success(monkeypatch):
     execution_service = Mock()
-    execution_service.execute.return_value = {"success": True, "code": TTS_EXECUTION_RESULT_OK}
+    execution_service.execute.return_value = TTSExecutionResult(
+        success=True,
+        code=TTS_EXECUTION_RESULT_OK,
+    )
     cleanup_service = Mock()
     on_complete = Mock()
     processor = DesktopAppTTSProcessor(
@@ -446,12 +450,17 @@ def test_desktop_app_tts_processor_runs_cleanup_after_success(monkeypatch):
 
     execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_called_once_with(3)
-    on_complete.assert_called_once_with({"success": True, "code": TTS_EXECUTION_RESULT_OK})
+    on_complete.assert_called_once_with(
+        TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK)
+    )
 
 
 def test_desktop_app_tts_processor_skips_cleanup_when_execution_fails(monkeypatch):
     execution_service = Mock()
-    execution_service.execute.return_value = {"success": False, "code": TTS_EXECUTION_RESULT_FAILED}
+    execution_service.execute.return_value = TTSExecutionResult(
+        success=False,
+        code=TTS_EXECUTION_RESULT_FAILED,
+    )
     cleanup_service = Mock()
     on_complete = Mock()
     processor = DesktopAppTTSProcessor(
@@ -472,4 +481,6 @@ def test_desktop_app_tts_processor_skips_cleanup_when_execution_fails(monkeypatc
 
     execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_not_called()
-    on_complete.assert_called_once_with({"success": False, "code": TTS_EXECUTION_RESULT_FAILED})
+    on_complete.assert_called_once_with(
+        TTSExecutionResult(success=False, code=TTS_EXECUTION_RESULT_FAILED)
+    )
