@@ -105,6 +105,9 @@ Use o README principal como ponto de entrada e deixe os detalhes nos guias espec
 - [Fluxos de runtime e composition roots](docs/RUNTIME_FLOWS.md)
 - [Guia de transicoes arquiteturais e compatibilidade temporaria](docs/ARCHITECTURE_TRANSITIONS.md)
 - [Mapa de onde mexer por tipo de mudanca](docs/CHANGE_MAP.md)
+- [Checklist curto de review tecnico](docs/REVIEW_CHECKLIST.md)
+- [Regra de limpeza de transicoes temporarias](docs/TRANSITION_CLEANUP.md)
+- [Exemplos de onde começar por tipo de mudanca](docs/CHANGE_EXAMPLES.md)
 - [Guia do Desktop App](docs/README_DESKTOP_APP.md)
 - [Configuracao de hotkeys](docs/HOTKEY_SETUP.md)
 

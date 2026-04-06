@@ -24,6 +24,9 @@ These are not canonical policy files, but they are useful when reasoning about c
 - `../RUNTIME_FLOWS.md`: entrypoints, composition roots, and main runtime paths
 - `../ARCHITECTURE_TRANSITIONS.md`: temporary compatibility and steady-state guidance
 - `../CHANGE_MAP.md`: where to start for each kind of change
+- `../REVIEW_CHECKLIST.md`: short review checklist for contracts, boundaries, and runtime safety
+- `../TRANSITION_CLEANUP.md`: operational rule for temporary compatibility cleanup
+- `../CHANGE_EXAMPLES.md`: concrete examples of where a change should start and land
 
 ## Working rule
 
