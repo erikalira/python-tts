@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict, is_dataclass
+
 from src.application.results import (
     SPEAK_RESULT_CROSS_GUILD_CHANNEL,
     SPEAK_RESULT_MISSING_GUILD_ID,
@@ -67,7 +69,12 @@ class HTTPVoiceContextPresenter:
     """Map voice-context results to HTTP JSON/status."""
 
     def to_payload(self, result: VoiceContextResult) -> dict:
-        return result.to_dict()
+        payload = asdict(result)
+        return {
+            key: self._serialize_value(value)
+            for key, value in payload.items()
+            if value is not None
+        }
 
     def get_status_code(self, result: VoiceContextResult) -> int:
         if result.code == VOICE_CONTEXT_RESULT_MEMBER_REQUIRED:
@@ -75,3 +82,12 @@ class HTTPVoiceContextPresenter:
         if result.code == VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL:
             return 404
         return 200
+
+    def _serialize_value(self, value):
+        if is_dataclass(value):
+            return {
+                key: self._serialize_value(nested_value)
+                for key, nested_value in asdict(value).items()
+                if nested_value is not None
+            }
+        return value

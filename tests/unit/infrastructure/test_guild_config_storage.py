@@ -47,10 +47,11 @@ def test_update_config_async_preserves_persisted_fields_after_cache_miss(tmp_pat
             rate=240,
         ),
     )
-    assert result["config"]["engine"] == "pyttsx3"
-    assert result["config"]["language"] == "fr"
-    assert result["config"]["voice_id"] == "custom-voice"
-    assert result["config"]["rate"] == 240
+    assert result.config is not None
+    assert result.config.engine == "pyttsx3"
+    assert result.config.language == "fr"
+    assert result.config.voice_id == "custom-voice"
+    assert result.config.rate == 240
 
     persisted = asyncio.run(storage.load(456))
     assert persisted is not None

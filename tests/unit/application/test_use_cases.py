@@ -49,10 +49,9 @@ class TestSpeakTextUseCase:
         
         result = await use_case.execute(sample_tts_request)
         
-        assert result["success"] is True
-        assert result["code"] == SPEAK_RESULT_OK
-        assert "queued" in result
-        assert result.to_dict()["code"] == SPEAK_RESULT_OK
+        assert result.success is True
+        assert result.code == SPEAK_RESULT_OK
+        assert result.queued is False
         assert len(mock_tts_engine.calls) == 1
         assert len(mock_channel_repository.channel.played_audio) == 1
     
@@ -75,8 +74,8 @@ class TestSpeakTextUseCase:
         request = TTSRequest(text="")
         result = await use_case.execute(request)
         
-        assert result["success"] is False
-        assert result["code"] == SPEAK_RESULT_MISSING_TEXT
+        assert result.success is False
+        assert result.code == SPEAK_RESULT_MISSING_TEXT
     
     async def test_execute_no_channel_found(
         self,
@@ -101,9 +100,9 @@ class TestSpeakTextUseCase:
         
         result = await use_case.execute(sample_tts_request)
         
-        assert result["success"] is False
-        assert result["code"] == SPEAK_RESULT_USER_NOT_IN_CHANNEL
-        assert result["queued"] is False
+        assert result.success is False
+        assert result.code == SPEAK_RESULT_USER_NOT_IN_CHANNEL
+        assert result.queued is False
 
     async def test_execute_truncates_text_with_shared_policy(
         self,
@@ -125,7 +124,7 @@ class TestSpeakTextUseCase:
         request = TTSRequest(text="  abcdefgh  ", channel_id=123456, guild_id=789012, member_id=345678)
         result = await use_case.execute(request)
 
-        assert result["success"] is True
+        assert result.success is True
         assert mock_tts_engine.calls[0]["text"] == "abcde"
 
     async def test_execute_infers_guild_id_from_member_channel_when_missing(
@@ -147,7 +146,7 @@ class TestSpeakTextUseCase:
         request = TTSRequest(text="test", member_id=345678)
         result = await use_case.execute(request)
 
-        assert result["success"] is True
+        assert result.success is True
         assert mock_tts_engine.calls[0]["config"].language == "pt"
         assert mock_channel_repository.channel.played_audio
     
@@ -170,7 +169,7 @@ class TestSpeakTextUseCase:
         request = TTSRequest(text="test", channel_id=123456, guild_id=789012, member_id=345678)
         result = await use_case.execute(request)
         
-        assert result["success"] is True
+        assert result.success is True
         assert mock_channel_repository.channel.is_connected()
 
     async def test_execute_keeps_processing_flag_while_background_queue_is_draining(
@@ -222,21 +221,21 @@ class TestSpeakTextUseCase:
         await asyncio.wait_for(first_started.wait(), timeout=1)
 
         second_result = await use_case.execute(second_request)
-        assert second_result["queued"] is True
-        assert second_result["code"] == SPEAK_RESULT_QUEUED
-        assert second_result["position"] == 0
+        assert second_result.queued is True
+        assert second_result.code == SPEAK_RESULT_QUEUED
+        assert second_result.position == 0
 
         first_release.set()
         first_result = await asyncio.wait_for(first_task, timeout=1)
-        assert first_result["success"] is True
+        assert first_result.success is True
 
         await asyncio.wait_for(second_started.wait(), timeout=1)
 
         third_result = await use_case.execute(third_request)
-        assert third_result["success"] is True
-        assert third_result["queued"] is True
-        assert third_result["code"] == SPEAK_RESULT_QUEUED
-        assert third_result["position"] == 0
+        assert third_result.success is True
+        assert third_result.queued is True
+        assert third_result.code == SPEAK_RESULT_QUEUED
+        assert third_result.position == 0
         assert process_order == ["first", "second"]
 
         second_release.set()
@@ -263,9 +262,9 @@ class TestSpeakTextUseCase:
 
         result = await use_case.execute(sample_tts_request)
 
-        assert result["success"] is False
-        assert result["code"] == SPEAK_RESULT_QUEUE_FULL
-        assert result["queued"] is False
+        assert result.success is False
+        assert result.code == SPEAK_RESULT_QUEUE_FULL
+        assert result.queued is False
 
 
 class TestConfigureTTSUseCase:
@@ -288,9 +287,9 @@ class TestConfigureTTSUseCase:
                 rate=180,
             ),
         )
-        assert "config" in result
-        assert result["config"]["engine"] == "gtts"
-        assert result["config"]["language"] == "pt"
+        assert result.config is not None
+        assert result.config.engine == "gtts"
+        assert result.config.language == "pt"
     
     @pytest.mark.asyncio
     async def test_update_engine(self, mock_config_repository):
@@ -299,8 +298,9 @@ class TestConfigureTTSUseCase:
         
         result = await use_case.update_config_async(guild_id=123, engine="pyttsx3")
         
-        assert result["success"] is True
-        assert result["config"]["engine"] == "pyttsx3"
+        assert result.success is True
+        assert result.config is not None
+        assert result.config.engine == "pyttsx3"
         
         # Verify it was saved
         saved_config = mock_config_repository.get_config(123)
@@ -313,8 +313,9 @@ class TestConfigureTTSUseCase:
         
         result = await use_case.update_config_async(guild_id=123, language="en")
         
-        assert result["success"] is True
-        assert result["config"]["language"] == "en"
+        assert result.success is True
+        assert result.config is not None
+        assert result.config.language == "en"
     
     @pytest.mark.asyncio
     async def test_update_voice_id(self, mock_config_repository):
@@ -323,8 +324,9 @@ class TestConfigureTTSUseCase:
         
         result = await use_case.update_config_async(guild_id=123, voice_id="en-us")
         
-        assert result["success"] is True
-        assert result["config"]["voice_id"] == "en-us"
+        assert result.success is True
+        assert result.config is not None
+        assert result.config.voice_id == "en-us"
     
     @pytest.mark.asyncio
     async def test_invalid_engine(self, mock_config_repository):
@@ -337,7 +339,8 @@ class TestConfigureTTSUseCase:
             success=False,
             message="Invalid engine. Use 'gtts' or 'pyttsx3'",
         )
-        assert "Invalid engine" in result["message"]
+        assert result.message is not None
+        assert "Invalid engine" in result.message
 
 
 @pytest.mark.asyncio
@@ -350,8 +353,8 @@ class TestVoiceChannelUseCases:
 
         result = await use_case.execute(guild_id=789012, member_id=345678)
 
-        assert result["success"] is True
-        assert result["code"] == JOIN_RESULT_OK
+        assert result.success is True
+        assert result.code == JOIN_RESULT_OK
         assert mock_channel_repository.channel.is_connected() is True
 
     async def test_join_voice_channel_requires_member_channel(self):
@@ -362,8 +365,8 @@ class TestVoiceChannelUseCases:
 
         result = await use_case.execute(guild_id=789012, member_id=345678)
 
-        assert result["success"] is False
-        assert result["code"] == JOIN_RESULT_USER_NOT_IN_CHANNEL
+        assert result.success is False
+        assert result.code == JOIN_RESULT_USER_NOT_IN_CHANNEL
 
     async def test_leave_voice_channel_success(self, mock_channel_repository):
         """Leave use case should disconnect an active guild voice channel."""
@@ -372,8 +375,8 @@ class TestVoiceChannelUseCases:
 
         result = await use_case.execute(guild_id=789012)
 
-        assert result["success"] is True
-        assert result["code"] == LEAVE_RESULT_OK
+        assert result.success is True
+        assert result.code == LEAVE_RESULT_OK
         assert mock_channel_repository.channel.is_connected() is False
 
     async def test_leave_voice_channel_when_not_connected(self, mock_channel_repository):
@@ -382,8 +385,8 @@ class TestVoiceChannelUseCases:
 
         result = await use_case.execute(guild_id=789012)
 
-        assert result["success"] is False
-        assert result["code"] == LEAVE_RESULT_NOT_CONNECTED
+        assert result.success is False
+        assert result.code == LEAVE_RESULT_NOT_CONNECTED
     
     @pytest.mark.asyncio
     async def test_update_multiple_settings(self, mock_config_repository):
@@ -397,7 +400,8 @@ class TestVoiceChannelUseCases:
             voice_id="en-us"
         )
         
-        assert result["success"] is True
-        assert result["config"]["engine"] == "pyttsx3"
-        assert result["config"]["language"] == "en"
-        assert result["config"]["voice_id"] == "en-us"
+        assert result.success is True
+        assert result.config is not None
+        assert result.config.engine == "pyttsx3"
+        assert result.config.language == "en"
+        assert result.config.voice_id == "en-us"
