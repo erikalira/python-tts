@@ -24,6 +24,8 @@ Apply these rules strictly:
 - Never place business logic in presentation or infrastructure unless there is a strong and explicit reason
 - Prefer extracting interfaces, use cases, or services instead of copying behavior
 - Preserve independent execution of the Discord bot and Windows app
+- Prefer explicit typed contracts at module boundaries over ad-hoc mappings when the boundary is reused
+- Keep temporary facades and compatibility paths narrow, intentional, and easy to remove
 
 ## Preferred placement
 
@@ -40,3 +42,16 @@ Apply these rules strictly:
 - Desktop runtime reimplementing shared routing or validation logic that belongs in `src/`
 - Infrastructure modules becoming the place where product rules live
 - Shared policy copied into multiple instruction files and drifting over time
+- Compatibility shims becoming permanent architecture by inertia
+- Large modules that mix composition, business flow, presentation mapping, and transport details without a clear reason
+
+## Scalability guidance
+
+For this project, good scalability means:
+
+- both runtimes can evolve without duplicating shared rules
+- contributors can find the relevant flow quickly
+- modules expose predictable contracts and responsibilities
+- composition roots stay readable even when they remain large
+
+Do not split files only because they are long. Split when doing so improves responsibility boundaries, contract clarity, onboarding readability, or change isolation.

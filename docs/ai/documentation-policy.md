@@ -24,9 +24,20 @@ Update documentation when a change affects:
 - operator workflows
 - desktop UX that users rely on
 - contributor or AI guidance
+- onboarding clarity for a changed flow
+- the intended steady state after introducing temporary compatibility or facade code
 
 ## Naming guidance
 
 - Prefer feature-specific filenames in `docs/features/`
 - Keep top-level `docs/` focused on durable guides, not change logs
 - Write docs to explain intent, constraints, and operating expectations
+
+## Documentation quality bar
+
+Good documentation in this repository should:
+
+- explain why the structure exists, not only what files changed
+- help a new contributor find the entrypoint and main flow quickly
+- distinguish durable architecture from temporary transition structure
+- avoid over-specifying implementation details that will drift quickly

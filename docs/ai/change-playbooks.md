@@ -32,6 +32,20 @@ Use when similar logic appears in bot flow and desktop flow.
 3. Extract before replacing
 4. Replace before deleting
 5. Validate bot and desktop startup before closing the refactor
+6. Note any temporary facade, compatibility layer, or fallback left behind
+7. Prefer closing implicit contracts before doing cosmetic modularization
+
+## Technical leadership heuristics
+
+Use these heuristics when deciding whether a refactor is worth doing:
+
+1. Does it improve boundary integrity?
+2. Does it make contracts more explicit?
+3. Does it reduce onboarding time for the next contributor?
+4. Does it reduce hidden coupling or duplicated policy?
+5. Is the benefit large enough to justify the new structure?
+
+If the answer is mostly no, prefer leaving the code alone.
 
 ## Reviews
 
@@ -39,6 +53,9 @@ Focus first on:
 
 - boundary violations
 - duplication
+- weak contracts
+- temporary structures that are drifting into permanence
+- onboarding clarity of the changed flow
 - flow regressions
 - missing validation
 - stale docs or tool guidance

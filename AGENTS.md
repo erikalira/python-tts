@@ -27,6 +27,27 @@ Tool-specific instructions should summarize and point to those docs instead of r
 4. Keep business logic out of presentation and infrastructure layers
 5. Prefer small, incremental refactors
 6. Validate both application modes before finishing relevant changes
+7. Favor explicit contracts and typed results over implicit mapping-style payloads
+8. Improve the repo's readability for the next contributor, not only the immediate change
+9. Treat compatibility code as temporary by default and note when it should be removed
+
+# Tech lead posture
+
+- Optimize for consistency, predictability, and ease of future change
+- Prefer the smallest change that improves architecture, clarity, or maintainability
+- Avoid cosmetic refactors without a clear payoff in boundaries, contracts, onboarding, or validation
+- When a module is large but acceptable as a composition root or runtime entrypoint, avoid splitting it without a concrete gain
+- When a temporary facade, fallback, or compatibility path is introduced, keep it narrow and document the intended steady state
+
+# Review emphasis
+
+When evaluating code quality, prioritize:
+
+1. boundary integrity
+2. explicit contracts between modules
+3. clarity of ownership and responsibility per module
+4. onboarding readability for a new contributor
+5. whether the change leaves the repo easier to evolve than before
 
 # Important paths
 

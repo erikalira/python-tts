@@ -23,6 +23,8 @@ Use when similar logic exists in multiple flows, especially the Discord bot and 
 3. Extract the shared module or interface
 4. Replace duplicate call sites incrementally
 5. Validate both entrypoints after the extraction
+6. Prefer stable contracts and clear ownership over thin shared helpers with vague responsibility
+7. If a compatibility facade is left behind, describe the intended end state
 
 # Output
 
@@ -30,3 +32,9 @@ Use when similar logic exists in multiple flows, especially the Discord bot and 
 - extraction plan
 - target location
 - validation notes
+
+Good extractions should leave the repo:
+
+- easier to navigate
+- more explicit at module boundaries
+- less dependent on historical knowledge from the original author
