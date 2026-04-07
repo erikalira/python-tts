@@ -104,7 +104,6 @@ class DesktopAppUIRuntimeCoordinator:
         return configuration_coordinator.reconfigure(
             current_config=current_config,
             hotkeys_were_active=hotkeys_were_active,
-            pause_hotkeys=lambda: hotkey_manager.stop() if hotkey_manager else None,
             resume_hotkeys=lambda: hotkey_manager.start() if hotkey_manager else None,
             notify_error=notification_service.notify_error if notification_service else None,
             notify_success=notification_service.notify_success if notification_service else None,

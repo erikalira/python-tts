@@ -39,19 +39,6 @@ class NotificationServiceLike(Protocol):
         ...
 
 
-class MainWindowRootLike(Protocol):
-    """Contract for the underlying UI root object."""
-
-    def quit(self) -> None:
-        ...
-
-
-class MainWindowLike(Protocol):
-    """Runtime contract for the Desktop App main window."""
-
-    root: MainWindowRootLike | None
-
-
 class DesktopAppLifecycleCoordinator:
     """Coordinate runtime startup, main-loop behavior, and shutdown."""
 
@@ -150,7 +137,7 @@ class DesktopAppLifecycleCoordinator:
         hotkey_manager: HotkeyManagerLike | None,
         notification_service: NotificationServiceLike | None,
         shutdown_requested: Event,
-        main_window: MainWindowLike | None,
+        main_window: object | None,
     ) -> bool:
         """Shutdown runtime services and return the new running flag."""
         logger.info("[DESKTOP_APP] Encerrando aplicacao...")
@@ -163,9 +150,10 @@ class DesktopAppLifecycleCoordinator:
                 notification_service.stop()
             running = False
 
-        if main_window and main_window.root:
+        main_window_root = getattr(main_window, "root", None)
+        if main_window_root:
             try:
-                main_window.root.quit()
+                main_window_root.quit()
             except Exception:
                 logger.debug(
                     "[DESKTOP_APP] Falha ao encerrar loop da janela principal",

@@ -5,11 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Callable, Optional
 
-from src.application.desktop_bot import (
-    DesktopBotActionResult,
-    DesktopBotVoiceContextResult,
-)
-
 from ..config.desktop_config import (
     DesktopAppConfig,
 )
@@ -70,7 +65,6 @@ class DesktopConfigurationCoordinator:
         self,
         current_config: DesktopAppConfig,
         hotkeys_were_active: bool,
-        pause_hotkeys: Callable[[], None],
         resume_hotkeys: Callable[[], None],
         notify_error: Optional[Callable[[str, str], None]] = None,
         notify_success: Optional[Callable[[str, str], None]] = None,
