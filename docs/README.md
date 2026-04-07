@@ -11,6 +11,8 @@ This directory contains the repository's supporting documentation. The root `REA
 - [DEPENDENCY_MAINTENANCE.md](DEPENDENCY_MAINTENANCE.md): dependency upgrade workflow, tooling, and validation checklist
 - [BUILD_GUIDE.md](BUILD_GUIDE.md): Windows executable build flow
 - [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview and layer map
+- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md): curated architecture diagrams grouped by layer and runtime
+- [ARCHITECTURE_DIAGRAMS_GENERATED.md](ARCHITECTURE_DIAGRAMS_GENERATED.md): automatic `pyreverse` diagrams rendered as Mermaid in Markdown
 - [RUNTIME_FLOWS.md](RUNTIME_FLOWS.md): bot and Desktop App entrypoints, composition roots, and main runtime flows
 - [ARCHITECTURE_TRANSITIONS.md](ARCHITECTURE_TRANSITIONS.md): guidance for temporary facades, compatibility paths, and steady-state cleanup
 - [CHANGE_MAP.md](CHANGE_MAP.md): where to start for bot, desktop, shared, refactor, and documentation changes
@@ -32,6 +34,7 @@ This directory contains the repository's supporting documentation. The root `REA
 ## Conventions
 
 - `docs/` contains durable architecture and operational guides
+- `docs/diagrams/` contains editable Mermaid architecture sources
 - `docs/features/` contains feature docs, feature iterations, and implementation notes
 - `docs/refactors/` contains incremental refactor plans and execution-oriented architecture improvements
 - `docs/ai/` contains canonical project guidance for AI tools and instruction files

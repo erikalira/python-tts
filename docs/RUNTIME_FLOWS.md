@@ -16,6 +16,8 @@ The architecture is easier to maintain when contributors can identify:
 - the main runtime coordinator
 - where shared logic begins
 
+For visual structure, pair this guide with [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md).
+
 ## Discord bot flow
 
 ### Entry path
