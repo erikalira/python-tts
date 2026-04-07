@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
 from src.application.desktop_bot import DesktopBotConnectionStatus, DesktopBotVoiceContextStatus
@@ -304,21 +304,18 @@ def test_local_pyttsx3_engine_initializes_and_speaks():
     config = DesktopAppConfig.create_default()
     config.tts.voice_id = "target"
 
-    voice = SimpleNamespace(id="target-voice")
     engine = Mock()
-    engine.getProperty.return_value = [voice]
     engine.say = Mock()
     engine.runAndWait = Mock()
 
     adapter = Mock()
     adapter.is_available.return_value = True
-    adapter.create_engine.return_value = engine
+    adapter.create_configured_engine.return_value = engine
 
     local_engine = LocalPyTTSX3Engine(config, adapter=adapter)
 
     assert local_engine.speak("hello") is True
-    engine.setProperty.assert_any_call("rate", config.tts.rate)
-    engine.setProperty.assert_any_call("voice", "target-voice")
+    adapter.create_configured_engine.assert_called_once_with(config.tts, ANY)
     engine.say.assert_called_once_with("hello")
 
 

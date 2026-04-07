@@ -1,4 +1,9 @@
-"""Compatibility facade for shared application use cases."""
+"""Public import surface for shared application use cases.
+
+This module is intentionally kept as a small, stable entrypoint for callers
+that need the main application use cases without depending on the internal
+file layout of ``src.application``.
+"""
 
 from src.application.speak_use_case import SpeakTextUseCase
 from src.application.tts_config_use_case import ConfigureTTSUseCase

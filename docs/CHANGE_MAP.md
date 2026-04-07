@@ -54,6 +54,7 @@ Then decide:
 
 Start with:
 
+- `src/application/use_cases.py` for the stable public use-case imports
 - `src/application/`
 - `src/core/`
 

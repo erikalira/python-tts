@@ -10,7 +10,6 @@ from abc import ABC, abstractmethod
 from typing import Callable, Optional, Protocol
 
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
-from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter, is_pyttsx3_available
@@ -65,21 +64,7 @@ class LocalPyTTSX3Engine(TTSEngine):
 
         try:
             if self._engine is None:
-                create_configured_engine = None
-                adapter_type_method = getattr(type(self._adapter), "create_configured_engine", None)
-                instance_method = vars(self._adapter).get("create_configured_engine")
-
-                if callable(adapter_type_method):
-                    create_configured_engine = getattr(self._adapter, "create_configured_engine")
-                elif callable(instance_method):
-                    create_configured_engine = instance_method
-
-                if create_configured_engine is not None:
-                    self._engine = create_configured_engine(self._config.tts, logger)
-                else:
-                    # Backward-compatible path for older adapters and existing test doubles.
-                    self._engine = self._adapter.create_engine()
-                    configure_pyttsx3_engine(self._engine, self._config.tts, logger)
+                self._engine = self._adapter.create_configured_engine(self._config.tts, logger)
 
             self._last_error_message = None
             return True
