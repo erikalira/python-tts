@@ -6,11 +6,8 @@ import logging
 from typing import Callable, Optional
 
 from src.application.desktop_bot import (
-    CheckDesktopBotConnectionUseCase,
     DesktopBotActionResult,
     DesktopBotVoiceContextResult,
-    FetchDesktopBotVoiceContextUseCase,
-    SendDesktopBotTestMessageUseCase,
 )
 
 from ..config.desktop_config import (
@@ -18,60 +15,9 @@ from ..config.desktop_config import (
 )
 from ..results import DesktopConfigurationSaveResult
 from ..gui.configuration_service import ConfigurationService
-from ..services.discord_bot_client import HttpDiscordBotClient
 from .configuration_application import DesktopConfigurationApplicationService
 
 logger = logging.getLogger(__name__)
-
-
-class DesktopBotActions:
-    """Handle Desktop App panel actions that talk to the Discord bot runtime."""
-
-    def __init__(self, gateway_factory: Optional[Callable[[DesktopAppConfig], object]] = None):
-        self._gateway_factory = gateway_factory or HttpDiscordBotClient
-
-    def test_bot_connection(self, config: DesktopAppConfig) -> DesktopBotActionResult:
-        """Test connectivity against the bot health endpoint."""
-        gateway = self._gateway_factory(config)
-        result = CheckDesktopBotConnectionUseCase(gateway).execute()
-        if result.success:
-            logger.info("[DESKTOP_APP] Teste de conexao com o bot concluido com sucesso")
-        else:
-            logger.warning(
-                "[DESKTOP_APP] Teste de conexao com o bot falhou: %s",
-                result.message,
-            )
-        return result
-
-    def send_test_message(self, config: DesktopAppConfig) -> DesktopBotActionResult:
-        """Send a short manual test message to validate the speak flow."""
-        gateway = self._gateway_factory(config)
-        result = SendDesktopBotTestMessageUseCase(gateway).execute()
-        if result.success:
-            logger.info("[DESKTOP_APP] Mensagem curta de teste enviada ao bot")
-        else:
-            logger.warning(
-                "[DESKTOP_APP] Falha ao enviar mensagem curta de teste ao bot: %s",
-                result.message,
-            )
-        return result
-
-    def fetch_current_voice_context(self, config: DesktopAppConfig) -> DesktopBotVoiceContextResult:
-        """Fetch the currently detected guild/channel for the configured Discord user."""
-        gateway = self._gateway_factory(config)
-        result = FetchDesktopBotVoiceContextUseCase(gateway).execute()
-        if result.success:
-            logger.info(
-                "[DESKTOP_APP] Canal detectado para o usuario: guild=%s channel=%s",
-                result.guild_name,
-                result.channel_name,
-            )
-        else:
-            logger.warning(
-                "[DESKTOP_APP] Nao foi possivel detectar o canal atual: %s",
-                result.message,
-            )
-        return result
 
 
 class DesktopConfigurationCoordinator:

@@ -220,7 +220,7 @@ def test_desktop_app_test_bot_connection_uses_http_client(monkeypatch):
         success=True,
         message="ok",
     )
-    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr(app, "_bot_gateway_factory", lambda cfg: fake_client)
 
     result = app._test_bot_connection(config)
 
@@ -250,7 +250,7 @@ def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
     fake_client.has_bot_url.return_value = True
     fake_client.has_member_id.return_value = True
     fake_client.send_text.return_value = True
-    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr(app, "_bot_gateway_factory", lambda cfg: fake_client)
 
     result = app._send_test_message(config)
 
@@ -272,7 +272,7 @@ def test_desktop_app_send_test_message_returns_bot_error_details(monkeypatch):
     fake_client.has_member_id.return_value = True
     fake_client.send_text.return_value = False
     fake_client.get_last_error_message.return_value = "Bot respondeu HTTP 400: user is not connected to a voice channel"
-    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr(app, "_bot_gateway_factory", lambda cfg: fake_client)
 
     result = app._send_test_message(config)
 
@@ -296,7 +296,7 @@ def test_desktop_app_refresh_voice_context_uses_http_client(monkeypatch):
         success=True,
         message="Canal detectado: Guild A / Sala 1",
     )
-    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr(app, "_bot_gateway_factory", lambda cfg: fake_client)
 
     result = app._refresh_voice_context(config)
 
