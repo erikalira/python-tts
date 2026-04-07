@@ -46,3 +46,56 @@ def test_ui_runtime_coordinator_drains_queued_actions():
     action_one.assert_called_once_with()
     action_two.assert_called_once_with()
     assert coordinator.action_queue.empty()
+
+
+def test_ui_runtime_coordinator_show_status_focuses_existing_window():
+    coordinator = DesktopAppUIRuntimeCoordinator()
+    coordinator._main_window = Mock()
+
+    coordinator.show_status(
+        get_status=Mock(),
+        notification_service=Mock(),
+    )
+
+    coordinator.main_window.focus.assert_called_once_with()
+    coordinator.main_window.push_log.assert_called_once_with(
+        "Janela principal trazida para frente via tray"
+    )
+
+
+def test_ui_runtime_coordinator_show_status_notifies_when_window_is_closed():
+    coordinator = DesktopAppUIRuntimeCoordinator()
+    notification_service = Mock()
+
+    coordinator.show_status(
+        get_status=lambda: {
+            "discord_configured": True,
+            "hotkey_active": False,
+            "tts_available": True,
+        },
+        notification_service=notification_service,
+    )
+
+    notification_service.notify_info.assert_called_once_with(
+        "Desktop App",
+        "Modo Discord | Hotkeys inativas | TTS disponivel",
+    )
+
+
+def test_ui_runtime_coordinator_handle_configure_focuses_existing_window():
+    coordinator = DesktopAppUIRuntimeCoordinator()
+    coordinator._main_window = Mock()
+
+    updated_config, applied = coordinator.handle_configure(
+        ensure_action_coordinators=Mock(),
+        hotkey_manager=Mock(),
+        get_configuration_coordinator=Mock(),
+        current_config=Mock(),
+        notification_service=Mock(),
+    )
+
+    assert (updated_config, applied) == (None, False)
+    coordinator.main_window.focus.assert_called_once_with()
+    coordinator.main_window.push_log.assert_called_once_with(
+        "Acao de configuracao solicitada via tray"
+    )

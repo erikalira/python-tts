@@ -26,7 +26,6 @@ from .desktop_actions import DesktopConfigurationCoordinator
 from .runtime_lifecycle import DesktopAppLifecycleCoordinator
 from .runtime_status import DesktopAppStatusBuilder
 from .tts_runtime import DesktopAppHotkeyHandler, DesktopAppTTSProcessor, DesktopAppTTSResultPresenter
-from .ui_tray_actions import DesktopAppUIActionsCoordinator
 from .ui_runtime import DesktopAppUIRuntimeCoordinator
 
 logger = logging.getLogger(__name__)
@@ -60,7 +59,6 @@ class DesktopApp:
 
         self._configuration_coordinator: Optional[DesktopConfigurationCoordinator] = None
         self._lifecycle_coordinator = DesktopAppLifecycleCoordinator(TKINTER_AVAILABLE)
-        self._ui_actions_coordinator = DesktopAppUIActionsCoordinator()
         self._ui_runtime_coordinator = DesktopAppUIRuntimeCoordinator()
         self._status_builder = DesktopAppStatusBuilder()
 
@@ -320,8 +318,7 @@ class DesktopApp:
 
     def _handle_status_click(self) -> None:
         """Handle system tray status click."""
-        self._ui_actions_coordinator.show_status(
-            main_window=self._ui_runtime_coordinator.main_window,
+        self._ui_runtime_coordinator.show_status(
             get_status=self._get_application_status,
             notification_service=self._notification_service,
         )
@@ -332,8 +329,7 @@ class DesktopApp:
 
     def _handle_configure(self) -> None:
         """Handle system tray configure action."""
-        updated_config, applied = self._ui_actions_coordinator.handle_configure(
-            main_window=self._ui_runtime_coordinator.main_window,
+        updated_config, applied = self._ui_runtime_coordinator.handle_configure(
             ensure_action_coordinators=self._ensure_action_coordinators,
             hotkey_manager=self._hotkey_manager,
             get_configuration_coordinator=lambda: self._configuration_coordinator,
