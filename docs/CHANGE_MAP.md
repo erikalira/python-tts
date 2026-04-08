@@ -72,7 +72,7 @@ Good candidates for shared logic:
 
 Start with:
 
-- `docs/ai/change-playbooks.md`
+- `.specify/memory/constitution.md`
 - `docs/ARCHITECTURE_TRANSITIONS.md`
 - the current composition root or use case involved
 

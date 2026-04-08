@@ -5,15 +5,15 @@ This repository is a two-runtime Python platform:
 - Discord bot
 - Windows hotkey desktop app
 
-The canonical source of project guidance lives in `docs/ai/`.
+The canonical source of project guidance lives in `.specify/`.
 
 ## Read first
 
-- `docs/ai/project-context.md`
-- `docs/ai/architecture-rules.md`
-- `docs/ai/engineering-standards.md`
-- `docs/ai/documentation-policy.md`
-- `docs/ai/change-playbooks.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/templates/plan-template.md`
+- `.specify/templates/spec-template.md`
+- `.specify/templates/tasks-template.md`
 - `docs/ARCHITECTURE.md`
 
 ## Non-negotiable rules

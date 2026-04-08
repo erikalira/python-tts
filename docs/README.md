@@ -1,6 +1,7 @@
 # Documentation
 
-This directory contains the repository's supporting documentation. The root `README.md` stays short on purpose, while the details live here.
+This directory contains the repository's supporting documentation. The root
+`README.md` stays short on purpose, while the details live here.
 
 ## Main guides
 
@@ -24,12 +25,11 @@ This directory contains the repository's supporting documentation. The root `REA
 
 ## Governance
 
-- [ai/README.md](ai/README.md): canonical AI governance index
-- [ai/project-context.md](ai/project-context.md): project scope, entrypoints, and repo map
-- [ai/architecture-rules.md](ai/architecture-rules.md): clean architecture and dependency rules
-- [ai/engineering-standards.md](ai/engineering-standards.md): coding, validation, and definition of done
-- [ai/documentation-policy.md](ai/documentation-policy.md): documentation placement rules
-- [ai/change-playbooks.md](ai/change-playbooks.md): playbooks for common change types
+- [../.specify/README.md](../.specify/README.md): canonical Spec Kit governance and workflow index
+- [../.specify/memory/constitution.md](../.specify/memory/constitution.md): repository constitution and non-negotiable rules
+- [../.specify/templates/spec-template.md](../.specify/templates/spec-template.md): feature specification standard
+- [../.specify/templates/plan-template.md](../.specify/templates/plan-template.md): implementation plan standard
+- [../.specify/templates/tasks-template.md](../.specify/templates/tasks-template.md): task breakdown standard
 
 ## Conventions
 
@@ -37,7 +37,7 @@ This directory contains the repository's supporting documentation. The root `REA
 - `docs/diagrams/` contains editable Mermaid architecture sources
 - `docs/features/` contains feature docs, feature iterations, and implementation notes
 - `docs/refactors/` contains incremental refactor plans and execution-oriented architecture improvements
-- `docs/ai/` contains canonical project guidance for AI tools and instruction files
+- `.specify/` contains canonical project guidance and feature workflow templates
 
 ## Features
 

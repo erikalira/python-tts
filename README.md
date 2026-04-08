@@ -8,7 +8,9 @@ Projeto com dois aplicativos independentes:
 - Bot do Discord para entrar em canal de voz e reproduzir TTS
 - Desktop App Windows com hotkeys para capturar texto e enviar ao bot
 
-O repositorio segue Clean Architecture e busca reutilizar logica entre os dois fluxos, sem duplicacao entre o runtime interno do Desktop App em `src/desktop` e o restante de `src`.
+O repositorio segue Clean Architecture e busca reutilizar logica entre os dois
+fluxos, sem duplicacao entre o runtime interno do Desktop App em `src/desktop`
+e o restante de `src`.
 
 ## Estrutura rapida
 
@@ -93,13 +95,15 @@ No Linux, gere o `.exe` pelo workflow de CI que roda em ambiente Windows.
 
 ## Documentacao
 
-Use o README principal como ponto de entrada e deixe os detalhes nos guias especificos. A pasta `docs/` fica reservada para estrutura principal e guias duraveis; documentacao de novas features deve ir em `docs/features/`.
+Use o README principal como ponto de entrada e deixe os detalhes nos guias
+especificos. A pasta `docs/` fica reservada para estrutura principal e guias
+duraveis; documentacao de novas features deve ir em `docs/features/`.
 
 - [Indice da documentacao](docs/README.md)
 - [Guia de setup do ambiente](docs/SETUP.md)
 - [Guia de testes](docs/TESTING.md)
 - [Deploy do bot como servico Windows com WinSW](docs/WINDOWS_BOT_SERVICE.md)
-- [Governanca de IA e instrucoes canonicas](docs/ai/README.md)
+- [Constituicao e workflow canonicos](.specify/README.md)
 - [Guia de build do executavel Windows](docs/BUILD_GUIDE.md)
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
 - [Fluxos de runtime e composition roots](docs/RUNTIME_FLOWS.md)
@@ -107,7 +111,7 @@ Use o README principal como ponto de entrada e deixe os detalhes nos guias espec
 - [Mapa de onde mexer por tipo de mudanca](docs/CHANGE_MAP.md)
 - [Checklist curto de review tecnico](docs/REVIEW_CHECKLIST.md)
 - [Regra de limpeza de transicoes temporarias](docs/TRANSITION_CLEANUP.md)
-- [Exemplos de onde começar por tipo de mudanca](docs/CHANGE_EXAMPLES.md)
+- [Exemplos de onde comecar por tipo de mudanca](docs/CHANGE_EXAMPLES.md)
 - [Guia do Desktop App](docs/README_DESKTOP_APP.md)
 - [Configuracao de hotkeys](docs/HOTKEY_SETUP.md)
 

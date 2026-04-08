@@ -9,13 +9,13 @@ Both must keep working independently after changes.
 
 # Source of truth
 
-Use `docs/ai/` as the canonical source of project guidance:
+Use `.specify/` as the canonical source of project guidance:
 
-- `docs/ai/project-context.md`
-- `docs/ai/architecture-rules.md`
-- `docs/ai/engineering-standards.md`
-- `docs/ai/documentation-policy.md`
-- `docs/ai/change-playbooks.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/templates/plan-template.md`
+- `.specify/templates/spec-template.md`
+- `.specify/templates/tasks-template.md`
 
 Tool-specific instructions should summarize and point to those docs instead of redefining policy.
 
