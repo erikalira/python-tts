@@ -12,7 +12,6 @@ import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
 
 try:
     from pylint.pyreverse.main import Run as PyreverseRun
@@ -84,7 +83,7 @@ def _run_pyreverse(target: DiagramTarget) -> Path:
 
     if PyreverseRun is None:
         raise RuntimeError("pylint is not installed in the active environment")
-    pyreverse_run = cast(type, PyreverseRun)
+    assert PyreverseRun is not None
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     previous_cwd = Path.cwd()
@@ -92,7 +91,7 @@ def _run_pyreverse(target: DiagramTarget) -> Path:
         # pyreverse resolves imports relative to the current working directory.
         # Keeping execution rooted at the repository mirrors the CLI behavior.
         os.chdir(ROOT)
-        exit_code = pyreverse_run(_pyreverse_args(target)).run()
+        exit_code = PyreverseRun(args=_pyreverse_args(target)).run()
     finally:
         os.chdir(previous_cwd)
     if exit_code != 0:
@@ -174,7 +173,8 @@ def main() -> int:
     except RuntimeError as exc:
         print("Failed to run pyreverse.", file=sys.stderr)
         print(
-            "Install pylint in the active environment or run this script from the project's configured environment.",
+            "Install pylint in the active environment or run this script "
+            "from the project's configured environment.",
             file=sys.stderr,
         )
         print(str(exc), file=sys.stderr)
