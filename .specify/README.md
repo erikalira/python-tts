@@ -29,11 +29,25 @@ Use these files as the shared foundation for:
 These are not the canonical rules source, but they remain useful when changing
 code or operations:
 
+- `docs/SETUP.md`
+- `docs/TESTING.md`
 - `docs/ARCHITECTURE.md`
 - `docs/RUNTIME_FLOWS.md`
 - `docs/ARCHITECTURE_TRANSITIONS.md`
 - `docs/DEPENDENCY_MAINTENANCE.md`
-- `docs/TESTING.md`
+
+## Environment baseline
+
+Use the repository virtual environment as the default Python runtime for local
+development, validation, and agent-run commands. Do not rely on a globally
+installed Python when the repo `.venv` is available.
+
+- Windows PowerShell: `.\.venv\Scripts\python.exe`
+- Ubuntu / WSL / macOS: `.venv/bin/python`
+
+When installing dependencies or running tests, prefer commands such as
+`.\.venv\Scripts\python.exe -m pip install -r requirements-test.txt` and
+`.\.venv\Scripts\python.exe -m pytest`.
 
 ## Working rule
 
