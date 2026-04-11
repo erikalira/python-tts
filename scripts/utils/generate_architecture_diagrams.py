@@ -14,9 +14,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from pylint.pyreverse.main import Run as PyreverseRun
+    from pylint import run_pyreverse
 except ImportError:  # pragma: no cover - handled at runtime for CLI usage
-    PyreverseRun = None
+    run_pyreverse = None
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -81,9 +81,8 @@ def _pyreverse_args(target: DiagramTarget) -> list[str]:
 def _run_pyreverse(target: DiagramTarget) -> Path:
     """Generate one Mermaid diagram file through the pyreverse Python API."""
 
-    if PyreverseRun is None:
+    if run_pyreverse is None:
         raise RuntimeError("pylint is not installed in the active environment")
-    assert PyreverseRun is not None
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     previous_cwd = Path.cwd()
@@ -91,7 +90,12 @@ def _run_pyreverse(target: DiagramTarget) -> Path:
         # pyreverse resolves imports relative to the current working directory.
         # Keeping execution rooted at the repository mirrors the CLI behavior.
         os.chdir(ROOT)
-        exit_code = PyreverseRun(args=_pyreverse_args(target)).run()
+        try:
+            run_pyreverse(_pyreverse_args(target))
+        except SystemExit as exc:
+            exit_code = exc.code if isinstance(exc.code, int) else 1
+        else:
+            exit_code = 0
     finally:
         os.chdir(previous_cwd)
     if exit_code != 0:
