@@ -7,12 +7,16 @@ embedded Mermaid code fence so it renders directly on GitHub.
 
 from __future__ import annotations
 
+import os
 import shutil
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from shutil import which
+
+try:
+    from pylint.pyreverse.main import Run as PyreverseRun
+except ImportError:  # pragma: no cover - handled at runtime for CLI usage
+    PyreverseRun = None
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +25,8 @@ OUTPUT_DIR = ROOT / "docs" / "diagrams" / "generated"
 
 @dataclass(frozen=True)
 class DiagramTarget:
+    """Describe one diagram generation target."""
+
     slug: str
     title: str
     description: str
@@ -37,20 +43,31 @@ TARGETS = (
     DiagramTarget(
         slug="bot-runtime",
         title="Generated Bot Runtime Diagram",
-        description="Automatic class diagram for bot runtime, presentation, and infrastructure modules.",
+        description=(
+            "Automatic class diagram for bot runtime, presentation, and infrastructure modules."
+        ),
         modules=("src.bot_runtime", "src.presentation", "src.infrastructure"),
     ),
     DiagramTarget(
         slug="desktop-runtime",
         title="Generated Desktop Runtime Diagram",
-        description="Automatic class diagram for Desktop App runtime, GUI, services, and config modules.",
-        modules=("src.desktop.app", "src.desktop.gui", "src.desktop.services", "src.desktop.config"),
+        description=(
+            "Automatic class diagram for Desktop App runtime, GUI, services, and config modules."
+        ),
+        modules=(
+            "src.desktop.app",
+            "src.desktop.gui",
+            "src.desktop.services",
+            "src.desktop.config",
+        ),
     ),
 )
 
 
-def _pyreverse_command(target: DiagramTarget) -> list[str]:
-    command_tail = [
+def _pyreverse_args(target: DiagramTarget) -> list[str]:
+    """Build the pyreverse argument list for one diagram target."""
+
+    return [
         "-o",
         "mmd",
         "-d",
@@ -60,32 +77,24 @@ def _pyreverse_command(target: DiagramTarget) -> list[str]:
         *target.modules,
     ]
 
-    local_pyreverse = ROOT / ".venv" / "Scripts" / "pyreverse.exe"
-    if local_pyreverse.exists():
-        return [str(local_pyreverse), *command_tail]
-
-    pyreverse_executable = which("pyreverse")
-    if pyreverse_executable:
-        return [pyreverse_executable, *command_tail]
-
-    return [
-        sys.executable,
-        "-m",
-        "pylint.pyreverse.main",
-        *command_tail,
-    ]
-
 
 def _run_pyreverse(target: DiagramTarget) -> Path:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    """Generate one Mermaid diagram file through the pyreverse Python API."""
 
-    command = _pyreverse_command(target)
-    subprocess.run(
-        command,
-        cwd=ROOT,
-        check=True,
-        text=True,
-    )
+    if PyreverseRun is None:
+        raise RuntimeError("pylint is not installed in the active environment")
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    previous_cwd = Path.cwd()
+    try:
+        # pyreverse resolves imports relative to the current working directory.
+        # Keeping execution rooted at the repository mirrors the CLI behavior.
+        os.chdir(ROOT)
+        exit_code = PyreverseRun(_pyreverse_args(target)).run()
+    finally:
+        os.chdir(previous_cwd)
+    if exit_code != 0:
+        raise RuntimeError(f"pyreverse failed with exit code {exit_code}")
 
     generated_name = f"classes_{target.slug.replace('-', '_')}.mmd"
     generated_path = OUTPUT_DIR / generated_name
@@ -152,20 +161,22 @@ def _write_index(targets: tuple[DiagramTarget, ...]) -> None:
 
 
 def main() -> int:
-    generated = []
+    """Generate Markdown-wrapped Mermaid diagrams and an index page."""
+
+    generated: list[DiagramTarget] = []
     try:
         for target in TARGETS:
             mermaid_path = _run_pyreverse(target)
             _wrap_mermaid(target, mermaid_path)
             generated.append(target)
-    except subprocess.CalledProcessError as exc:
+    except RuntimeError as exc:
         print("Failed to run pyreverse.", file=sys.stderr)
         print(
             "Install pylint in the active environment or run this script from the project's configured environment.",
             file=sys.stderr,
         )
-        print(f"Command: {' '.join(exc.cmd)}", file=sys.stderr)
-        return exc.returncode
+        print(str(exc), file=sys.stderr)
+        return 1
     except FileNotFoundError as exc:
         print(str(exc), file=sys.stderr)
         return 1
