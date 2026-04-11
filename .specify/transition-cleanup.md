@@ -1,10 +1,12 @@
 # Transition Cleanup Rule
 
-Use this rule whenever temporary compatibility, facades, or fallback paths are introduced.
+Use this rule whenever temporary compatibility, facades, or fallback paths are
+introduced.
 
 ## Rule
 
-Temporary transition code is acceptable only when it protects a migration in progress.
+Temporary transition code is acceptable only when it protects a migration in
+progress.
 
 It should not remain in the codebase without a visible reason.
 

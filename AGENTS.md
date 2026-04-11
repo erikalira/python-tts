@@ -62,5 +62,6 @@ When evaluating code quality, prioritize:
 # Documentation rule
 
 - Use top-level `docs/` for durable guides and architecture material
-- Use `docs/features/` for feature docs, feature iterations, and implementation notes
+- Use `specs/` for feature execution artifacts and planning outputs
+- Do not keep implementation-history writeups in `docs/`
 - Update `docs/README.md` when documentation structure or navigation changes

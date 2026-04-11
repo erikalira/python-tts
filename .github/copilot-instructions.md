@@ -47,5 +47,6 @@ Before closing a relevant change:
 ## Documentation placement
 
 - Keep durable guides in `docs/`
-- Put feature docs and implementation notes in `docs/features/`
+- Put feature planning and execution artifacts in `specs/`
+- Do not keep implementation-history writeups in `docs/`
 - Keep `docs/README.md` in sync with navigation changes

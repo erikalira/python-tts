@@ -19,6 +19,10 @@ Use these files as the shared foundation for:
 - `templates/tasks-template.md`: mandatory structure for execution task lists
 - `templates/agent-file-template.md`: baseline guidance format for agent-facing
   instruction files
+- `review-checklist.md`: review and self-review checklist for code changes
+- `transition-cleanup.md`: temporary compatibility and cleanup rule
+- `change-map.md`: where to start for each kind of change
+- `change-examples.md`: concrete examples of starting points and target layers
 
 ## Companion docs
 
@@ -28,10 +32,8 @@ code or operations:
 - `docs/ARCHITECTURE.md`
 - `docs/RUNTIME_FLOWS.md`
 - `docs/ARCHITECTURE_TRANSITIONS.md`
-- `docs/CHANGE_MAP.md`
-- `docs/REVIEW_CHECKLIST.md`
-- `docs/TRANSITION_CLEANUP.md`
-- `docs/CHANGE_EXAMPLES.md`
+- `docs/DEPENDENCY_MAINTENANCE.md`
+- `docs/TESTING.md`
 
 ## Working rule
 

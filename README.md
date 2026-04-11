@@ -96,8 +96,8 @@ No Linux, gere o `.exe` pelo workflow de CI que roda em ambiente Windows.
 ## Documentacao
 
 Use o README principal como ponto de entrada e deixe os detalhes nos guias
-especificos. A pasta `docs/` fica reservada para estrutura principal e guias
-duraveis; documentacao de novas features deve ir em `docs/features/`.
+especificos. A pasta `docs/` fica reservada para guias duraveis; artefatos de
+planejamento e execucao de features devem ir em `specs/`.
 
 - [Indice da documentacao](docs/README.md)
 - [Guia de setup do ambiente](docs/SETUP.md)
@@ -108,10 +108,6 @@ duraveis; documentacao de novas features deve ir em `docs/features/`.
 - [Arquitetura do projeto](docs/ARCHITECTURE.md)
 - [Fluxos de runtime e composition roots](docs/RUNTIME_FLOWS.md)
 - [Guia de transicoes arquiteturais e compatibilidade temporaria](docs/ARCHITECTURE_TRANSITIONS.md)
-- [Mapa de onde mexer por tipo de mudanca](docs/CHANGE_MAP.md)
-- [Checklist curto de review tecnico](docs/REVIEW_CHECKLIST.md)
-- [Regra de limpeza de transicoes temporarias](docs/TRANSITION_CLEANUP.md)
-- [Exemplos de onde comecar por tipo de mudanca](docs/CHANGE_EXAMPLES.md)
 - [Guia do Desktop App](docs/README_DESKTOP_APP.md)
 - [Configuracao de hotkeys](docs/HOTKEY_SETUP.md)
 

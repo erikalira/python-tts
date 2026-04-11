@@ -29,7 +29,7 @@ implementation and testing of each story.
 - Desktop runtime and GUI: `src/desktop/`
 - Entrypoints: `src/bot.py`, `app.py`
 - Tests: `tests/unit/`, `tests/integration/`
-- Documentation: `docs/`, `docs/features/`, `docs/README.md`, `README.md`
+- Documentation: `docs/`, `docs/README.md`, `README.md`
 
 ## Phase 1: Setup
 
@@ -123,7 +123,7 @@ implementation and testing of each story.
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] TXXX [P] Final documentation updates in `docs/`, `docs/features/`, `docs/README.md`, and `README.md`
+- [ ] TXXX [P] Final documentation updates in `docs/`, `docs/README.md`, and `README.md`
 - [ ] TXXX Remove or narrow temporary compatibility code noted in the plan when feasible
 - [ ] TXXX Run the promised automated tests
 - [ ] TXXX Validate the affected runtime(s): bot startup, desktop startup, or both

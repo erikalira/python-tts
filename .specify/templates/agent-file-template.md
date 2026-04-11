@@ -4,13 +4,13 @@ Auto-generated from Spec Kit planning artifacts. Last updated: [DATE]
 
 ## Canonical Guidance
 
-Treat `docs/ai/` as the source of truth for project guidance:
+Treat `.specify/` as the source of truth for project guidance:
 
-- `docs/ai/project-context.md`
-- `docs/ai/architecture-rules.md`
-- `docs/ai/engineering-standards.md`
-- `docs/ai/documentation-policy.md`
-- `docs/ai/change-playbooks.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/templates/spec-template.md`
+- `.specify/templates/plan-template.md`
+- `.specify/templates/tasks-template.md`
 
 Use these docs instead of restating long policy sections in agent-specific files.
 
@@ -45,7 +45,7 @@ Use these docs instead of restating long policy sections in agent-specific files
 - Feature specs live in `specs/<feature>/`.
 - Planning and governance templates live in `.specify/`.
 - Implementation plans and tasks must follow the constitution in `.specify/memory/constitution.md`.
-- Documentation updates belong in `docs/` or `docs/features/`, with navigation reflected in `docs/README.md`.
+- Documentation updates belong in `docs/`, with navigation reflected in `docs/README.md`.
 
 ## Recent Changes
 

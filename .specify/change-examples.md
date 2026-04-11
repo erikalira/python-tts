@@ -9,7 +9,8 @@ Start with:
 - `src/presentation/discord_commands.py`
 - `src/presentation/discord_command_handlers.py`
 
-Move into shared layers only if the change adds reusable flow logic or business rules.
+Move into shared layers only if the change adds reusable flow logic or business
+rules.
 
 ## Example: change HTTP input or response behavior
 
@@ -47,7 +48,8 @@ Start with:
 - `src/desktop/gui/main_window_presenter.py`
 - `src/desktop/app/desktop_actions.py`
 
-Keep UI event wiring in desktop GUI/runtime modules and avoid pulling GUI concerns into shared layers.
+Keep UI event wiring in desktop GUI/runtime modules and avoid pulling GUI
+concerns into shared layers.
 
 ## Example: split a large file
 

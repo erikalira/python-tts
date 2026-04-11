@@ -2,7 +2,8 @@
 
 This guide helps contributors decide where to start when changing the project.
 
-It is intentionally short. The goal is to reduce exploration time, not to document every file.
+It is intentionally short. The goal is to reduce exploration time, not to
+document every file.
 
 ## Start here first
 
@@ -58,7 +59,8 @@ Start with:
 - `src/application/`
 - `src/core/`
 
-Use `src/desktop/` or `src/presentation/` only for runtime-specific entry and exit points.
+Use `src/desktop/` or `src/presentation/` only for runtime-specific entry and
+exit points.
 
 Good candidates for shared logic:
 
@@ -73,7 +75,7 @@ Good candidates for shared logic:
 Start with:
 
 - `.specify/memory/constitution.md`
-- `docs/ARCHITECTURE_TRANSITIONS.md`
+- `.specify/transition-cleanup.md`
 - the current composition root or use case involved
 
 Prefer:
@@ -105,9 +107,11 @@ Use this rule of thumb:
 
 - pure rule or reusable decision:
   `src/core/` or `src/application/`
-- transport, framework, filesystem, network, tray, Discord client, HTTP server:
+- transport, framework, filesystem, network, tray, Discord client, HTTP
+  server:
   `src/infrastructure/` or `src/desktop/`
 - command/controller/UI event flow:
   `src/presentation/` or `src/desktop/gui/`
 
-If a piece of logic might be needed by both runtimes later, bias toward shared layers instead of duplicating it in desktop-only code.
+If a piece of logic might be needed by both runtimes later, bias toward shared
+layers instead of duplicating it in desktop-only code.

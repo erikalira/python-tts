@@ -50,10 +50,9 @@
 
 - [ ] No documentation update needed
 - [ ] Documentation updated in `docs/`
-- [ ] Documentation updated in `docs/features/`
-- [ ] AI guidance updated in `docs/ai/`
+- [ ] Workflow or guidance updated in `.specify/`
 
-<!-- If instructions or governance changed, keep `docs/ai/` as the source of truth.
+<!-- If instructions or governance changed, keep `.specify/` as the source of truth.
 Update tool-specific instruction files only to point back to the canonical docs. -->
 
 ## Screenshots or Recordings

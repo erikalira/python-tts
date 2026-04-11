@@ -38,8 +38,8 @@ smallest architecture-safe approach.]
       intentional interfaces instead of ad-hoc payloads.
 - [ ] Dual-runtime safety addressed: impact on the Discord bot and Windows
       desktop app is identified, including which runtime(s) must be validated.
-- [ ] Documentation impact captured: `docs/`, `docs/features/`, `docs/README.md`,
-      `README.md`, and agent guidance updates are identified where relevant.
+- [ ] Documentation impact captured: `docs/`, `docs/README.md`, `README.md`,
+      and agent guidance updates are identified where relevant.
 - [ ] Incremental change strategy chosen: the plan favors small, reversible
       steps and explains any temporary compatibility path that remains.
 
@@ -76,8 +76,6 @@ tests/
 `-- integration/
 
 docs/
-|-- ai/
-|-- features/
 `-- README.md
 ```
 

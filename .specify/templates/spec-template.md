@@ -100,5 +100,5 @@ runtime(s) are involved.]
 
 ## Documentation Impact *(mandatory)*
 
-- [List each doc to update in `docs/`, `docs/features/`, `docs/README.md`,
-  `README.md`, `AGENTS.md`, or agent-specific instruction files, or state `None`.]
+- [List each doc to update in `docs/`, `docs/README.md`, `README.md`,
+  `AGENTS.md`, or agent-specific instruction files, or state `None`.]

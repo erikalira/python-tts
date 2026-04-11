@@ -67,10 +67,10 @@ breaks startup in the other.
 ### V. Documentation As Operational Memory
 `.specify/` MUST remain the canonical source of project guidance for human and
 AI contributors. Durable architecture and operational guides MUST live in
-`docs/`, feature-specific notes MUST live in `docs/features/`, and
-documentation indexes MUST be updated when navigation changes. Repository
-guidance outside `.specify/` MUST summarize or link back instead of becoming a
-second source of truth.
+`docs/`, feature execution artifacts MUST live in `specs/`, and documentation
+indexes MUST be updated when navigation changes. Repository guidance outside
+`.specify/` MUST summarize or link back instead of becoming a second source of
+truth.
 
 Rationale: The workflow becomes easier to maintain when governance and
 execution standards live in one place and the rest of the repo points back to

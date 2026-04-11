@@ -134,5 +134,3 @@ Observacoes:
 ## Referencias
 
 - [README_DESKTOP_APP.md](README_DESKTOP_APP.md)
-- [features/DESKTOP_APP_MAIN_PANEL.md](features/DESKTOP_APP_MAIN_PANEL.md)
-- [features/DESKTOP_APP_GUI_UX.md](features/DESKTOP_APP_GUI_UX.md)
