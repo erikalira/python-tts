@@ -23,6 +23,8 @@ Use when refactoring code that affects multiple modules, especially shared logic
 3. Break the refactor into small reversible steps
 4. Define validation for each step
 5. Order the work to extract first, replace second, remove old code last
+6. Prefer tightening contracts before broad modularization when both are needed
+7. Call out any temporary facade or compatibility layer that will remain after the plan
 
 # Output
 
@@ -30,3 +32,10 @@ Use when refactoring code that affects multiple modules, especially shared logic
 - affected files
 - validation checklist per step
 - documentation note when relevant
+
+The plan should optimize for:
+
+- explicit contracts
+- reduced hidden coupling
+- easier onboarding in the changed area
+- smaller future maintenance cost, not just cleaner file layout

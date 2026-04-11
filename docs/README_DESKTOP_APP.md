@@ -36,6 +36,18 @@ Ao abrir o executavel, o usuario ve um painel principal que:
 - oferece `Enviar teste de voz` manual com mensagem curta
 - exibe atividade e logs uteis sem depender do terminal
 
+## Diretrizes de UX
+
+O Desktop App deve manter uma experiencia previsivel para o usuario final:
+
+- a interface deve permanecer responsiva durante interacoes comuns
+- handlers da GUI nao devem bloquear a thread principal com trabalho longo
+- campos editaveis devem aceitar foco, selecao, digitacao e colagem de forma confiavel
+- estados somente leitura ou desabilitados devem ficar claros visualmente
+- a janela principal deve orientar o fluxo inicial sem depender de terminal
+- minimizar, restaurar e sair devem seguir um fluxo consistente
+- a GUI deve coletar dados e delegar acoes, sem absorver regra de negocio
+
 ## Build
 
 ```powershell
@@ -46,5 +58,3 @@ python app.py
 ## Relacionados
 
 - [ARCHITECTURE.md](ARCHITECTURE.md)
-- [features/DESKTOP_APP_MAIN_PANEL.md](features/DESKTOP_APP_MAIN_PANEL.md)
-- [features/DESKTOP_APP_GUI_UX.md](features/DESKTOP_APP_GUI_UX.md)

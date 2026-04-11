@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 """System tray adapters for Desktop App services."""
 
+from __future__ import annotations
+
+import logging
 from pathlib import Path
 from typing import Callable, Optional
+
+logger = logging.getLogger(__name__)
 
 try:
     from pystray import Icon, Menu, MenuItem
     from PIL import Image, ImageDraw
+
     _pystray_available = True
 except Exception as exc:
-    print(f"[NOTIFICATION] ⚠️ pystray not available: {exc}")
+    logger.warning("pystray not available: %s", exc)
     Icon = Menu = MenuItem = Image = ImageDraw = None
     _pystray_available = False
 
@@ -84,10 +90,10 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         try:
             self._icon = self._create_icon()
             self._running = True
-            print("[TRAY] ✅ System tray iniciado")
+            logger.info("[TRAY] System tray iniciado")
             self._icon.run()
         except Exception as exc:
-            print(f"[TRAY] ❌ Erro ao iniciar system tray: {exc}")
+            logger.error("[TRAY] Erro ao iniciar system tray: %s", exc)
             self._running = False
 
     def hide(self) -> None:
@@ -96,9 +102,9 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
             try:
                 self._icon.stop()
                 self._running = False
-                print("[TRAY] 🛑 System tray parado")
+                logger.info("[TRAY] System tray parado")
             except Exception as exc:
-                print(f"[TRAY] ⚠️ Erro ao parar system tray: {exc}")
+                logger.warning("[TRAY] Erro ao parar system tray: %s", exc)
 
     def set_tooltip(self, tooltip: str) -> None:
         """Set tooltip text."""
@@ -115,8 +121,6 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
 
     def _create_icon(self) -> Icon:
         menu = Menu(
-            # On Windows, pystray maps left click to the default menu item and
-            # right click to the context menu. Keep the default action explicit.
             MenuItem("Abrir Desktop App", self._handle_status_click, default=True),
             MenuItem(
                 f"Digite {self._config.hotkey.trigger_open}texto{self._config.hotkey.trigger_close} para falar",
@@ -124,7 +128,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
                 enabled=False,
             ),
             Menu.SEPARATOR,
-            MenuItem("⚙️ Configurações", self._handle_configure),
+            MenuItem("Configuracoes", self._handle_configure),
             MenuItem("Sair", self._handle_quit),
         )
         return Icon("Desktop App", self._create_icon_image(), "Desktop App", menu)
@@ -135,7 +139,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
             if icon_path.exists():
                 return Image.open(icon_path)
         except Exception as exc:
-            print(f"[TRAY] ⚠️ Failed to load tray icon asset: {exc}")
+            logger.warning("[TRAY] Failed to load tray icon asset: %s", exc)
 
         img = Image.new("RGB", (64, 64), color="#2C2F33")
         draw = ImageDraw.Draw(img)
@@ -147,22 +151,22 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         if self._on_status_click:
             self._on_status_click()
         elif self._config.discord.bot_url and self._config.discord.member_id:
-            print(f"✅ Conectado ao Discord: {self._config.discord.bot_url}")
-            print(f"👤 User ID: {self._config.discord.member_id}")
+            logger.info("Conectado ao Discord: %s", self._config.discord.bot_url)
+            logger.info("User ID: %s", self._config.discord.member_id)
         else:
-            print("⚠️ Discord não configurado completamente")
+            logger.warning("Discord nao configurado completamente")
 
     def _handle_configure(self, icon, item) -> None:
         if self._on_configure:
             self._on_configure()
         else:
-            print("🔧 Configurações não disponíveis")
+            logger.warning("Configuracoes nao disponiveis")
 
     def _handle_quit(self, icon, item) -> None:
         if self._on_quit:
             self._on_quit()
         else:
-            print("[TRAY] Pedido de saida sem quit_handler configurado; ocultando tray.")
+            logger.warning("[TRAY] Pedido de saida sem quit_handler configurado; ocultando tray.")
             self.hide()
 
 

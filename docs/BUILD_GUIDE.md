@@ -64,7 +64,7 @@ Na primeira execucao:
 | Problema | Solucao |
 |----------|---------|
 | Build falha | Ative o `.venv` e reinstale dependencias com `pip install -r requirements.txt` |
-| Icone nao encontrado | O build pode continuar sem icone |
+| Icone nao encontrado | Verifique `assets/icon.ico`. Se necessario, recrie com `python scripts/utils/create_icon.py` e rode o script oficial novamente |
 | PyInstaller nao encontrado | Com o `.venv` ativo, rode `pip install pyinstaller` |
 | Antivirus bloqueia `.exe` | Adicione excecao para a pasta `dist/` |
 

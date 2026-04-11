@@ -1,12 +1,20 @@
 from unittest.mock import Mock
 
-from src.application.desktop_bot import DESKTOP_BOT_TEST_MESSAGE
+from src.application.desktop_bot import (
+    DESKTOP_BOT_TEST_MESSAGE,
+    DesktopBotActionResult,
+    DesktopBotConnectionStatus,
+    DesktopBotVoiceContextResult,
+    DesktopBotVoiceContextStatus,
+)
 from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_FAILED,
     TTS_EXECUTION_RESULT_MISSING_TEXT,
     TTS_EXECUTION_RESULT_OK,
+    TTSExecutionResult,
 )
 from src.desktop.app.desktop_actions import DesktopConfigurationCoordinator
+from src.desktop.results import DesktopConfigurationSaveResult
 from src.desktop.app.desktop_app import DesktopApp
 from src.desktop.app.tts_runtime import (
     DesktopAppHotkeyHandler,
@@ -46,7 +54,7 @@ def test_desktop_app_tts_result_presenter_notifies_success_after_tts():
     notifier = Mock()
     presenter = DesktopAppTTSResultPresenter(notifier)
 
-    presenter.present({"success": True, "code": TTS_EXECUTION_RESULT_OK})
+    presenter.present(TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK))
 
     notifier.notify_success.assert_called_once_with("Desktop App", "Texto reproduzido com sucesso")
 
@@ -55,7 +63,7 @@ def test_desktop_app_tts_result_presenter_notifies_missing_text_error():
     notifier = Mock()
     presenter = DesktopAppTTSResultPresenter(notifier)
 
-    presenter.present({"success": False, "code": TTS_EXECUTION_RESULT_MISSING_TEXT})
+    presenter.present(TTSExecutionResult(success=False, code=TTS_EXECUTION_RESULT_MISSING_TEXT))
 
     notifier.notify_error.assert_called_once_with("Desktop App", "Nenhum texto valido foi capturado")
 
@@ -65,11 +73,11 @@ def test_desktop_app_tts_result_presenter_notifies_failure():
     presenter = DesktopAppTTSResultPresenter(notifier)
 
     presenter.present(
-        {
-            "success": False,
-            "code": TTS_EXECUTION_RESULT_FAILED,
-            "message": "Bot respondeu HTTP 503: servico suspenso ou indisponivel",
-        }
+        TTSExecutionResult(
+            success=False,
+            code=TTS_EXECUTION_RESULT_FAILED,
+            message="Bot respondeu HTTP 503: servico suspenso ou indisponivel",
+        )
     )
 
     notifier.notify_error.assert_called_once_with(
@@ -193,7 +201,10 @@ def test_desktop_app_save_configuration_from_ui_applies_changes():
 
     result = app._save_configuration_from_ui(updated_config)
 
-    assert result["success"] is True
+    assert result == DesktopConfigurationSaveResult(
+        success=True,
+        message="Configuracao aplicada com sucesso",
+    )
     app._config_repository.save.assert_called_once_with(updated_config)
     app._update_services_config.assert_called_once()
 
@@ -205,12 +216,15 @@ def test_desktop_app_test_bot_connection_uses_http_client(monkeypatch):
 
     fake_client = Mock()
     fake_client.has_bot_url.return_value = True
-    fake_client.check_connection.return_value = {"success": True, "message": "ok"}
-    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    fake_client.check_connection.return_value = DesktopBotConnectionStatus(
+        success=True,
+        message="ok",
+    )
+    monkeypatch.setattr(app, "_bot_gateway_factory", lambda cfg: fake_client)
 
     result = app._test_bot_connection(config)
 
-    assert result == {"success": True, "message": "ok"}
+    assert result == DesktopBotActionResult(success=True, message="ok")
     fake_client.check_connection.assert_called_once_with()
 
 
@@ -222,8 +236,8 @@ def test_desktop_app_send_test_message_requires_discord_identifiers():
 
     result = app._send_test_message(config)
 
-    assert result["success"] is False
-    assert "User ID" in result["message"]
+    assert result.success is False
+    assert "User ID" in result.message
 
 
 def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
@@ -236,11 +250,14 @@ def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
     fake_client.has_bot_url.return_value = True
     fake_client.has_member_id.return_value = True
     fake_client.send_text.return_value = True
-    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr(app, "_bot_gateway_factory", lambda cfg: fake_client)
 
     result = app._send_test_message(config)
 
-    assert result == {"success": True, "message": "Mensagem de teste enviada ao bot com sucesso"}
+    assert result == DesktopBotActionResult(
+        success=True,
+        message="Mensagem de teste enviada ao bot com sucesso",
+    )
     fake_client.send_text.assert_called_once_with(DESKTOP_BOT_TEST_MESSAGE)
 
 
@@ -255,14 +272,14 @@ def test_desktop_app_send_test_message_returns_bot_error_details(monkeypatch):
     fake_client.has_member_id.return_value = True
     fake_client.send_text.return_value = False
     fake_client.get_last_error_message.return_value = "Bot respondeu HTTP 400: user is not connected to a voice channel"
-    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    monkeypatch.setattr(app, "_bot_gateway_factory", lambda cfg: fake_client)
 
     result = app._send_test_message(config)
 
-    assert result == {
-        "success": False,
-        "message": "Bot respondeu HTTP 400: user is not connected to a voice channel",
-    }
+    assert result == DesktopBotActionResult(
+        success=False,
+        message="Bot respondeu HTTP 400: user is not connected to a voice channel",
+    )
     fake_client.send_text.assert_called_once_with(DESKTOP_BOT_TEST_MESSAGE)
 
 
@@ -275,16 +292,16 @@ def test_desktop_app_refresh_voice_context_uses_http_client(monkeypatch):
     fake_client = Mock()
     fake_client.has_bot_url.return_value = True
     fake_client.has_member_id.return_value = True
-    fake_client.fetch_voice_context.return_value = {
-        "success": True,
-        "message": "Canal detectado: Guild A / Sala 1",
-    }
-    monkeypatch.setattr("src.desktop.app.desktop_actions.HttpDiscordBotClient", lambda cfg: fake_client)
+    fake_client.fetch_voice_context.return_value = DesktopBotVoiceContextStatus(
+        success=True,
+        message="Canal detectado: Guild A / Sala 1",
+    )
+    monkeypatch.setattr(app, "_bot_gateway_factory", lambda cfg: fake_client)
 
     result = app._refresh_voice_context(config)
 
-    assert result == {
-        "success": True,
-        "message": "Canal detectado: Guild A / Sala 1",
-    }
+    assert result == DesktopBotVoiceContextResult(
+        success=True,
+        message="Canal detectado: Guild A / Sala 1",
+    )
     fake_client.fetch_voice_context.assert_called_once_with()

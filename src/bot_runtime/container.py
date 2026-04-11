@@ -1,6 +1,7 @@
 """Dependency injection container."""
 
 import importlib.util
+import logging
 
 import discord
 from discord import app_commands
@@ -15,6 +16,7 @@ from src.application.use_cases import (
     SpeakTextUseCase,
 )
 from src.infrastructure.audio_queue import InMemoryAudioQueue
+from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvailability
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
 from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
@@ -23,6 +25,8 @@ from src.presentation.discord_commands import DiscordCommands
 from src.presentation.http_controllers import SpeakController, VoiceContextController
 
 from .settings import Config
+
+logger = logging.getLogger(__name__)
 
 
 class Container:
@@ -66,12 +70,14 @@ class Container:
 
         self.speak_controller = SpeakController(self.speak_use_case)
         self.voice_context_controller = VoiceContextController(self.voice_context_use_case)
+        self.voice_runtime_availability = DependencyVoiceRuntimeAvailability()
         self.discord_commands = DiscordCommands(
             tree=self.command_tree,
             speak_use_case=self.speak_use_case,
             config_use_case=self.config_use_case,
             join_use_case=self.join_use_case,
             leave_use_case=self.leave_use_case,
+            voice_runtime_availability=self.voice_runtime_availability,
         )
 
         self._log_voice_runtime_status()
@@ -80,15 +86,15 @@ class Container:
     def _log_voice_runtime_status(self) -> None:
         has_davey = importlib.util.find_spec("davey") is not None
         if not has_davey:
-            print("Warning: voice support requires the `davey` package with newer discord.py versions.")
+            logger.warning("Voice support requires the `davey` package with newer discord.py versions.")
 
     def _register_events(self):
         @self.discord_client.event
         async def on_ready():
-            print(f"Discord bot ready as {self.discord_client.user}")
-            print(f"   Connected to {len(self.discord_client.guilds)} guild(s)")
+            logger.info("Discord bot ready as %s", self.discord_client.user)
+            logger.info("Connected to %s guild(s)", len(self.discord_client.guilds))
             for guild in self.discord_client.guilds:
-                print(f"   - {guild.name} (ID: {guild.id})")
+                logger.info("Guild connected: %s (ID: %s)", guild.name, guild.id)
             await self._sync_commands_once()
 
         @self.discord_client.event
@@ -98,12 +104,12 @@ class Container:
     async def _sync_commands_once(self) -> None:
         """Sync slash commands only once per process to avoid reconnect churn."""
         if self._commands_synced:
-            print("Slash commands already synced for this process")
+            logger.info("Slash commands already synced for this process")
             return
 
         try:
             await self.command_tree.sync()
             self._commands_synced = True
-            print("Slash commands synced")
+            logger.info("Slash commands synced")
         except Exception as exc:
-            print(f"Failed to sync commands: {exc}")
+            logger.error("Failed to sync commands: %s", exc)

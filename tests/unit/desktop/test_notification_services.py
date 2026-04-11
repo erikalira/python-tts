@@ -1,4 +1,5 @@
-﻿from unittest.mock import Mock
+from unittest.mock import Mock
+import logging
 
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.services.notification_services import (
@@ -8,15 +9,15 @@ from src.desktop.services.notification_services import (
 )
 
 
-def test_console_notification_service_is_available(capsys):
+def test_console_notification_service_is_available(caplog):
     service = ConsoleNotificationService()
 
-    service.show_info("Title", "Message")
-    service.show_success("Title", "Message")
-    service.show_error("Title", "Message")
+    with caplog.at_level(logging.INFO):
+        service.show_info("Title", "Message")
+        service.show_success("Title", "Message")
+        service.show_error("Title", "Message")
 
-    output = capsys.readouterr().out
-    assert "Title: Message" in output
+    assert "Title: Message" in caplog.text
     assert service.is_available() is True
 
 
@@ -206,4 +207,3 @@ def test_py_system_tray_icon_uses_open_as_default_menu_action(monkeypatch):
 
     assert items[0].text == "Abrir Desktop App"
     assert items[0].default is True
-

@@ -15,15 +15,20 @@ class DialogFeedback:
     message: str
 
 
+@dataclass(frozen=True)
+class InitialSetupResult:
+    """Structured output for the initial Desktop App setup flow."""
+
+    member_id: str | None
+    bot_url: str
+    skip_discord: bool
+
+
 class ConfigDialogsPresenter:
     """Build dialog messages and form results for Desktop App configuration UIs."""
 
-    def build_skip_discord_result(self, *, bot_url: str) -> dict:
-        return {
-            "member_id": None,
-            "bot_url": bot_url,
-            "skip_discord": True,
-        }
+    def build_skip_discord_result(self, *, bot_url: str) -> InitialSetupResult:
+        return InitialSetupResult(member_id=None, bot_url=bot_url, skip_discord=True)
 
     def validate_initial_setup(
         self,
@@ -49,12 +54,12 @@ class ConfigDialogsPresenter:
         *,
         member_id: str,
         bot_url: str,
-    ) -> tuple[dict, DialogFeedback]:
-        result = {
-            "member_id": normalize_optional_text(member_id),
-            "bot_url": bot_url,
-            "skip_discord": False,
-        }
+    ) -> tuple[InitialSetupResult, DialogFeedback]:
+        result = InitialSetupResult(
+            member_id=normalize_optional_text(member_id),
+            bot_url=bot_url,
+            skip_discord=False,
+        )
         if normalize_optional_text(member_id):
             return result, DialogFeedback(
                 title="Sucesso",
@@ -70,12 +75,12 @@ class ConfigDialogsPresenter:
         *,
         member_id: str,
         bot_url: str,
-    ) -> dict:
-        return {
-            "member_id": normalize_optional_text(member_id),
-            "bot_url": bot_url,
-            "skip_discord": not bool(normalize_optional_text(member_id)),
-        }
+    ) -> InitialSetupResult:
+        return InitialSetupResult(
+            member_id=normalize_optional_text(member_id),
+            bot_url=bot_url,
+            skip_discord=not bool(normalize_optional_text(member_id)),
+        )
 
     def format_validation_errors(self, errors: list[str]) -> str:
         return "Erros encontrados:\n\n" + "\n".join(errors)

@@ -2,6 +2,7 @@
 """Configuration persistence for the Desktop App."""
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Optional
@@ -15,6 +16,8 @@ from .models import (
     TTSConfig,
 )
 from .paths import get_config_directory
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigurationRepository:
@@ -63,7 +66,7 @@ class ConfigurationRepository:
                 ),
             )
         except Exception as exc:
-            print(f"[CONFIG] Erro ao carregar configuracao: {exc}")
+            logger.error("[CONFIG] Erro ao carregar configuracao: %s", exc)
             return DesktopAppConfig.create_default()
 
     @staticmethod
@@ -103,8 +106,8 @@ class ConfigurationRepository:
             with open(self._config_file, "w", encoding="utf-8") as file:
                 json.dump(data, file, indent=2, ensure_ascii=False)
 
-            print(f"[CONFIG] Configuracao salva em: {self._config_file}")
+            logger.info("[CONFIG] Configuracao salva em: %s", self._config_file)
             return True
         except Exception as exc:
-            print(f"[CONFIG] Erro ao salvar configuracao: {exc}")
+            logger.error("[CONFIG] Erro ao salvar configuracao: %s", exc)
             return False

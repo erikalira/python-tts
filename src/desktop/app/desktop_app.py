@@ -5,18 +5,27 @@ import logging
 import threading
 from typing import Callable, Optional
 
+from src.application.desktop_bot import (
+    CheckDesktopBotConnectionUseCase,
+    DesktopBotActionResult,
+    DesktopBotGateway,
+    DesktopBotVoiceContextResult,
+    FetchDesktopBotVoiceContextUseCase,
+    SendDesktopBotTestMessageUseCase,
+)
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
 from ..gui.configuration_service import ConfigurationService
 from ..gui.tk_support import TKINTER_AVAILABLE
+from ..results import DesktopConfigurationSaveResult
+from ..services.discord_bot_client import HttpDiscordBotClient
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
 from .configuration_application import DesktopConfigurationApplicationService
-from .desktop_actions import DesktopBotActions, DesktopConfigurationCoordinator
+from .desktop_actions import DesktopConfigurationCoordinator
 from .runtime_lifecycle import DesktopAppLifecycleCoordinator
 from .runtime_status import DesktopAppStatusBuilder
 from .tts_runtime import DesktopAppHotkeyHandler, DesktopAppTTSProcessor, DesktopAppTTSResultPresenter
-from .ui_tray_actions import DesktopAppUIActionsCoordinator
 from .ui_runtime import DesktopAppUIRuntimeCoordinator
 
 logger = logging.getLogger(__name__)
@@ -46,11 +55,10 @@ class DesktopApp:
         self._hotkey_manager_factory = hotkey_manager_factory
         self._notification_service_factory = notification_service_factory
         self._console_wait_factory = console_wait_factory or KeyboardHookBackend
+        self._bot_gateway_factory: Callable[[DesktopAppConfig], DesktopBotGateway] = HttpDiscordBotClient
 
-        self._bot_actions: Optional[DesktopBotActions] = None
         self._configuration_coordinator: Optional[DesktopConfigurationCoordinator] = None
         self._lifecycle_coordinator = DesktopAppLifecycleCoordinator(TKINTER_AVAILABLE)
-        self._ui_actions_coordinator = DesktopAppUIActionsCoordinator()
         self._ui_runtime_coordinator = DesktopAppUIRuntimeCoordinator()
         self._status_builder = DesktopAppStatusBuilder()
 
@@ -88,8 +96,6 @@ class DesktopApp:
 
     def _ensure_action_coordinators(self) -> None:
         """Create action coordinators lazily for direct unit-test usage."""
-        if self._bot_actions is None:
-            self._bot_actions = DesktopBotActions()
         if self._config_service is None:
             self._config_service = ConfigurationService(prefer_gui=True)
         if self._config_repository is None:
@@ -141,13 +147,13 @@ class DesktopApp:
 
         try:
             if not self._handle_initial_configuration():
-                print("[DESKTOP_APP] Configuracao cancelada. Encerrando.")
+                logger.info("[DESKTOP_APP] Configuracao cancelada. Encerrando.")
                 return
 
             self._show_current_configuration()
 
             if not self._start_services():
-                print("[DESKTOP_APP] Falha ao iniciar servicos. Encerrando.")
+                logger.error("[DESKTOP_APP] Falha ao iniciar servicos. Encerrando.")
                 return
 
             self._run_main_loop()
@@ -207,31 +213,63 @@ class DesktopApp:
             on_refresh_voice_context=self._refresh_voice_context,
         )
 
-    def _save_configuration_from_ui(self, updated_config: DesktopAppConfig) -> dict:
+    def _save_configuration_from_ui(self, updated_config: DesktopAppConfig) -> DesktopConfigurationSaveResult:
         """Validate, persist, and apply config changes from the main window."""
         self._ensure_action_coordinators()
         if self._configuration_coordinator is None:
-            return {"success": False, "message": "Coordenador de configuracao indisponivel"}
+            return DesktopConfigurationSaveResult(
+                success=False,
+                message="Coordenador de configuracao indisponivel",
+            )
 
         result = self._configuration_coordinator.save_from_ui(updated_config)
-        if result.get("success"):
+        if result.success:
             self._config = updated_config
         return result
 
-    def _test_bot_connection(self, config: DesktopAppConfig) -> dict:
+    def _test_bot_connection(self, config: DesktopAppConfig) -> DesktopBotActionResult:
         """Test connectivity against the bot health endpoint."""
-        self._ensure_action_coordinators()
-        return self._bot_actions.test_bot_connection(config)
+        result = CheckDesktopBotConnectionUseCase(self._build_bot_gateway(config)).execute()
+        if result.success:
+            logger.info("[DESKTOP_APP] Teste de conexao com o bot concluido com sucesso")
+        else:
+            logger.warning(
+                "[DESKTOP_APP] Teste de conexao com o bot falhou: %s",
+                result.message,
+            )
+        return result
 
-    def _send_test_message(self, config: DesktopAppConfig) -> dict:
+    def _send_test_message(self, config: DesktopAppConfig) -> DesktopBotActionResult:
         """Send a short manual test message through the bot."""
-        self._ensure_action_coordinators()
-        return self._bot_actions.send_test_message(config)
+        result = SendDesktopBotTestMessageUseCase(self._build_bot_gateway(config)).execute()
+        if result.success:
+            logger.info("[DESKTOP_APP] Mensagem curta de teste enviada ao bot")
+        else:
+            logger.warning(
+                "[DESKTOP_APP] Falha ao enviar mensagem curta de teste ao bot: %s",
+                result.message,
+            )
+        return result
 
-    def _refresh_voice_context(self, config: DesktopAppConfig) -> dict:
+    def _refresh_voice_context(self, config: DesktopAppConfig) -> DesktopBotVoiceContextResult:
         """Refresh the currently detected Discord voice context."""
-        self._ensure_action_coordinators()
-        return self._bot_actions.fetch_current_voice_context(config)
+        result = FetchDesktopBotVoiceContextUseCase(self._build_bot_gateway(config)).execute()
+        if result.success:
+            logger.info(
+                "[DESKTOP_APP] Canal detectado para o usuario: guild=%s channel=%s",
+                result.guild_name,
+                result.channel_name,
+            )
+        else:
+            logger.warning(
+                "[DESKTOP_APP] Nao foi possivel detectar o canal atual: %s",
+                result.message,
+            )
+        return result
+
+    def _build_bot_gateway(self, config: DesktopAppConfig) -> DesktopBotGateway:
+        """Create the bot gateway used by Desktop App panel actions."""
+        return self._bot_gateway_factory(config)
 
     def _show_current_configuration(self) -> None:
         """Log the current Desktop App configuration summary."""
@@ -280,8 +318,7 @@ class DesktopApp:
 
     def _handle_status_click(self) -> None:
         """Handle system tray status click."""
-        self._ui_actions_coordinator.show_status(
-            main_window=self._ui_runtime_coordinator.main_window,
+        self._ui_runtime_coordinator.show_status(
             get_status=self._get_application_status,
             notification_service=self._notification_service,
         )
@@ -292,8 +329,7 @@ class DesktopApp:
 
     def _handle_configure(self) -> None:
         """Handle system tray configure action."""
-        updated_config, applied = self._ui_actions_coordinator.handle_configure(
-            main_window=self._ui_runtime_coordinator.main_window,
+        updated_config, applied = self._ui_runtime_coordinator.handle_configure(
             ensure_action_coordinators=self._ensure_action_coordinators,
             hotkey_manager=self._hotkey_manager,
             get_configuration_coordinator=lambda: self._configuration_coordinator,

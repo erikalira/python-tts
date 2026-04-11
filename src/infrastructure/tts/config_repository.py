@@ -17,19 +17,19 @@ class InMemoryConfigRepository(IConfigRepository):
             default_config: Default TTS configuration
         """
         self._default_config = default_config
-        self._user_configs: Dict[int, TTSConfig] = {}
+        self._guild_configs: Dict[int, TTSConfig] = {}
     
-    def get_config(self, user_id: Optional[int] = None) -> TTSConfig:
-        """Get TTS configuration for user or global default.
+    def get_config(self, guild_id: Optional[int] = None) -> TTSConfig:
+        """Get TTS configuration for a guild or the global default.
         
         Args:
-            user_id: User ID or None for default
-            
+            guild_id: Guild ID or None for default
+             
         Returns:
-            TTSConfig for the user or default
+            TTSConfig for the guild or default
         """
-        if user_id and user_id in self._user_configs:
-            return self._user_configs[user_id]
+        if guild_id and guild_id in self._guild_configs:
+            return self._guild_configs[guild_id]
         
         # Return copy to avoid external modification
         return TTSConfig(
@@ -39,25 +39,25 @@ class InMemoryConfigRepository(IConfigRepository):
             rate=self._default_config.rate
         )
 
-    async def load_config_async(self, user_id: Optional[int] = None) -> TTSConfig:
+    async def load_config_async(self, guild_id: Optional[int] = None) -> TTSConfig:
         """Load configuration asynchronously using the in-memory state."""
-        return self.get_config(user_id)
+        return self.get_config(guild_id)
     
-    def set_config(self, user_id: int, config: TTSConfig) -> None:
-        """Set TTS configuration for a specific user.
+    def set_config(self, guild_id: int, config: TTSConfig) -> None:
+        """Set TTS configuration for a specific guild.
         
         Args:
-            user_id: User ID
+            guild_id: Guild ID
             config: New configuration
         """
-        self._user_configs[user_id] = TTSConfig(
+        self._guild_configs[guild_id] = TTSConfig(
             engine=config.engine,
             language=config.language,
             voice_id=config.voice_id,
             rate=config.rate
         )
 
-    async def save_config_async(self, user_id: int, config: TTSConfig) -> bool:
+    async def save_config_async(self, guild_id: int, config: TTSConfig) -> bool:
         """Persist configuration asynchronously using the in-memory state."""
-        self.set_config(user_id, config)
+        self.set_config(guild_id, config)
         return True

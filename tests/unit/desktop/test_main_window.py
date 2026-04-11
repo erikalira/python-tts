@@ -1,9 +1,11 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.gui.main_window import DesktopAppMainWindow
 from src.desktop.gui.main_window_presenter import ERROR_COLOR, SUCCESS_COLOR, WARNING_COLOR
+from src.desktop.results import DesktopConfigurationSaveResult
 
 
 class DummyVar:
@@ -72,7 +74,9 @@ def test_main_window_handle_test_connection_uses_presenter_feedback():
     window = build_main_window()
     config = DesktopAppConfig.create_default()
     window._build_config_from_form = Mock(return_value=config)
-    window._on_test_connection = Mock(return_value={"success": True, "message": "Bot online"})
+    window._on_test_connection = Mock(
+        return_value=DesktopBotActionResult(success=True, message="Bot online")
+    )
     window._connection_var = DummyVar()
     window._connection_label = DummyLabel()
 
@@ -98,7 +102,12 @@ def test_main_window_handle_refresh_voice_context_updates_voice_context_message(
     window = build_main_window()
     config = DesktopAppConfig.create_default()
     window._build_config_from_form = Mock(return_value=config)
-    window._on_refresh_voice_context = Mock(return_value={"success": False, "message": "Usuario fora do canal"})
+    window._on_refresh_voice_context = Mock(
+        return_value=DesktopBotVoiceContextResult(
+            success=False,
+            message="Usuario fora do canal",
+        )
+    )
     window._voice_context_var = DummyVar()
     window._voice_context_label = DummyLabel()
 
@@ -130,6 +139,31 @@ def test_main_window_set_status_updates_status_var_and_color():
     assert window._status_var.get() == "OK: Tudo certo"
     assert window._status_label.fg == SUCCESS_COLOR
     window.push_log.assert_called_once_with("Tudo certo")
+
+
+def test_main_window_handle_save_uses_typed_save_result():
+    window = build_main_window()
+    new_config = DesktopAppConfig.create_default()
+    new_config.discord.bot_url = "http://bot"
+    new_config.discord.member_id = "123"
+    window._build_config_from_form = Mock(return_value=new_config)
+    window._on_save = Mock(
+        return_value=DesktopConfigurationSaveResult(
+            success=True,
+            message="Configuracao aplicada com sucesso",
+        )
+    )
+    window._status_var = DummyVar()
+    window._status_label = DummyLabel()
+    window._config_var = DummyVar()
+    window._config_label = DummyLabel()
+    window.push_log = Mock()
+
+    window._handle_save()
+
+    assert window.config is new_config
+    assert window._status_var.get() == "OK: Configuracao aplicada com sucesso"
+    assert window._status_label.fg == SUCCESS_COLOR
 
 
 def test_main_window_clear_logs_resets_widget_and_pushes_log(monkeypatch):

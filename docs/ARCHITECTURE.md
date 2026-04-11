@@ -14,6 +14,18 @@ Ambos seguem Clean Architecture e os principios SOLID para manter:
 - reuso de regras compartilhadas em `src/application/` e `src/core/`
 - independencia entre o bot e o Desktop App
 
+## Diagramas
+
+Para leitura visual da arquitetura, use os diagramas curados em vez do output bruto do `pyreverse`:
+
+- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md)
+- [diagrams/layer-overview.md](diagrams/layer-overview.md)
+- [diagrams/shared-tts-core.md](diagrams/shared-tts-core.md)
+- [diagrams/bot-runtime.md](diagrams/bot-runtime.md)
+- [diagrams/desktop-runtime.md](diagrams/desktop-runtime.md)
+
+Esses diagramas foram organizados por camada e contexto de runtime para ficarem legiveis como documentacao duravel.
+
 ## Entry points
 
 ### Desktop App
@@ -122,5 +134,3 @@ Observacoes:
 ## Referencias
 
 - [README_DESKTOP_APP.md](README_DESKTOP_APP.md)
-- [features/DESKTOP_APP_MAIN_PANEL.md](features/DESKTOP_APP_MAIN_PANEL.md)
-- [features/DESKTOP_APP_GUI_UX.md](features/DESKTOP_APP_GUI_UX.md)

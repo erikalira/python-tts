@@ -9,13 +9,11 @@ from src.infrastructure.http.server import HTTPServer
 
 @pytest.mark.asyncio
 async def test_http_server_exposes_health_version_and_about_routes():
-    controller = Mock()
-    controller.handle = AsyncMock()
-    voice_context_controller = Mock()
-    voice_context_controller.handle = AsyncMock()
+    speak_handler = AsyncMock()
+    voice_context_handler = AsyncMock()
     server = HTTPServer(
-        speak_controller=controller,
-        voice_context_controller=voice_context_controller,
+        speak_handler=speak_handler,
+        voice_context_handler=voice_context_handler,
         port=10000,
     )
 
@@ -26,7 +24,7 @@ async def test_http_server_exposes_health_version_and_about_routes():
         response = await match_info.handler(request)
 
         if path == "/voice-context":
-            voice_context_controller.handle.assert_awaited_once_with(request)
+            voice_context_handler.assert_awaited_once_with(request)
             continue
 
         assert response.status == 200
@@ -43,13 +41,11 @@ async def test_http_server_exposes_health_version_and_about_routes():
 
 @pytest.mark.asyncio
 async def test_http_server_routes_speak_to_controller():
-    controller = Mock()
-    controller.handle = AsyncMock(return_value=web.Response(text="ok"))
-    voice_context_controller = Mock()
-    voice_context_controller.handle = AsyncMock()
+    speak_handler = AsyncMock(return_value=web.Response(text="ok"))
+    voice_context_handler = AsyncMock()
     server = HTTPServer(
-        speak_controller=controller,
-        voice_context_controller=voice_context_controller,
+        speak_handler=speak_handler,
+        voice_context_handler=voice_context_handler,
         port=10000,
     )
 
@@ -60,4 +56,4 @@ async def test_http_server_routes_speak_to_controller():
     response = await match_info.handler(request)
 
     assert response.status == 200
-    controller.handle.assert_awaited_once_with(request)
+    speak_handler.assert_awaited_once_with(request)

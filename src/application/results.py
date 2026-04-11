@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Optional
 
 SPEAK_RESULT_OK = "ok"
 SPEAK_RESULT_QUEUED = "queued"
@@ -37,19 +37,7 @@ VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL = "not_in_channel"
 
 @dataclass(slots=True)
 class ResultBase:
-    """Compatibility-friendly typed result base."""
-
-    def to_dict(self) -> dict[str, Any]:
-        return {key: value for key, value in asdict(self).items() if value is not None}
-
-    def get(self, key: str, default: Any = None) -> Any:
-        return self.to_dict().get(key, default)
-
-    def __getitem__(self, key: str) -> Any:
-        return self.to_dict()[key]
-
-    def __contains__(self, key: str) -> bool:
-        return key in self.to_dict()
+    """Typed result base for shared application flows."""
 
 
 @dataclass(slots=True)
@@ -86,3 +74,19 @@ class SpeakTextResult(ResultBase):
     queue_size: Optional[int] = None
     item_id: Optional[str] = None
     error_detail: Optional[str] = None
+
+
+@dataclass(slots=True)
+class TTSConfigurationData(ResultBase):
+    engine: str
+    language: str
+    voice_id: str
+    rate: int
+
+
+@dataclass(slots=True)
+class ConfigureTTSResult(ResultBase):
+    success: bool
+    guild_id: Optional[int] = None
+    config: Optional[TTSConfigurationData] = None
+    message: Optional[str] = None

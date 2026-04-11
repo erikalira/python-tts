@@ -1,8 +1,14 @@
 """Tests for Discord commands presentation layer."""
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock
 from discord import app_commands
-from src.application.results import JoinVoiceChannelResult, LeaveVoiceChannelResult, SpeakTextResult
+from src.application.results import (
+    ConfigureTTSResult,
+    JoinVoiceChannelResult,
+    LeaveVoiceChannelResult,
+    SpeakTextResult,
+)
+from src.application.voice_runtime import VoiceRuntimeStatus
 from src.presentation.discord_commands import DiscordCommands
 from src.application.use_cases import (
     ConfigureTTSUseCase,
@@ -14,6 +20,16 @@ from src.application.use_cases import (
 
 class TestDiscordCommands:
     """Test DiscordCommands presentation layer."""
+
+    @pytest.fixture
+    def voice_runtime_availability(self):
+        availability = Mock()
+        availability.get_status.return_value = VoiceRuntimeStatus(
+            ffmpeg_available=True,
+            pynacl_installed=True,
+            davey_installed=True,
+        )
+        return availability
     
     @pytest.fixture
     def commands_instance(
@@ -23,6 +39,7 @@ class TestDiscordCommands:
         mock_config_repository,
         mock_audio_queue,
         build_speak_use_case,
+        voice_runtime_availability,
     ):
         """Create a DiscordCommands instance for testing."""
         speak_use_case = build_speak_use_case(
@@ -44,6 +61,7 @@ class TestDiscordCommands:
             config_use_case,
             join_use_case,
             leave_use_case,
+            voice_runtime_availability,
         )
     
     def test_initialization(self, commands_instance):
@@ -74,8 +92,7 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.delete_original_response = AsyncMock()
         
-        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
-            await commands_instance._handle_speak(interaction, "Test message")
+        await commands_instance._handle_speak(interaction, "Test message")
         
         interaction.response.defer.assert_called_once()
         interaction.delete_original_response.assert_called_once()
@@ -87,8 +104,12 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.edit_original_response = AsyncMock()
         
-        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=False):
-            await commands_instance._handle_speak(interaction, "Test")
+        commands_instance._voice_runtime_availability.get_status.return_value = VoiceRuntimeStatus(
+            ffmpeg_available=False,
+            pynacl_installed=True,
+            davey_installed=True,
+        )
+        await commands_instance._handle_speak(interaction, "Test")
 
         interaction.edit_original_response.assert_called_once()
         assert "indispon" in interaction.edit_original_response.call_args.kwargs["content"].lower()
@@ -108,8 +129,7 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.edit_original_response = AsyncMock()
         
-        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
-            await commands_instance._handle_speak(interaction, "Test")
+        await commands_instance._handle_speak(interaction, "Test")
         
         interaction.edit_original_response.assert_called_once()
 
@@ -131,8 +151,7 @@ class TestDiscordCommands:
             side_effect=RuntimeError("cannot schedule new futures after interpreter shutdown")
         )
 
-        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
-            await commands_instance._handle_speak(interaction, "Test")
+        await commands_instance._handle_speak(interaction, "Test")
 
         interaction.response.defer.assert_called_once()
         interaction.edit_original_response.assert_called_once()
@@ -197,7 +216,7 @@ class TestDiscordCommands:
         
         # Mock update to fail
         commands_instance._config_use_case.update_config_async = AsyncMock(
-            return_value={"success": False, "message": "Config error"}
+            return_value=ConfigureTTSResult(success=False, message="Config error")
         )
         
         await commands_instance._handle_config(interaction, "invalid", None, None)
@@ -219,8 +238,7 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.edit_original_response = AsyncMock()
         
-        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
-            await commands_instance._handle_join(interaction)
+        await commands_instance._handle_join(interaction)
         
         interaction.response.defer.assert_called_once()
         interaction.edit_original_response.assert_called_once()
@@ -233,8 +251,12 @@ class TestDiscordCommands:
         interaction = Mock()
         interaction.response = AsyncMock()
         
-        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=False):
-            await commands_instance._handle_join(interaction)
+        commands_instance._voice_runtime_availability.get_status.return_value = VoiceRuntimeStatus(
+            ffmpeg_available=False,
+            pynacl_installed=False,
+            davey_installed=True,
+        )
+        await commands_instance._handle_join(interaction)
 
         interaction.response.send_message.assert_called_once()
         assert "indispon" in interaction.response.send_message.call_args.args[0].lower()
@@ -254,8 +276,7 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.edit_original_response = AsyncMock()
 
-        with patch('src.presentation.discord_commands._has_voice_runtime_support', return_value=True):
-            await commands_instance._handle_join(interaction)
+        await commands_instance._handle_join(interaction)
 
         interaction.response.defer.assert_called_once()
         interaction.edit_original_response.assert_called_once_with(content='Joined your channel.')

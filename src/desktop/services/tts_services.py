@@ -7,10 +7,9 @@ Provides Desktop App TTS engines and orchestration helpers.
 import logging
 import threading
 from abc import ABC, abstractmethod
-from typing import Optional, Protocol
+from typing import Callable, Optional, Protocol
 
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
-from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter, is_pyttsx3_available
@@ -65,8 +64,7 @@ class LocalPyTTSX3Engine(TTSEngine):
 
         try:
             if self._engine is None:
-                self._engine = self._adapter.create_engine()
-                configure_pyttsx3_engine(self._engine, self._config.tts, logger)
+                self._engine = self._adapter.create_configured_engine(self._config.tts, logger)
 
             self._last_error_message = None
             return True
@@ -130,11 +128,11 @@ class DesktopAppTTSService:
     def __init__(
         self,
         config: DesktopAppConfig,
-        bot_client: Optional[DiscordBotClient] = None,
-        local_engine_factory: Optional[object] = None,
+        bot_client: DiscordBotClient,
+        local_engine_factory: Optional[Callable[[DesktopAppConfig], TTSEngine]] = None,
     ):
         self._config = config
-        self._bot_client = bot_client or HttpDiscordBotClient(config)
+        self._bot_client = bot_client
         self._local_engine_factory = local_engine_factory or (
             lambda cfg: LocalPyTTSX3Engine(cfg)
         )

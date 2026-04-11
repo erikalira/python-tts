@@ -24,15 +24,17 @@ Use this skill when:
 # Goal
 
 Identify whether the implementation respects project boundaries and recommend the smallest safe improvement.
+Also assess whether the changed area improves explicit contracts, onboarding readability, and temporary-structure discipline.
 
 # Review process
 
 1. Identify the changed files and map each file to a layer
 2. Inspect imports and dependencies between those files
 3. Mark any boundary violations, layer leakage, or duplicated logic
-4. Separate critical issues from minor improvements
-5. Suggest the smallest safe refactor instead of a full rewrite
-6. Preserve both execution modes:
+4. Note weak contracts, lingering mapping-style payloads, or compatibility layers that may no longer be justified
+5. Separate critical issues from minor improvements
+6. Suggest the smallest safe refactor instead of a full rewrite
+7. Preserve both execution modes:
    - Discord bot
    - Windows desktop app
 
@@ -51,6 +53,13 @@ For each finding include:
 - issue
 - why it weakens clean architecture
 - recommended fix
+
+Prefer calling out:
+
+- hidden coupling
+- unclear ownership of responsibilities
+- temporary facades that should remain temporary
+- poor readability for the next contributor in the affected flow
 
 ## Safe refactor suggestions
 

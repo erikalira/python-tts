@@ -1,5 +1,6 @@
 import asyncio
 
+from src.application.results import ConfigureTTSResult, TTSConfigurationData
 from src.application.use_cases import ConfigureTTSUseCase
 from src.core.entities import TTSConfig
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
@@ -36,11 +37,21 @@ def test_update_config_async_preserves_persisted_fields_after_cache_miss(tmp_pat
 
     result = asyncio.run(use_case.update_config_async(guild_id=456, language="fr"))
 
-    assert result["success"] is True
-    assert result["config"]["engine"] == "pyttsx3"
-    assert result["config"]["language"] == "fr"
-    assert result["config"]["voice_id"] == "custom-voice"
-    assert result["config"]["rate"] == 240
+    assert result == ConfigureTTSResult(
+        success=True,
+        guild_id=456,
+        config=TTSConfigurationData(
+            engine="pyttsx3",
+            language="fr",
+            voice_id="custom-voice",
+            rate=240,
+        ),
+    )
+    assert result.config is not None
+    assert result.config.engine == "pyttsx3"
+    assert result.config.language == "fr"
+    assert result.config.voice_id == "custom-voice"
+    assert result.config.rate == 240
 
     persisted = asyncio.run(storage.load(456))
     assert persisted is not None
