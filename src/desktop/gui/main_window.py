@@ -146,7 +146,7 @@ class DesktopAppMainWindow:
         self._voice_context_label.pack(anchor="w", pady=(8, 0))
 
         form_frame = compat.ttk.LabelFrame(main_frame, text="Configuracao", padding="10")
-        form_frame.pack(fill="both", expand=True, pady=(0, 12))
+        form_frame.pack(fill="x", pady=(0, 12))
         self._build_config_notebook(form_frame)
 
         build_action_buttons(

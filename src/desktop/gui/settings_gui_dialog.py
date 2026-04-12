@@ -17,10 +17,16 @@ from .settings_console_dialog import ConsoleConfig
 class GUIConfig(ConfigInterface):
     """GUI configuration interface."""
 
+    _MAX_NOTEBOOK_TAB_HEIGHT = 200
+
     def __init__(self, tts_catalog: TTSCatalog | None = None):
         self.root: Optional[object] = None
         self.config: Optional[DesktopAppConfig] = None
         self.result: Optional[DesktopAppConfig] = None
+        self._main_frame: Optional[object] = None
+        self._button_frame: Optional[object] = None
+        self._notebook: Optional[object] = None
+        self._tab_scroll_pairs: list[tuple[object, object]] = []
         self._presenter = ConfigDialogsPresenter()
         self._tts_catalog = tts_catalog or RuntimeTTSCatalog()
         self.member_id_var: Optional[object] = None
@@ -47,14 +53,10 @@ class GUIConfig(ConfigInterface):
         self.result = None
         self.root = compat.tk.Tk()
         self.root.title("Desktop App - Configuracao")
-        self.root.geometry("600x500")
         self.root.resizable(True, True)
         self.root.protocol("WM_DELETE_WINDOW", self._cancel)
         self._create_interface()
-        self.root.update_idletasks()
-        x = (self.root.winfo_screenwidth() // 2) - (self.root.winfo_width() // 2)
-        y = (self.root.winfo_screenheight() // 2) - (self.root.winfo_height() // 2)
-        self.root.geometry(f"+{x}+{y}")
+        self._resize_to_selected_tab(center_window=True)
         self.root.mainloop()
         return self.result
 
@@ -63,37 +65,86 @@ class GUIConfig(ConfigInterface):
 
         if not self.root or not self.config:
             return
-        main_frame = compat.ttk.Frame(self.root, padding="10")
-        main_frame.pack(fill="both", expand=True)
-        compat.ttk.Label(main_frame, text="Desktop App Configuration", font=("Arial", 14, "bold")).pack(pady=(0, 20))
-        self._build_config_notebook(main_frame)
-        button_frame = compat.ttk.Frame(main_frame)
-        button_frame.pack(fill="x", pady=(10, 0))
-        compat.ttk.Button(button_frame, text="Salvar", command=self._save_config).pack(side="right", padx=(10, 0))
-        compat.ttk.Button(button_frame, text="Cancelar", command=self._cancel).pack(side="right")
+        self._main_frame = compat.ttk.Frame(self.root, padding="10")
+        self._main_frame.pack(fill="both", expand=True)
+        compat.ttk.Label(self._main_frame, text="Desktop App Configuration", font=("Arial", 14, "bold")).pack(pady=(0, 20))
+        self._build_config_notebook(self._main_frame)
+        self._button_frame = compat.ttk.Frame(self._main_frame)
+        self._button_frame.pack(fill="x", pady=(10, 0))
+        compat.ttk.Button(self._button_frame, text="Salvar", command=self._save_config).pack(side="right", padx=(10, 0))
+        compat.ttk.Button(self._button_frame, text="Cancelar", command=self._cancel).pack(side="right")
 
     def _build_config_notebook(self, parent):
         from . import tk_support as compat
 
         notebook = compat.ttk.Notebook(parent)
-        notebook.pack(fill="both", expand=True, pady=(0, 10))
+        notebook.pack(fill="x", expand=False, pady=(0, 10))
+        self._notebook = notebook
 
-        discord_frame = compat.ttk.Frame(notebook, padding="10")
-        notebook.add(discord_frame, text="Discord")
+        discord_frame = self._create_scrollable_tab(notebook, "Discord")
         self._create_discord_tab(discord_frame)
 
-        tts_frame = compat.ttk.Frame(notebook, padding="10")
-        notebook.add(tts_frame, text="TTS")
+        tts_frame = self._create_scrollable_tab(notebook, "TTS")
         self._create_tts_tab(tts_frame)
 
-        hotkey_frame = compat.ttk.Frame(notebook, padding="10")
-        notebook.add(hotkey_frame, text="Hotkey")
+        hotkey_frame = self._create_scrollable_tab(notebook, "Hotkey")
         self._create_hotkey_tab(hotkey_frame)
 
-        interface_frame = compat.ttk.Frame(notebook, padding="10")
-        notebook.add(interface_frame, text="Interface")
+        interface_frame = self._create_scrollable_tab(notebook, "Interface")
         self._create_interface_tab(interface_frame)
+        self._fit_notebook_to_selected_tab()
+        self._update_tab_scrollbars()
+        if hasattr(notebook, "bind"):
+            notebook.bind("<<NotebookTabChanged>>", self._handle_tab_changed)
         return notebook
+
+    def _create_scrollable_tab(self, notebook, title: str):
+        from . import tk_support as compat
+
+        tab_container = compat.ttk.Frame(notebook)
+        notebook.add(tab_container, text=title)
+
+        canvas = compat.tk.Canvas(tab_container, highlightthickness=0, borderwidth=0)
+        scrollbar = compat.ttk.Scrollbar(tab_container, orient="vertical", command=canvas.yview)
+        content_frame = compat.ttk.Frame(canvas, padding="10")
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        window_id = canvas.create_window((0, 0), window=content_frame, anchor="nw")
+
+        def _refresh_scroll_region(_event=None):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def _sync_content_width(event):
+            canvas.itemconfigure(window_id, width=event.width)
+
+        content_frame.bind("<Configure>", _refresh_scroll_region)
+        canvas.bind("<Configure>", _sync_content_width)
+        self._bind_mousewheel(canvas, content_frame)
+        self._tab_scroll_pairs.append((canvas, scrollbar))
+        return content_frame
+
+    def _bind_mousewheel(self, canvas, content_frame) -> None:
+        def _on_mousewheel(event):
+            delta = getattr(event, "delta", 0)
+            if delta == 0:
+                return
+            canvas.yview_scroll(int(-delta / 120), "units")
+
+        def _bind(_event=None):
+            if self.root and hasattr(self.root, "bind_all"):
+                self.root.bind_all("<MouseWheel>", _on_mousewheel)
+
+        def _unbind(_event=None):
+            if self.root and hasattr(self.root, "unbind_all"):
+                self.root.unbind_all("<MouseWheel>")
+
+        for widget in (canvas, content_frame):
+            if hasattr(widget, "bind"):
+                widget.bind("<Enter>", _bind)
+                widget.bind("<Leave>", _unbind)
 
     def _create_discord_tab(self, parent):
         from . import tk_support as compat
@@ -117,6 +168,7 @@ class GUIConfig(ConfigInterface):
                 "O bot vai descobrir o servidor pelo seu canal de voz atual."
             ),
             wraplength=400,
+            justify="left",
             font=("Arial", 8),
         ).pack(anchor="w", pady=(10, 0))
 
@@ -317,3 +369,68 @@ class GUIConfig(ConfigInterface):
         self.result = None
         if self.root:
             self.root.destroy()
+
+    def _handle_tab_changed(self, _event=None) -> None:
+        self._fit_notebook_to_selected_tab()
+        self._update_tab_scrollbars()
+        self._resize_to_selected_tab()
+
+    def _fit_notebook_to_selected_tab(self) -> None:
+        if not self._notebook:
+            return
+
+        self._notebook.update_idletasks()
+        selected_tab = self._notebook.select() if hasattr(self._notebook, "select") else None
+        selected_widget = self._notebook.nametowidget(selected_tab) if selected_tab else None
+        if selected_widget is None:
+            return
+
+        tab_height = min(selected_widget.winfo_reqheight(), self._MAX_NOTEBOOK_TAB_HEIGHT)
+        if hasattr(self._notebook, "configure"):
+            self._notebook.configure(height=tab_height)
+
+    def _update_tab_scrollbars(self) -> None:
+        for canvas, scrollbar in self._tab_scroll_pairs:
+            if not hasattr(canvas, "update_idletasks") or not hasattr(scrollbar, "winfo_manager"):
+                continue
+
+            canvas.update_idletasks()
+            scrollregion = canvas.bbox("all")
+            viewport_height = canvas.winfo_height()
+            content_height = 0 if scrollregion is None else scrollregion[3] - scrollregion[1]
+            should_show = content_height > viewport_height + 1
+            is_visible = bool(scrollbar.winfo_manager())
+
+            if should_show and not is_visible:
+                scrollbar.pack(side="right", fill="y")
+            elif not should_show and is_visible:
+                scrollbar.pack_forget()
+
+    def _resize_to_selected_tab(self, center_window: bool = False) -> None:
+        if not self.root or not self._main_frame or not self._notebook or not self._button_frame:
+            return
+
+        self.root.update_idletasks()
+        selected_tab = self._notebook.select() if hasattr(self._notebook, "select") else None
+        selected_widget = self._notebook.nametowidget(selected_tab) if selected_tab else None
+        if selected_widget is None:
+            return
+
+        header_height = max(0, self._main_frame.winfo_reqheight() - self._notebook.winfo_reqheight() - self._button_frame.winfo_reqheight())
+        notebook_height = self._notebook.winfo_reqheight()
+        target_width = max(600, self.root.winfo_reqwidth())
+        target_height = header_height + notebook_height + self._button_frame.winfo_reqheight()
+
+        if center_window:
+            x = (self.root.winfo_screenwidth() // 2) - (target_width // 2)
+            y = (self.root.winfo_screenheight() // 2) - (target_height // 2)
+            self.root.geometry(f"{target_width}x{target_height}+{x}+{y}")
+            self.root.update_idletasks()
+            self._update_tab_scrollbars()
+            return
+
+        x = self.root.winfo_x()
+        y = self.root.winfo_y()
+        self.root.geometry(f"{target_width}x{target_height}+{x}+{y}")
+        self.root.update_idletasks()
+        self._update_tab_scrollbars()
