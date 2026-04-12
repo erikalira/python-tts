@@ -52,7 +52,7 @@ class Config:
         if not self.discord_token:
             return False, "DISCORD_TOKEN not set"
 
-        if self.tts_config.engine not in ["gtts", "pyttsx3"]:
+        if self.tts_config.engine not in ["gtts", "pyttsx3", "edge-tts"]:
             return False, f"Invalid TTS_ENGINE: {self.tts_config.engine}"
 
         return True, ""

@@ -19,7 +19,7 @@ from src.application.results import (
     SpeakTextResult,
 )
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
-from src.core.entities import AudioQueueItem
+from src.core.entities import AudioQueueItem, TTSConfig
 from src.core.interfaces import IAudioFileCleanup, IAudioQueue, IConfigRepository, ITTSEngine
 
 logger = logging.getLogger(__name__)
@@ -141,6 +141,7 @@ class TTSQueueOrchestrator:
                 )
 
             config = await self._config_repository.load_config_async(request.guild_id)
+            config = self._apply_request_override(config, request.config_override)
             audio = await self._tts_engine.generate_audio(request.text, config)
 
             if not voice_channel.is_connected():
@@ -209,3 +210,15 @@ class TTSQueueOrchestrator:
                         audio.path,
                         cleanup_error,
                     )
+
+    def _apply_request_override(self, base_config: TTSConfig, override: TTSConfig | None) -> TTSConfig:
+        if override is None:
+            return base_config
+
+        return TTSConfig(
+            engine=override.engine,
+            language=override.language,
+            voice_id=override.voice_id,
+            rate=override.rate,
+            output_device=base_config.output_device,
+        )

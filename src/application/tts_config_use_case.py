@@ -48,10 +48,10 @@ class ConfigureTTSUseCase:
         current_config = self._config_repository.get_config(guild_id)
 
         if engine is not None:
-            if engine.lower() not in ["gtts", "pyttsx3"]:
+            if engine.lower() not in ["gtts", "pyttsx3", "edge-tts"]:
                 return ConfigureTTSResult(
                     success=False,
-                    message="Invalid engine. Use 'gtts' or 'pyttsx3'",
+                    message="Invalid engine. Use 'gtts', 'pyttsx3' or 'edge-tts'",
                 )
             current_config.engine = engine.lower()
         if language is not None:

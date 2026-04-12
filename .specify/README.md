@@ -29,11 +29,40 @@ Use these files as the shared foundation for:
 These are not the canonical rules source, but they remain useful when changing
 code or operations:
 
+- `docs/SETUP.md`
+- `docs/TESTING.md`
 - `docs/ARCHITECTURE.md`
 - `docs/RUNTIME_FLOWS.md`
 - `docs/ARCHITECTURE_TRANSITIONS.md`
 - `docs/DEPENDENCY_MAINTENANCE.md`
-- `docs/TESTING.md`
+
+## Environment baseline
+
+Use the repository virtual environment as the default Python runtime for local
+development, validation, and agent-run commands. Do not rely on a globally
+installed Python when the repo `.venv` is available.
+
+- Windows PowerShell: `.\.venv\Scripts\python.exe`
+- Ubuntu / WSL / macOS: `.venv/bin/python`
+
+When installing dependencies or running tests, prefer commands such as
+`.\.venv\Scripts\python.exe -m pip install -r requirements-test.txt` and
+`.\.venv\Scripts\python.exe -m pytest`.
+
+## Text and encoding baseline
+
+Use UTF-8 source files by default when editing repository text and code.
+Prefer natural Portuguese in user-facing strings instead of escaped Unicode
+sequences.
+
+- Write Portuguese accents directly when the file format supports UTF-8, such
+  as `configuração`, `não`, `áudio`, and `você`.
+- Do not replace Portuguese characters with Unicode escapes like `\u00e3`,
+  `\u00e7`, or `\u00f3` unless the target format explicitly requires escapes.
+- Prefer readable Portuguese text in bot messages, desktop labels, docs, and
+  tests that assert user-facing content.
+- Keep ASCII-only text only when required by external tools, legacy formats, or
+  existing file constraints that would break with UTF-8 characters.
 
 ## Working rule
 

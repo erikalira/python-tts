@@ -3,6 +3,7 @@ import tempfile
 import asyncio
 import logging
 from typing import Optional
+
 import pyttsx3
 from gtts import gTTS
 from src.core.interfaces import ITTSEngine
@@ -87,6 +88,8 @@ class Pyttsx3Engine(ITTSEngine):
             AudioFile with generated audio path
         """
         self._initialize_engine(config)
+        if self._engine:
+            configure_pyttsx3_engine(self._engine, config, logger)
         
         tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
         tmpname = tmp.name
@@ -105,6 +108,51 @@ class Pyttsx3Engine(ITTSEngine):
         
         self._engine.save_to_file(text, output_path)
         self._engine.runAndWait()
+
+
+class EdgeTTSEngine(ITTSEngine):
+    """Microsoft Edge online TTS engine implementation."""
+
+    async def generate_audio(self, text: str, config: TTSConfig) -> AudioFile:
+        try:
+            import edge_tts
+        except ImportError as exc:
+            raise RuntimeError("edge-tts is not installed") from exc
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        tmpname = tmp.name
+        tmp.close()
+
+        communicate = edge_tts.Communicate(
+            text=text,
+            voice=config.voice_id,
+            rate=self._map_rate(config.rate),
+        )
+        await communicate.save(tmpname)
+        return AudioFile(path=tmpname)
+
+    @staticmethod
+    def _map_rate(rate: int) -> str:
+        baseline = 180
+        delta = int(round(((rate - baseline) / baseline) * 100))
+        clamped = max(-50, min(100, delta))
+        sign = "+" if clamped >= 0 else ""
+        return f"{sign}{clamped}%"
+
+
+class RoutedTTSEngine(ITTSEngine):
+    """Route audio generation to the engine requested by the current config."""
+
+    def __init__(self):
+        self._engines: dict[str, ITTSEngine] = {}
+
+    async def generate_audio(self, text: str, config: TTSConfig) -> AudioFile:
+        engine_key = config.engine.lower()
+        engine = self._engines.get(engine_key)
+        if engine is None:
+            engine = TTSEngineFactory.create(config)
+            self._engines[engine_key] = engine
+        return await engine.generate_audio(text, config)
 
 
 class TTSEngineFactory:
@@ -130,5 +178,7 @@ class TTSEngineFactory:
             return GTTSEngine()
         elif config.engine == 'pyttsx3':
             return Pyttsx3Engine()
+        elif config.engine == 'edge-tts':
+            return EdgeTTSEngine()
         else:
             raise ValueError(f"Unknown TTS engine: {config.engine}")
