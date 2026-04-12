@@ -46,6 +46,7 @@ class SpeakTextUseCase:
             channel_id=request.channel_id,
             guild_id=inferred_guild_id,
             member_id=request.member_id,
+            config_override=request.config_override,
         )
 
         logger.info(

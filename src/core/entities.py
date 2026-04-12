@@ -12,6 +12,7 @@ class TTSRequest:
     channel_id: Optional[int] = None
     guild_id: Optional[int] = None
     member_id: Optional[int] = None
+    config_override: Optional["TTSConfig"] = None
 
 
 @dataclass

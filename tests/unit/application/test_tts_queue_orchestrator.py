@@ -7,7 +7,7 @@ import pytest
 from src.application.results import SPEAK_RESULT_OK, SPEAK_RESULT_UNKNOWN_ERROR
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
-from src.core.entities import AudioQueueItem, TTSRequest
+from src.core.entities import AudioQueueItem, TTSConfig, TTSRequest
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 from tests.conftest import MockAudioCleanup, MockConfigRepository, MockTTSEngine, MockVoiceChannelRepository
 
@@ -82,3 +82,64 @@ class TestTTSQueueOrchestrator:
 
         assert processed == ["first", "second"]
         assert orchestrator.is_processing(789012) is False
+
+    async def test_process_item_uses_guild_specific_engine_from_config(self):
+        queue = InMemoryAudioQueue()
+        config_repository = MockConfigRepository()
+        await config_repository.save_config_async(
+            789012,
+            TTSConfig(
+                engine="pyttsx3",
+                language="en",
+                voice_id="en-us",
+                rate=180,
+            ),
+        )
+        tts_engine = MockTTSEngine()
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=tts_engine,
+            config_repository=config_repository,
+            audio_queue=queue,
+            voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository()),
+            audio_cleanup=MockAudioCleanup(),
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(text="robot", guild_id=789012, member_id=345678, channel_id=123456)
+        )
+
+        result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_OK
+        assert tts_engine.calls[0]["config"].engine == "pyttsx3"
+
+    async def test_process_item_applies_per_request_voice_override_without_persisting_it(self):
+        queue = InMemoryAudioQueue()
+        config_repository = MockConfigRepository()
+        tts_engine = MockTTSEngine()
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=tts_engine,
+            config_repository=config_repository,
+            audio_queue=queue,
+            voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository()),
+            audio_cleanup=MockAudioCleanup(),
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(
+                text="override",
+                guild_id=789012,
+                member_id=345678,
+                channel_id=123456,
+                config_override=TTSConfig(
+                    engine="edge-tts",
+                    language="pt-BR",
+                    voice_id="pt-BR-FranciscaNeural",
+                    rate=180,
+                ),
+            )
+        )
+
+        result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_OK
+        assert tts_engine.calls[0]["config"].engine == "edge-tts"
+        assert config_repository.get_config(789012).engine == "gtts"

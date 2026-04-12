@@ -327,6 +327,17 @@ class TestConfigureTTSUseCase:
         assert result.success is True
         assert result.config is not None
         assert result.config.voice_id == "en-us"
+
+    @pytest.mark.asyncio
+    async def test_update_edge_tts_engine(self, mock_config_repository):
+        """Test updating TTS engine to edge-tts."""
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(guild_id=123, engine="edge-tts")
+
+        assert result.success is True
+        assert result.config is not None
+        assert result.config.engine == "edge-tts"
     
     @pytest.mark.asyncio
     async def test_invalid_engine(self, mock_config_repository):
@@ -337,7 +348,7 @@ class TestConfigureTTSUseCase:
         
         assert result == ConfigureTTSResult(
             success=False,
-            message="Invalid engine. Use 'gtts' or 'pyttsx3'",
+            message="Invalid engine. Use 'gtts', 'pyttsx3' or 'edge-tts'",
         )
         assert result.message is not None
         assert "Invalid engine" in result.message

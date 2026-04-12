@@ -20,7 +20,8 @@ from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvail
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
 from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
-from src.infrastructure.tts.engines import TTSEngineFactory
+from src.infrastructure.tts.engines import RoutedTTSEngine
+from src.infrastructure.tts.voice_catalog import RuntimeTTSCatalog
 from src.presentation.discord_commands import DiscordCommands
 from src.presentation.http_controllers import SpeakController, VoiceContextController
 
@@ -45,8 +46,8 @@ class Container:
         self.voice_channel_repository = DiscordVoiceChannelRepository(self.discord_client)
         self.audio_queue = InMemoryAudioQueue()
         self.audio_cleanup = FileAudioCleanup()
-        self.tts_engine_factory = TTSEngineFactory()
-        self.tts_engine = self.tts_engine_factory.create(config.tts_config)
+        self.tts_engine = RoutedTTSEngine()
+        self.tts_catalog = RuntimeTTSCatalog()
         self.voice_channel_resolution = VoiceChannelResolutionService(self.voice_channel_repository)
         self.tts_queue_orchestrator = TTSQueueOrchestrator(
             tts_engine=self.tts_engine,
@@ -78,6 +79,7 @@ class Container:
             join_use_case=self.join_use_case,
             leave_use_case=self.leave_use_case,
             voice_runtime_availability=self.voice_runtime_availability,
+            tts_catalog=self.tts_catalog,
         )
 
         self._log_voice_runtime_status()

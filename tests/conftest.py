@@ -1,6 +1,7 @@
 """Test fixtures and mocks shared across tests."""
 import pytest
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
+from src.application.tts_voice_catalog import TTSVoiceOption
 from src.application.use_cases import SpeakTextUseCase
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.core.interfaces import ITTSEngine, IVoiceChannel, IVoiceChannelRepository, IConfigRepository, IAudioQueue, IAudioFileCleanup
@@ -150,6 +151,60 @@ class MockAudioCleanup(IAudioFileCleanup):
     async def cleanup(self, audio: AudioFile) -> None:
         self.cleaned_paths.append(audio.path)
 
+
+class MockTTSCatalog:
+    """Mock catalog for presentation tests that expose voice options."""
+
+    def __init__(self):
+        self.options = {
+            "gtts:pt:roa-pt-br": TTSVoiceOption(
+                key="gtts:pt:roa-pt-br",
+                engine="gtts",
+                label="Google TTS - Portugues (Brasil)",
+                language="pt",
+                voice_id="roa/pt-br",
+            ),
+            "pyttsx3:david": TTSVoiceOption(
+                key="pyttsx3:david",
+                engine="pyttsx3",
+                label="R.E.P.O. - Microsoft David",
+                language="system",
+                voice_id="David",
+            ),
+            "pyttsx3:maria": TTSVoiceOption(
+                key="pyttsx3:maria",
+                engine="pyttsx3",
+                label="R.E.P.O. - Microsoft Maria",
+                language="system",
+                voice_id="Maria",
+            ),
+            "edge-tts:pt-br-francisca": TTSVoiceOption(
+                key="edge-tts:pt-br-francisca",
+                engine="edge-tts",
+                label="Edge TTS - Francisca (PT-BR Neural)",
+                language="pt-BR",
+                voice_id="pt-BR-FranciscaNeural",
+            ),
+        }
+
+    def list_voice_options(self) -> list[TTSVoiceOption]:
+        return list(self.options.values())
+
+    def get_voice_option(self, key: str) -> TTSVoiceOption | None:
+        return self.options.get(key)
+
+    def find_voice_option(self, *, engine: str, language: str, voice_id: str) -> TTSVoiceOption | None:
+        for option in self.options.values():
+            if option.engine == engine and option.language == language and option.voice_id == voice_id:
+                return option
+        return None
+
+    def is_voice_available(self, *, engine: str, voice_id: str) -> bool:
+        return any(
+            option.engine == engine and option.voice_id.lower() == voice_id.lower()
+            for option in self.options.values()
+        )
+
 class MockAudioQueue(IAudioQueue):
     """Mock audio queue for testing."""
     
@@ -223,6 +278,12 @@ def mock_audio_queue():
 def mock_audio_cleanup():
     """Fixture for mock audio cleanup."""
     return MockAudioCleanup()
+
+
+@pytest.fixture
+def mock_tts_catalog():
+    """Fixture for mock TTS catalog."""
+    return MockTTSCatalog()
 
 
 @pytest.fixture
