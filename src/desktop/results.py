@@ -1,13 +1,5 @@
-"""Shared result contracts for Desktop App runtime flows."""
+"""Compatibility re-export for Desktop App result DTOs."""
 
-from __future__ import annotations
+from src.application.dto import DesktopConfigurationSaveResultDTO
 
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True)
-class DesktopConfigurationSaveResult:
-    """Structured result for Desktop App configuration saves from the main window."""
-
-    success: bool
-    message: str
+DesktopConfigurationSaveResult = DesktopConfigurationSaveResultDTO

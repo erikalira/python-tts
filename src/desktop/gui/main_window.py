@@ -6,9 +6,12 @@ import logging
 import queue
 from typing import Callable, Optional
 
-from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
+from src.application.dto import (
+    DesktopBotActionResultDTO,
+    DesktopBotVoiceContextResultDTO,
+    DesktopConfigurationSaveResultDTO,
+)
 from ..config.desktop_config import ConfigurationValidator, DesktopAppConfig
-from ..results import DesktopConfigurationSaveResult
 from .config_dialogs import GUIConfig
 from .main_window_presenter import DesktopAppMainWindowPresenter, MainWindowMessage
 from .main_window_sections import build_action_buttons, build_header, build_help_section
@@ -23,10 +26,10 @@ class DesktopAppMainWindow:
     def __init__(
         self,
         config: DesktopAppConfig,
-        on_save: Callable[[DesktopAppConfig], DesktopConfigurationSaveResult],
-        on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResult],
-        on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResult],
-        on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResult],
+        on_save: Callable[[DesktopAppConfig], DesktopConfigurationSaveResultDTO],
+        on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResultDTO],
+        on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResultDTO],
+        on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResultDTO],
         on_process_ui_actions: Optional[Callable[[], None]] = None,
     ):
         self.root: Optional[object] = None

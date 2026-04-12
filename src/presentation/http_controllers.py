@@ -4,8 +4,9 @@ import logging
 
 from aiohttp import web
 
+from src.application.dto import SpeakTextInputDTO, VoiceContextQueryDTO
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
-from src.core.entities import TTSConfig, TTSRequest
+from src.core.entities import TTSConfig
 from src.presentation.http_presenters import HTTPSpeakPresenter, HTTPVoiceContextPresenter
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ class SpeakController:
             logger.error("Invalid JSON: %s", exc)
             return web.Response(text="invalid json", status=400)
 
-        tts_request = TTSRequest(
+        tts_request = SpeakTextInputDTO(
             text=data.get("text", ""),
             channel_id=self._parse_int(data.get("channel_id")),
             guild_id=self._parse_int(data.get("guild_id")),
@@ -75,8 +76,10 @@ class VoiceContextController:
         self._presenter = HTTPVoiceContextPresenter()
 
     async def handle(self, request: web.Request) -> web.Response:
-        member_id = self._parse_int(request.query.get("member_id") or request.query.get("user_id"))
-        result = await self._voice_context_use_case.execute(member_id)
+        query = VoiceContextQueryDTO(
+            member_id=self._parse_int(request.query.get("member_id") or request.query.get("user_id"))
+        )
+        result = await self._voice_context_use_case.execute(query)
         return web.json_response(
             self._presenter.to_payload(result),
             status=self._presenter.get_status_code(result),

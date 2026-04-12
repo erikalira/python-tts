@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from src.application.results import SPEAK_RESULT_OK, SPEAK_RESULT_UNKNOWN_ERROR
+from src.application.dto import SPEAK_RESULT_OK, SPEAK_RESULT_UNKNOWN_ERROR
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.core.entities import AudioQueueItem, TTSConfig, TTSRequest

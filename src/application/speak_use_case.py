@@ -5,8 +5,9 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from src.application.results import (
+from src.application.dto import (
     SpeakTextResult,
+    SpeakTextInputDTO,
     SPEAK_RESULT_MISSING_TEXT,
     SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_QUEUE_FULL,
@@ -38,10 +39,17 @@ class SpeakTextUseCase:
         self._voice_channel_resolution = voice_channel_resolution
         self._queue_orchestrator = queue_orchestrator
 
-    async def execute(self, request: TTSRequest) -> SpeakTextResult:
+    async def execute(self, request: SpeakTextInputDTO) -> SpeakTextResult:
         prepared_text = prepare_tts_text(request.text, self._max_text_length)
-        inferred_guild_id = await self._voice_channel_resolution.infer_guild_id(request)
-        request = TTSRequest(
+        domain_request = TTSRequest(
+            text=prepared_text,
+            channel_id=request.channel_id,
+            guild_id=request.guild_id,
+            member_id=request.member_id,
+            config_override=request.config_override,
+        )
+        inferred_guild_id = await self._voice_channel_resolution.infer_guild_id(domain_request)
+        domain_request = TTSRequest(
             text=prepared_text,
             channel_id=request.channel_id,
             guild_id=inferred_guild_id,
@@ -51,15 +59,15 @@ class SpeakTextUseCase:
 
         logger.info(
             "[USE_CASE] Speak request from user %s: text='%s...', guild_id=%s",
-            request.member_id,
-            request.text[:50],
-            request.guild_id,
+            domain_request.member_id,
+            domain_request.text[:50],
+            domain_request.guild_id,
         )
 
-        if not request.text:
+        if not domain_request.text:
             return SpeakTextResult(success=False, code=SPEAK_RESULT_MISSING_TEXT, queued=False)
 
-        user_channel = await self._channel_repository.find_by_member_id(request.member_id)
+        user_channel = await self._channel_repository.find_by_member_id(domain_request.member_id)
         if not user_channel:
             return SpeakTextResult(
                 success=False,
@@ -67,7 +75,7 @@ class SpeakTextUseCase:
                 queued=False,
             )
 
-        item = AudioQueueItem(request=request)
+        item = AudioQueueItem(request=domain_request)
         item_id = await self._audio_queue.enqueue(item)
         if item_id is None:
             return SpeakTextResult(
@@ -78,7 +86,7 @@ class SpeakTextUseCase:
             )
 
         position = await self._audio_queue.get_item_position(item_id)
-        guild_id = request.guild_id
+        guild_id = domain_request.guild_id
         if position == 0 and not self._queue_orchestrator.is_processing(guild_id):
             return await self._queue_orchestrator.start_processing_for_item(guild_id)
 

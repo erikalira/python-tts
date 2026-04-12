@@ -220,6 +220,18 @@ class TestVoiceContextController:
         assert "Mock Guild" in response.text
         assert "Mock Voice" in response.text
 
+    async def test_handle_accepts_user_id_alias(self, mock_channel_repository):
+        controller = VoiceContextController(
+            GetCurrentVoiceContextUseCase(mock_channel_repository)
+        )
+        request = Mock(spec=web.Request)
+        request.query = {"user_id": "345678"}
+
+        response = await controller.handle(request)
+
+        assert response.status == 200
+        assert "Mock Guild" in response.text
+
     async def test_handle_returns_not_found_when_member_not_in_voice(self):
         from tests.conftest import MockVoiceChannelRepository
 

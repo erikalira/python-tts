@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.application.results import (
+from src.application.dto import (
     JOIN_RESULT_MISSING_GUILD_ID,
     JOIN_RESULT_OK,
     JOIN_RESULT_USER_NOT_IN_CHANNEL,

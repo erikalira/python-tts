@@ -13,7 +13,7 @@ from src.application.tts_execution import (
 from src.application.tts_routing import build_tts_engine_chain
 from src.desktop.app.tts_runtime import DesktopAppTTSProcessor
 from src.desktop.config.desktop_config import DesktopAppConfig, get_default_discord_bot_url
-from src.desktop.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
+from src.desktop.services.discord_bot_client import DiscordSpeakRequestDTO, HttpDiscordBotClient
 from src.desktop.services.tts_services import (
     DesktopAppTTSService,
     DiscordTTSService,
@@ -47,7 +47,7 @@ class FakeDiscordBotClient:
         return self.available
 
     def build_request(self, text):
-        return DiscordSpeakRequest(text=text, member_id="20")
+        return DiscordSpeakRequestDTO(text=text, member_id="20")
 
     def send_speak_request(self, request):
         self.requests.append(request)

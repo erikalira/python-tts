@@ -8,7 +8,7 @@ from typing import Callable, Optional
 from ..config.desktop_config import (
     DesktopAppConfig,
 )
-from ..results import DesktopConfigurationSaveResult
+from src.application.dto import DesktopConfigurationSaveResultDTO
 from ..gui.configuration_service import ConfigurationService
 from .configuration_application import DesktopConfigurationApplicationService
 
@@ -42,17 +42,17 @@ class DesktopConfigurationCoordinator:
         self._configuration_application.apply(updated_config)
         return True, updated_config
 
-    def save_from_ui(self, updated_config: DesktopAppConfig) -> DesktopConfigurationSaveResult:
+    def save_from_ui(self, updated_config: DesktopAppConfig) -> DesktopConfigurationSaveResultDTO:
         """Validate, persist, and apply configuration changes from the main window."""
         is_valid, errors = self._configuration_application.validate(updated_config)
         if not is_valid:
             message = "; ".join(errors)
             logger.error("[DESKTOP_APP] Configuracao invalida recebida da interface: %s", message)
-            return DesktopConfigurationSaveResult(success=False, message=message)
+            return DesktopConfigurationSaveResultDTO(success=False, message=message)
 
         save_success = self._configuration_application.apply(updated_config)
         logger.info("[DESKTOP_APP] Configuracao salva pelo painel principal")
-        return DesktopConfigurationSaveResult(
+        return DesktopConfigurationSaveResultDTO(
             success=True,
             message=(
                 "Configuracao aplicada com sucesso"
