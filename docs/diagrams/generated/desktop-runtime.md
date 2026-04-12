@@ -69,7 +69,7 @@ classDiagram
     show() None
   }
   class DesktopAppMainWindowPresenter {
-    build_connection_result(result: DesktopBotActionResult, default_message: str) MainWindowMessage
+    build_connection_result(result: DesktopBotActionResultDTO, default_message: str) MainWindowMessage
     build_invalid_value_message(action_name: str, exc: ValueError) MainWindowMessage
     build_local_config_status(config: DesktopAppConfig) MainWindowMessage
     build_status(message: str, success: bool) MainWindowMessage
@@ -123,25 +123,36 @@ classDiagram
   class DesktopConfigurationCoordinator {
     handle_initial_configuration(current_config: DesktopAppConfig) tuple[bool, DesktopAppConfig]
     reconfigure(current_config: DesktopAppConfig, hotkeys_were_active: bool, resume_hotkeys: Callable[[], None], notify_error: Optional[Callable[[str, str], None]], notify_success: Optional[Callable[[str, str], None]], are_hotkeys_active: Optional[Callable[[], bool]]) tuple[Optional[DesktopAppConfig], bool]
-    save_from_ui(updated_config: DesktopAppConfig) DesktopConfigurationSaveResult
+    save_from_ui(updated_config: DesktopAppConfig) DesktopConfigurationSaveResultDTO
   }
   class DialogFeedback {
     message : str
     title : str
   }
   class DiscordBotClient {
-    build_request(text: str)* DiscordSpeakRequest
-    check_connection()* DesktopBotConnectionStatus
-    fetch_voice_context()* DesktopBotVoiceContextStatus
+    build_request(text: str)* DiscordSpeakRequestDTO
+    check_connection()* DesktopBotConnectionStatusDTO
+    fetch_voice_context()* DesktopBotVoiceContextStatusDTO
     get_last_error_message()* Optional[str]
     is_available()* bool
-    send_speak_request(request: DiscordSpeakRequest)* bool
+    send_speak_request(request: DiscordSpeakRequestDTO)* bool
+  }
+  class DiscordBotHttpResponse {
+    ok : bool
+    payload : dict | None
+    status_code : int
+    text : str
+  }
+  class DiscordBotHttpTransport {
+    get(url: str) DiscordBotHttpResponse
+    post_json(url: str, payload: dict) DiscordBotHttpResponse
   }
   class DiscordConfig {
     bot_url : str
     member_id : Optional[str]
   }
-  class DiscordSpeakRequest {
+  class DiscordSpeakRequestDTO {
+    config_override : Optional[TTSConfig]
     member_id : Optional[str]
     text : str
     to_payload() dict
@@ -169,6 +180,7 @@ classDiagram
     trigger_close_var : Optional[object], StringVar
     trigger_open_var : Optional[object], StringVar
     voice_id_var : Optional[object], StringVar
+    voice_selection_var : Optional[object], StringVar
     show_config(config: DesktopAppConfig) Optional[DesktopAppConfig]
   }
   class HotkeyCaptureResult {
@@ -217,9 +229,9 @@ classDiagram
     reset() None
   }
   class HttpDiscordBotClient {
-    build_request(text: str) DiscordSpeakRequest
-    check_connection() DesktopBotConnectionStatus
-    fetch_voice_context() DesktopBotVoiceContextStatus
+    build_request(text: str) DiscordSpeakRequestDTO
+    check_connection() DesktopBotConnectionStatusDTO
+    fetch_voice_context() DesktopBotVoiceContextStatusDTO
     get_health_url() str
     get_last_error_message() Optional[str]
     get_speak_url() str
@@ -228,7 +240,7 @@ classDiagram
     has_member_id() bool
     has_transport() bool
     is_available() bool
-    send_speak_request(request: DiscordSpeakRequest) bool
+    send_speak_request(request: DiscordSpeakRequestDTO) bool
     send_text(text: str) bool
   }
   class InitialSetupGUI {

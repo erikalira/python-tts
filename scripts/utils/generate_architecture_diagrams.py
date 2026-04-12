@@ -35,18 +35,30 @@ class DiagramTarget:
 
 TARGETS = (
     DiagramTarget(
-        slug="shared",
-        title="Generated Shared Diagram",
-        description="Automatic class diagram for shared core and application modules.",
-        modules=("src.core", "src.application"),
+        slug="core",
+        title="Generated Core Diagram",
+        description="Automatic class diagram for the innermost shared domain and port contracts in `src.core`.",
+        modules=("src.core",),
     ),
     DiagramTarget(
-        slug="bot-runtime",
-        title="Generated Bot Runtime Diagram",
+        slug="application",
+        title="Generated Application Diagram",
+        description="Automatic class diagram for reusable use cases and orchestration in `src.application`.",
+        modules=("src.application",),
+    ),
+    DiagramTarget(
+        slug="presentation-bot",
+        title="Generated Presentation And Bot Runtime Diagram",
         description=(
-            "Automatic class diagram for bot runtime, presentation, and infrastructure modules."
+            "Automatic class diagram for delivery entrypoints in `src.presentation` and the Discord bot composition root in `src.bot_runtime`."
         ),
-        modules=("src.bot_runtime", "src.presentation", "src.infrastructure"),
+        modules=("src.presentation", "src.bot_runtime"),
+    ),
+    DiagramTarget(
+        slug="infrastructure",
+        title="Generated Infrastructure Diagram",
+        description="Automatic class diagram for adapters and IO-facing implementations in `src.infrastructure`.",
+        modules=("src.infrastructure",),
     ),
     DiagramTarget(
         slug="desktop-runtime",
@@ -141,6 +153,10 @@ def _write_index(targets: tuple[DiagramTarget, ...]) -> None:
         "# Generated Architecture Diagrams",
         "",
         "These diagrams are generated automatically with `pyreverse`.",
+        "",
+        "They are intentionally grouped by architectural boundary first, so the generated view stays closer to the repository's Clean Architecture shape.",
+        "",
+        "Automatic diagrams still do not infer Clean Architecture rules on their own. They help inspect structure and drift, while the curated diagrams remain the best explanation of intended boundaries.",
         "",
         "## Files",
         "",

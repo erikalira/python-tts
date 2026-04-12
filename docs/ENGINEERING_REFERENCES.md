@@ -93,19 +93,22 @@ Applied here:
 - reasoning about per-guild and per-member state maps
 - preferring simple, understandable algorithms unless scale proves otherwise
 
-### Head First Design Patterns
+### Design Patterns: Elements of Reusable Object-Oriented Software (GoF)
 
 Important concepts for this repo:
 
-- use patterns as vocabulary, not decoration
-- adapter and strategy patterns are often enough
-- avoid pattern-heavy code when simpler code is clearer
+- favor composition over inheritance when extending behavior
+- use patterns to name recurring structure at boundaries, not to add ceremony
+- prefer a small set of fitting patterns such as adapter, strategy, facade, and factory where they reduce coupling
+- avoid forcing abstract hierarchies when simpler object composition is clearer
 
 Applied here:
 
 - adapters around runtime-specific integrations
-- strategy-like runtime selection for TTS engines
-- caution against introducing patterns without payoff
+- strategy-style routing between TTS engines
+- facade-style composition roots that keep wiring separate from application logic
+- factory-like construction where runtime dependencies or integrations need controlled setup
+- caution against introducing pattern-heavy abstractions without a concrete payoff in readability or boundaries
 
 ### HTTP: The Definitive Guide
 
