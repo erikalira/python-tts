@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Optional
 
+from src.application.tts_voice_catalog import TTSCatalog
+from src.infrastructure.tts.voice_catalog import RuntimeTTSCatalog
+
 from ..config.desktop_config import ConfigurationValidator, DesktopAppConfig
 from .config_dialog_contracts import ConfigInterface
 from .config_helpers import build_updated_config, prompt_numeric_input, resolve_text_value
@@ -11,6 +14,9 @@ from .config_helpers import build_updated_config, prompt_numeric_input, resolve_
 
 class ConsoleConfig(ConfigInterface):
     """Console configuration interface."""
+
+    def __init__(self, tts_catalog: TTSCatalog | None = None):
+        self._tts_catalog = tts_catalog or RuntimeTTSCatalog()
 
     def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         print("\n" + "=" * 50)
@@ -28,8 +34,9 @@ class ConsoleConfig(ConfigInterface):
         print("\nEngines TTS disponiveis:")
         print("1. gtts (Google TTS)")
         print("2. pyttsx3 (local)")
+        print("3. edge-tts (vozes neurais)")
         while True:
-            choice = input(f"Escolha [1-2, atual: {config.tts.engine}]: ").strip()
+            choice = input(f"Escolha [1-3, atual: {config.tts.engine}]: ").strip()
             if not choice:
                 engine = config.tts.engine
                 break
@@ -39,10 +46,16 @@ class ConsoleConfig(ConfigInterface):
             if choice == "2":
                 engine = "pyttsx3"
                 break
+            if choice == "3":
+                engine = "edge-tts"
+                break
             print("Opcao invalida!")
 
-        language = resolve_text_value(input(f"Idioma [{config.tts.language}]: "), config.tts.language)
-        voice_id = resolve_text_value(input(f"Voice ID [{config.tts.voice_id}]: "), config.tts.voice_id)
+        selected_option = self._prompt_voice_option(engine, config)
+        default_language = selected_option.language if selected_option is not None else config.tts.language
+        default_voice_id = selected_option.voice_id if selected_option is not None else config.tts.voice_id
+        language = resolve_text_value(input(f"Idioma [{default_language}]: "), default_language)
+        voice_id = resolve_text_value(input(f"Voice ID [{default_voice_id}]: "), default_voice_id)
 
         while True:
             rate_input = input(f"Velocidade [{config.tts.rate}]: ").strip()
@@ -108,3 +121,28 @@ class ConsoleConfig(ConfigInterface):
         for error in errors:
             print(f"   - {error}")
         return None
+
+    def _prompt_voice_option(self, engine: str, config: DesktopAppConfig):
+        options = [option for option in self._tts_catalog.list_voice_options() if option.engine == engine]
+        if not options:
+            return None
+
+        print(f"\nVozes disponiveis para {engine}:")
+        current_option = self._tts_catalog.find_voice_option(
+            engine=config.tts.engine,
+            language=config.tts.language,
+            voice_id=config.tts.voice_id,
+        )
+        for index, option in enumerate(options, start=1):
+            current_marker = " (atual)" if current_option and option.key == current_option.key else ""
+            print(f"{index}. {option.label}{current_marker}")
+
+        while True:
+            choice = input("Escolha uma voz do catalogo ou pressione Enter para manter/editar manualmente: ").strip()
+            if not choice:
+                return None
+            if choice.isdigit():
+                selected_index = int(choice) - 1
+                if 0 <= selected_index < len(options):
+                    return options[selected_index]
+            print("Opcao invalida!")

@@ -17,6 +17,9 @@ class DummyVar:
     def get(self):
         return self._value
 
+    def set(self, value):
+        self._value = value
+
 
 class DummyRoot:
     def __init__(self):
@@ -139,7 +142,7 @@ def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch)
     config.tts.language = "pt"
     config.tts.voice_id = "voice"
     config.tts.rate = 180
-    responses = iter(["", "", "", "", "", "", "", "", ""])
+    responses = iter(["", "", "", "", "", "", "", "", "", ""])
 
     monkeypatch.setattr("builtins.input", lambda _prompt: next(responses))
 
@@ -276,14 +279,16 @@ def test_gui_config_show_config_creates_window_and_returns_result(monkeypatch):
 
 
 def test_gui_config_create_tabs_populates_variables(monkeypatch):
-    gui = GUIConfig()
+    from tests.conftest import MockTTSCatalog
+
+    gui = GUIConfig(tts_catalog=MockTTSCatalog())
     gui.root = DummyRoot()
     gui.config = DesktopAppConfig.create_default()
     gui.config.discord.member_id = "123"
     gui.config.discord.bot_url = "http://bot"
     gui.config.tts.engine = "pyttsx3"
-    gui.config.tts.language = "en"
-    gui.config.tts.voice_id = "voice"
+    gui.config.tts.language = "system"
+    gui.config.tts.voice_id = "David"
     gui.config.tts.rate = 220
     gui.config.hotkey.trigger_open = "["
     gui.config.hotkey.trigger_close = "]"
@@ -297,8 +302,9 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
     assert gui.member_id_var.get() == "123"
     assert gui.bot_url_var.get() == "http://bot"
     assert gui.engine_var.get() == "pyttsx3"
-    assert gui.language_var.get() == "en"
-    assert gui.voice_id_var.get() == "voice"
+    assert gui.voice_selection_var.get() == "R.E.P.O. - Microsoft David"
+    assert gui.language_var.get() == "system"
+    assert gui.voice_id_var.get() == "David"
     assert gui.rate_var.get() == "220"
     assert gui.trigger_open_var.get() == "["
     assert gui.trigger_close_var.get() == "]"
@@ -316,6 +322,7 @@ def test_gui_config_save_config_saves_valid_configuration(monkeypatch):
     gui.member_id_var = DummyVar("123")
     gui.bot_url_var = DummyVar("http://bot")
     gui.engine_var = DummyVar("pyttsx3")
+    gui.voice_selection_var = DummyVar("")
     gui.language_var = DummyVar("en")
     gui.voice_id_var = DummyVar("voice")
     gui.rate_var = DummyVar("210")
@@ -346,6 +353,7 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch, prevent_rea
     gui.member_id_var = DummyVar("123")
     gui.bot_url_var = DummyVar("http://bot")
     gui.engine_var = DummyVar("gtts")
+    gui.voice_selection_var = DummyVar("")
     gui.language_var = DummyVar("pt")
     gui.voice_id_var = DummyVar("voice")
     gui.rate_var = DummyVar("180")
@@ -361,6 +369,23 @@ def test_gui_config_save_config_shows_validation_errors(monkeypatch, prevent_rea
 
     assert gui.result is None
     assert prevent_real_messageboxes["error"] == [("Erro de Validacao", "Erros encontrados:\n\nbad rate")]
+
+
+def test_gui_config_handle_voice_selection_updates_fields():
+    from tests.conftest import MockTTSCatalog
+
+    gui = GUIConfig(tts_catalog=MockTTSCatalog())
+    gui.voice_selection_var = DummyVar("Edge TTS - Francisca (PT-BR Neural)")
+    gui.engine_var = DummyVar("gtts")
+    gui.language_var = DummyVar("pt")
+    gui.voice_id_var = DummyVar("roa/pt-br")
+    gui._list_voice_labels()
+
+    gui._handle_voice_selection()
+
+    assert gui.engine_var.get() == "edge-tts"
+    assert gui.language_var.get() == "pt-BR"
+    assert gui.voice_id_var.get() == "pt-BR-FranciscaNeural"
 
 
 def test_config_dialogs_presenter_builds_initial_setup_result():
