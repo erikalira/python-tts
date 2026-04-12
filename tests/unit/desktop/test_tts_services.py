@@ -61,17 +61,33 @@ def test_http_discord_bot_client_builds_payload_and_url():
     config = DesktopAppConfig.create_default()
     config.discord.bot_url = get_default_discord_bot_url().rstrip("/") + "/"
     config.discord.member_id = "20"
+    config.tts.engine = "edge-tts"
+    config.tts.language = "pt-BR"
+    config.tts.voice_id = "pt-BR-FranciscaNeural"
+    config.tts.rate = 210
 
     client = HttpDiscordBotClient(config)
     request = client.build_request("hello")
 
-    assert request.to_payload() == {"text": "hello", "member_id": "20"}
+    assert request.to_payload() == {
+        "text": "hello",
+        "member_id": "20",
+        "config_override": {
+            "engine": "edge-tts",
+            "language": "pt-BR",
+            "voice_id": "pt-BR-FranciscaNeural",
+            "rate": 210,
+        },
+    }
     assert client.get_speak_url() == get_default_discord_bot_url().rstrip("/") + "/speak"
     assert client.get_health_url() == get_default_discord_bot_url().rstrip("/") + "/health"
 
 
 def test_discord_tts_service_builds_payload_and_sends_request():
     config = DesktopAppConfig.create_default()
+    config.tts.engine = "pyttsx3"
+    config.tts.language = "system"
+    config.tts.voice_id = "David"
     bot_client = FakeDiscordBotClient(available=True, result=True)
     service = DiscordTTSService(config, bot_client=bot_client)
 

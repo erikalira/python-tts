@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Optional, Protocol
 
 from src.application.desktop_bot import DesktopBotConnectionStatus, DesktopBotVoiceContextStatus
+from src.core.entities import TTSConfig
 
 try:
     import requests
@@ -25,12 +26,20 @@ class DiscordSpeakRequest:
 
     text: str
     member_id: Optional[str] = None
+    config_override: Optional[TTSConfig] = None
 
     def to_payload(self) -> dict:
         """Serialize request to the JSON payload expected by the bot."""
         payload = {"text": self.text}
         if self.member_id:
             payload["member_id"] = self.member_id
+        if self.config_override:
+            payload["config_override"] = {
+                "engine": self.config_override.engine,
+                "language": self.config_override.language,
+                "voice_id": self.config_override.voice_id,
+                "rate": self.config_override.rate,
+            }
         return payload
 
 
@@ -84,6 +93,12 @@ class HttpDiscordBotClient:
         return DiscordSpeakRequest(
             text=text,
             member_id=self._config.discord.member_id,
+            config_override=TTSConfig(
+                engine=self._config.tts.engine,
+                language=self._config.tts.language,
+                voice_id=self._config.tts.voice_id,
+                rate=self._config.tts.rate,
+            ),
         )
 
     def send_text(self, text: str) -> bool:

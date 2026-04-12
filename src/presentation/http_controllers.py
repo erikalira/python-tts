@@ -5,7 +5,7 @@ import logging
 from aiohttp import web
 
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
-from src.core.entities import TTSRequest
+from src.core.entities import TTSConfig, TTSRequest
 from src.presentation.http_presenters import HTTPSpeakPresenter, HTTPVoiceContextPresenter
 
 logger = logging.getLogger(__name__)
@@ -30,6 +30,7 @@ class SpeakController:
             channel_id=self._parse_int(data.get("channel_id")),
             guild_id=self._parse_int(data.get("guild_id")),
             member_id=self._parse_int(data.get("member_id") or data.get("user_id")),
+            config_override=self._parse_config_override(data),
         )
         result = await self._speak_use_case.execute(tts_request)
         return web.Response(
@@ -44,6 +45,26 @@ class SpeakController:
             return int(value)
         except (ValueError, TypeError):
             return None
+
+    def _parse_config_override(self, data: dict) -> TTSConfig | None:
+        override = data.get("config_override")
+        if not isinstance(override, dict):
+            override = data
+
+        engine = override.get("engine")
+        language = override.get("language")
+        voice_id = override.get("voice_id")
+        rate = override.get("rate")
+
+        if engine is None and language is None and voice_id is None and rate is None:
+            return None
+
+        return TTSConfig(
+            engine=str(engine or "gtts"),
+            language=str(language or "pt"),
+            voice_id=str(voice_id or "roa/pt-br"),
+            rate=self._parse_int(rate) or 180,
+        )
 
 
 class VoiceContextController:

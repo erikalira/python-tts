@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import Mock, AsyncMock
 from aiohttp import web
+
 from src.presentation.http_controllers import SpeakController, VoiceContextController
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 
@@ -150,7 +151,7 @@ class TestSpeakController:
         response = await controller.handle(request)
         
         assert response.status == 200
-    
+
     async def test_parse_int_with_invalid_values(
         self,
         mock_tts_engine,
@@ -182,6 +183,26 @@ class TestSpeakController:
         
         # Test float
         assert controller._parse_int(789.5) == 789
+
+    def test_parse_config_override_reads_nested_payload(self):
+        controller = SpeakController(Mock(spec=SpeakTextUseCase))
+
+        override = controller._parse_config_override(
+            {
+                "config_override": {
+                    "engine": "edge-tts",
+                    "language": "pt-BR",
+                    "voice_id": "pt-BR-FranciscaNeural",
+                    "rate": 210,
+                }
+            }
+        )
+
+        assert override is not None
+        assert override.engine == "edge-tts"
+        assert override.language == "pt-BR"
+        assert override.voice_id == "pt-BR-FranciscaNeural"
+        assert override.rate == 210
 
 
 @pytest.mark.asyncio
