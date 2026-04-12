@@ -69,7 +69,7 @@ class Container:
         self.leave_use_case = LeaveVoiceChannelUseCase(channel_repository=self.voice_channel_repository)
         self.voice_context_use_case = GetCurrentVoiceContextUseCase(channel_repository=self.voice_channel_repository)
 
-        self.speak_controller = SpeakController(self.speak_use_case)
+        self.speak_controller = SpeakController(self.speak_use_case, self.config_repository)
         self.voice_context_controller = VoiceContextController(self.voice_context_use_case)
         self.voice_runtime_availability = DependencyVoiceRuntimeAvailability()
         self.discord_commands = DiscordCommands(

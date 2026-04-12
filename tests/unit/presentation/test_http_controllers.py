@@ -1,8 +1,10 @@
 """Tests for HTTP controllers."""
+
 import pytest
 from unittest.mock import Mock, AsyncMock
 from aiohttp import web
 
+from src.core.entities import TTSConfig
 from src.presentation.http_controllers import SpeakController, VoiceContextController
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 
@@ -202,6 +204,36 @@ class TestSpeakController:
         assert override.engine == "edge-tts"
         assert override.language == "pt-BR"
         assert override.voice_id == "pt-BR-FranciscaNeural"
+        assert override.rate == 210
+
+    def test_parse_config_override_merges_partial_payload_with_guild_config(self, mock_config_repository):
+        mock_config_repository.set_config(
+            789012,
+            TTSConfig(
+                engine="edge-tts",
+                language="pt-BR",
+                voice_id="pt-BR-FranciscaNeural",
+                rate=210,
+            ),
+        )
+        controller = SpeakController(
+            Mock(spec=SpeakTextUseCase),
+            config_repository=mock_config_repository,
+        )
+
+        override = controller._parse_config_override(
+            {
+                "config_override": {
+                    "voice_id": "pt-BR-AntonioNeural",
+                }
+            },
+            guild_id=789012,
+        )
+
+        assert override is not None
+        assert override.engine == "edge-tts"
+        assert override.language == "pt-BR"
+        assert override.voice_id == "pt-BR-AntonioNeural"
         assert override.rate == 210
 
 
