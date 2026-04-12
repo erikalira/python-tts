@@ -56,6 +56,8 @@ class GUIConfig(ConfigInterface):
         self.root.resizable(True, True)
         self.root.protocol("WM_DELETE_WINDOW", self._cancel)
         self._create_interface()
+        if hasattr(self.root, "update_idletasks"):
+            self.root.update_idletasks()
         self._resize_to_selected_tab(center_window=True)
         self.root.mainloop()
         return self.result
@@ -104,7 +106,13 @@ class GUIConfig(ConfigInterface):
         tab_container = compat.ttk.Frame(notebook)
         notebook.add(tab_container, text=title)
 
-        canvas = compat.tk.Canvas(tab_container, highlightthickness=0, borderwidth=0)
+        canvas_factory = getattr(compat.tk, "Canvas", None)
+        if canvas_factory is None:
+            content_frame = compat.ttk.Frame(tab_container, padding="10")
+            content_frame.pack(fill="both", expand=True)
+            return content_frame
+
+        canvas = canvas_factory(tab_container, highlightthickness=0, borderwidth=0)
         scrollbar = compat.ttk.Scrollbar(tab_container, orient="vertical", command=canvas.yview)
         content_frame = compat.ttk.Frame(canvas, padding="10")
 
@@ -376,7 +384,7 @@ class GUIConfig(ConfigInterface):
         self._resize_to_selected_tab()
 
     def _fit_notebook_to_selected_tab(self) -> None:
-        if not self._notebook:
+        if not self._notebook or not hasattr(self._notebook, "update_idletasks"):
             return
 
         self._notebook.update_idletasks()
