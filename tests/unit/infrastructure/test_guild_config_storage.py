@@ -1,6 +1,6 @@
 import asyncio
 
-from src.application.results import ConfigureTTSResult, TTSConfigurationData
+from src.application.dto import ConfigureTTSResult, TTSConfigurationData
 from src.application.use_cases import ConfigureTTSUseCase
 from src.core.entities import TTSConfig
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage

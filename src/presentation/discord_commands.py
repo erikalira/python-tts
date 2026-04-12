@@ -5,7 +5,8 @@ import logging
 import discord
 from discord import app_commands
 
-from src.application.results import SPEAK_RESULT_OK, SPEAK_RESULT_QUEUED
+from src.application.discord_speak_request_builder import DiscordSpeakRequestBuilder
+from src.application.dto import SPEAK_RESULT_OK, SPEAK_RESULT_QUEUED
 from src.application.tts_voice_catalog import TTSCatalog
 from src.application.use_cases import (
     ConfigureTTSUseCase,
@@ -14,7 +15,6 @@ from src.application.use_cases import (
     SpeakTextUseCase,
 )
 from src.application.voice_runtime import VoiceRuntimeAvailability, VoiceRuntimeStatus
-from src.core.entities import TTSConfig, TTSRequest
 from src.presentation.discord_command_handlers import (
     DiscordAboutCommandHandler,
     DiscordConfigCommandHandler,
@@ -57,6 +57,7 @@ class DiscordCommands:
         self._speak_presenter = DiscordSpeakPresenter()
         self._config_handler = DiscordConfigCommandHandler(config_use_case, tts_catalog)
         self._about_handler = DiscordAboutCommandHandler()
+        self._speak_request_builder = DiscordSpeakRequestBuilder(config_use_case, tts_catalog)
         self._register_commands()
 
     def _register_commands(self):
@@ -147,36 +148,17 @@ class DiscordCommands:
             return
 
         try:
-            if not interaction.guild or not interaction.guild.id:
-                await interaction.edit_original_response(content="❌ Erro: Não foi possível determinar o servidor.")
+            prepared_request = self._speak_request_builder.build(
+                text=text,
+                guild_id=interaction.guild.id if interaction.guild else None,
+                member_id=interaction.user.id if interaction.user else None,
+                voice_key=voz,
+            )
+            if prepared_request.error_message:
+                await interaction.edit_original_response(content=prepared_request.error_message)
                 return
 
-            config_override = None
-            if voz is not None:
-                selected_voice = self._tts_catalog.get_voice_option(voz)
-                if selected_voice is None:
-                    await interaction.edit_original_response(content="❌ Voz inválida ou indisponível.")
-                    return
-
-                current_config = self._config_use_case.get_config(interaction.guild.id)
-                if not current_config.success or current_config.config is None:
-                    await interaction.edit_original_response(content="❌ Não foi possível carregar a configuração atual da voz.")
-                    return
-
-                config_override = TTSConfig(
-                    engine=selected_voice.engine,
-                    language=selected_voice.language,
-                    voice_id=selected_voice.voice_id,
-                    rate=current_config.config.rate,
-                )
-
-            tts_request = TTSRequest(
-                text=text,
-                guild_id=interaction.guild.id,
-                member_id=interaction.user.id,
-                config_override=config_override,
-            )
-            result = await self._speak_use_case.execute(tts_request)
+            result = await self._speak_use_case.execute(prepared_request.request)
 
             try:
                 if result.code == SPEAK_RESULT_QUEUED:

@@ -2,7 +2,7 @@
 import asyncio
 
 import pytest
-from src.application.results import (
+from src.application.dto import (
     ConfigureTTSResult,
     JOIN_RESULT_OK,
     JOIN_RESULT_USER_NOT_IN_CHANNEL,
@@ -13,6 +13,7 @@ from src.application.results import (
     SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_QUEUE_FULL,
     SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+    SpeakTextInputDTO,
     SpeakTextResult,
     TTSConfigurationData,
 )
@@ -22,7 +23,7 @@ from src.application.use_cases import (
     LeaveVoiceChannelUseCase,
     SpeakTextUseCase,
 )
-from src.core.entities import TTSRequest, TTSConfig
+from src.core.entities import TTSConfig
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 
 
@@ -71,7 +72,7 @@ class TestSpeakTextUseCase:
             mock_audio_queue=mock_audio_queue,
         )
         
-        request = TTSRequest(text="")
+        request = SpeakTextInputDTO(text="")
         result = await use_case.execute(request)
         
         assert result.success is False
@@ -121,7 +122,7 @@ class TestSpeakTextUseCase:
             max_text_length=5,
         )
 
-        request = TTSRequest(text="  abcdefgh  ", channel_id=123456, guild_id=789012, member_id=345678)
+        request = SpeakTextInputDTO(text="  abcdefgh  ", channel_id=123456, guild_id=789012, member_id=345678)
         result = await use_case.execute(request)
 
         assert result.success is True
@@ -143,7 +144,7 @@ class TestSpeakTextUseCase:
             mock_audio_queue=mock_audio_queue,
         )
 
-        request = TTSRequest(text="test", member_id=345678)
+        request = SpeakTextInputDTO(text="test", member_id=345678)
         result = await use_case.execute(request)
 
         assert result.success is True
@@ -166,7 +167,7 @@ class TestSpeakTextUseCase:
             mock_audio_queue=mock_audio_queue,
         )
         
-        request = TTSRequest(text="test", channel_id=123456, guild_id=789012, member_id=345678)
+        request = SpeakTextInputDTO(text="test", channel_id=123456, guild_id=789012, member_id=345678)
         result = await use_case.execute(request)
         
         assert result.success is True
@@ -213,9 +214,9 @@ class TestSpeakTextUseCase:
 
         use_case._queue_orchestrator._process_item = fake_process_audio
 
-        first_request = TTSRequest(text="first", channel_id=123456, guild_id=789012, member_id=345678)
-        second_request = TTSRequest(text="second", channel_id=123456, guild_id=789012, member_id=345678)
-        third_request = TTSRequest(text="third", channel_id=123456, guild_id=789012, member_id=345678)
+        first_request = SpeakTextInputDTO(text="first", channel_id=123456, guild_id=789012, member_id=345678)
+        second_request = SpeakTextInputDTO(text="second", channel_id=123456, guild_id=789012, member_id=345678)
+        third_request = SpeakTextInputDTO(text="third", channel_id=123456, guild_id=789012, member_id=345678)
 
         first_task = asyncio.create_task(use_case.execute(first_request))
         await asyncio.wait_for(first_started.wait(), timeout=1)

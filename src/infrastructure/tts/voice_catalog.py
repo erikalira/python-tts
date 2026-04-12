@@ -33,8 +33,11 @@ _EDGE_TTS_OPTIONS = [
 class RuntimeTTSCatalog(TTSCatalog):
     """Expose runtime-selectable voices for Discord command autocomplete."""
 
+    def __init__(self) -> None:
+        self._cached_pyttsx3_options: list[TTSVoiceOption] | None = None
+
     def list_voice_options(self) -> list[TTSVoiceOption]:
-        return [*_GTTS_OPTIONS, *_EDGE_TTS_OPTIONS, *self._list_pyttsx3_options()]
+        return [*_GTTS_OPTIONS, *_EDGE_TTS_OPTIONS, *self._get_pyttsx3_options()]
 
     def get_voice_option(self, key: str) -> TTSVoiceOption | None:
         normalized_key = key.strip().lower()
@@ -64,6 +67,11 @@ class RuntimeTTSCatalog(TTSCatalog):
             option.engine == normalized_engine and option.voice_id.lower() == voice_id.lower()
             for option in self.list_voice_options()
         )
+
+    def _get_pyttsx3_options(self) -> list[TTSVoiceOption]:
+        if self._cached_pyttsx3_options is None:
+            self._cached_pyttsx3_options = self._list_pyttsx3_options()
+        return list(self._cached_pyttsx3_options)
 
     def _list_pyttsx3_options(self) -> list[TTSVoiceOption]:
         options: list[TTSVoiceOption] = []

@@ -45,3 +45,20 @@ def test_runtime_tts_catalog_includes_edge_tts_profiles():
     resolved = catalog.get_voice_option("edge-tts:pt-br-francisca")
     assert resolved is not None
     assert resolved.language == "pt-BR"
+
+
+def test_runtime_tts_catalog_caches_pyttsx3_voice_enumeration():
+    catalog = RuntimeTTSCatalog()
+    voices = [
+        SimpleNamespace(
+            id=r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_EN-US_DAVID_11.0",
+            name="Microsoft David",
+        ),
+    ]
+
+    with patch("src.infrastructure.tts.voice_catalog.list_pyttsx3_voices", return_value=voices) as list_mock:
+        first_options = catalog.list_voice_options()
+        second_options = catalog.list_voice_options()
+
+    assert first_options == second_options
+    list_mock.assert_called_once()

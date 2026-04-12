@@ -123,4 +123,56 @@ operating meaning. Compliance reviews for plans, tasks, and code reviews MUST
 check the constitution before implementation begins and again before work is
 considered done.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-08 | **Last Amended**: 2026-04-08
+## Architecture And Design Heuristics
+
+The repository SHOULD prefer practical application of proven software design
+concepts when they clarify boundaries, reduce change risk, or improve
+operability. These heuristics guide decisions without forcing ceremony for its
+own sake.
+
+- Layered architecture SHOULD remain the default mental model for cross-module
+  changes.
+- Service-layer orchestration SHOULD live in `src/application/` rather than in
+  controllers, GUI handlers, or infrastructure adapters.
+- Repository-style abstractions SHOULD be used when they decouple shared
+  application logic from infrastructure or external systems.
+- DTOs SHOULD be introduced at reusable boundaries when they make contracts
+  clearer than passing implicit dictionaries or mixed-purpose models.
+- Domain models MAY stay lean when the behavior is simple; richer domain
+  behavior SHOULD be introduced only when it removes duplicated policy or
+  scattered invariants.
+- Data-mapper-style indirection SHOULD NOT be introduced unless persistence
+  complexity justifies it.
+
+## Reliability And Runtime Resilience
+
+Shared flows, bot HTTP endpoints, desktop integrations, and background runtime
+behavior SHOULD be designed with failure handling in mind.
+
+- External calls SHOULD define timeout behavior explicitly.
+- Partial failures SHOULD produce actionable typed results or user-facing
+  messages rather than silent fallbacks.
+- Health checks, startup validation, and dependency-availability checks SHOULD
+  remain explicit and easy to diagnose.
+- Logging SHOULD help contributors distinguish configuration issues, transport
+  failures, voice-runtime failures, and business-rule failures.
+- Temporary compatibility or migration code MUST keep its failure modes narrow
+  and observable.
+
+## Evolution And Refactoring Discipline
+
+The codebase SHOULD evolve through small architectural improvements backed by
+tests and local validation.
+
+- Refactors SHOULD preserve behavior while improving naming, ownership,
+  contracts, or shared reuse.
+- New abstractions SHOULD be introduced only when they remove duplication,
+  shrink boundary leakage, or improve operability.
+- Pattern usage MUST be justified by a concrete repository problem; pattern
+  hunting without payoff SHOULD be rejected.
+- Architecture decisions SHOULD prefer reversible, incremental steps over large
+  rewrites.
+- New durable guidance SHOULD be encoded as project-specific rules or checklists
+  instead of book quotations or theory-heavy summaries.
+
+**Version**: 1.1.0 | **Ratified**: 2026-04-08 | **Last Amended**: 2026-04-12

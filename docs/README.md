@@ -12,6 +12,7 @@ This directory contains the repository's supporting documentation. The root
 - [DEPENDENCY_MAINTENANCE.md](DEPENDENCY_MAINTENANCE.md): dependency upgrade workflow, tooling, and validation checklist
 - [BUILD_GUIDE.md](BUILD_GUIDE.md): Windows executable build flow
 - [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview and layer map
+- [ENGINEERING_REFERENCES.md](ENGINEERING_REFERENCES.md): books and engineering concepts that inform repository design decisions
 - [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md): curated architecture diagrams grouped by layer and runtime
 - [ARCHITECTURE_DIAGRAMS_GENERATED.md](ARCHITECTURE_DIAGRAMS_GENERATED.md): automatic `pyreverse` diagrams rendered as Mermaid in Markdown
 - [RUNTIME_FLOWS.md](RUNTIME_FLOWS.md): bot and Desktop App entrypoints, composition roots, and main runtime flows

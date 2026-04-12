@@ -1,6 +1,6 @@
 """Unit tests for Discord presenters."""
 
-from src.application.results import (
+from src.application.dto import (
     JOIN_RESULT_USER_NOT_IN_CHANNEL,
     LEAVE_RESULT_VOICE_CONNECTION_FAILED,
     SPEAK_RESULT_QUEUED,

@@ -1,6 +1,6 @@
 """Unit tests for HTTP presenters."""
 
-from src.application.results import (
+from src.application.dto import (
     SPEAK_RESULT_OK,
     SPEAK_RESULT_QUEUE_FULL,
     SPEAK_RESULT_QUEUED,

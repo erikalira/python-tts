@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from src.application.results import ConfigureTTSResult, TTSConfigurationData
+from src.application.dto import ConfigureTTSResult, TTSConfigurationData
 from src.core.interfaces import IConfigRepository
 
 logger = logging.getLogger(__name__)

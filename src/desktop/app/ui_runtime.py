@@ -6,10 +6,13 @@ import logging
 import queue
 from typing import Callable, Optional
 
-from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
+from src.application.dto import (
+    DesktopBotActionResultDTO,
+    DesktopBotVoiceContextResultDTO,
+    DesktopConfigurationSaveResultDTO,
+)
 from ..config.desktop_config import DesktopAppConfig
 from ..gui.main_window import DesktopAppMainWindow
-from ..results import DesktopConfigurationSaveResult
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +36,10 @@ class DesktopAppUIRuntimeCoordinator:
         self,
         *,
         config: DesktopAppConfig,
-        on_save: Callable[[DesktopAppConfig], DesktopConfigurationSaveResult],
-        on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResult],
-        on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResult],
-        on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResult],
+        on_save: Callable[[DesktopAppConfig], DesktopConfigurationSaveResultDTO],
+        on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResultDTO],
+        on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResultDTO],
+        on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResultDTO],
     ) -> None:
         """Create and show the main Desktop App window."""
         self._main_window = DesktopAppMainWindow(

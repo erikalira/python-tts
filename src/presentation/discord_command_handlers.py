@@ -7,7 +7,7 @@ import platform
 
 import discord
 
-from src.application.results import ConfigureTTSResult
+from src.application.dto import ConfigureTTSResult
 from src.application.tts_voice_catalog import TTSCatalog
 from src.application.voice_runtime import VoiceRuntimeStatus
 

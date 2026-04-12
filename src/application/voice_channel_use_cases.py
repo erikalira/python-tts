@@ -5,9 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from src.application.results import (
+from src.application.dto import (
     JoinVoiceChannelResult,
     LeaveVoiceChannelResult,
+    VoiceContextQueryDTO,
     VoiceContextResult,
     JOIN_RESULT_MISSING_GUILD_ID,
     JOIN_RESULT_OK,
@@ -91,18 +92,18 @@ class GetCurrentVoiceContextUseCase:
     def __init__(self, channel_repository: IVoiceChannelRepository):
         self._channel_repository = channel_repository
 
-    async def execute(self, member_id: Optional[int]) -> VoiceContextResult:
-        if member_id is None:
+    async def execute(self, query: VoiceContextQueryDTO) -> VoiceContextResult:
+        if query.member_id is None:
             return VoiceContextResult(success=False, code=VOICE_CONTEXT_RESULT_MEMBER_REQUIRED)
 
-        channel = await self._channel_repository.find_by_member_id(member_id)
+        channel = await self._channel_repository.find_by_member_id(query.member_id)
         if not channel:
             return VoiceContextResult(success=False, code=VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL)
 
         return VoiceContextResult(
             success=True,
             code=VOICE_CONTEXT_RESULT_OK,
-            member_id=member_id,
+            member_id=query.member_id,
             guild_id=channel.get_guild_id(),
             guild_name=channel.get_guild_name(),
             channel_id=channel.get_channel_id(),

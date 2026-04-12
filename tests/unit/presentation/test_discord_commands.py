@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import Mock, AsyncMock
 from discord import app_commands
-from src.application.results import (
+from src.application.dto import (
     ConfigureTTSResult,
     JoinVoiceChannelResult,
     LeaveVoiceChannelResult,

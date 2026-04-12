@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
 
-from src.application.results import (
+from src.application.dto import (
     SPEAK_RESULT_CROSS_GUILD_CHANNEL,
     SPEAK_RESULT_MISSING_GUILD_ID,
     SPEAK_RESULT_MISSING_TEXT,
