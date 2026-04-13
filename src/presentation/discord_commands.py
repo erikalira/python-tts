@@ -18,6 +18,7 @@ from src.application.voice_runtime import VoiceRuntimeAvailability, VoiceRuntime
 from src.presentation.discord_command_handlers import (
     DiscordAboutCommandHandler,
     DiscordConfigCommandHandler,
+    DiscordServerConfigCommandHandler,
 )
 from src.presentation.discord_presenters import (
     DiscordJoinPresenter,
@@ -56,6 +57,7 @@ class DiscordCommands:
         self._leave_presenter = DiscordLeavePresenter()
         self._speak_presenter = DiscordSpeakPresenter()
         self._config_handler = DiscordConfigCommandHandler(config_use_case, tts_catalog)
+        self._server_config_handler = DiscordServerConfigCommandHandler(config_use_case, tts_catalog)
         self._about_handler = DiscordAboutCommandHandler()
         self._speak_request_builder = DiscordSpeakRequestBuilder(config_use_case, tts_catalog)
         self._register_commands()
@@ -80,6 +82,20 @@ class DiscordCommands:
         @app_commands.autocomplete(voz=self._autocomplete_voz)
         async def config(interaction: discord.Interaction, voz: str = None):
             await self._handle_config(interaction, voz)
+
+        @self._tree.command(name="config-reset", description="Reset your personal voice override")
+        async def config_reset(interaction: discord.Interaction):
+            await self._handle_config_reset(interaction)
+
+        @self._tree.command(name="server-config", description="Configure the default server voice")
+        @app_commands.describe(voz="Escolha a voz padrão para usuários sem configuração pessoal")
+        @app_commands.autocomplete(voz=self._autocomplete_voz)
+        async def server_config(interaction: discord.Interaction, voz: str = None):
+            await self._handle_server_config(interaction, voz)
+
+        @self._tree.command(name="server-config-reset", description="Reset the default server voice")
+        async def server_config_reset(interaction: discord.Interaction):
+            await self._handle_server_config_reset(interaction)
 
         @self._tree.command(name="about", description="Show bot information and version")
         async def about(interaction: discord.Interaction):
@@ -185,6 +201,15 @@ class DiscordCommands:
 
     async def _handle_config(self, interaction: discord.Interaction, voz: str | None):
         await self._config_handler.handle(interaction, voz)
+
+    async def _handle_config_reset(self, interaction: discord.Interaction):
+        await self._config_handler.handle_reset(interaction)
+
+    async def _handle_server_config(self, interaction: discord.Interaction, voz: str | None):
+        await self._server_config_handler.handle(interaction, voz)
+
+    async def _handle_server_config_reset(self, interaction: discord.Interaction):
+        await self._server_config_handler.handle_reset(interaction)
 
     async def _handle_about(self, interaction: discord.Interaction):
         await self._about_handler.handle(interaction, self._get_voice_runtime_status())

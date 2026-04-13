@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: tts-bot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tts_hotkey_windows
+      POSTGRES_USER: tts_user
+      POSTGRES_PASSWORD: change_me_in_production
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/001_bot_config_schema.sql:/docker-entrypoint-initdb.d/001_bot_config_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tts_user -d tts_hotkey_windows"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tts-discord-bot
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "10000:10000"
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_BOT_HOST: 0.0.0.0
+      PORT: 10000
+      CONFIG_STORAGE_BACKEND: postgres
+      DATABASE_URL: ${DATABASE_URL}
+      TTS_ENGINE: ${TTS_ENGINE:-gtts}
+      TTS_LANGUAGE: ${TTS_LANGUAGE:-pt}
+      TTS_VOICE_ID: ${TTS_VOICE_ID:-roa/pt-br}
+      TTS_RATE: ${TTS_RATE:-180}
+      MAX_TEXT_LENGTH: ${MAX_TEXT_LENGTH:-500}
+
+volumes:
+  postgres_data:

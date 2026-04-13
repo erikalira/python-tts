@@ -33,12 +33,13 @@ class SpeakController:
             return web.Response(text="invalid json", status=400)
 
         guild_id = self._parse_int(data.get("guild_id"))
+        member_id = self._parse_int(data.get("member_id") or data.get("user_id"))
         tts_request = SpeakTextInputDTO(
             text=data.get("text", ""),
             channel_id=self._parse_int(data.get("channel_id")),
             guild_id=guild_id,
-            member_id=self._parse_int(data.get("member_id") or data.get("user_id")),
-            config_override=self._parse_config_override(data, guild_id),
+            member_id=member_id,
+            config_override=self._parse_config_override(data, guild_id, member_id),
         )
         result = await self._speak_use_case.execute(tts_request)
         return web.Response(
@@ -54,7 +55,12 @@ class SpeakController:
         except (ValueError, TypeError):
             return None
 
-    def _parse_config_override(self, data: dict, guild_id: int | None = None) -> TTSConfig | None:
+    def _parse_config_override(
+        self,
+        data: dict,
+        guild_id: int | None = None,
+        member_id: int | None = None,
+    ) -> TTSConfig | None:
         override = data.get("config_override")
         if not isinstance(override, dict):
             override = data
@@ -67,7 +73,7 @@ class SpeakController:
         if engine is None and language is None and voice_id is None and rate is None:
             return None
 
-        base_config = self._get_base_config(guild_id)
+        base_config = self._get_base_config(guild_id, member_id)
         return TTSConfig(
             engine=str(engine or base_config.engine),
             language=str(language or base_config.language),
@@ -76,10 +82,10 @@ class SpeakController:
             output_device=base_config.output_device,
         )
 
-    def _get_base_config(self, guild_id: int | None) -> TTSConfig:
+    def _get_base_config(self, guild_id: int | None, member_id: int | None = None) -> TTSConfig:
         if self._config_repository is None:
             return TTSConfig()
-        return self._config_repository.get_config(guild_id)
+        return self._config_repository.get_config(guild_id, user_id=member_id)
 
 
 class VoiceContextController:

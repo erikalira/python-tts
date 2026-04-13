@@ -287,6 +287,7 @@ class TestConfigureTTSUseCase:
                 voice_id="roa/pt-br",
                 rate=180,
             ),
+            scope="default",
         )
         assert result.config is not None
         assert result.config.engine == "gtts"
@@ -328,6 +329,28 @@ class TestConfigureTTSUseCase:
         assert result.success is True
         assert result.config is not None
         assert result.config.voice_id == "en-us"
+
+    @pytest.mark.asyncio
+    async def test_update_user_scoped_voice_id(self, mock_config_repository):
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(guild_id=123, user_id=999, voice_id="Maria")
+
+        assert result.success is True
+        assert mock_config_repository.get_config(123, user_id=999).voice_id == "Maria"
+
+    @pytest.mark.asyncio
+    async def test_reset_user_scoped_voice_id(self, mock_config_repository):
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+        await use_case.update_config_async(guild_id=123, user_id=999, voice_id="Maria")
+        await use_case.update_config_async(guild_id=123, voice_id="David")
+
+        result = await use_case.reset_config_async(guild_id=123, user_id=999)
+
+        assert result.success is True
+        assert result.scope == "guild"
+        assert result.config is not None
+        assert result.config.voice_id == "David"
 
     @pytest.mark.asyncio
     async def test_update_edge_tts_engine(self, mock_config_repository):

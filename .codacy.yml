@@ -30,6 +30,7 @@ exclude_paths:
   - "dist/**"
   - "*.egg-info/**"
   - "docs/**"
+  - "deploy/postgres/**"
 
 # Transform paths (if needed)
 transform_paths:

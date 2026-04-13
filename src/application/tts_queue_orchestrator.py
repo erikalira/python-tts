@@ -149,7 +149,7 @@ class TTSQueueOrchestrator:
                     error_detail=error,
                 )
 
-            config = await self._config_repository.load_config_async(request.guild_id)
+            config = await self._config_repository.load_config_async(request.guild_id, user_id=request.member_id)
             config = self._apply_request_override(config, request.config_override)
             try:
                 audio = await asyncio.wait_for(

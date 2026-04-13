@@ -42,3 +42,41 @@ def test_config_reads_timeout_overrides_from_env(tmp_path):
     assert config.tts_playback_timeout_seconds == 18
     assert config.voice_connection_timeout_seconds == 7
     assert config.voice_idle_disconnect_timeout_seconds == 90
+
+
+def test_config_requires_database_url_for_postgres_backend(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "CONFIG_STORAGE_BACKEND=postgres",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (
+        False,
+        "DATABASE_URL not set for CONFIG_STORAGE_BACKEND=postgres",
+    )
+
+
+def test_config_accepts_postgres_backend_when_database_url_is_present(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "CONFIG_STORAGE_BACKEND=postgres",
+                "DATABASE_URL=postgresql://user:pass@localhost:5432/app",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (True, "")

@@ -46,6 +46,7 @@ def test_update_config_async_preserves_persisted_fields_after_cache_miss(tmp_pat
             voice_id="custom-voice",
             rate=240,
         ),
+        scope="guild",
     )
     assert result.config is not None
     assert result.config.engine == "pyttsx3"
@@ -59,3 +60,68 @@ def test_update_config_async_preserves_persisted_fields_after_cache_miss(tmp_pat
     assert persisted.language == "fr"
     assert persisted.voice_id == "custom-voice"
     assert persisted.rate == 240
+
+
+def test_guild_config_repository_prefers_user_scope_over_guild_scope(tmp_path):
+    storage = JSONConfigStorage(storage_dir=str(tmp_path))
+    default_config = TTSConfig(engine="gtts", language="pt", voice_id="roa/pt-br", rate=180)
+
+    asyncio.run(storage.save(123, TTSConfig(engine="edge-tts", language="pt-BR", voice_id="pt-BR-FranciscaNeural", rate=210)))
+    asyncio.run(storage.save(123, TTSConfig(engine="pyttsx3", language="system", voice_id="Maria", rate=190), user_id=999))
+
+    repo = GuildConfigRepository(default_config=default_config, storage=storage)
+
+    loaded = repo.get_config(123, user_id=999)
+
+    assert loaded.engine == "pyttsx3"
+    assert loaded.voice_id == "Maria"
+
+
+def test_update_config_async_can_persist_user_scoped_voice(tmp_path):
+    storage = JSONConfigStorage(storage_dir=str(tmp_path))
+    default_config = TTSConfig(engine="gtts", language="pt", voice_id="roa/pt-br", rate=180)
+    repo = GuildConfigRepository(default_config=default_config, storage=storage)
+    use_case = ConfigureTTSUseCase(config_repository=repo)
+
+    result = asyncio.run(
+        use_case.update_config_async(
+            guild_id=456,
+            user_id=777,
+            voice_id="custom-user-voice",
+        )
+    )
+
+    assert result.success is True
+    persisted = asyncio.run(storage.load(456, user_id=777))
+    assert persisted is not None
+    assert persisted.voice_id == "custom-user-voice"
+
+
+def test_user_scope_fallback_returns_isolated_copy_of_guild_cache(tmp_path):
+    storage = JSONConfigStorage(storage_dir=str(tmp_path))
+    default_config = TTSConfig(engine="gtts", language="pt", voice_id="roa/pt-br", rate=180)
+    repo = GuildConfigRepository(default_config=default_config, storage=storage)
+
+    guild_config = TTSConfig(engine="edge-tts", language="pt-BR", voice_id="David", rate=210)
+    repo.set_config(123, guild_config)
+
+    resolved = repo.get_config(123, user_id=999)
+    resolved.voice_id = "Maria"
+
+    cached_guild = repo.get_config(123)
+    assert cached_guild.voice_id == "David"
+
+
+def test_update_config_async_user_scope_does_not_mutate_guild_cache(tmp_path):
+    storage = JSONConfigStorage(storage_dir=str(tmp_path))
+    default_config = TTSConfig(engine="gtts", language="pt", voice_id="roa/pt-br", rate=180)
+    repo = GuildConfigRepository(default_config=default_config, storage=storage)
+    use_case = ConfigureTTSUseCase(config_repository=repo)
+
+    asyncio.run(storage.save(123, TTSConfig(engine="edge-tts", language="pt-BR", voice_id="David", rate=210)))
+
+    result = asyncio.run(use_case.update_config_async(guild_id=123, user_id=999, voice_id="Maria"))
+
+    assert result.success is True
+    assert repo.get_config(123).voice_id == "David"
+    assert repo.get_config(123, user_id=999).voice_id == "Maria"

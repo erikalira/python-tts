@@ -19,6 +19,7 @@ from src.infrastructure.audio_queue import InMemoryAudioQueue
 from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvailability
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
+from src.infrastructure.persistence.postgres_storage import PostgreSQLConfigStorage
 from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
 from src.infrastructure.tts.engines import RoutedTTSEngine
 from src.infrastructure.tts.voice_catalog import RuntimeTTSCatalog
@@ -41,8 +42,8 @@ class Container:
         self.discord_client = discord.Client(intents=intents)
         self.command_tree = app_commands.CommandTree(self.discord_client)
 
-        json_storage = JSONConfigStorage(storage_dir="configs")
-        self.config_repository = GuildConfigRepository(default_config=config.tts_config, storage=json_storage)
+        config_storage = self._build_config_storage(config)
+        self.config_repository = GuildConfigRepository(default_config=config.tts_config, storage=config_storage)
         self.voice_channel_repository = DiscordVoiceChannelRepository(
             self.discord_client,
             connection_timeout_seconds=config.voice_connection_timeout_seconds,
@@ -91,6 +92,14 @@ class Container:
 
         self._log_voice_runtime_status()
         self._register_events()
+
+    def _build_config_storage(self, config: Config):
+        if config.config_storage_backend == "postgres":
+            logger.info("[CONTAINER] Using Postgres config storage")
+            return PostgreSQLConfigStorage(database_url=config.database_url or "")
+
+        logger.info("[CONTAINER] Using JSON config storage at %s", config.config_storage_dir)
+        return JSONConfigStorage(storage_dir=config.config_storage_dir)
 
     def _log_voice_runtime_status(self) -> None:
         has_davey = importlib.util.find_spec("davey") is not None
