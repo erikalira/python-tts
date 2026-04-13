@@ -1,10 +1,11 @@
 """Focused tests for queue draining and playback orchestration."""
 
 import asyncio
+from unittest.mock import patch
 
 import pytest
 
-from src.application.dto import SPEAK_RESULT_OK, SPEAK_RESULT_UNKNOWN_ERROR
+from src.application.dto import SPEAK_RESULT_GENERATION_TIMEOUT, SPEAK_RESULT_OK, SPEAK_RESULT_UNKNOWN_ERROR
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.core.entities import AudioQueueItem, TTSConfig, TTSRequest
@@ -143,3 +144,29 @@ class TestTTSQueueOrchestrator:
         assert result.code == SPEAK_RESULT_OK
         assert tts_engine.calls[0]["config"].engine == "edge-tts"
         assert config_repository.get_config(789012).engine == "gtts"
+
+    async def test_process_item_fails_fast_when_audio_generation_hangs(self):
+        class HangingTTSEngine(MockTTSEngine):
+            async def generate_audio(self, text: str, config: TTSConfig):
+                self.calls.append({"text": text, "config": config})
+                await asyncio.Future()
+
+        queue = InMemoryAudioQueue()
+        cleanup = MockAudioCleanup()
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=HangingTTSEngine(),
+            config_repository=MockConfigRepository(),
+            audio_queue=queue,
+            voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository()),
+            audio_cleanup=cleanup,
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(text="edge hang", guild_id=789012, member_id=345678, channel_id=123456)
+        )
+
+        with patch("src.application.tts_queue_orchestrator._AUDIO_GENERATION_TIMEOUT_SECONDS", 0.01):
+            result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_GENERATION_TIMEOUT
+        assert result.success is False
+        assert cleanup.cleaned_paths == []

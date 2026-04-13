@@ -13,6 +13,7 @@ from src.application.dto import (
     LEAVE_RESULT_OK,
     LEAVE_RESULT_VOICE_CONNECTION_FAILED,
     SPEAK_RESULT_CROSS_GUILD_CHANNEL,
+    SPEAK_RESULT_GENERATION_TIMEOUT,
     SPEAK_RESULT_MISSING_GUILD_ID,
     SPEAK_RESULT_MISSING_TEXT,
     SPEAK_RESULT_PLAYBACK_TIMEOUT,
@@ -38,30 +39,32 @@ class DiscordSpeakPresenter:
         if code == SPEAK_RESULT_QUEUED:
             position = (result.position or 0) + 1
             queue_size = result.queue_size or position
-            return f"⏳ Sua mensagem está na **fila** (posição **{position}**/{queue_size}). Será reproduzida em breve!"
+            return f"Sua mensagem esta na **fila** (posicao **{position}**/{queue_size}). Sera reproduzida em breve!"
         if code == SPEAK_RESULT_MISSING_TEXT:
-            return "❌ Texto não informado."
+            return "Texto nao informado."
         if code == SPEAK_RESULT_USER_NOT_IN_CHANNEL:
-            return "❌ Você não está em nenhuma sala de voz. Entre em uma sala e tente novamente."
+            return "Voce nao esta em nenhuma sala de voz. Entre em uma sala e tente novamente."
         if code == SPEAK_RESULT_QUEUE_FULL:
-            return "❌ Fila de áudio cheia. Tente novamente mais tarde."
+            return "Fila de audio cheia. Tente novamente mais tarde."
         if code == SPEAK_RESULT_MISSING_GUILD_ID:
-            return "❌ Erro: Não foi possível determinar o servidor."
+            return "Erro: Nao foi possivel determinar o servidor."
         if code == SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND:
-            return "❌ Bot não conseguiu encontrar sua sala de voz."
+            return "Bot nao conseguiu encontrar sua sala de voz."
         if code == SPEAK_RESULT_CROSS_GUILD_CHANNEL:
-            return "❌ Canal de voz pertence a servidor diferente."
+            return "Canal de voz pertence a servidor diferente."
         if code == SPEAK_RESULT_USER_LEFT_CHANNEL:
-            return "❌ Você saiu do canal de voz."
+            return "Voce saiu do canal de voz."
+        if code == SPEAK_RESULT_GENERATION_TIMEOUT:
+            return "Tempo limite excedido durante geracao do audio."
         if code == SPEAK_RESULT_PLAYBACK_TIMEOUT:
-            return "⏱️ Tempo limite excedido durante reprodução."
+            return "Tempo limite excedido durante reproducao."
         if code == SPEAK_RESULT_VOICE_CONNECTION_FAILED:
-            return "🔌 Bot não conseguiu se conectar ao canal."
+            return "Bot nao conseguiu se conectar ao canal."
         if code == SPEAK_RESULT_VOICE_PERMISSION_DENIED:
-            return "⛔ Bot não tem permissão neste canal."
+            return "Bot nao tem permissao neste canal."
         if code == SPEAK_RESULT_UNKNOWN_ERROR:
-            return "❌ Erro ao reproduzir áudio."
-        return "❌ Erro inesperado ao processar áudio."
+            return "Erro ao reproduzir audio."
+        return "Erro inesperado ao processar audio."
 
 
 class DiscordJoinPresenter:
@@ -73,12 +76,12 @@ class DiscordJoinPresenter:
         if result.code == JOIN_RESULT_USER_NOT_IN_CHANNEL:
             return "You are not connected to a voice channel."
         if result.code == JOIN_RESULT_MISSING_GUILD_ID:
-            return "❌ Este comando só pode ser usado em um servidor."
+            return "Este comando so pode ser usado em um servidor."
         if result.code == JOIN_RESULT_VOICE_CHANNEL_NOT_FOUND:
             return "Could not find voice channel."
         if result.code == JOIN_RESULT_VOICE_CONNECTION_FAILED:
-            return "❌ Não foi possível entrar no canal. Tente novamente."
-        return "❌ Não foi possível entrar no canal. Tente novamente."
+            return "Nao foi possivel entrar no canal. Tente novamente."
+        return "Nao foi possivel entrar no canal. Tente novamente."
 
 
 class DiscordLeavePresenter:
@@ -90,7 +93,7 @@ class DiscordLeavePresenter:
         if result.code == LEAVE_RESULT_NOT_CONNECTED:
             return "I am not connected to a voice channel."
         if result.code == LEAVE_RESULT_MISSING_GUILD_ID:
-            return "❌ Este comando só pode ser usado em um servidor."
+            return "Este comando so pode ser usado em um servidor."
         if result.code == LEAVE_RESULT_VOICE_CONNECTION_FAILED and result.error_detail:
             return f"Error disconnecting: {result.error_detail}"
         return "Error disconnecting."

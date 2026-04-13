@@ -8,6 +8,7 @@ from typing import Optional
 
 from src.application.dto import (
     SPEAK_RESULT_CROSS_GUILD_CHANNEL,
+    SPEAK_RESULT_GENERATION_TIMEOUT,
     SPEAK_RESULT_MISSING_GUILD_ID,
     SPEAK_RESULT_OK,
     SPEAK_RESULT_PLAYBACK_TIMEOUT,
@@ -23,6 +24,9 @@ from src.core.entities import AudioQueueItem, TTSConfig
 from src.core.interfaces import IAudioFileCleanup, IAudioQueue, IConfigRepository, ITTSEngine
 
 logger = logging.getLogger(__name__)
+
+_AUDIO_GENERATION_TIMEOUT_SECONDS = 60
+_AUDIO_PLAYBACK_TIMEOUT_SECONDS = 60
 
 
 class TTSQueueOrchestrator:
@@ -142,7 +146,26 @@ class TTSQueueOrchestrator:
 
             config = await self._config_repository.load_config_async(request.guild_id)
             config = self._apply_request_override(config, request.config_override)
-            audio = await self._tts_engine.generate_audio(request.text, config)
+            try:
+                audio = await asyncio.wait_for(
+                    self._tts_engine.generate_audio(request.text, config),
+                    timeout=_AUDIO_GENERATION_TIMEOUT_SECONDS,
+                )
+            except asyncio.TimeoutError:
+                error = "Tempo limite excedido durante geracao do audio"
+                item.mark_failed(error)
+                logger.warning(
+                    "[QUEUE_ORCHESTRATOR] Audio generation timed out for item %s after %ss",
+                    item.item_id,
+                    _AUDIO_GENERATION_TIMEOUT_SECONDS,
+                )
+                return SpeakTextResult(
+                    success=False,
+                    code=SPEAK_RESULT_GENERATION_TIMEOUT,
+                    queued=True,
+                    item_id=item.item_id,
+                    error_detail=error,
+                )
 
             if not voice_channel.is_connected():
                 await voice_channel.connect()
@@ -161,7 +184,7 @@ class TTSQueueOrchestrator:
                 )
 
             try:
-                await asyncio.wait_for(voice_channel.play_audio(audio), timeout=60)
+                await asyncio.wait_for(voice_channel.play_audio(audio), timeout=_AUDIO_PLAYBACK_TIMEOUT_SECONDS)
                 item.mark_completed()
                 return SpeakTextResult(
                     success=True,
@@ -172,6 +195,11 @@ class TTSQueueOrchestrator:
             except asyncio.TimeoutError:
                 error = "Tempo limite excedido durante reproducao"
                 item.mark_failed(error)
+                logger.warning(
+                    "[QUEUE_ORCHESTRATOR] Audio playback timed out for item %s after %ss",
+                    item.item_id,
+                    _AUDIO_PLAYBACK_TIMEOUT_SECONDS,
+                )
                 return SpeakTextResult(
                     success=False,
                     code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
