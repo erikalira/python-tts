@@ -218,15 +218,15 @@ class GuildConfigRepository(IConfigRepository):
             rate=config.rate,
         )
 
-    def get_config(self, guild_id: int, user_id: Optional[int] = None) -> TTSConfig:
+    def get_config(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
         """Get resolved TTS configuration for a guild/user scope.
         
         Returns cached config if available, otherwise loads from storage
         or returns default.
         
         Args:
-            guild_id: Guild identifier (required, not optional)
-            
+            guild_id: Guild identifier or None for the default config
+             
         Returns:
             TTSConfig for the guild
         """
