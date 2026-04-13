@@ -209,6 +209,15 @@ class GuildConfigRepository(IConfigRepository):
         self._user_cache: Dict[tuple[int, int], TTSConfig] = {}
         logger.info("[CONFIG_REPO] Initialized per-guild configuration repository")
 
+    def _clone_config(self, config: TTSConfig) -> TTSConfig:
+        """Return an isolated copy so callers never mutate cache-owned state."""
+        return TTSConfig(
+            engine=config.engine,
+            language=config.language,
+            voice_id=config.voice_id,
+            rate=config.rate,
+        )
+
     def get_config(self, guild_id: int, user_id: Optional[int] = None) -> TTSConfig:
         """Get resolved TTS configuration for a guild/user scope.
         
@@ -228,11 +237,11 @@ class GuildConfigRepository(IConfigRepository):
         if user_id is not None:
             cache_key = (guild_id, user_id)
             if cache_key in self._user_cache:
-                return self._user_cache[cache_key]
+                return self._clone_config(self._user_cache[cache_key])
 
         # Check cache first (fast path)
         if guild_id in self._cache and user_id is None:
-            return self._cache[guild_id]
+            return self._clone_config(self._cache[guild_id])
 
         logger.debug(f"[CONFIG_REPO] Cache miss for guild {guild_id}, loading from storage")
         load_sync = getattr(self._storage, "load_sync", None)
@@ -240,14 +249,14 @@ class GuildConfigRepository(IConfigRepository):
             if user_id is not None:
                 user_config = load_sync(guild_id, user_id=user_id)
                 if user_config:
-                    self._user_cache[(guild_id, user_id)] = user_config
-                    return user_config
+                    self._user_cache[(guild_id, user_id)] = self._clone_config(user_config)
+                    return self._clone_config(self._user_cache[(guild_id, user_id)])
                 if guild_id in self._cache:
-                    return self._cache[guild_id]
+                    return self._clone_config(self._cache[guild_id])
             config = load_sync(guild_id)
             if config:
-                self._cache[guild_id] = config
-                return config
+                self._cache[guild_id] = self._clone_config(config)
+                return self._clone_config(self._cache[guild_id])
 
         return self._get_default_config()
 
@@ -273,20 +282,20 @@ class GuildConfigRepository(IConfigRepository):
             if user_id is not None:
                 user_config = await self._storage.load(guild_id, user_id=user_id)
                 if user_config:
-                    self._user_cache[(guild_id, user_id)] = user_config
+                    self._user_cache[(guild_id, user_id)] = self._clone_config(user_config)
                     logger.info(
                         "[CONFIG_REPO] Loaded config from storage for guild %s user %s",
                         guild_id,
                         user_id,
                     )
-                    return user_config
+                    return self._clone_config(self._user_cache[(guild_id, user_id)])
 
             config = await self._storage.load(guild_id)
             
             if config:
-                self._cache[guild_id] = config
+                self._cache[guild_id] = self._clone_config(config)
                 logger.info(f"[CONFIG_REPO] Loaded config from storage for guild {guild_id}")
-                return config
+                return self._clone_config(self._cache[guild_id])
             else:
                 logger.debug(f"[CONFIG_REPO] No config in storage for guild {guild_id}, using default")
                 return self._get_default_config()
@@ -309,12 +318,7 @@ class GuildConfigRepository(IConfigRepository):
             return
 
         # Store copy to prevent external modification
-        target = TTSConfig(
-            engine=config.engine,
-            language=config.language,
-            voice_id=config.voice_id,
-            rate=config.rate
-        )
+        target = self._clone_config(config)
         if user_id is not None:
             self._user_cache[(guild_id, user_id)] = target
             logger.debug(f"[CONFIG_REPO] Updated user cache for guild {guild_id} user {user_id}")
