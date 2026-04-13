@@ -1,7 +1,6 @@
 """Focused tests for queue draining and playback orchestration."""
 
 import asyncio
-from unittest.mock import patch
 
 import pytest
 
@@ -159,13 +158,13 @@ class TestTTSQueueOrchestrator:
             audio_queue=queue,
             voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository()),
             audio_cleanup=cleanup,
+            generation_timeout_seconds=0.01,
         )
         item = AudioQueueItem(
             request=TTSRequest(text="edge hang", guild_id=789012, member_id=345678, channel_id=123456)
         )
 
-        with patch("src.application.tts_queue_orchestrator._AUDIO_GENERATION_TIMEOUT_SECONDS", 0.01):
-            result = await orchestrator._process_item(item)
+        result = await orchestrator._process_item(item)
 
         assert result.code == SPEAK_RESULT_GENERATION_TIMEOUT
         assert result.success is False

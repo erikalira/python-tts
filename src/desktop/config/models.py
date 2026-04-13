@@ -8,6 +8,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from src.core.entities import TTSConfig
+from src.core.timeouts import DEFAULT_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
 
 # Load environment variables from .env file once for Desktop App defaults.
 load_dotenv(Path(__file__).resolve().parents[3] / ".env", override=True)
@@ -57,7 +58,7 @@ class InterfaceConfig:
 class NetworkConfig:
     """Network configuration."""
 
-    request_timeout: int = 10
+    request_timeout: int = DEFAULT_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
     user_agent: str = "DesktopApp/2.0"
     max_text_length: int = 500
 

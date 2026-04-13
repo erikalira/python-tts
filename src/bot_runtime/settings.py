@@ -6,6 +6,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from src.core.entities import TTSConfig
+from src.core.timeouts import (
+    DEFAULT_BOT_TTS_GENERATION_TIMEOUT_SECONDS,
+    DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
+    DEFAULT_DISCORD_IDLE_DISCONNECT_TIMEOUT_SECONDS,
+    DEFAULT_DISCORD_VOICE_CONNECTION_TIMEOUT_SECONDS,
+)
 
 
 class Config:
@@ -34,6 +40,21 @@ class Config:
         self.discord_bot_port = self.http_port
         self.http_host = os.getenv("DISCORD_BOT_HOST", os.getenv("HOST", "127.0.0.1"))
         self.max_text_length = int(os.getenv("MAX_TEXT_LENGTH", os.getenv("TTS_MAX_TEXT_LENGTH", "500")))
+        self.tts_generation_timeout_seconds = float(
+            os.getenv("TTS_GENERATION_TIMEOUT_SECONDS", str(DEFAULT_BOT_TTS_GENERATION_TIMEOUT_SECONDS))
+        )
+        self.tts_playback_timeout_seconds = float(
+            os.getenv("TTS_PLAYBACK_TIMEOUT_SECONDS", str(DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS))
+        )
+        self.voice_connection_timeout_seconds = float(
+            os.getenv("DISCORD_VOICE_CONNECTION_TIMEOUT_SECONDS", str(DEFAULT_DISCORD_VOICE_CONNECTION_TIMEOUT_SECONDS))
+        )
+        self.voice_idle_disconnect_timeout_seconds = float(
+            os.getenv(
+                "DISCORD_VOICE_IDLE_DISCONNECT_TIMEOUT_SECONDS",
+                str(DEFAULT_DISCORD_IDLE_DISCONNECT_TIMEOUT_SECONDS),
+            )
+        )
 
         # TTS settings
         self.tts_config = TTSConfig(
