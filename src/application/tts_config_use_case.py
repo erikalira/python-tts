@@ -31,6 +31,7 @@ class ConfigureTTSUseCase:
                 voice_id=config.voice_id,
                 rate=config.rate,
             ),
+            scope=self._config_repository.get_effective_scope(guild_id, user_id=user_id),
         )
 
     async def update_config_async(
@@ -81,4 +82,26 @@ class ConfigureTTSUseCase:
                 voice_id=current_config.voice_id,
                 rate=current_config.rate,
             ),
+            scope="user" if user_id is not None else "guild",
+        )
+
+    async def reset_config_async(self, guild_id: int, user_id: Optional[int] = None) -> ConfigureTTSResult:
+        if guild_id is None:
+            return ConfigureTTSResult(success=False, message="Guild ID is required")
+
+        deleted = await self._config_repository.delete_config_async(guild_id, user_id=user_id)
+        if not deleted:
+            return ConfigureTTSResult(success=False, message="Failed to reset configuration")
+
+        config = self._config_repository.get_config(guild_id, user_id=user_id)
+        return ConfigureTTSResult(
+            success=True,
+            guild_id=guild_id,
+            config=TTSConfigurationData(
+                engine=config.engine,
+                language=config.language,
+                voice_id=config.voice_id,
+                rate=config.rate,
+            ),
+            scope=self._config_repository.get_effective_scope(guild_id, user_id=user_id),
         )

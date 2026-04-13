@@ -360,7 +360,7 @@ class GuildConfigRepository(IConfigRepository):
             logger.error(f"[CONFIG_REPO] Error saving config for guild {guild_id}: {e}")
             return False
 
-    async def delete_config_async(self, guild_id: int) -> bool:
+    async def delete_config_async(self, guild_id: int, user_id: Optional[int] = None) -> bool:
         """Delete configuration for a guild.
         
         Args:
@@ -370,23 +370,49 @@ class GuildConfigRepository(IConfigRepository):
             True if deleted successfully
         """
         try:
-            # Remove from cache
-            self._cache.pop(guild_id, None)
-            user_keys = [key for key in self._user_cache if key[0] == guild_id]
-            for key in user_keys:
-                self._user_cache.pop(key, None)
+            if user_id is not None:
+                self._user_cache.pop((guild_id, user_id), None)
+            else:
+                self._cache.pop(guild_id, None)
+                user_keys = [key for key in self._user_cache if key[0] == guild_id]
+                for key in user_keys:
+                    self._user_cache.pop(key, None)
 
             # Delete from storage
-            success = await self._storage.delete(guild_id)
+            success = await self._storage.delete(guild_id, user_id=user_id)
 
             if success:
-                logger.info(f"[CONFIG_REPO] Deleted config for guild {guild_id}")
+                if user_id is not None:
+                    logger.info("[CONFIG_REPO] Deleted config for guild %s user %s", guild_id, user_id)
+                else:
+                    logger.info(f"[CONFIG_REPO] Deleted config for guild {guild_id}")
 
             return success
 
         except Exception as e:
             logger.error(f"[CONFIG_REPO] Error deleting config for guild {guild_id}: {e}")
             return False
+
+    def get_effective_scope(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> str:
+        if guild_id is None:
+            return "default"
+
+        if user_id is not None:
+            cache_key = (guild_id, user_id)
+            if cache_key in self._user_cache:
+                return "user"
+            load_sync = getattr(self._storage, "load_sync", None)
+            if callable(load_sync) and load_sync(guild_id, user_id=user_id):
+                return "user"
+
+        if guild_id in self._cache:
+            return "guild"
+
+        load_sync = getattr(self._storage, "load_sync", None)
+        if callable(load_sync) and load_sync(guild_id):
+            return "guild"
+
+        return "default"
 
     def _get_default_config(self) -> TTSConfig:
         """Get default configuration (defensive copy).

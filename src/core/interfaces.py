@@ -116,6 +116,16 @@ class IConfigRepository(ABC):
         """Persist TTS configuration asynchronously for a specific guild or guild/user scope."""
         pass
 
+    @abstractmethod
+    async def delete_config_async(self, guild_id: int, user_id: Optional[int] = None) -> bool:
+        """Delete TTS configuration for a specific guild or guild/user scope."""
+        pass
+
+    @abstractmethod
+    def get_effective_scope(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> str:
+        """Return whether the resolved config comes from user, guild, or default scope."""
+        pass
+
 
 class IInputListener(ABC):
     """Interface for input listening (keyboard, etc)."""

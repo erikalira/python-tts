@@ -46,6 +46,7 @@ def test_update_config_async_preserves_persisted_fields_after_cache_miss(tmp_pat
             voice_id="custom-voice",
             rate=240,
         ),
+        scope="guild",
     )
     assert result.config is not None
     assert result.config.engine == "pyttsx3"

@@ -143,10 +143,20 @@ class MockConfigRepository(IConfigRepository):
         self.set_config(guild_id, config, user_id=user_id)
         return True
     
-    async def delete_config_async(self, guild_id: int) -> bool:
+    async def delete_config_async(self, guild_id: int, user_id: int | None = None) -> bool:
         """Delete config async mock."""
+        if user_id is not None:
+            self.user_configs.pop((guild_id, user_id), None)
+            return True
         self.configs.pop(guild_id, None)
         return True
+
+    def get_effective_scope(self, guild_id: int = None, user_id: int | None = None) -> str:
+        if guild_id and user_id and (guild_id, user_id) in self.user_configs:
+            return "user"
+        if guild_id and guild_id in self.configs:
+            return "guild"
+        return "default"
 
 
 class MockAudioCleanup(IAudioFileCleanup):

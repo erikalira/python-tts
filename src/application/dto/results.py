@@ -91,3 +91,4 @@ class ConfigureTTSResult(ResultBase):
     guild_id: Optional[int] = None
     config: Optional[TTSConfigurationData] = None
     message: Optional[str] = None
+    scope: Optional[str] = None

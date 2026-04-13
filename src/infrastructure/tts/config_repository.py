@@ -70,3 +70,17 @@ class InMemoryConfigRepository(IConfigRepository):
         """Persist configuration asynchronously using the in-memory state."""
         self.set_config(guild_id, config, user_id=user_id)
         return True
+
+    async def delete_config_async(self, guild_id: int, user_id: Optional[int] = None) -> bool:
+        if user_id is not None:
+            self._user_configs.pop((guild_id, user_id), None)
+            return True
+        self._guild_configs.pop(guild_id, None)
+        return True
+
+    def get_effective_scope(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> str:
+        if guild_id and user_id and (guild_id, user_id) in self._user_configs:
+            return "user"
+        if guild_id and guild_id in self._guild_configs:
+            return "guild"
+        return "default"

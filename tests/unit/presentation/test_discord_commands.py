@@ -248,6 +248,91 @@ class TestDiscordCommands:
         
         interaction.response.defer.assert_called_once()
         interaction.edit_original_response.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_server_config_requires_manage_guild(self, commands_instance):
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.user.guild_permissions = Mock(manage_guild=False)
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
+        interaction.response = AsyncMock()
+
+        await commands_instance._handle_server_config(interaction, None)
+
+        interaction.response.send_message.assert_called_once()
+        assert "permiss" in interaction.response.send_message.call_args.args[0].lower()
+
+    @pytest.mark.asyncio
+    async def test_handle_server_config_update_engine(
+        self,
+        commands_instance,
+        mock_config_repository
+    ):
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.user.guild_permissions = Mock(manage_guild=True)
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
+        interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_server_config(interaction, "pyttsx3:david")
+
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
+
+        config = mock_config_repository.get_config(67890)
+        assert config.engine == "pyttsx3"
+        assert config.voice_id == "David"
+
+    @pytest.mark.asyncio
+    async def test_handle_config_reset(self, commands_instance, mock_config_repository):
+        await commands_instance._config_use_case.update_config_async(
+            guild_id=67890,
+            user_id=67890,
+            voice_id="Maria",
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
+        interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_config_reset(interaction)
+
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_server_config_reset(self, commands_instance):
+        await commands_instance._config_use_case.update_config_async(
+            guild_id=67890,
+            voice_id="David",
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.user.guild_permissions = Mock(manage_guild=True)
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
+        interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_server_config_reset(interaction)
+
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_handle_join_no_voice_channel(self, commands_instance):
