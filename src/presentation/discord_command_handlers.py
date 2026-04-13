@@ -126,6 +126,26 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
             logger.error("[CONFIG] Error updating config for guild %s: %s", guild_id, exc, exc_info=True)
             await interaction.edit_original_response(content="❌ Erro ao atualizar sua configuração")
 
+    async def handle_reset(self, interaction: discord.Interaction) -> None:
+        if not interaction.guild or not interaction.guild.id:
+            await interaction.response.send_message("❌ Este comando só pode ser usado em um servidor.", ephemeral=True)
+            return
+
+        guild_id = interaction.guild.id
+        user_id = interaction.user.id if interaction.user else None
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        try:
+            result = await self._config_use_case.reset_config_async(guild_id, user_id=user_id)
+            if not result.success:
+                await interaction.edit_original_response(content=f"❌ {result.message}")
+                return
+            await interaction.edit_original_response(
+                embed=self._build_reset_config_embed(interaction.guild.name, guild_id, result)
+            )
+        except Exception as exc:
+            logger.error("[CONFIG] Error resetting personal config for guild %s: %s", guild_id, exc, exc_info=True)
+            await interaction.edit_original_response(content="❌ Erro ao resetar sua configuração")
+
     def _build_current_config_embed(
         self,
         guild_name: str,
@@ -167,26 +187,6 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
         embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
         return embed
 
-    async def handle_reset(self, interaction: discord.Interaction) -> None:
-        if not interaction.guild or not interaction.guild.id:
-            await interaction.response.send_message("❌ Este comando só pode ser usado em um servidor.", ephemeral=True)
-            return
-
-        guild_id = interaction.guild.id
-        user_id = interaction.user.id if interaction.user else None
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        try:
-            result = await self._config_use_case.reset_config_async(guild_id, user_id=user_id)
-            if not result.success:
-                await interaction.edit_original_response(content=f"❌ {result.message}")
-                return
-            await interaction.edit_original_response(
-                embed=self._build_reset_config_embed(interaction.guild.name, guild_id, result)
-            )
-        except Exception as exc:
-            logger.error("[CONFIG] Error resetting personal config for guild %s: %s", guild_id, exc, exc_info=True)
-            await interaction.edit_original_response(content="❌ Erro ao resetar sua configuração")
-
     def _build_reset_config_embed(
         self,
         guild_name: str,
@@ -196,7 +196,7 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
         config = result.config
         voz_nome = self._resolve_voice_name(config)
         embed = discord.Embed(
-            title="↩️ Configuração Pessoal Resetada",
+            title="Configuração Pessoal Resetada",
             description=f"Seu override pessoal foi removido em {guild_name}",
             color=discord.Color.orange(),
         )
@@ -268,6 +268,32 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
             logger.error("[SERVER_CONFIG] Error updating config for guild %s: %s", guild_id, exc, exc_info=True)
             await interaction.edit_original_response(content="❌ Erro ao atualizar a configuração padrão do servidor")
 
+    async def handle_reset(self, interaction: discord.Interaction) -> None:
+        if not interaction.guild or not interaction.guild.id:
+            await interaction.response.send_message("❌ Este comando só pode ser usado em um servidor.", ephemeral=True)
+            return
+
+        if not self._can_manage_guild(interaction):
+            await interaction.response.send_message(
+                "❌ Você precisa da permissão de gerenciar o servidor para resetar a voz padrão.",
+                ephemeral=True,
+            )
+            return
+
+        guild_id = interaction.guild.id
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        try:
+            result = await self._config_use_case.reset_config_async(guild_id)
+            if not result.success:
+                await interaction.edit_original_response(content=f"❌ {result.message}")
+                return
+            await interaction.edit_original_response(
+                embed=self._build_server_reset_embed(interaction.guild.name, guild_id, result)
+            )
+        except Exception as exc:
+            logger.error("[SERVER_CONFIG] Error resetting config for guild %s: %s", guild_id, exc, exc_info=True)
+            await interaction.edit_original_response(content="❌ Erro ao resetar a configuração padrão do servidor")
+
     def _can_manage_guild(self, interaction: discord.Interaction) -> bool:
         permissions = getattr(getattr(interaction, "user", None), "guild_permissions", None)
         return bool(getattr(permissions, "manage_guild", False))
@@ -313,32 +339,6 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
         embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
         return embed
 
-    async def handle_reset(self, interaction: discord.Interaction) -> None:
-        if not interaction.guild or not interaction.guild.id:
-            await interaction.response.send_message("❌ Este comando só pode ser usado em um servidor.", ephemeral=True)
-            return
-
-        if not self._can_manage_guild(interaction):
-            await interaction.response.send_message(
-                "❌ Você precisa da permissão de gerenciar o servidor para resetar a voz padrão.",
-                ephemeral=True,
-            )
-            return
-
-        guild_id = interaction.guild.id
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        try:
-            result = await self._config_use_case.reset_config_async(guild_id)
-            if not result.success:
-                await interaction.edit_original_response(content=f"❌ {result.message}")
-                return
-            await interaction.edit_original_response(
-                embed=self._build_server_reset_embed(interaction.guild.name, guild_id, result)
-            )
-        except Exception as exc:
-            logger.error("[SERVER_CONFIG] Error resetting config for guild %s: %s", guild_id, exc, exc_info=True)
-            await interaction.edit_original_response(content="❌ Erro ao resetar a configuração padrão do servidor")
-
     def _build_server_reset_embed(
         self,
         guild_name: str,
@@ -348,7 +348,7 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
         config = result.config
         voz_nome = self._resolve_voice_name(config)
         embed = discord.Embed(
-            title="↩️ Padrão do Servidor Resetado",
+            title="Padrão do Servidor Resetado",
             description=f"O padrão do servidor foi removido em {guild_name}",
             color=discord.Color.orange(),
         )
@@ -370,15 +370,15 @@ class DiscordAboutCommandHandler:
         from src.__version__ import __author__, __description__, __version__
 
         embed = discord.Embed(
-            title="🤖 TTS Bot Information",
+            title="TTS Bot Information",
             description=__description__,
             color=discord.Color.blue(),
         )
         embed.add_field(name="Version", value=f"`{__version__}`", inline=True)
         embed.add_field(name="Author", value=__author__, inline=True)
-        embed.add_field(name="FFmpeg", value="✅ Available" if runtime_status.ffmpeg_available else "❌ Not found", inline=True)
-        embed.add_field(name="PyNaCl", value="✅ Installed" if runtime_status.pynacl_installed else "❌ Not installed", inline=True)
-        embed.add_field(name="davey", value="✅ Installed" if runtime_status.davey_installed else "❌ Not installed", inline=True)
+        embed.add_field(name="FFmpeg", value="Available" if runtime_status.ffmpeg_available else "Not found", inline=True)
+        embed.add_field(name="PyNaCl", value="Installed" if runtime_status.pynacl_installed else "Not installed", inline=True)
+        embed.add_field(name="davey", value="Installed" if runtime_status.davey_installed else "Not installed", inline=True)
         embed.add_field(
             name="Commands",
             value="• `/join` - Join your voice channel\n"

@@ -10,6 +10,8 @@ This directory contains the repository's supporting documentation. The root
 - [ENVIRONMENTS.md](ENVIRONMENTS.md): local and production environment variables for bot and Desktop App
 - [WINDOWS_BOT_SERVICE.md](WINDOWS_BOT_SERVICE.md): WinSW deployment guide for keeping the Discord bot running as a Windows service
 - [BOT_PRODUCTION_PERSISTENCE.md](BOT_PRODUCTION_PERSISTENCE.md): recommended persistence architecture for production bot deploys
+- [DOCKER_POSTGRES_DEPLOY.md](DOCKER_POSTGRES_DEPLOY.md): run the Discord bot with Docker and Postgres
+- [BACKUP_AND_RESTORE_DATABASE.md](BACKUP_AND_RESTORE_DATABASE.md): backup and restore flow for the Dockerized Postgres database
 - [DEPENDENCY_MAINTENANCE.md](DEPENDENCY_MAINTENANCE.md): dependency upgrade workflow, tooling, and validation checklist
 - [BUILD_GUIDE.md](BUILD_GUIDE.md): Windows executable build flow
 - [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview and layer map
