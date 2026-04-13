@@ -25,6 +25,7 @@ O executÃ¡vel serÃ¡ criado em `dist/HotkeyTTS.exe`
 
 - **create_icon.py**: Gera Ã­cones para os executÃ¡veis
 - **dependency_maintenance.py**: inspeciona versoes, reescreve constraints de `requirements*.txt` e executa validacao pos-migracao
+- **migrate_json_config_to_postgres.py**: migra configs `guild_*.json` do bot para o backend Postgres
 
 ### ðŸ§ª Testes manuais
 

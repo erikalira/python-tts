@@ -11,3 +11,4 @@ gtts>=2.3.0
 edge-tts>=7.2.8
 pystray>=0.19.0
 Pillow>=12.2.0
+psycopg[binary]>=3.2.0

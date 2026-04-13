@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -63,6 +64,9 @@ class Config:
             voice_id=os.getenv("TTS_VOICE_ID", "roa/pt-br"),
             rate=int(os.getenv("TTS_RATE", "180")),
         )
+        self.config_storage_backend = os.getenv("CONFIG_STORAGE_BACKEND", "json").strip().lower() or "json"
+        self.config_storage_dir = os.getenv("CONFIG_STORAGE_DIR", "configs")
+        self.database_url: Optional[str] = os.getenv("DATABASE_URL")
 
     def validate(self) -> tuple[bool, str]:
         """Validate required configuration.
@@ -75,5 +79,11 @@ class Config:
 
         if self.tts_config.engine not in ["gtts", "pyttsx3", "edge-tts"]:
             return False, f"Invalid TTS_ENGINE: {self.tts_config.engine}"
+
+        if self.config_storage_backend not in ["json", "postgres"]:
+            return False, f"Invalid CONFIG_STORAGE_BACKEND: {self.config_storage_backend}"
+
+        if self.config_storage_backend == "postgres" and not self.database_url:
+            return False, "DATABASE_URL not set for CONFIG_STORAGE_BACKEND=postgres"
 
         return True, ""

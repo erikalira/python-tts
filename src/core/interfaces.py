@@ -97,23 +97,23 @@ class IConfigRepository(ABC):
     """Interface for guild-scoped TTS configuration management."""
     
     @abstractmethod
-    def get_config(self, guild_id: Optional[int] = None) -> TTSConfig:
-        """Get TTS configuration for a guild or the global default."""
+    def get_config(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
+        """Get resolved TTS configuration for a guild/user scope or the global default."""
         pass
 
     @abstractmethod
-    async def load_config_async(self, guild_id: Optional[int] = None) -> TTSConfig:
-        """Load TTS configuration asynchronously for a guild or the global default."""
+    async def load_config_async(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
+        """Load resolved TTS configuration asynchronously for a guild/user scope or the global default."""
         pass
     
     @abstractmethod
-    def set_config(self, guild_id: int, config: TTSConfig) -> None:
-        """Set TTS configuration for a specific guild."""
+    def set_config(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> None:
+        """Set TTS configuration for a specific guild or guild/user scope."""
         pass
 
     @abstractmethod
-    async def save_config_async(self, guild_id: int, config: TTSConfig) -> bool:
-        """Persist TTS configuration asynchronously for a specific guild."""
+    async def save_config_async(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> bool:
+        """Persist TTS configuration asynchronously for a specific guild or guild/user scope."""
         pass
 
 

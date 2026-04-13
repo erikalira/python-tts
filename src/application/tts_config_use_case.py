@@ -17,11 +17,11 @@ class ConfigureTTSUseCase:
     def __init__(self, config_repository: IConfigRepository):
         self._config_repository = config_repository
 
-    def get_config(self, guild_id: int) -> ConfigureTTSResult:
+    def get_config(self, guild_id: int, user_id: Optional[int] = None) -> ConfigureTTSResult:
         if guild_id is None:
             return ConfigureTTSResult(success=False, message="Guild ID is required")
 
-        config = self._config_repository.get_config(guild_id)
+        config = self._config_repository.get_config(guild_id, user_id=user_id)
         return ConfigureTTSResult(
             success=True,
             guild_id=guild_id,
@@ -36,6 +36,7 @@ class ConfigureTTSUseCase:
     async def update_config_async(
         self,
         guild_id: int,
+        user_id: Optional[int] = None,
         engine: Optional[str] = None,
         language: Optional[str] = None,
         voice_id: Optional[str] = None,
@@ -45,7 +46,7 @@ class ConfigureTTSUseCase:
             return ConfigureTTSResult(success=False, message="Guild ID is required")
 
         logger.info("[CONFIG_USE_CASE] Updating config for guild %s", guild_id)
-        current_config = self._config_repository.get_config(guild_id)
+        current_config = self._config_repository.get_config(guild_id, user_id=user_id)
 
         if engine is not None:
             if engine.lower() not in ["gtts", "pyttsx3", "edge-tts"]:
@@ -66,7 +67,7 @@ class ConfigureTTSUseCase:
                 )
             current_config.rate = rate
 
-        saved = await self._config_repository.save_config_async(guild_id, current_config)
+        saved = await self._config_repository.save_config_async(guild_id, current_config, user_id=user_id)
         if not saved:
             logger.error("[CONFIG_USE_CASE] Failed to persist config for guild %s", guild_id)
             return ConfigureTTSResult(success=False, message="Failed to save configuration")

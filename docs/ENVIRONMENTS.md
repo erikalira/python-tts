@@ -26,6 +26,9 @@ Use the examples in the repository root as the starting point:
 | `TTS_RATE` | Optional | Optional | No | Defaults to `180`. |
 | `TTS_OUTPUT_DEVICE` | Optional | No | No | Desktop-only local audio output setting. |
 | `MAX_TEXT_LENGTH` | Optional | Optional | No | Bot runtime limit for incoming text. |
+| `CONFIG_STORAGE_BACKEND` | Optional | Yes | Yes in practice for production | `json` for local dev, `postgres` for production-grade bot persistence. |
+| `CONFIG_STORAGE_DIR` | Optional | No | No | Directory used only by the JSON config backend. |
+| `DATABASE_URL` | No | Yes | Required with `CONFIG_STORAGE_BACKEND=postgres` | Postgres connection string for durable bot configuration. |
 
 ## Local Development
 
@@ -44,6 +47,7 @@ Notes:
 - `DISCORD_BOT_URL` is primarily for the Desktop App.
 - `DISCORD_BOT_PORT` is used as the bot HTTP port when `PORT` is not set.
 - `DISCORD_MEMBER_ID` is the only Desktop App identifier still needed for Discord voice-context detection.
+- `CONFIG_STORAGE_BACKEND=json` remains the simplest local default.
 
 ## Cloud Production
 
@@ -54,6 +58,8 @@ Recommended minimum values:
 ```env
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
 DISCORD_BOT_HOST=0.0.0.0
+CONFIG_STORAGE_BACKEND=postgres
+DATABASE_URL=postgresql://user:password@host:5432/tts_hotkey_windows
 ```
 
 Notes:
@@ -62,6 +68,7 @@ Notes:
 - Many cloud platforms expose the listening port through `PORT`. In this repository, `render.yaml` sets it to `10000` for that specific platform.
 - `DISCORD_BOT_PORT` is not usually needed in cloud deploys when `PORT` is already provided.
 - `DISCORD_BOT_URL` is not needed in cloud deploys for the bot service itself.
+- `DATABASE_URL` becomes mandatory when the bot uses `CONFIG_STORAGE_BACKEND=postgres`.
 
 ## Runtime Sources
 

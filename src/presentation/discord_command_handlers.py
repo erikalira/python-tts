@@ -31,6 +31,7 @@ class DiscordConfigCommandHandler:
             return
 
         guild_id = interaction.guild.id
+        user_id = interaction.user.id if interaction.user else None
         logger.info(
             "[CONFIG] User %s in guild %s updating config: voz=%s",
             interaction.user.id,
@@ -39,7 +40,7 @@ class DiscordConfigCommandHandler:
         )
 
         if voz is None:
-            result = self._config_use_case.get_config(guild_id)
+            result = self._config_use_case.get_config(guild_id, user_id=user_id)
             if not result.success:
                 await interaction.response.send_message(f"❌ {result.message}", ephemeral=True)
                 return
@@ -59,6 +60,7 @@ class DiscordConfigCommandHandler:
 
             result = await self._config_use_case.update_config_async(
                 guild_id=guild_id,
+                user_id=user_id,
                 engine=selected_voice.engine,
                 language=selected_voice.language,
                 voice_id=selected_voice.voice_id,
@@ -88,8 +90,8 @@ class DiscordConfigCommandHandler:
         )
         voz_nome = resolved_voice.label if resolved_voice else self._build_fallback_voice_label(config.engine, config.voice_id)
         embed = discord.Embed(
-            title="🎤 Configuração de Voz do Servidor",
-            description=f"Configurações de {guild_name}",
+            title="Sua Configuração de Voz",
+            description=f"Configurações pessoais em {guild_name}",
             color=discord.Color.blue(),
         )
         embed.add_field(name="Voz", value=voz_nome, inline=True)
@@ -113,7 +115,7 @@ class DiscordConfigCommandHandler:
         voz_nome = resolved_voice.label if resolved_voice else self._build_fallback_voice_label(config.engine, config.voice_id)
         embed = discord.Embed(
             title="✅ Configuração Atualizada",
-            description=f"Configurações do servidor {guild_name} atualizadas",
+            description=f"Sua configuração de voz em {guild_name} foi atualizada",
             color=discord.Color.green(),
         )
         embed.add_field(name="Voz", value=voz_nome, inline=True)

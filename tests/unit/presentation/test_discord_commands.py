@@ -223,7 +223,7 @@ class TestDiscordCommands:
         interaction.response.defer.assert_called_once()
         interaction.edit_original_response.assert_called_once()
         
-        config = mock_config_repository.get_config(67890)
+        config = mock_config_repository.get_config(67890, user_id=67890)
         assert config.engine == "pyttsx3"
         assert config.voice_id == "David"
     

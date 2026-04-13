@@ -7,7 +7,7 @@ def test_builder_creates_request_with_voice_override(mock_tts_catalog):
         "ConfigUseCaseStub",
         (),
         {
-            "get_config": lambda self, guild_id: ConfigureTTSResult(
+            "get_config": lambda self, guild_id, user_id=None: ConfigureTTSResult(
                 success=True,
                 guild_id=guild_id,
                 config=TTSConfigurationData(
@@ -37,7 +37,7 @@ def test_builder_creates_request_with_voice_override(mock_tts_catalog):
 
 
 def test_builder_requires_guild_id(mock_tts_catalog):
-    config_use_case = type("ConfigUseCaseStub", (), {"get_config": lambda self, guild_id: None})()
+    config_use_case = type("ConfigUseCaseStub", (), {"get_config": lambda self, guild_id, user_id=None: None})()
     builder = DiscordSpeakRequestBuilder(config_use_case, mock_tts_catalog)
 
     result = builder.build(text="Teste", guild_id=None, member_id=11111)

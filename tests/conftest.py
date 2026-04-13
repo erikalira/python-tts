@@ -96,6 +96,7 @@ class MockConfigRepository(IConfigRepository):
     
     def __init__(self):
         self.configs = {}
+        self.user_configs = {}
         self.default_config = TTSConfig(
             engine='gtts',
             language='pt',
@@ -103,8 +104,10 @@ class MockConfigRepository(IConfigRepository):
             rate=180
         )
     
-    def get_config(self, guild_id: int = None) -> TTSConfig:
+    def get_config(self, guild_id: int = None, user_id: int | None = None) -> TTSConfig:
         """Get config by guild ID."""
+        if guild_id and user_id and (guild_id, user_id) in self.user_configs:
+            return self.user_configs[(guild_id, user_id)]
         if guild_id and guild_id in self.configs:
             return self.configs[guild_id]
         return TTSConfig(
@@ -114,26 +117,30 @@ class MockConfigRepository(IConfigRepository):
             rate=self.default_config.rate
         )
 
-    async def load_config_async(self, guild_id: int = None) -> TTSConfig:
+    async def load_config_async(self, guild_id: int = None, user_id: int | None = None) -> TTSConfig:
         """Load config through the async repository contract."""
-        return self.get_config(guild_id)
+        return self.get_config(guild_id, user_id=user_id)
     
-    def set_config(self, guild_id: int, config: TTSConfig) -> None:
+    def set_config(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> None:
         """Set config by guild ID."""
-        self.configs[guild_id] = TTSConfig(
+        target = TTSConfig(
             engine=config.engine,
             language=config.language,
             voice_id=config.voice_id,
             rate=config.rate
         )
+        if user_id is not None:
+            self.user_configs[(guild_id, user_id)] = target
+            return
+        self.configs[guild_id] = target
     
-    async def load_from_storage(self, guild_id: int) -> TTSConfig:
+    async def load_from_storage(self, guild_id: int, user_id: int | None = None) -> TTSConfig:
         """Load config from storage mock."""
-        return self.get_config(guild_id)
+        return self.get_config(guild_id, user_id=user_id)
     
-    async def save_config_async(self, guild_id: int, config: TTSConfig) -> bool:
+    async def save_config_async(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> bool:
         """Save config async mock."""
-        self.set_config(guild_id, config)
+        self.set_config(guild_id, config, user_id=user_id)
         return True
     
     async def delete_config_async(self, guild_id: int) -> bool:

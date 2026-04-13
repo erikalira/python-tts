@@ -46,7 +46,7 @@ class DiscordSpeakRequestBuilder:
                     error_message="❌ Voz inválida ou indisponível."
                 )
 
-            current_config = self._config_use_case.get_config(guild_id)
+            current_config = self._config_use_case.get_config(guild_id, user_id=member_id)
             if not current_config.success or current_config.config is None:
                 return DiscordSpeakPreparationResult(
                     error_message="❌ Não foi possível carregar a configuração atual da voz."
