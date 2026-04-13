@@ -43,7 +43,12 @@ class Container:
 
         json_storage = JSONConfigStorage(storage_dir="configs")
         self.config_repository = GuildConfigRepository(default_config=config.tts_config, storage=json_storage)
-        self.voice_channel_repository = DiscordVoiceChannelRepository(self.discord_client)
+        self.voice_channel_repository = DiscordVoiceChannelRepository(
+            self.discord_client,
+            connection_timeout_seconds=config.voice_connection_timeout_seconds,
+            playback_timeout_seconds=config.tts_playback_timeout_seconds,
+            idle_disconnect_timeout_seconds=config.voice_idle_disconnect_timeout_seconds,
+        )
         self.audio_queue = InMemoryAudioQueue()
         self.audio_cleanup = FileAudioCleanup()
         self.tts_engine = RoutedTTSEngine()
@@ -55,6 +60,8 @@ class Container:
             audio_queue=self.audio_queue,
             voice_channel_resolution=self.voice_channel_resolution,
             audio_cleanup=self.audio_cleanup,
+            generation_timeout_seconds=config.tts_generation_timeout_seconds,
+            playback_timeout_seconds=config.tts_playback_timeout_seconds,
         )
 
         self.speak_use_case = SpeakTextUseCase(

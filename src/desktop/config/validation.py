@@ -2,6 +2,10 @@
 """Validation for Desktop App configuration."""
 
 from .models import DesktopAppConfig
+from src.core.timeouts import (
+    MAX_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS,
+    MIN_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS,
+)
 
 
 class ConfigurationValidator:
@@ -18,7 +22,10 @@ class ConfigurationValidator:
         if config.tts.rate < 50 or config.tts.rate > 500:
             errors.append("TTS Rate deve estar entre 50 e 500 WPM")
 
-        if config.network.request_timeout < 1 or config.network.request_timeout > 60:
+        if (
+            config.network.request_timeout < MIN_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
+            or config.network.request_timeout > MAX_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
+        ):
             errors.append("Request timeout deve estar entre 1 e 60 segundos")
 
         if config.network.max_text_length < 1 or config.network.max_text_length > 2000:

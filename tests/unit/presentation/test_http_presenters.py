@@ -1,6 +1,7 @@
 """Unit tests for HTTP presenters."""
 
 from src.application.dto import (
+    SPEAK_RESULT_GENERATION_TIMEOUT,
     SPEAK_RESULT_OK,
     SPEAK_RESULT_QUEUE_FULL,
     SPEAK_RESULT_QUEUED,
@@ -31,6 +32,12 @@ class TestHTTPSpeakPresenter:
         result = SpeakTextResult(success=False, code=SPEAK_RESULT_QUEUE_FULL, queued=False)
 
         assert presenter.get_status_code(result) == 400
+
+    def test_builds_generation_timeout_message(self):
+        presenter = HTTPSpeakPresenter()
+        result = SpeakTextResult(success=False, code=SPEAK_RESULT_GENERATION_TIMEOUT, queued=False)
+
+        assert presenter.build_message(result) == "audio generation timeout"
 
 
 class TestHTTPVoiceContextPresenter:

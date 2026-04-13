@@ -5,14 +5,14 @@ from typing import Optional, Dict
 import discord
 from src.core.interfaces import IVoiceChannel, IVoiceChannelRepository
 from src.core.entities import AudioFile
+from src.core.timeouts import (
+    DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
+    DEFAULT_DISCORD_IDLE_DISCONNECT_TIMEOUT_SECONDS,
+    DEFAULT_DISCORD_VOICE_CONNECTION_TIMEOUT_SECONDS,
+)
 from src.infrastructure.discord.ffmpeg_runtime import resolve_ffmpeg_executable
 
 logger = logging.getLogger(__name__)
-
-# Timeout configuration
-# Auto-disconnect after 30 minutes of inactivity
-IDLE_DISCONNECT_TIMEOUT = 30 * 60  # 30 minutes in seconds
-
 
 class DiscordVoiceChannel(IVoiceChannel):
     """Discord voice channel wrapper.
@@ -21,7 +21,14 @@ class DiscordVoiceChannel(IVoiceChannel):
     Follows Adapter pattern to adapt discord.py to our interface.
     """
     
-    def __init__(self, channel: discord.VoiceChannel):
+    def __init__(
+        self,
+        channel: discord.VoiceChannel,
+        *,
+        connection_timeout_seconds: float = DEFAULT_DISCORD_VOICE_CONNECTION_TIMEOUT_SECONDS,
+        playback_timeout_seconds: float = DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
+        idle_disconnect_timeout_seconds: float = DEFAULT_DISCORD_IDLE_DISCONNECT_TIMEOUT_SECONDS,
+    ):
         """Initialize with discord.VoiceChannel.
         
         Args:
@@ -32,6 +39,9 @@ class DiscordVoiceChannel(IVoiceChannel):
         self._disconnect_task: Optional[asyncio.Task] = None
         self._last_activity: float = 0
         self._connection_lock = asyncio.Lock()
+        self._connection_timeout_seconds = connection_timeout_seconds
+        self._playback_timeout_seconds = playback_timeout_seconds
+        self._idle_disconnect_timeout_seconds = idle_disconnect_timeout_seconds
 
     def _sync_voice_client(self) -> Optional[discord.VoiceClient]:
         """Synchronize cached voice client with Discord's guild state."""
@@ -65,13 +75,17 @@ class DiscordVoiceChannel(IVoiceChannel):
             try:
                 if existing_client and existing_client.channel:
                     logger.info(f"[VOICE_CHANNEL] Moving existing voice connection to channel: {self._channel.name}")
-                    await existing_client.move_to(self._channel, timeout=30.0)
+                    await existing_client.move_to(self._channel, timeout=self._connection_timeout_seconds)
                     self._voice_client = existing_client
                 else:
                     logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name}")
                     # Avoid discord.py's internal reconnect loop when the voice gateway
                     # rejects the session with a fatal close code (e.g. 4017).
-                    self._voice_client = await self._channel.connect(timeout=30.0, reconnect=False, self_deaf=True)
+                    self._voice_client = await self._channel.connect(
+                        timeout=self._connection_timeout_seconds,
+                        reconnect=False,
+                        self_deaf=True,
+                    )
 
                 await asyncio.sleep(0.5)
                 active_client = self._sync_voice_client()
@@ -176,7 +190,7 @@ class DiscordVoiceChannel(IVoiceChannel):
             # WAIT FOR PLAYBACK TO COMPLETE (event-driven, not polling)
             # This is much more reliable than checking is_playing() repeatedly
             try:
-                await asyncio.wait_for(playback_done.wait(), timeout=60)
+                await asyncio.wait_for(playback_done.wait(), timeout=self._playback_timeout_seconds)
                 logger.info("[VOICE_CHANNEL] Playback completed successfully")
                 
                 # If there was an error in the callback, raise it
@@ -184,10 +198,13 @@ class DiscordVoiceChannel(IVoiceChannel):
                     raise RuntimeError(f"Audio playback error: {playback_error}")
                     
             except asyncio.TimeoutError:
-                logger.warning("[VOICE_CHANNEL] Playback timeout (60s), stopping player...")
+                logger.warning(
+                    "[VOICE_CHANNEL] Playback timeout (%ss), stopping player...",
+                    self._playback_timeout_seconds,
+                )
                 if voice_client:
                     voice_client.stop()
-                raise TimeoutError("Audio playback exceeded 60 second timeout")
+                raise TimeoutError(f"Audio playback exceeded {self._playback_timeout_seconds} second timeout")
             
         except Exception as e:
             logger.error(f"[VOICE_CHANNEL] Error during playback: {e}")
@@ -238,8 +255,11 @@ class DiscordVoiceChannel(IVoiceChannel):
         self._cancel_disconnect_timer()
         
         # Schedule new disconnect
-        if IDLE_DISCONNECT_TIMEOUT:
-            logger.info(f"[VOICE_CHANNEL] Scheduling auto-disconnect in {IDLE_DISCONNECT_TIMEOUT}s (30 minutes)")
+        if self._idle_disconnect_timeout_seconds:
+            logger.info(
+                "[VOICE_CHANNEL] Scheduling auto-disconnect in %ss",
+                self._idle_disconnect_timeout_seconds,
+            )
             self._disconnect_task = asyncio.create_task(self._auto_disconnect())
     
     def _cancel_disconnect_timer(self) -> None:
@@ -252,11 +272,14 @@ class DiscordVoiceChannel(IVoiceChannel):
     async def _auto_disconnect(self) -> None:
         """Auto-disconnect after timeout."""
         try:
-            await asyncio.sleep(IDLE_DISCONNECT_TIMEOUT)
+            await asyncio.sleep(self._idle_disconnect_timeout_seconds)
             
             # Double-check we're still connected and idle
             if self.is_connected():
-                logger.info(f"[VOICE_CHANNEL] Auto-disconnecting after {IDLE_DISCONNECT_TIMEOUT}s of inactivity")
+                logger.info(
+                    "[VOICE_CHANNEL] Auto-disconnecting after %ss of inactivity",
+                    self._idle_disconnect_timeout_seconds,
+                )
                 await self.disconnect()
                 logger.info("[VOICE_CHANNEL] Auto-disconnect completed")
         except asyncio.CancelledError:
@@ -277,19 +300,37 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
     - Prevents memory leaks from long-lived connections
     """
     
-    def __init__(self, client: discord.Client):
+    def __init__(
+        self,
+        client: discord.Client,
+        *,
+        connection_timeout_seconds: float = DEFAULT_DISCORD_VOICE_CONNECTION_TIMEOUT_SECONDS,
+        playback_timeout_seconds: float = DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
+        idle_disconnect_timeout_seconds: float = DEFAULT_DISCORD_IDLE_DISCONNECT_TIMEOUT_SECONDS,
+    ):
         """Initialize repository with Discord client.
         
         Args:
             client: Discord client instance
         """
         self._client = client
+        self._connection_timeout_seconds = connection_timeout_seconds
+        self._playback_timeout_seconds = playback_timeout_seconds
+        self._idle_disconnect_timeout_seconds = idle_disconnect_timeout_seconds
         self._member_cache: Dict[int, DiscordVoiceChannel] = {}
         # Cache to reuse same instance per channel (critical for timer management)
         self._channel_instances: Dict[int, DiscordVoiceChannel] = {}
         # Track when instances were last used for cleanup
         self._instance_last_used: Dict[int, float] = {}
         logger.info("[VOICE_REPO] Initialized DiscordVoiceChannelRepository")
+
+    def _create_channel_instance(self, channel: discord.VoiceChannel) -> DiscordVoiceChannel:
+        return DiscordVoiceChannel(
+            channel,
+            connection_timeout_seconds=self._connection_timeout_seconds,
+            playback_timeout_seconds=self._playback_timeout_seconds,
+            idle_disconnect_timeout_seconds=self._idle_disconnect_timeout_seconds,
+        )
     
     async def find_connected_channel(self) -> Optional[IVoiceChannel]:
         """Find any voice channel where bot is already connected.
@@ -310,7 +351,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
                         logger.info(f"[VOICE_REPO] Found connected channel: {channel.name} in guild {guild.name} (id={guild.id})")
                         # Reuse existing instance if available
                         if channel.id not in self._channel_instances:
-                            self._channel_instances[channel.id] = DiscordVoiceChannel(channel)
+                            self._channel_instances[channel.id] = self._create_channel_instance(channel)
                         # Update last used timestamp
                         self._instance_last_used[channel.id] = now
                         # Clean up stale instances periodically
@@ -344,7 +385,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
                             logger.debug(f"[VOICE_REPO] Found member {member_id} in channel {vc.name} (guild={guild.id})")
                             # Reuse existing instance if available to preserve timer state
                             if vc.id not in self._channel_instances:
-                                self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
+                                self._channel_instances[vc.id] = self._create_channel_instance(vc)
                             # Update last used timestamp
                             self._instance_last_used[vc.id] = now
                             # Clean up stale instances
@@ -369,7 +410,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
             if isinstance(channel, discord.VoiceChannel):
                 # Reuse existing instance if available to preserve timer state
                 if channel.id not in self._channel_instances:
-                    self._channel_instances[channel.id] = DiscordVoiceChannel(channel)
+                    self._channel_instances[channel.id] = self._create_channel_instance(channel)
                 return self._channel_instances[channel.id]
         except Exception as e:
             logger.error(f"Error finding channel by ID {channel_id}: {e}")
@@ -395,7 +436,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
                             if vc.guild.voice_client == guild.voice_client:
                                 # Reuse existing instance if available
                                 if vc.id not in self._channel_instances:
-                                    self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
+                                    self._channel_instances[vc.id] = self._create_channel_instance(vc)
                                 return self._channel_instances[vc.id]
                     
                     # Return first available channel
@@ -403,7 +444,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
                         vc = guild.voice_channels[0]
                         # Reuse existing instance if available
                         if vc.id not in self._channel_instances:
-                            self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
+                            self._channel_instances[vc.id] = self._create_channel_instance(vc)
                         return self._channel_instances[vc.id]
             except Exception as e:
                 logger.error(f"Error finding channel by guild ID {guild_id}: {e}")
@@ -414,7 +455,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
                 vc = guild.voice_channels[0]
                 # Reuse existing instance if available
                 if vc.id not in self._channel_instances:
-                    self._channel_instances[vc.id] = DiscordVoiceChannel(vc)
+                    self._channel_instances[vc.id] = self._create_channel_instance(vc)
                 return self._channel_instances[vc.id]
         
         return None
@@ -427,7 +468,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
             channel: Voice channel or None if disconnected
         """
         if channel:
-            self._member_cache[member_id] = DiscordVoiceChannel(channel)
+            self._member_cache[member_id] = self._create_channel_instance(channel)
         else:
             self._member_cache.pop(member_id, None)
     

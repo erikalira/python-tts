@@ -1,5 +1,8 @@
 """Tests for TTS engines."""
+import asyncio
+from pathlib import Path
 import sys
+import threading
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -105,6 +108,34 @@ class TestGTTSEngine:
         # Cleanup
         await cleanup.cleanup(audio)
 
+    async def test_generate_audio_cleans_temp_file_after_cancellation(self):
+        from src.infrastructure.tts.engines import GTTSEngine
+
+        engine = GTTSEngine()
+        config = TTSConfig(engine="gtts", language="en")
+        release = threading.Event()
+        generated_paths = []
+
+        def fake_generate_sync(text: str, config: TTSConfig, output_path: str):
+            generated_paths.append(output_path)
+            release.wait(timeout=1)
+            Path(output_path).write_text("audio", encoding="utf-8")
+
+        engine._generate_sync = fake_generate_sync
+
+        task = asyncio.create_task(engine.generate_audio("Hello world", config))
+        await asyncio.sleep(0.05)
+        task.cancel()
+
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+        release.set()
+        await asyncio.sleep(0.1)
+
+        assert generated_paths
+        assert not Path(generated_paths[0]).exists()
+
 
 @pytest.mark.asyncio
 class TestEdgeTTSEngine:
@@ -130,3 +161,31 @@ class TestEdgeTTSEngine:
         assert audio.path.endswith(".mp3")
         assert saved_calls[0]["voice"] == "pt-BR-FranciscaNeural"
         assert saved_calls[0]["rate"] == "+0%"
+
+    async def test_generate_audio_cleans_temp_file_when_cancelled(self):
+        from src.infrastructure.tts.engines import EdgeTTSEngine
+
+        saved_calls = []
+
+        class FakeCommunicate:
+            def __init__(self, text: str, voice: str, rate: str):
+                saved_calls.append({"text": text, "voice": voice, "rate": rate})
+
+            async def save(self, path: str):
+                saved_calls[-1]["path"] = path
+                await asyncio.Future()
+
+        fake_module = SimpleNamespace(Communicate=FakeCommunicate)
+
+        with patch.dict(sys.modules, {"edge_tts": fake_module}):
+            engine = EdgeTTSEngine()
+            config = TTSConfig(engine="edge-tts", language="pt-BR", voice_id="pt-BR-FranciscaNeural", rate=180)
+            task = asyncio.create_task(engine.generate_audio("Oi", config))
+            await asyncio.sleep(0.05)
+            task.cancel()
+
+            with pytest.raises(asyncio.CancelledError):
+                await task
+
+        assert saved_calls
+        assert not Path(saved_calls[0]["path"]).exists()
