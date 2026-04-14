@@ -37,6 +37,15 @@ pip install -r requirements.txt
 winget install ffmpeg
 ```
 
+### Windows (CMD)
+
+```cmd
+python -m venv .venv
+.\.venv\Scripts\activate.bat
+pip install -r requirements.txt
+winget install ffmpeg
+```
+
 ### Linux/macOS
 
 ```bash
