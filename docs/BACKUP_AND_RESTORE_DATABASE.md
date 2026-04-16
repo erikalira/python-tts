@@ -57,7 +57,7 @@ Example:
 powershell -ExecutionPolicy Bypass -File scripts/utils/backup_postgres.ps1 `
   -ContainerName tts-bot-postgres `
   -DatabaseName tts_hotkey_windows `
-  -DatabaseUser tts_user `
+  -DatabaseUser your_postgres_user `
   -BackupDirectory "C:\Backups\tts-bot" `
   -RetentionDays 30
 ```
@@ -78,7 +78,7 @@ powershell -ExecutionPolicy Bypass -File scripts/utils/restore_postgres.ps1 `
   -BackupFile "C:\Backups\tts-bot\tts_backup_2026-04-13_03-00-00.dump" `
   -ContainerName tts-bot-postgres `
   -DatabaseName tts_hotkey_windows `
-  -DatabaseUser tts_user
+  -DatabaseUser your_postgres_user
 ```
 
 What it does:
