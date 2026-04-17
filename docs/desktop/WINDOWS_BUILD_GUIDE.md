@@ -1,4 +1,4 @@
-# Como Criar Executavel do Desktop App para Windows
+# Windows Build Guide
 
 Este guia explica como criar o executavel do Desktop App para Windows com Clean Architecture.
 

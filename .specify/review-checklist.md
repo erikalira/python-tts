@@ -9,8 +9,16 @@ Use this checklist during code review, self-review, or AI review guidance.
 3. Did the change reduce duplication or accidentally introduce more?
 4. Is responsibility clearer after the change?
 5. Is the changed flow easier for the next contributor to understand?
-6. Was a new abstraction introduced for a real repository need, or only because a pattern looked appealing?
-7. Does the change improve operability, diagnosability, or runtime resilience where relevant?
+6. Was a new abstraction introduced for a real repository need, or only because
+   a pattern looked appealing?
+7. Does the change improve operability, diagnosability, or runtime resilience
+   where relevant?
+8. Did the author optimize for repository-level maintainability instead of a
+   local shortcut?
+9. Is the intended steady state clear if compatibility code or a migration path
+   was introduced?
+10. Was any obsolete path, dead code, or transitional branch left behind
+    without a reason?
 
 ## Runtime safety
 
@@ -27,6 +35,8 @@ Prefer:
 - typed results
 - stable payload shapes
 - narrow and intentional adapters
+- protocol or interface boundaries that reflect real ownership
+- contract docs or naming that make the reusable boundary easy to discover
 
 Watch for:
 
@@ -35,6 +45,7 @@ Watch for:
 - hidden assumptions about keys, flags, or shape
 - DTOs introduced where no real reusable boundary exists
 - domain models carrying transport concerns or presentation-only fields
+- interfaces that exist only to satisfy a pattern rather than a repository need
 
 ## Service Layer And Ownership
 
@@ -49,6 +60,8 @@ Watch for:
 - presentation code loading config, picking defaults, or combining business rules
 - infrastructure adapters deciding product behavior
 - service objects that add indirection without owning meaningful workflow
+- large runtime files growing policy they should delegate to shared layers
+- ownership that is obvious only after reading multiple files in sequence
 
 ## Refactor discipline
 
@@ -58,8 +71,10 @@ Ask:
 - was the change kept incremental?
 - was any temporary facade or fallback introduced?
 - if so, is the intended steady state clear?
+- is there a named cleanup point or deletion condition for compatibility code?
 - did tests protect the behavior before structure changed?
 - did the refactor remove boundary leakage, duplication, or ambiguity?
+- did the refactor improve future change cost, not just current aesthetics?
 
 ## Reliability And Integration
 
@@ -80,3 +95,4 @@ Update docs when the change affects:
 - architecture boundaries
 - contributor decision-making
 - temporary compatibility structure
+- AI guidance hierarchy or repository governance

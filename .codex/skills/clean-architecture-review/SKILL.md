@@ -7,9 +7,11 @@ description: Review changes for clean architecture boundary violations, layer le
 
 Read these first:
 
-- `docs/ai/architecture-rules.md`
-- `docs/ai/engineering-standards.md`
-- `docs/ai/documentation-policy.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/review-checklist.md`
+- `docs/ARCHITECTURE.md`
+- `docs/ARCHITECTURE_TRANSITIONS.md`
 
 # When to use
 
@@ -23,15 +25,17 @@ Use this skill when:
 
 # Goal
 
-Identify whether the implementation respects project boundaries and recommend the smallest safe improvement.
-Also assess whether the changed area improves explicit contracts, onboarding readability, and temporary-structure discipline.
+Identify whether the implementation respects project boundaries and recommend the
+smallest safe improvement. Also assess whether the changed area improves
+explicit contracts, onboarding readability, and temporary-structure discipline.
 
 # Review process
 
 1. Identify the changed files and map each file to a layer
 2. Inspect imports and dependencies between those files
 3. Mark any boundary violations, layer leakage, or duplicated logic
-4. Note weak contracts, lingering mapping-style payloads, or compatibility layers that may no longer be justified
+4. Note weak contracts, lingering mapping-style payloads, or compatibility
+   layers that may no longer be justified
 5. Separate critical issues from minor improvements
 6. Suggest the smallest safe refactor instead of a full rewrite
 7. Preserve both execution modes:

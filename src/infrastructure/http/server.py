@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import asdict
 from collections.abc import Awaitable, Callable
 
 from aiohttp import web
 
+from src.application.dto import BotHealthResponseDTO
 from src.__version__ import __version__, __author__, __description__
 
 logger = logging.getLogger(__name__)
@@ -57,7 +59,7 @@ class HTTPServer:
 
     async def _health(self, request: web.Request) -> web.Response:
         """Health check endpoint for Docker/Render."""
-        return web.json_response({"status": "healthy"})
+        return web.json_response(asdict(BotHealthResponseDTO(status="healthy")))
 
     async def _version(self, request: web.Request) -> web.Response:
         return web.json_response({

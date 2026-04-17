@@ -17,6 +17,8 @@ Minimum values:
 
 ```env
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+POSTGRES_USER=tts_user
+POSTGRES_PASSWORD=change_me_in_production
 TTS_ENGINE=gtts
 TTS_LANGUAGE=pt
 TTS_VOICE_ID=roa/pt-br

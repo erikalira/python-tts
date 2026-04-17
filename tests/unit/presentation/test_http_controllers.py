@@ -68,6 +68,56 @@ class TestSpeakController:
         
         assert response.status == 400
         assert response.text == "missing text"
+
+    async def test_handle_null_text_as_missing_text(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """Test handling request with null text payload."""
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+        )
+        controller = SpeakController(use_case)
+
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": None})
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert response.text == "missing text"
+
+    async def test_handle_non_string_text_as_missing_text(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """Test handling request with non-string text payload."""
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+        )
+        controller = SpeakController(use_case)
+
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": 123})
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert response.text == "missing text"
     
     async def test_handle_invalid_json(
         self,

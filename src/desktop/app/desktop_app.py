@@ -12,6 +12,7 @@ from src.application.desktop_bot import (
     SendDesktopBotTestMessageUseCase,
 )
 from src.application.dto import (
+    DesktopAppRuntimeStatusDTO,
     DesktopBotActionResultDTO,
     DesktopBotVoiceContextResultDTO,
     DesktopConfigurationSaveResultDTO,
@@ -350,7 +351,7 @@ class DesktopApp:
         logger.info("[DESKTOP_APP] Encerrando via system tray...")
         self._shutdown()
 
-    def _get_application_status(self) -> dict:
+    def _get_application_status(self) -> DesktopAppRuntimeStatusDTO:
         """Get a compact view of current runtime status."""
         return self._status_builder.build(
             initialized=self._initialized,

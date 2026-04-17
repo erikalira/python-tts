@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Protocol
 
+from src.application.dto import DesktopTTSStatusDTO
 from src.application.tts_text import prepare_tts_text
 
 TTS_EXECUTION_RESULT_OK = "ok"
@@ -30,7 +31,7 @@ class DesktopTTSExecutionPort(Protocol):
     def is_available(self) -> bool:
         """Return whether the underlying TTS flow is available."""
 
-    def get_status_info(self) -> dict[str, Any]:
+    def get_status_info(self) -> DesktopTTSStatusDTO:
         """Return runtime status details for the Desktop App."""
 
     def get_last_error_message(self) -> str | None:
@@ -71,6 +72,6 @@ class SpeakTextExecutionUseCase:
         """Return whether the underlying TTS service is available."""
         return self._tts_service.is_available()
 
-    def get_status_info(self) -> dict:
+    def get_status_info(self) -> DesktopTTSStatusDTO:
         """Expose status info from the underlying TTS service."""
         return self._tts_service.get_status_info()

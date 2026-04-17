@@ -5,15 +5,15 @@ framework: "discord.py_aiohttp_tkinter"
 architecture: "clean_architecture"
 
 context_files:
+  - ".specify/README.md"
+  - ".specify/memory/constitution.md"
+  - ".specify/review-checklist.md"
   - "README.md"
   - "docs/README.md"
   - "docs/ARCHITECTURE.md"
-  - "docs/ai/project-context.md"
-  - "docs/ai/architecture-rules.md"
-  - "docs/ai/engineering-standards.md"
-  - "docs/ai/documentation-policy.md"
   - "src/bot.py"
   - "app.py"
+  - "AGENTS.md"
 
 domain_concepts:
   - "Discord bot runtime"
@@ -28,18 +28,22 @@ coding_preferences:
   - "Keep business logic in core and application layers"
   - "Prefer small incremental refactors"
   - "Use type hints in shared and public code"
+  - "Favor explicit contracts over implicit reusable payloads"
+  - "Keep compatibility code narrow and document the steady state"
 
 testing_strategy:
   - "Run relevant unit and integration tests"
   - "Validate bot startup when bot flow changes"
   - "Validate desktop startup when desktop flow changes"
   - "Test the changed path directly when automation is not enough"
+  - "Call out validation gaps explicitly when a runtime check cannot be performed"
 
 documentation_requirements:
   - "Keep docs/ for durable guides and architecture docs"
-  - "Use docs/features/ for feature docs and implementation notes"
+  - "Use specs/ for feature specs, plans, and execution artifacts"
   - "Update docs/README.md when navigation changes"
-  - "Treat docs/ai/ as canonical AI governance"
+  - "Treat .specify/ as canonical AI governance"
+  - "Keep AGENTS.md and Copilot instruction files derivative of .specify/"
 
 naming_conventions:
   files: "snake_case"

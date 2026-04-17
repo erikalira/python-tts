@@ -7,11 +7,11 @@ description: Check package versions, update Python dependencies, and validate de
 
 Read these first:
 
-- `docs/ai/project-context.md`
-- `docs/ai/engineering-standards.md`
-- `docs/ai/change-playbooks.md`
-- `docs/ai/documentation-policy.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/review-checklist.md`
 - `docs/DEPENDENCY_MAINTENANCE.md`
+- `docs/TESTING.md`
 
 For the step-by-step command checklist, read:
 

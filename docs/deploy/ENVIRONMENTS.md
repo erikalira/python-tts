@@ -29,6 +29,8 @@ Use the examples in the repository root as the starting point:
 | `CONFIG_STORAGE_BACKEND` | Optional | Yes | Yes in practice for production | `json` for local dev, `postgres` for production-grade bot persistence. |
 | `CONFIG_STORAGE_DIR` | Optional | No | No | Directory used only by the JSON config backend. |
 | `DATABASE_URL` | No | Yes | Required with `CONFIG_STORAGE_BACKEND=postgres` | Postgres connection string for durable bot configuration. |
+| `POSTGRES_USER` | No | Docker Compose only | Required in practice for bundled Postgres | Compose credential used by the repository's bundled Postgres container. Keep it aligned with `DATABASE_URL`. |
+| `POSTGRES_PASSWORD` | No | Docker Compose only | Required in practice for bundled Postgres | Compose password used by the repository's bundled Postgres container. Keep it aligned with `DATABASE_URL`. |
 
 ## Local Development
 
@@ -59,8 +61,10 @@ Recommended minimum values:
 ```env
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
 DISCORD_BOT_HOST=0.0.0.0
+POSTGRES_USER=tts_user
+POSTGRES_PASSWORD=change_me_in_production
 CONFIG_STORAGE_BACKEND=postgres
-DATABASE_URL=postgresql://user:password@host:5432/tts_hotkey_windows
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/tts_hotkey_windows
 ```
 
 Notes:
@@ -70,6 +74,9 @@ Notes:
 - `DISCORD_BOT_PORT` is not usually needed in cloud deploys when `PORT` is already provided.
 - `DISCORD_BOT_URL` is not needed in cloud deploys for the bot service itself.
 - `DATABASE_URL` becomes mandatory when the bot uses `CONFIG_STORAGE_BACKEND=postgres`.
+- When using the repository's bundled Docker Compose Postgres, keep
+  `POSTGRES_USER` and `POSTGRES_PASSWORD` in the same `.env` file and match
+  them with the credentials embedded in `DATABASE_URL`.
 
 ## Bundled Docker + Postgres Stack
 
@@ -95,6 +102,6 @@ Notes:
 
 ## Runtime Sources
 
-The current bot runtime reads its environment from [`src/bot_runtime/settings.py`](../src/bot_runtime/settings.py).
+The current bot runtime reads its environment from [`src/bot_runtime/settings.py`](../../src/bot_runtime/settings.py).
 
-The Desktop App local defaults are derived from [`src/desktop/config/models.py`](../src/desktop/config/models.py) and [`src/desktop/config/repository.py`](../src/desktop/config/repository.py).
+The Desktop App local defaults are derived from [`src/desktop/config/models.py`](../../src/desktop/config/models.py) and [`src/desktop/config/repository.py`](../../src/desktop/config/repository.py).

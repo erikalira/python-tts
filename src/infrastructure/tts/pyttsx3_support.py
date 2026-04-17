@@ -4,15 +4,33 @@ from __future__ import annotations
 
 import logging
 import platform
+from typing import Protocol
 
 from src.core.entities import TTSConfig
+
+
+class Pyttsx3VoiceLike(Protocol):
+    """Contract for pyttsx3 voice metadata used by shared helpers."""
+
+    id: str
+    name: str
+
+
+class Pyttsx3EngineLike(Protocol):
+    """Contract for pyttsx3 engine operations used by shared helpers."""
+
+    def getProperty(self, name: str):
+        """Read a pyttsx3 property."""
+
+    def setProperty(self, name: str, value) -> None:
+        """Set a pyttsx3 property."""
 
 
 def _normalize_voice_token(value: str) -> str:
     return value.strip().lower()
 
 
-def _voice_matches(voice: object, requested: str) -> bool:
+def _voice_matches(voice: Pyttsx3VoiceLike, requested: str) -> bool:
     normalized = _normalize_voice_token(requested)
     if not normalized:
         return False
@@ -27,7 +45,7 @@ def _voice_matches(voice: object, requested: str) -> bool:
     return any(normalized in candidate for candidate in candidates if candidate)
 
 
-def list_pyttsx3_voices(logger: logging.Logger | None = None) -> list[object]:
+def list_pyttsx3_voices(logger: logging.Logger | None = None) -> list[Pyttsx3VoiceLike]:
     """Return installed pyttsx3 voices, or an empty list when unavailable."""
     active_logger = logger or logging.getLogger(__name__)
 
@@ -42,7 +60,11 @@ def list_pyttsx3_voices(logger: logging.Logger | None = None) -> list[object]:
         return []
 
 
-def configure_pyttsx3_engine(engine: object, config: TTSConfig, logger: logging.Logger | None = None) -> None:
+def configure_pyttsx3_engine(
+    engine: Pyttsx3EngineLike,
+    config: TTSConfig,
+    logger: logging.Logger | None = None,
+) -> None:
     """Apply the shared voice and rate configuration to a pyttsx3 engine."""
     active_logger = logger or logging.getLogger(__name__)
     engine.setProperty("rate", config.rate)

@@ -16,6 +16,21 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Repository-Specific Guidance
+
+When planning for this repository:
+
+- Optimize for the smallest architecture-safe approach rather than a broad
+  redesign.
+- Treat explicit contracts, dual-runtime safety, and shared-logic extraction as
+  primary planning concerns, not polish.
+- Prefer existing shared layers in `src/` before introducing new runtime-only
+  policy.
+- If a temporary compatibility path is necessary, make the intended steady
+  state and cleanup trigger explicit in the plan.
+- Do not assume sub-agents are available. If extra research is needed, perform
+  it within the normal workflow unless the user explicitly asks for delegation.
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before planning)**:
@@ -65,6 +80,12 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Phase 1: Update agent context by running the agent script
    - Re-evaluate Constitution Check post-design
 
+   Repository-specific plan checks:
+   - Make module ownership explicit for each touched area.
+   - Call out whether bot startup, desktop startup, or both require validation.
+   - Capture docs updates in `docs/`, `docs/README.md`, `README.md`, and
+     derivative instruction files when guidance changes.
+
 4. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
 
 5. **Check for extension hooks**: After reporting, check if `.specify/extensions.yml` exists in the project root.
@@ -105,7 +126,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - For each dependency → best practices task
    - For each integration → patterns task
 
-2. **Generate and dispatch research agents**:
+2. **Generate research tasks**:
 
    ```text
    For each unknown in Technical Context:

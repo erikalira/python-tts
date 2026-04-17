@@ -94,7 +94,7 @@ Once the request reaches a use case in `src/application/`, the flow should be re
 When onboarding into the codebase, prefer this reading order:
 
 1. `README.md`
-2. `docs/ARCHITECTURE.md`
+2. `docs/architecture/ARCHITECTURE.md`
 3. this file
 4. the entrypoint and composition root for the runtime you are touching
 5. the relevant shared use case or desktop runtime coordinator

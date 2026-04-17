@@ -16,6 +16,16 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Repository-Specific Guidance
+
+In this repository, treat these as especially high-signal during analysis:
+
+- ambiguity about affected runtime(s)
+- duplication or ownership drift between `src/desktop/` and shared `src/`
+- missing contract work when reusable boundaries cross modules or runtimes
+- missing validation for bot startup, desktop startup, or shared runtime flows
+- missing docs or guidance updates when architecture or contributor workflow changed
+
 ## Goal
 
 Identify inconsistencies, duplications, ambiguities, and underspecified items across the three core artifacts (`spec.md`, `plan.md`, `tasks.md`) before implementation. This command MUST run only after `/speckit.tasks` has successfully produced a complete `tasks.md`.
@@ -103,12 +113,17 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 - Any requirement or plan element conflicting with a MUST principle
 - Missing mandated sections or quality gates from constitution
+- Plans or tasks that normalize permanent compatibility paths without a cleanup
+  story
 
 #### E. Coverage Gaps
 
 - Requirements with zero associated tasks
 - Tasks with no mapped requirement/story
 - Success Criteria requiring buildable work (performance, security, availability) not reflected in tasks
+- Runtime validation promises in spec/plan with no corresponding tasks
+- Documentation or instruction-file impact called out in spec/plan with no
+  corresponding tasks
 
 #### F. Inconsistency
 

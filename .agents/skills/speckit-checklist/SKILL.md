@@ -37,6 +37,16 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Repository-Specific Guidance
+
+For this repository, good requirement-quality checklists often need to probe:
+
+- whether the affected runtime(s) are explicit
+- whether shared-vs-runtime-specific ownership is clear
+- whether reusable contracts are explicit where modules or runtimes interact
+- whether validation expectations cover the changed startup/runtime path
+- whether docs and contributor guidance impact is captured when relevant
+
 ## Execution Steps
 
 1. **Setup**: Run `.specify/scripts/powershell/check-prerequisites.ps1 -Json` from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS list.
@@ -120,6 +130,8 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Non-Functional Requirements** (Performance, Security, Accessibility, etc. - are they specified?)
    - **Dependencies & Assumptions** (Are they documented and validated?)
    - **Ambiguities & Conflicts** (What needs clarification?)
+   - **Runtime Ownership & Boundaries** (Is it clear what belongs to bot,
+     desktop, or shared layers?)
 
    **HOW TO WRITE CHECKLIST ITEMS - "Unit Tests for English"**:
 
@@ -175,6 +187,8 @@ You **MUST** consider the user input before proceeding (if not empty).
    - For each scenario class, ask: "Are [scenario type] requirements complete, clear, and consistent?"
    - If scenario class missing: "Are [scenario type] requirements intentionally excluded or missing? [Gap]"
    - Include resilience/rollback when state mutation occurs: "Are rollback requirements defined for migration failures? [Gap]"
+   - Include runtime impact when shared code or startup wiring changes:
+     "Is the affected runtime path explicitly identified and bounded? [Clarity]"
 
    **Traceability Requirements**:
    - MINIMUM: ≥80% of items MUST include at least one traceability reference

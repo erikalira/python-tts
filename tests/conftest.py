@@ -1,5 +1,6 @@
 """Test fixtures and mocks shared across tests."""
 import pytest
+from src.application.dto import AudioQueueStatusDTO
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.tts_voice_catalog import TTSVoiceOption
 from src.application.use_cases import SpeakTextUseCase
@@ -246,7 +247,7 @@ class MockAudioQueue(IAudioQueue):
     
     async def get_queue_status(self, guild_id):
         """Get queue status."""
-        return {"size": len(self.items), "items": []}
+        return AudioQueueStatusDTO(size=len(self.items), items=[])
     
     async def get_item_position(self, item_id: str) -> int:
         """Get item position."""

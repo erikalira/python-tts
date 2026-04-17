@@ -5,9 +5,20 @@ from __future__ import annotations
 import logging
 import queue
 from threading import Event
-from typing import Callable, Protocol
+from typing import Callable, Protocol, TypeVar
+
+from src.application.dto import DesktopTTSServiceStatusDTO
 
 logger = logging.getLogger(__name__)
+
+ConfigT = TypeVar("ConfigT")
+
+
+class DesktopTTSProcessorLike(Protocol):
+    """Runtime contract for Desktop App TTS processors."""
+
+    def get_service_status(self) -> DesktopTTSServiceStatusDTO:
+        """Return the typed TTS status object."""
 
 
 class HotkeyManagerLike(Protocol):
@@ -102,15 +113,15 @@ class DesktopAppLifecycleCoordinator:
         self,
         *,
         running: bool,
-        config: object,
+        config: ConfigT,
         hotkey_manager: HotkeyManagerLike | None,
-        tts_processor: object,
+        tts_processor: DesktopTTSProcessorLike | None,
         notification_service: NotificationServiceLike | None,
-        tts_processor_factory: Callable[[object], object],
-        notification_service_factory: Callable[[object], NotificationServiceLike],
+        tts_processor_factory: Callable[[ConfigT], DesktopTTSProcessorLike],
+        notification_service_factory: Callable[[ConfigT], NotificationServiceLike],
         initialize_notification_service: Callable[[NotificationServiceLike], None],
         rebuild_hotkey_manager: Callable[[bool], None],
-    ) -> tuple[object, NotificationServiceLike | None]:
+    ) -> tuple[DesktopTTSProcessorLike | None, NotificationServiceLike | None]:
         """Rebuild dependent services after a configuration change."""
         hotkeys_were_active = bool(hotkey_manager and hotkey_manager.is_active())
         if hotkeys_were_active:

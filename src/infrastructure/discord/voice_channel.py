@@ -3,6 +3,7 @@ import asyncio
 import logging
 from typing import Optional, Dict
 import discord
+from src.application.dto import DiscordVoiceChannelCacheStatsDTO
 from src.core.interfaces import IVoiceChannel, IVoiceChannelRepository
 from src.core.entities import AudioFile
 from src.core.timeouts import (
@@ -516,17 +517,17 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
             except Exception as e:
                 logger.warning(f"[VOICE_REPO] Error cleaning up stale instance {channel_id}: {e}")
     
-    def get_cache_stats(self) -> dict:
+    def get_cache_stats(self) -> DiscordVoiceChannelCacheStatsDTO:
         """Get statistics about the channel instance cache.
         
         Returns:
-            dict with cache statistics
+            Typed cache statistics.
         """
-        return {
-            "cached_channels": len(self._channel_instances),
-            "cached_members": len(self._member_cache),
-            "total_tracked": len(self._instance_last_used)
-        }
+        return DiscordVoiceChannelCacheStatsDTO(
+            cached_channels=len(self._channel_instances),
+            cached_members=len(self._member_cache),
+            total_tracked=len(self._instance_last_used),
+        )
     
     async def cleanup_all(self) -> None:
         """Clean up all cached voice channel instances.

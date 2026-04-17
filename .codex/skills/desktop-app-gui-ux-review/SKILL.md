@@ -7,10 +7,11 @@ description: Review or validate Desktop App GUI changes for responsiveness, edit
 
 Read these first:
 
-- `docs/ai/project-context.md`
-- `docs/ai/architecture-rules.md`
-- `docs/ai/documentation-policy.md`
-- `docs/ai/change-playbooks.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/review-checklist.md`
+- `docs/README_DESKTOP_APP.md`
+- `docs/RUNTIME_FLOWS.md`
 
 # When to use
 
@@ -24,7 +25,8 @@ Use when:
 
 # Goal
 
-Catch UX regressions early while keeping the desktop app responsive, understandable, and aligned with clean architecture.
+Catch UX regressions early while keeping the desktop app responsive,
+understandable, and aligned with clean architecture.
 
 # What to check
 

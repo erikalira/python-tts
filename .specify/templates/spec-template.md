@@ -57,6 +57,8 @@ runtime(s) are involved.]
   environment state is missing or invalid?
 - What temporary compatibility path, if any, is required and when should it be
   removed?
+- What is explicitly out of scope so the change does not expand opportunistically?
+- How should operators or contributors diagnose failure in the changed flow?
 
 ## Requirements *(mandatory)*
 
@@ -73,6 +75,11 @@ runtime(s) are involved.]
   including startup or smoke checks when relevant.
 - **FR-006**: System MUST define required documentation updates when behavior,
   architecture, runtime flow, or contributor guidance changes.
+- **FR-007**: System MUST keep reusable boundaries explicit through typed
+  contracts, stable payloads, or named protocols when the boundary crosses
+  modules, runtimes, or adapters.
+- **FR-008**: System MUST identify any temporary compatibility code, migration
+  path, or deliberate non-goal required to ship safely.
 
 ### Key Entities *(include if feature involves data or reusable contracts)*
 
@@ -98,7 +105,13 @@ runtime(s) are involved.]
 - [Assumption about data/environment.]
 - [Dependency on existing system/service.]
 
+## Non-Goals & Out of Scope
+
+- [Intentional non-goal to prevent architecture or scope drift.]
+- [Another explicit thing this feature will not attempt.]
+
 ## Documentation Impact *(mandatory)*
 
 - [List each doc to update in `docs/`, `docs/README.md`, `README.md`,
-  `AGENTS.md`, or agent-specific instruction files, or state `None`.]
+  `AGENTS.md`, `.github/copilot-instructions.md`, or other derivative guidance
+  files, or state `None`.]

@@ -38,6 +38,7 @@ implementation and testing of each story.
 - [ ] T001 Confirm affected modules, runtime(s), and documentation targets from `spec.md` and `plan.md`
 - [ ] T002 [P] Add or update scaffolding only where the implementation plan requires it
 - [ ] T003 [P] Add targeted tests or validation hooks needed before implementation
+- [ ] T004 Capture explicit non-goals, temporary compatibility limits, and validation promises from `plan.md`
 
 ---
 
@@ -47,10 +48,10 @@ implementation and testing of each story.
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Extract or define shared contracts/use cases required across modules
-- [ ] T005 [P] Add or adjust adapters/composition wiring required by the chosen architecture path
-- [ ] T006 [P] Create or update foundational test coverage for the affected boundary
-- [ ] T007 Capture any temporary compatibility path and its intended cleanup point
+- [ ] T005 Extract or define shared contracts/use cases required across modules
+- [ ] T006 [P] Add or adjust adapters/composition wiring required by the chosen architecture path
+- [ ] T007 [P] Create or update foundational test coverage for the affected boundary
+- [ ] T008 Capture any temporary compatibility path, its intended cleanup point, and its ownership
 
 **Checkpoint**: Foundations ready; user stories can now be implemented safely
 
@@ -73,7 +74,8 @@ implementation and testing of each story.
 - [ ] T013 [P] [US1] Implement adapter/runtime changes in the concrete affected files
 - [ ] T014 [US1] Wire the story through the correct entrypoint flow without moving business logic into presentation or infrastructure
 - [ ] T015 [US1] Add validation, error handling, and typed result contracts where the boundary is reused
-- [ ] T016 [US1] Update docs required for this story
+- [ ] T016 [US1] Remove or narrow obsolete transitional code that this story makes unnecessary
+- [ ] T017 [US1] Update docs and derivative guidance required for this story
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -87,13 +89,13 @@ implementation and testing of each story.
 
 ### Tests for User Story 2
 
-- [ ] T017 [P] [US2] Add or update validation needed for this story
+- [ ] T018 [P] [US2] Add or update validation needed for this story
 
 ### Implementation for User Story 2
 
-- [ ] T018 [P] [US2] Implement the story in the exact affected modules
-- [ ] T019 [US2] Integrate with shared services or prior story output without duplicating logic
-- [ ] T020 [US2] Update docs required for this story
+- [ ] T019 [P] [US2] Implement the story in the exact affected modules
+- [ ] T020 [US2] Integrate with shared services or prior story output without duplicating logic
+- [ ] T021 [US2] Update docs required for this story
 
 **Checkpoint**: At this point, User Stories 1 and 2 should both work independently
 
@@ -107,13 +109,13 @@ implementation and testing of each story.
 
 ### Tests for User Story 3
 
-- [ ] T021 [P] [US3] Add or update validation needed for this story
+- [ ] T022 [P] [US3] Add or update validation needed for this story
 
 ### Implementation for User Story 3
 
-- [ ] T022 [P] [US3] Implement the story in the exact affected modules
-- [ ] T023 [US3] Integrate with existing runtime flows and shared services
-- [ ] T024 [US3] Update docs required for this story
+- [ ] T023 [P] [US3] Implement the story in the exact affected modules
+- [ ] T024 [US3] Integrate with existing runtime flows and shared services
+- [ ] T025 [US3] Update docs required for this story
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -124,6 +126,7 @@ implementation and testing of each story.
 **Purpose**: Improvements that affect multiple user stories
 
 - [ ] TXXX [P] Final documentation updates in `docs/`, `docs/README.md`, and `README.md`
+- [ ] TXXX Sync derivative guidance such as `AGENTS.md` or `.github/copilot-instructions.md` when canonical rules changed
 - [ ] TXXX Remove or narrow temporary compatibility code noted in the plan when feasible
 - [ ] TXXX Run the promised automated tests
 - [ ] TXXX Validate the affected runtime(s): bot startup, desktop startup, or both

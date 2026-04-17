@@ -18,7 +18,7 @@ e o restante de `src`.
 - `app.py`: inicia o Desktop App Windows
 - `src/`: camadas principais da aplicacao
 - `docs/`: documentacao complementar
-- `docs/BUILD_GUIDE.md`: guia de build do executavel Windows
+- `docs/desktop/WINDOWS_BUILD_GUIDE.md`: guia de build do executavel Windows
 
 ## Requisitos
 
@@ -60,7 +60,7 @@ Para voz no Discord localmente, tambem pode ser necessario:
 pip install pynacl
 ```
 
-Para o passo a passo completo, consulte [docs/SETUP.md](docs/SETUP.md).
+Para o passo a passo completo, consulte [docs/getting-started/SETUP.md](docs/getting-started/SETUP.md).
 
 ## Execucao rapida
 
@@ -90,7 +90,7 @@ python app.py
 pytest
 ```
 
-Detalhes de estrutura e execucao estao em [docs/TESTING.md](docs/TESTING.md).
+Detalhes de estrutura e execucao estao em [docs/getting-started/TESTING.md](docs/getting-started/TESTING.md).
 
 ## Build do executavel Windows
 
@@ -109,16 +109,22 @@ especificos. A pasta `docs/` fica reservada para guias duraveis; artefatos de
 planejamento e execucao de features devem ir em `specs/`.
 
 - [Indice da documentacao](docs/README.md)
-- [Guia de setup do ambiente](docs/SETUP.md)
-- [Guia de testes](docs/TESTING.md)
-- [Deploy do bot como servico Windows com WinSW](docs/WINDOWS_BOT_SERVICE.md)
+- [Guia de setup do ambiente](docs/getting-started/SETUP.md)
+- [Guia de testes](docs/getting-started/TESTING.md)
+- [Guia de deploy no servidor](docs/deploy/DEPLOYMENT_GUIDE.md)
+- [Arquitetura do projeto](docs/architecture/ARCHITECTURE.md)
+- [Guia do Desktop App](docs/desktop/DESKTOP_APP_GUIDE.md)
 - [Constituicao e workflow canonicos](.specify/README.md)
-- [Guia de build do executavel Windows](docs/BUILD_GUIDE.md)
-- [Arquitetura do projeto](docs/ARCHITECTURE.md)
-- [Fluxos de runtime e composition roots](docs/RUNTIME_FLOWS.md)
-- [Guia de transicoes arquiteturais e compatibilidade temporaria](docs/ARCHITECTURE_TRANSITIONS.md)
-- [Guia do Desktop App](docs/README_DESKTOP_APP.md)
-- [Configuracao de hotkeys](docs/HOTKEY_SETUP.md)
+
+## Governanca para contribuidores e IA
+
+As regras canonicas de arquitetura, workflow e instrucao para agentes ficam em
+`.specify/`.
+
+- [Indice canonico de governanca](.specify/README.md)
+- [Constituicao do repositorio](.specify/memory/constitution.md)
+- [Checklist de review](.specify/review-checklist.md)
+- [Resumo derivado para agentes](AGENTS.md)
 
 ## Observacoes
 

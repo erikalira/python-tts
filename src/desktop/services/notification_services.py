@@ -10,6 +10,7 @@ import threading
 import time
 from typing import Callable, Optional
 
+from src.application.dto import SystemTrayStatusDTO
 from ..adapters.system_tray import (
     NullSystemTrayIcon as _NullSystemTrayIcon,
     create_system_tray_icon,
@@ -90,7 +91,7 @@ class SystemTrayService:
     def __init__(
         self,
         config: DesktopAppConfig,
-        tray_icon: Optional[object] = None,
+        tray_icon: Optional[SystemTrayIcon] = None,
         notification_service: Optional[NotificationService] = None,
     ):
         self._config = config
@@ -181,11 +182,11 @@ class SystemTrayService:
             return bool(self._tray_icon.is_running())
         return bool(self._tray_thread and self._tray_thread.is_alive())
 
-    def get_status(self) -> dict:
+    def get_status(self) -> SystemTrayStatusDTO:
         """Get system tray service status."""
-        return {
-            "tray_available": self._tray_icon.is_available(),
-            "tray_running": self.is_running(),
-            "pystray_installed": is_system_tray_available(),
-            "notifications_enabled": self._config.interface.show_notifications,
-        }
+        return SystemTrayStatusDTO(
+            tray_available=self._tray_icon.is_available(),
+            tray_running=self.is_running(),
+            pystray_installed=is_system_tray_available(),
+            notifications_enabled=self._config.interface.show_notifications,
+        )
