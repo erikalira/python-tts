@@ -35,7 +35,7 @@ class SpeakController:
         guild_id = self._parse_int(data.get("guild_id"))
         member_id_value = data.get("member_id") or data.get("user_id")
         request_dto = BotSpeakRequestDTO(
-            text=str(data.get("text", "")),
+            text=self._parse_text(data.get("text")),
             channel_id=self._parse_int(data.get("channel_id")),
             guild_id=guild_id,
             member_id=str(member_id_value) if member_id_value is not None else None,
@@ -61,6 +61,11 @@ class SpeakController:
             return int(value)
         except (ValueError, TypeError):
             return None
+
+    def _parse_text(self, value) -> str:
+        if isinstance(value, str):
+            return value
+        return ""
 
     def _parse_config_override(
         self,
