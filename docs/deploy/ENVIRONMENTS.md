@@ -8,7 +8,7 @@ This project has two independent runtimes with different environment needs:
 Use the examples in the repository root as the starting point:
 
 - `.env.example`: local development defaults
-- `.env.prod.example`: production example for the bot in cloud deploys
+- `.env.prod.example`: Dockerized bot + Postgres example for the bundled compose stack
 
 ## Environment Summary
 
@@ -53,7 +53,8 @@ Notes:
 
 ## Cloud Production
 
-For the bot deployed in the cloud, use `.env.prod.example` as the reference.
+For a cloud-hosted bot that connects to an external Postgres instance, provide
+the runtime values directly.
 
 Recommended minimum values:
 
@@ -76,6 +77,28 @@ Notes:
 - When using the repository's bundled Docker Compose Postgres, keep
   `POSTGRES_USER` and `POSTGRES_PASSWORD` in the same `.env` file and match
   them with the credentials embedded in `DATABASE_URL`.
+
+## Bundled Docker + Postgres Stack
+
+For `docker-compose.postgres.yml`, use `.env.prod.example` as the starting
+point.
+
+Recommended minimum values:
+
+```env
+DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+CONFIG_STORAGE_BACKEND=postgres
+POSTGRES_DB=tts_hotkey_windows
+POSTGRES_USER=tts_user
+POSTGRES_PASSWORD=change_me
+```
+
+Notes:
+
+- The bundled compose stack builds `DATABASE_URL` for the bot from
+  `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
+- With the bundled stack, do not maintain a second manual `DATABASE_URL` unless
+  you are intentionally pointing the bot at a different database service.
 
 ## Runtime Sources
 
