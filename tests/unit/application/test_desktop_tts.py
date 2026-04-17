@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+from src.application.dto import DesktopTTSStatusDTO
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
 
 
@@ -67,11 +68,11 @@ def test_desktop_tts_status_use_case_builds_status_payload():
 
     status = DesktopTTSStatusUseCase(gateway).execute()
 
-    assert status == {
-        "discord_available": True,
-        "local_tts_enabled": True,
-        "local_available": False,
-        "pyttsx3_installed": True,
-        "requests_installed": True,
-        "bot_url_configured": False,
-    }
+    assert status == DesktopTTSStatusDTO(
+        discord_available=True,
+        local_tts_enabled=True,
+        local_available=False,
+        pyttsx3_installed=True,
+        requests_installed=True,
+        bot_url_configured=False,
+    )

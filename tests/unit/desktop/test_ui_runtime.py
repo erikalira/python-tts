@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+from src.application.dto import DesktopAppRuntimeStatusDTO
 from src.desktop.app.ui_runtime import DesktopAppUIRuntimeCoordinator
 from src.desktop.config.desktop_config import DesktopAppConfig
 
@@ -68,11 +69,14 @@ def test_ui_runtime_coordinator_show_status_notifies_when_window_is_closed():
     notification_service = Mock()
 
     coordinator.show_status(
-        get_status=lambda: {
-            "discord_configured": True,
-            "hotkey_active": False,
-            "tts_available": True,
-        },
+        get_status=lambda: DesktopAppRuntimeStatusDTO(
+            initialized=True,
+            running=True,
+            discord_configured=True,
+            hotkey_active=False,
+            tts_available=True,
+            tray_available=True,
+        ),
         notification_service=notification_service,
     )
 

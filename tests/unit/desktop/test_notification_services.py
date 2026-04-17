@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 import logging
 
+from src.application.dto import SystemTrayStatusDTO
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.services.notification_services import (
     ConsoleNotificationService,
@@ -130,9 +131,12 @@ def test_system_tray_service_get_status_reflects_runtime():
 
     status = service.get_status()
 
-    assert status["tray_available"] is True
-    assert status["tray_running"] is False
-    assert status["notifications_enabled"] is True
+    assert status == SystemTrayStatusDTO(
+        tray_available=True,
+        tray_running=False,
+        pystray_installed=status.pystray_installed,
+        notifications_enabled=True,
+    )
 
 
 def test_py_system_tray_icon_quit_without_handler_only_hides_tray():

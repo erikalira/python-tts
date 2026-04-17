@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from typing import Optional, Dict, List
+from src.application.dto import AudioQueueItemStatusDTO, AudioQueueStatusDTO
 from src.core.interfaces import IAudioQueue
 from src.core.entities import AudioQueueItem, AudioQueueItemStatus
 import time
@@ -93,7 +94,7 @@ class InMemoryAudioQueue(IAudioQueue):
                 return None
             return self._queues[guild_id][0]
     
-    async def get_queue_status(self, guild_id: Optional[int]) -> dict:
+    async def get_queue_status(self, guild_id: Optional[int]) -> AudioQueueStatusDTO:
         """Get current queue status for a guild.
         
         Args:
@@ -104,24 +105,21 @@ class InMemoryAudioQueue(IAudioQueue):
         """
         async with self._lock:
             if guild_id not in self._queues:
-                return {"size": 0, "items": []}
+                return AudioQueueStatusDTO(size=0, items=[])
             
             queue = self._queues[guild_id]
             items_info = [
-                {
-                    "id": item.item_id,
-                    "user_id": item.request.member_id,
-                    "status": item.status.value,
-                    "position": item.position_in_queue,
-                    "wait_time_seconds": round(item.wait_time_seconds, 1)
-                }
+                AudioQueueItemStatusDTO(
+                    id=item.item_id,
+                    user_id=item.request.member_id,
+                    status=item.status.value,
+                    position=item.position_in_queue,
+                    wait_time_seconds=round(item.wait_time_seconds, 1),
+                )
                 for item in queue
             ]
             
-            return {
-                "size": len(queue),
-                "items": items_info
-            }
+            return AudioQueueStatusDTO(size=len(queue), items=items_info)
     
     async def get_item_position(self, item_id: str) -> int:
         """Get position of specific item in any queue.

@@ -96,6 +96,6 @@ class SpeakTextUseCase:
             code=SPEAK_RESULT_QUEUED,
             queued=True,
             position=position,
-            queue_size=status["size"],
+            queue_size=status.size,
             item_id=item_id,
         )

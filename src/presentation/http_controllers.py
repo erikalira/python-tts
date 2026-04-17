@@ -4,7 +4,7 @@ import logging
 
 from aiohttp import web
 
-from src.application.dto import SpeakTextInputDTO, VoiceContextQueryDTO
+from src.application.dto import BotSpeakRequestDTO, SpeakTextInputDTO, VoiceContextQueryDTO
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 from src.core.entities import TTSConfig
 from src.core.interfaces import IConfigRepository
@@ -33,13 +33,20 @@ class SpeakController:
             return web.Response(text="invalid json", status=400)
 
         guild_id = self._parse_int(data.get("guild_id"))
-        member_id = self._parse_int(data.get("member_id") or data.get("user_id"))
-        tts_request = SpeakTextInputDTO(
-            text=data.get("text", ""),
+        member_id_value = data.get("member_id") or data.get("user_id")
+        request_dto = BotSpeakRequestDTO(
+            text=str(data.get("text", "")),
             channel_id=self._parse_int(data.get("channel_id")),
             guild_id=guild_id,
-            member_id=member_id,
-            config_override=self._parse_config_override(data, guild_id, member_id),
+            member_id=str(member_id_value) if member_id_value is not None else None,
+            config_override=self._parse_config_override(data, guild_id, self._parse_int(member_id_value)),
+        )
+        tts_request = SpeakTextInputDTO(
+            text=request_dto.text,
+            channel_id=request_dto.channel_id,
+            guild_id=request_dto.guild_id,
+            member_id=self._parse_int(request_dto.member_id),
+            config_override=request_dto.config_override,
         )
         result = await self._speak_use_case.execute(tts_request)
         return web.Response(

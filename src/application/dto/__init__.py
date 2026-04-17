@@ -1,5 +1,19 @@
 """Application DTOs and typed contracts for use-case boundaries."""
 
+from .contracts import (
+    AudioQueueItemStatusDTO,
+    AudioQueueStatusDTO,
+    BotErrorResponseDTO,
+    BotHealthResponseDTO,
+    BotSpeakRequestDTO,
+    BotVoiceContextResponseDTO,
+    DesktopAppRuntimeStatusDTO,
+    DesktopTTSServiceStatusDTO,
+    DesktopTTSStatusDTO,
+    HotkeyManagerStatusDTO,
+    HotkeyServiceStatusDTO,
+    SystemTrayStatusDTO,
+)
 from .desktop_results import (
     DesktopBotActionResultDTO,
     DesktopBotConnectionStatusDTO,
@@ -46,17 +60,29 @@ from .speak_text_input_dto import SpeakTextInputDTO
 from .voice_context_query_dto import VoiceContextQueryDTO
 
 __all__ = [
+    "AudioQueueItemStatusDTO",
+    "AudioQueueStatusDTO",
+    "BotErrorResponseDTO",
+    "BotHealthResponseDTO",
+    "BotSpeakRequestDTO",
+    "BotVoiceContextResponseDTO",
+    "DesktopAppRuntimeStatusDTO",
     "ConfigureTTSResult",
     "DesktopBotActionResultDTO",
     "DesktopBotConnectionStatusDTO",
     "DesktopBotVoiceContextResultDTO",
     "DesktopBotVoiceContextStatusDTO",
     "DesktopConfigurationSaveResultDTO",
+    "DesktopTTSServiceStatusDTO",
+    "DesktopTTSStatusDTO",
+    "HotkeyManagerStatusDTO",
+    "HotkeyServiceStatusDTO",
     "JoinVoiceChannelResult",
     "LeaveVoiceChannelResult",
     "ResultBase",
     "SpeakTextInputDTO",
     "SpeakTextResult",
+    "SystemTrayStatusDTO",
     "TTSConfigurationData",
     "VoiceContextQueryDTO",
     "VoiceContextResult",

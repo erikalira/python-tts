@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict
 
 from src.application.dto import (
+    BotVoiceContextResponseDTO,
     SPEAK_RESULT_CROSS_GUILD_CHANNEL,
     SPEAK_RESULT_GENERATION_TIMEOUT,
     SPEAK_RESULT_MISSING_GUILD_ID,
@@ -71,13 +72,28 @@ class HTTPSpeakPresenter:
 class HTTPVoiceContextPresenter:
     """Map voice-context results to HTTP JSON/status."""
 
+    def to_response_dto(self, result: VoiceContextResult) -> BotVoiceContextResponseDTO:
+        """Build the explicit HTTP response DTO for voice-context lookups."""
+        message = None
+        if result.code == VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL:
+            message = "user is not connected to a voice channel"
+        elif result.code == VOICE_CONTEXT_RESULT_MEMBER_REQUIRED:
+            message = "member id is required"
+
+        return BotVoiceContextResponseDTO(
+            success=result.success,
+            code=result.code,
+            member_id=result.member_id,
+            guild_id=result.guild_id,
+            guild_name=result.guild_name,
+            channel_id=result.channel_id,
+            channel_name=result.channel_name,
+            message=message,
+        )
+
     def to_payload(self, result: VoiceContextResult) -> dict:
-        payload = asdict(result)
-        return {
-            key: self._serialize_value(value)
-            for key, value in payload.items()
-            if value is not None
-        }
+        payload = asdict(self.to_response_dto(result))
+        return {key: value for key, value in payload.items() if value is not None}
 
     def get_status_code(self, result: VoiceContextResult) -> int:
         if result.code == VOICE_CONTEXT_RESULT_MEMBER_REQUIRED:
@@ -86,11 +102,3 @@ class HTTPVoiceContextPresenter:
             return 404
         return 200
 
-    def _serialize_value(self, value):
-        if is_dataclass(value):
-            return {
-                key: self._serialize_value(nested_value)
-                for key, nested_value in asdict(value).items()
-                if nested_value is not None
-            }
-        return value

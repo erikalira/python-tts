@@ -9,6 +9,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Callable, Optional, Protocol
 
+from src.application.dto import DesktopTTSStatusDTO
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
@@ -164,7 +165,7 @@ class DesktopAppTTSService:
         """Check if TTS service is available."""
         return self._flow_service.is_available()
 
-    def get_status_info(self) -> dict:
+    def get_status_info(self) -> DesktopTTSStatusDTO:
         """Get status information about available engines."""
         return DesktopTTSStatusUseCase(_DesktopAppTTSStatusGateway(self)).execute()
 
