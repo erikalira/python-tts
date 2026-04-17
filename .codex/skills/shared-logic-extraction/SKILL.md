@@ -7,14 +7,16 @@ description: Identify duplicated logic between the Desktop App runtime and the s
 
 Read these first:
 
-- `docs/ai/project-context.md`
-- `docs/ai/architecture-rules.md`
-- `docs/ai/change-playbooks.md`
-- `docs/ai/documentation-policy.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/review-checklist.md`
+- `docs/ARCHITECTURE.md`
+- `docs/RUNTIME_FLOWS.md`
 
 # When to use
 
-Use when similar logic exists in multiple flows, especially the Discord bot and desktop app.
+Use when similar logic exists in multiple flows, especially the Discord bot and
+desktop app.
 
 # Extraction flow
 

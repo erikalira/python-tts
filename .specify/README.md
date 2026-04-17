@@ -1,28 +1,59 @@
 # Spec Kit Canonical Guidance
 
-This directory is the canonical source of truth for repository workflow and
-project guidance.
+This directory is the canonical source of truth for repository workflow,
+governance, and AI-facing guidance.
 
-Use these files as the shared foundation for:
+Use `.specify/` as the shared foundation for:
 
 - `AGENTS.md`
 - `.github/copilot-instructions.md`
-- `.codex/skills/*`
+- `.github/copilot-workspace.yml`
+- project-specific guidance embedded in `.agents/` and `.codex/`
 - feature specs and implementation plans in `specs/`
+
+Those files may summarize repository policy, but they must not evolve into a
+second authority.
 
 ## Canonical files
 
-- `memory/constitution.md`: repository rules, architecture constraints, review
-  gates, and governance
-- `templates/spec-template.md`: mandatory structure for feature specifications
-- `templates/plan-template.md`: mandatory structure for implementation plans
-- `templates/tasks-template.md`: mandatory structure for execution task lists
-- `templates/agent-file-template.md`: baseline guidance format for agent-facing
-  instruction files
-- `review-checklist.md`: review and self-review checklist for code changes
+- `memory/constitution.md`: non-negotiable rules, review gates, and governance
+- `templates/spec-template.md`: required shape for feature specifications
+- `templates/plan-template.md`: required shape for implementation plans
+- `templates/tasks-template.md`: required shape for execution task lists
+- `templates/agent-file-template.md`: pattern for derivative agent guidance
+- `review-checklist.md`: review and self-review rubric for code changes
 - `transition-cleanup.md`: temporary compatibility and cleanup rule
 - `change-map.md`: where to start for each kind of change
 - `change-examples.md`: concrete examples of starting points and target layers
+
+## AI Guidance Hierarchy
+
+When instructions appear in multiple places, use this order of precedence:
+
+1. `.specify/memory/constitution.md`
+2. `.specify/templates/*.md`
+3. `.specify/review-checklist.md`, `transition-cleanup.md`, `change-map.md`,
+   and `change-examples.md`
+4. Derivative files such as `AGENTS.md`, `.github/copilot-instructions.md`,
+   and `.github/copilot-workspace.yml`
+
+If a derivative file drifts from `.specify/`, `.specify/` wins and the
+derivative file should be corrected.
+
+## Staff-Level Working Standard
+
+Contributors and AI agents should optimize for repository-level change quality,
+not local cleverness.
+
+- Prefer the smallest change that improves boundaries, contracts, readability,
+  or runtime safety.
+- Do not introduce abstractions unless they remove duplication, clarify
+  ownership, or make future change safer.
+- Document the intended steady state whenever a temporary facade, compatibility
+  path, or migration layer is introduced.
+- Delete obsolete paths when the replacement is proven safe instead of
+  normalizing permanent dual paths.
+- Treat onboarding clarity as an engineering requirement, not a nice-to-have.
 
 ## Companion docs
 
@@ -55,10 +86,9 @@ Use UTF-8 source files by default when editing repository text and code.
 Prefer natural Portuguese in user-facing strings instead of escaped Unicode
 sequences.
 
-- Write Portuguese accents directly when the file format supports UTF-8, such
-  as `configuração`, `não`, `áudio`, and `você`.
-- Do not replace Portuguese characters with Unicode escapes like `\u00e3`,
-  `\u00e7`, or `\u00f3` unless the target format explicitly requires escapes.
+- Write Portuguese accents directly when the file format supports UTF-8.
+- Do not replace Portuguese characters with Unicode escapes unless the target
+  format explicitly requires escapes.
 - Prefer readable Portuguese text in bot messages, desktop labels, docs, and
   tests that assert user-facing content.
 - Keep ASCII-only text only when required by external tools, legacy formats, or

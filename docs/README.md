@@ -34,7 +34,8 @@ This directory contains the repository's supporting documentation. The root
 - [../.specify/review-checklist.md](../.specify/review-checklist.md): canonical review and self-review checklist
 - [../.specify/transition-cleanup.md](../.specify/transition-cleanup.md): canonical temporary compatibility cleanup rule
 - [../.specify/change-map.md](../.specify/change-map.md): canonical guide for where to start a change
-- [../.specify/change-examples.md](../.specify/change-examples.md): canonical examples of starting points and target layers
+- [../AGENTS.md](../AGENTS.md): derivative agent summary for the current repository
+- [../.github/copilot-instructions.md](../.github/copilot-instructions.md): derivative GitHub Copilot summary aligned to `.specify/`
 
 ## Conventions
 
@@ -42,6 +43,7 @@ This directory contains the repository's supporting documentation. The root
 - `docs/diagrams/` contains editable Mermaid architecture sources
 - `docs/refactors/` contains incremental refactor plans and execution-oriented architecture improvements
 - `.specify/` contains canonical project guidance and feature workflow templates
+- AI/tool-specific instruction files should remain derivative of `.specify/`
 
 ## Navigation
 

@@ -16,6 +16,19 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Repository-Specific Guidance
+
+When generating specs for this repository:
+
+- State clearly whether the feature affects the Discord bot, the Windows
+  desktop app, or both.
+- Treat shared logic as a first-class concern. If behavior could belong in
+  shared layers, avoid implying a desktop-only implementation by default.
+- Keep the scope bounded. Use Non-Goals to prevent opportunistic architecture
+  cleanup unless the user explicitly asked for it.
+- Capture contributor-guidance impact in Documentation Impact whenever the
+  change affects workflow, governance, or AI instructions.
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before specification)**:
@@ -116,6 +129,14 @@ Given that feature description, do this:
     8. Return: SUCCESS (spec ready for planning)
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
+
+   Repository-specific checks before finalizing the spec:
+   - Ensure affected runtime(s) are obvious from the stories, requirements, or
+     assumptions.
+   - Ensure shared-vs-runtime-specific ownership is explicit when reusable logic
+     is likely to change.
+   - Ensure Non-Goals prevent accidental duplication between `src/desktop/` and
+     shared modules in `src/`.
 
 6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
 

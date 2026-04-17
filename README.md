@@ -120,6 +120,16 @@ planejamento e execucao de features devem ir em `specs/`.
 - [Guia do Desktop App](docs/README_DESKTOP_APP.md)
 - [Configuracao de hotkeys](docs/HOTKEY_SETUP.md)
 
+## Governanca para contribuidores e IA
+
+As regras canonicas de arquitetura, workflow e instrucao para agentes ficam em
+`.specify/`.
+
+- [Indice canonico de governanca](.specify/README.md)
+- [Constituicao do repositorio](.specify/memory/constitution.md)
+- [Checklist de review](.specify/review-checklist.md)
+- [Resumo derivado para agentes](AGENTS.md)
+
 ## Observacoes
 
 - Nao versione o `DISCORD_TOKEN`
