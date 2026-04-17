@@ -91,7 +91,7 @@ class SystemTrayService:
     def __init__(
         self,
         config: DesktopAppConfig,
-        tray_icon: Optional[object] = None,
+        tray_icon: Optional[SystemTrayIcon] = None,
         notification_service: Optional[NotificationService] = None,
     ):
         self._config = config

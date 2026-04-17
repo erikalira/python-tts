@@ -7,6 +7,8 @@ import queue
 from threading import Event
 from typing import Callable, Protocol, TypeVar
 
+from src.application.dto import DesktopTTSServiceStatusDTO
+
 logger = logging.getLogger(__name__)
 
 ConfigT = TypeVar("ConfigT")
@@ -15,8 +17,8 @@ ConfigT = TypeVar("ConfigT")
 class DesktopTTSProcessorLike(Protocol):
     """Runtime contract for Desktop App TTS processors."""
 
-    def get_service_status(self):
-        """Return a typed or structured TTS status object."""
+    def get_service_status(self) -> DesktopTTSServiceStatusDTO:
+        """Return the typed TTS status object."""
 
 
 class HotkeyManagerLike(Protocol):

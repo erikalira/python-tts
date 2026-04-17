@@ -92,6 +92,15 @@ class AudioQueueStatusDTO:
 
 
 @dataclass(frozen=True, slots=True)
+class DiscordVoiceChannelCacheStatsDTO:
+    """Diagnostic cache stats for the Discord voice-channel repository."""
+
+    cached_channels: int
+    cached_members: int
+    total_tracked: int
+
+
+@dataclass(frozen=True, slots=True)
 class BotSpeakRequestDTO:
     """Wire contract for POST /speak requests sent to the bot runtime."""
 
