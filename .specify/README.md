@@ -60,12 +60,12 @@ not local cleverness.
 These are not the canonical rules source, but they remain useful when changing
 code or operations:
 
-- `docs/SETUP.md`
-- `docs/TESTING.md`
-- `docs/ARCHITECTURE.md`
-- `docs/RUNTIME_FLOWS.md`
-- `docs/ARCHITECTURE_TRANSITIONS.md`
-- `docs/DEPENDENCY_MAINTENANCE.md`
+- `docs/getting-started/SETUP.md`
+- `docs/getting-started/TESTING.md`
+- `docs/architecture/ARCHITECTURE.md`
+- `docs/architecture/RUNTIME_FLOWS.md`
+- `docs/architecture/ARCHITECTURE_TRANSITIONS.md`
+- `docs/maintenance/DEPENDENCY_MAINTENANCE.md`
 
 ## Environment baseline
 

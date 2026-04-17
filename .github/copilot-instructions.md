@@ -15,7 +15,7 @@ The canonical source of project guidance lives in `.specify/`.
 - `.specify/templates/spec-template.md`
 - `.specify/templates/tasks-template.md`
 - `.specify/review-checklist.md`
-- `docs/ARCHITECTURE.md`
+- `docs/architecture/ARCHITECTURE.md`
 
 This file is a derivative summary. If it disagrees with `.specify/`, follow
 `.specify/`.

@@ -184,7 +184,7 @@ Antes de submeter seu PR, verifique:
 ### ✅ Documentação
 
 - [ ] README.md atualizado (se necessário)
-- [ ] docs/ARCHITECTURE.md atualizado (se mudou arquitetura)
+- [ ] docs/architecture/ARCHITECTURE.md atualizado (se mudou arquitetura)
 - [ ] Comentários explicam "por quê", não "o quê"
 
 ## 🔨 Como Adicionar Novas Funcionalidades

@@ -79,6 +79,6 @@ Notes:
 
 ## Runtime Sources
 
-The current bot runtime reads its environment from [`src/bot_runtime/settings.py`](../src/bot_runtime/settings.py).
+The current bot runtime reads its environment from [`src/bot_runtime/settings.py`](../../src/bot_runtime/settings.py).
 
-The Desktop App local defaults are derived from [`src/desktop/config/models.py`](../src/desktop/config/models.py) and [`src/desktop/config/repository.py`](../src/desktop/config/repository.py).
+The Desktop App local defaults are derived from [`src/desktop/config/models.py`](../../src/desktop/config/models.py) and [`src/desktop/config/repository.py`](../../src/desktop/config/repository.py).

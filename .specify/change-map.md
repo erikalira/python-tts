@@ -90,8 +90,8 @@ Start with:
 
 - `README.md`
 - `docs/README.md`
-- `docs/ARCHITECTURE.md`
-- `docs/RUNTIME_FLOWS.md`
+- `docs/architecture/ARCHITECTURE.md`
+- `docs/architecture/RUNTIME_FLOWS.md`
 
 Update docs when the change affects:
 
