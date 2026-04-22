@@ -6,12 +6,12 @@ import logging
 from typing import Optional
 
 from src.application.dto import (
-    SpeakTextResult,
-    SpeakTextInputDTO,
     SPEAK_RESULT_MISSING_TEXT,
-    SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_QUEUE_FULL,
+    SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+    SpeakTextInputDTO,
+    SpeakTextResult,
 )
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.tts_text import prepare_tts_text
@@ -87,9 +87,6 @@ class SpeakTextUseCase:
 
         position = await self._audio_queue.get_item_position(item_id)
         guild_id = domain_request.guild_id
-        if position == 0 and not self._queue_orchestrator.is_processing(guild_id):
-            return await self._queue_orchestrator.start_processing_for_item(guild_id)
-
         status = await self._audio_queue.get_queue_status(guild_id)
         return SpeakTextResult(
             success=True,

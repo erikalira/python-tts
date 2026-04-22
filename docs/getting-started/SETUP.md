@@ -88,6 +88,26 @@ O caminho mostrado por `pip --version` deve apontar para `.venv`.
 
 Para o bot do Discord com voz, confirme tambem que `ffmpeg -version` funciona no mesmo terminal em que o bot sera executado.
 
+## 6.1. Redis opcional para a fila do bot
+
+Se quiser usar a fila Redis do bot localmente, suba apenas o Redis com Docker:
+
+```bash
+docker compose -f docker-compose.redis.yml up -d
+```
+
+Depois configure o `.env` com:
+
+```env
+TTS_QUEUE_BACKEND=redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_KEY_PREFIX=tts
+```
+
+Se nao quiser Redis, mantenha `TTS_QUEUE_BACKEND=inmemory`.
+
 ## 7. Desativar quando terminar
 
 ```bash

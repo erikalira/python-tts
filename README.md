@@ -72,6 +72,22 @@ DISCORD_BOT_URL=http://127.0.0.1:10000
 DISCORD_BOT_PORT=10000
 ```
 
+Para usar fila Redis no bot localmente:
+
+```bash
+docker compose -f docker-compose.redis.yml up -d
+```
+
+E adicione ao `.env`:
+
+```env
+TTS_QUEUE_BACKEND=redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_KEY_PREFIX=tts
+```
+
 Suba o bot:
 
 ```bash

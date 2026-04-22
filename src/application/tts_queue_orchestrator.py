@@ -51,7 +51,6 @@ class TTSQueueOrchestrator:
         self._audio_cleanup = audio_cleanup
         self._generation_timeout_seconds = generation_timeout_seconds
         self._playback_timeout_seconds = playback_timeout_seconds
-        self._guild_processors: dict[Optional[int], asyncio.Task] = {}
         self._processing_guilds: set[Optional[int]] = set()
 
     def is_processing(self, guild_id: Optional[int]) -> bool:
@@ -71,41 +70,14 @@ class TTSQueueOrchestrator:
                 )
 
             result = await self._process_item(item)
-            self._ensure_guild_processor(guild_id)
+            self._clear_guild_processing(guild_id)
             return result
         except Exception:
             self._clear_guild_processing(guild_id)
             raise
 
-    async def _process_queue_items(self, guild_id: Optional[int]) -> None:
-        try:
-            while True:
-                next_item = await self._audio_queue.peek_next(guild_id)
-                if not next_item:
-                    logger.debug("[QUEUE_ORCHESTRATOR] Queue empty for guild %s", guild_id)
-                    break
-
-                item = await self._audio_queue.dequeue(guild_id)
-                if item:
-                    logger.info("[QUEUE_ORCHESTRATOR] Processing queued item %s", item.item_id)
-                    await self._process_item(item)
-                    await asyncio.sleep(0.5)
-        except Exception as exc:
-            logger.error("[QUEUE_ORCHESTRATOR] Error draining queue for guild %s: %s", guild_id, exc, exc_info=True)
-        finally:
-            self._clear_guild_processing(guild_id)
-
-    def _ensure_guild_processor(self, guild_id: Optional[int]) -> None:
-        existing_task = self._guild_processors.get(guild_id)
-        if existing_task and not existing_task.done():
-            return
-
-        task = asyncio.create_task(self._process_queue_items(guild_id))
-        self._guild_processors[guild_id] = task
-
     def _clear_guild_processing(self, guild_id: Optional[int]) -> None:
         self._processing_guilds.discard(guild_id)
-        self._guild_processors.pop(guild_id, None)
 
     async def _process_item(self, item: AudioQueueItem) -> SpeakTextResult:
         item.mark_processing()

@@ -80,3 +80,50 @@ def test_config_accepts_postgres_backend_when_database_url_is_present(tmp_path):
     config = Config(env_file=env_file)
 
     assert config.validate() == (True, "")
+
+
+def test_config_reads_redis_queue_settings(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "TTS_QUEUE_BACKEND=redis",
+                "TTS_QUEUE_MAX_SIZE=99",
+                "REDIS_HOST=redis.local",
+                "REDIS_PORT=6380",
+                "REDIS_DB=2",
+                "REDIS_PASSWORD=secret",
+                "REDIS_KEY_PREFIX=discord-tts",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (True, "")
+    assert config.tts_queue_backend == "redis"
+    assert config.tts_queue_max_size == 99
+    assert config.redis_host == "redis.local"
+    assert config.redis_port == 6380
+    assert config.redis_db == 2
+    assert config.redis_password == "secret"
+    assert config.redis_key_prefix == "discord-tts"
+
+
+def test_config_rejects_unknown_queue_backend(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "TTS_QUEUE_BACKEND=unknown",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (False, "Invalid TTS_QUEUE_BACKEND: unknown")
