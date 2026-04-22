@@ -15,7 +15,8 @@ from src.application.use_cases import (
     LeaveVoiceChannelUseCase,
     SpeakTextUseCase,
 )
-from src.infrastructure.audio_queue import InMemoryAudioQueue
+from src.bot_runtime.queue_worker import BotQueueWorker
+from src.infrastructure.audio_queue import InMemoryAudioQueue, RedisAudioQueue
 from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvailability
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
@@ -29,6 +30,11 @@ from src.presentation.http_controllers import SpeakController, VoiceContextContr
 from .settings import Config
 
 logger = logging.getLogger(__name__)
+
+try:  # pragma: no cover - exercised when Redis is installed in runtime environments.
+    from redis.asyncio import Redis
+except ImportError:  # pragma: no cover - unit tests still cover the fallback path.
+    Redis = None  # type: ignore[assignment]
 
 
 class Container:
@@ -50,7 +56,7 @@ class Container:
             playback_timeout_seconds=config.tts_playback_timeout_seconds,
             idle_disconnect_timeout_seconds=config.voice_idle_disconnect_timeout_seconds,
         )
-        self.audio_queue = InMemoryAudioQueue()
+        self.audio_queue = self._build_audio_queue(config)
         self.audio_cleanup = FileAudioCleanup()
         self.tts_engine = RoutedTTSEngine()
         self.tts_catalog = RuntimeTTSCatalog()
@@ -63,6 +69,10 @@ class Container:
             audio_cleanup=self.audio_cleanup,
             generation_timeout_seconds=config.tts_generation_timeout_seconds,
             playback_timeout_seconds=config.tts_playback_timeout_seconds,
+        )
+        self.queue_worker = BotQueueWorker(
+            audio_queue=self.audio_queue,
+            queue_orchestrator=self.tts_queue_orchestrator,
         )
 
         self.speak_use_case = SpeakTextUseCase(
@@ -101,6 +111,33 @@ class Container:
         logger.info("[CONTAINER] Using JSON config storage at %s", config.config_storage_dir)
         return JSONConfigStorage(storage_dir=config.config_storage_dir)
 
+    def _build_audio_queue(self, config: Config):
+        if config.tts_queue_backend == "redis":
+            if Redis is None:
+                raise RuntimeError("redis package is required for TTS_QUEUE_BACKEND=redis")
+
+            logger.info(
+                "[CONTAINER] Using Redis audio queue at %s:%s/%s",
+                config.redis_host,
+                config.redis_port,
+                config.redis_db,
+            )
+            redis_client = Redis(
+                host=config.redis_host,
+                port=config.redis_port,
+                db=config.redis_db,
+                password=config.redis_password,
+                decode_responses=False,
+            )
+            return RedisAudioQueue(
+                redis_client,
+                max_queue_size=config.tts_queue_max_size,
+                key_prefix=config.redis_key_prefix,
+            )
+
+        logger.info("[CONTAINER] Using in-memory audio queue")
+        return InMemoryAudioQueue(max_queue_size=config.tts_queue_max_size)
+
     def _log_voice_runtime_status(self) -> None:
         has_davey = importlib.util.find_spec("davey") is not None
         if not has_davey:
@@ -131,3 +168,12 @@ class Container:
             logger.info("Slash commands synced")
         except Exception as exc:
             logger.error("Failed to sync commands: %s", exc)
+
+    async def start(self) -> None:
+        await self.queue_worker.start()
+
+    async def shutdown(self) -> None:
+        await self.queue_worker.stop()
+        close_queue = getattr(self.audio_queue, "aclose", None)
+        if close_queue is not None:
+            await close_queue()

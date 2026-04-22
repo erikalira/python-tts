@@ -50,7 +50,7 @@ class TestTTSQueueOrchestrator:
         assert result.code == SPEAK_RESULT_OK
         assert cleanup.cleaned_paths == ["/tmp/mock_audio.wav"]
 
-    async def test_background_processor_drains_followup_items(self):
+    async def test_start_processing_handles_only_one_item_per_call(self):
         queue = InMemoryAudioQueue()
         orchestrator = TTSQueueOrchestrator(
             tts_engine=MockTTSEngine(),
@@ -61,12 +61,9 @@ class TestTTSQueueOrchestrator:
         )
 
         processed = []
-        release = asyncio.Event()
 
         async def fake_process_item(item):
             processed.append(item.request.text)
-            if item.request.text == "second":
-                release.set()
             return type("FakeResult", (), {"code": SPEAK_RESULT_OK, "success": True})()
 
         orchestrator._process_item = fake_process_item
@@ -76,11 +73,10 @@ class TestTTSQueueOrchestrator:
 
         first_result = await orchestrator.start_processing_for_item(789012)
         assert first_result.code == SPEAK_RESULT_OK
-
-        await asyncio.wait_for(release.wait(), timeout=1)
-        await asyncio.sleep(0.6)
-
-        assert processed == ["first", "second"]
+        assert processed == ["first"]
+        next_item = await queue.peek_next(789012)
+        assert next_item is not None
+        assert next_item.request.text == "second"
         assert orchestrator.is_processing(789012) is False
 
     async def test_process_item_uses_guild_specific_engine_from_config(self):

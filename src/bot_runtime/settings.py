@@ -56,6 +56,13 @@ class Config:
                 str(DEFAULT_DISCORD_IDLE_DISCONNECT_TIMEOUT_SECONDS),
             )
         )
+        self.tts_queue_backend = os.getenv("TTS_QUEUE_BACKEND", "inmemory").strip().lower() or "inmemory"
+        self.tts_queue_max_size = int(os.getenv("TTS_QUEUE_MAX_SIZE", "50"))
+        self.redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
+        self.redis_port = int(os.getenv("REDIS_PORT", "6379"))
+        self.redis_db = int(os.getenv("REDIS_DB", "0"))
+        self.redis_password: Optional[str] = os.getenv("REDIS_PASSWORD")
+        self.redis_key_prefix = os.getenv("REDIS_KEY_PREFIX", "tts").strip() or "tts"
 
         # TTS settings
         self.tts_config = TTSConfig(
@@ -85,5 +92,8 @@ class Config:
 
         if self.config_storage_backend == "postgres" and not self.database_url:
             return False, "DATABASE_URL not set for CONFIG_STORAGE_BACKEND=postgres"
+
+        if self.tts_queue_backend not in ["inmemory", "redis"]:
+            return False, f"Invalid TTS_QUEUE_BACKEND: {self.tts_queue_backend}"
 
         return True, ""

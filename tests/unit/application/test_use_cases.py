@@ -1,5 +1,4 @@
 """Tests for application use cases."""
-import asyncio
 
 import pytest
 from src.application.dto import (
@@ -9,12 +8,10 @@ from src.application.dto import (
     LEAVE_RESULT_NOT_CONNECTED,
     LEAVE_RESULT_OK,
     SPEAK_RESULT_MISSING_TEXT,
-    SPEAK_RESULT_OK,
     SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_QUEUE_FULL,
     SPEAK_RESULT_USER_NOT_IN_CHANNEL,
     SpeakTextInputDTO,
-    SpeakTextResult,
     TTSConfigurationData,
 )
 from src.application.use_cases import (
@@ -51,10 +48,10 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(sample_tts_request)
         
         assert result.success is True
-        assert result.code == SPEAK_RESULT_OK
-        assert result.queued is False
-        assert len(mock_tts_engine.calls) == 1
-        assert len(mock_channel_repository.channel.played_audio) == 1
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert result.queued is True
+        assert len(mock_tts_engine.calls) == 0
+        assert len(mock_channel_repository.channel.played_audio) == 0
     
     async def test_execute_missing_text(
         self,
@@ -126,7 +123,8 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(request)
 
         assert result.success is True
-        assert mock_tts_engine.calls[0]["text"] == "abcde"
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert mock_audio_queue.items[0].request.text == "abcde"
 
     async def test_execute_infers_guild_id_from_member_channel_when_missing(
         self,
@@ -148,8 +146,8 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(request)
 
         assert result.success is True
-        assert mock_tts_engine.calls[0]["config"].language == "pt"
-        assert mock_channel_repository.channel.played_audio
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert mock_audio_queue.items[0].request.guild_id == mock_channel_repository.channel.get_guild_id()
     
     async def test_execute_finds_by_channel_id(
         self,
@@ -171,78 +169,8 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(request)
         
         assert result.success is True
-        assert mock_channel_repository.channel.is_connected()
-
-    async def test_execute_keeps_processing_flag_while_background_queue_is_draining(
-        self,
-        mock_tts_engine,
-        mock_channel_repository,
-        mock_config_repository,
-        build_speak_use_case,
-        sample_tts_request
-    ):
-        """A new request must stay queued while a background item is still playing."""
-        audio_queue = InMemoryAudioQueue()
-        use_case = build_speak_use_case(
-            mock_tts_engine=mock_tts_engine,
-            mock_channel_repository=mock_channel_repository,
-            mock_config_repository=mock_config_repository,
-            mock_audio_queue=audio_queue,
-        )
-
-        first_started = asyncio.Event()
-        first_release = asyncio.Event()
-        second_started = asyncio.Event()
-        second_release = asyncio.Event()
-        process_order = []
-
-        async def fake_process_audio(item):
-            process_order.append(item.request.text)
-            if item.request.text == "first":
-                first_started.set()
-                await first_release.wait()
-            elif item.request.text == "second":
-                second_started.set()
-                await second_release.wait()
-
-            return SpeakTextResult(
-                success=True,
-                code=SPEAK_RESULT_OK,
-                queued=False,
-                item_id=item.item_id,
-            )
-
-        use_case._queue_orchestrator._process_item = fake_process_audio
-
-        first_request = SpeakTextInputDTO(text="first", channel_id=123456, guild_id=789012, member_id=345678)
-        second_request = SpeakTextInputDTO(text="second", channel_id=123456, guild_id=789012, member_id=345678)
-        third_request = SpeakTextInputDTO(text="third", channel_id=123456, guild_id=789012, member_id=345678)
-
-        first_task = asyncio.create_task(use_case.execute(first_request))
-        await asyncio.wait_for(first_started.wait(), timeout=1)
-
-        second_result = await use_case.execute(second_request)
-        assert second_result.queued is True
-        assert second_result.code == SPEAK_RESULT_QUEUED
-        assert second_result.position == 0
-
-        first_release.set()
-        first_result = await asyncio.wait_for(first_task, timeout=1)
-        assert first_result.success is True
-
-        await asyncio.wait_for(second_started.wait(), timeout=1)
-
-        third_result = await use_case.execute(third_request)
-        assert third_result.success is True
-        assert third_result.queued is True
-        assert third_result.code == SPEAK_RESULT_QUEUED
-        assert third_result.position == 0
-        assert process_order == ["first", "second"]
-
-        second_release.set()
-        await asyncio.sleep(0.6)
-
-        assert process_order == ["first", "second", "third"]
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert mock_audio_queue.items[0].request.channel_id == 123456
 
     async def test_execute_returns_failure_when_queue_is_full(
         self,
