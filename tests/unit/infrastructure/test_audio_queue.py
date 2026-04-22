@@ -103,6 +103,12 @@ class FakeRedis:
         self._expirations.pop(key, None)
         return removed
 
+    async def expire(self, key: str, seconds: int) -> bool:
+        if key not in self._strings and key not in self._lists and key not in self._sets:
+            return False
+        self._expirations[key] = time.time() + seconds
+        return True
+
     async def aclose(self) -> None:
         return None
 
@@ -216,3 +222,15 @@ class TestRedisAudioQueue:
         await queue.release_guild_lock(1, "worker-a")
 
         assert await queue.acquire_guild_lock(1, "worker-b") is True
+
+    async def test_renew_guild_lock_extends_existing_lock(self):
+        fake_redis = FakeRedis()
+        queue = RedisAudioQueue(fake_redis, max_queue_size=5, key_prefix="test")
+
+        assert await queue.acquire_guild_lock(1, "worker-a", ttl_seconds=5) is True
+        original_expiration = fake_redis._expirations[queue._lock_key(1)]
+
+        renewed = await queue.renew_guild_lock(1, "worker-a", ttl_seconds=20)
+
+        assert renewed is True
+        assert fake_redis._expirations[queue._lock_key(1)] > original_expiration

@@ -221,6 +221,17 @@ class IAudioQueue(ABC):
             item: AudioQueueItem with updated status/metadata.
         """
         pass
+
+    @abstractmethod
+    async def renew_guild_lock(self, guild_id: Optional[int], owner_token: str, ttl_seconds: int = 30) -> bool:
+        """Refresh the distributed guild lock while processing is still active.
+
+        Args:
+            guild_id: Guild identifier
+            owner_token: Lock owner token
+            ttl_seconds: New lock TTL
+        """
+        pass
     
     @abstractmethod
     async def clear_completed(self, guild_id: Optional[int], older_than_seconds: int = 3600):

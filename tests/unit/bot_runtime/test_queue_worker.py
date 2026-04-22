@@ -103,3 +103,41 @@ class TestBotQueueWorker:
 
         assert processed == ["first", "second"]
         assert max_active_processors == 1
+
+    async def test_worker_renews_guild_lock_during_long_processing(self):
+        class RenewalQueue(InMemoryAudioQueue):
+            def __init__(self):
+                super().__init__()
+                self.renew_calls = 0
+
+            async def renew_guild_lock(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+                del guild_id, owner_token, ttl_seconds
+                self.renew_calls += 1
+                return True
+
+        queue = RenewalQueue()
+        await queue.enqueue(AudioQueueItem(request=TTSRequest(text="long", guild_id=1, member_id=10)))
+        release = asyncio.Event()
+
+        class FakeOrchestrator:
+            async def start_processing_for_item(self, guild_id):
+                item = await queue.dequeue(guild_id)
+                if item is None:
+                    return SpeakTextResult(success=True, code=SPEAK_RESULT_OK, queued=False)
+                await release.wait()
+                return SpeakTextResult(success=True, code=SPEAK_RESULT_OK, queued=False)
+
+        worker = BotQueueWorker(
+            audio_queue=queue,
+            queue_orchestrator=FakeOrchestrator(),
+            poll_interval_seconds=0.01,
+            guild_lock_ttl_seconds=3,
+            guild_lock_renew_interval_seconds=0.01,
+        )
+        await worker.start()
+        await asyncio.sleep(0.05)
+        release.set()
+        await asyncio.sleep(0.05)
+        await worker.stop()
+
+        assert queue.renew_calls > 0

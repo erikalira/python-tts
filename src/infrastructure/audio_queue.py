@@ -206,6 +206,11 @@ class InMemoryAudioQueue(IAudioQueue):
             if self._guild_locks.get(guild_id) == owner_token:
                 self._guild_locks.pop(guild_id, None)
 
+    async def renew_guild_lock(self, guild_id: Optional[int], owner_token: str, ttl_seconds: int = 30) -> bool:
+        del ttl_seconds
+        async with self._lock:
+            return self._guild_locks.get(guild_id) == owner_token
+
     async def _refresh_positions_unlocked(self, guild_id: Optional[int]) -> None:
         queue = self._queues.get(guild_id, [])
         for index, remaining_item in enumerate(queue):
@@ -340,6 +345,16 @@ class RedisAudioQueue(IAudioQueue):
             return
         if self._decode(current) == owner_token:
             await self._redis.delete(lock_key)
+
+    async def renew_guild_lock(self, guild_id: Optional[int], owner_token: str, ttl_seconds: int = 30) -> bool:
+        lock_key = self._lock_key(guild_id)
+        current = await self._redis.get(lock_key)
+        if current is None or self._decode(current) != owner_token:
+            return False
+        expire = getattr(self._redis, "expire", None)
+        if expire is None:
+            return bool(await self._redis.set(lock_key, owner_token, ex=ttl_seconds))
+        return bool(await expire(lock_key, ttl_seconds))
 
     async def aclose(self) -> None:
         close = getattr(self._redis, "aclose", None)

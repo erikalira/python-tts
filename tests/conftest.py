@@ -262,6 +262,11 @@ class MockAudioQueue(IAudioQueue):
             if existing_item.item_id == item.item_id:
                 self.items[index] = item
                 return
+
+    async def renew_guild_lock(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+        """Renew a mock guild lock."""
+        del ttl_seconds
+        return True
     
     async def clear_completed(self, guild_id, older_than_seconds: int = 3600):
         """Clear completed items."""
