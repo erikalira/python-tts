@@ -20,6 +20,7 @@ def _build_config(backend: str):
     config.redis_db = 0
     config.redis_password = None
     config.redis_key_prefix = "tts"
+    config.redis_completed_item_ttl_seconds = 900
     return config
 
 

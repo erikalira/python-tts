@@ -91,6 +91,16 @@ def _item_from_payload(payload: dict[str, Any]) -> AudioQueueItem:
     return item
 
 
+def _build_status_dto(item: AudioQueueItem) -> AudioQueueItemStatusDTO:
+    return AudioQueueItemStatusDTO(
+        id=item.item_id,
+        user_id=item.request.member_id,
+        status=item.status.value,
+        position=item.position_in_queue,
+        wait_time_seconds=round(item.wait_time_seconds, 1),
+    )
+
+
 class InMemoryAudioQueue(IAudioQueue):
     """In-memory audio queue per guild for safe multi-user handling."""
 
@@ -147,7 +157,7 @@ class InMemoryAudioQueue(IAudioQueue):
             items = self._history.get(guild_id, [])
             return AudioQueueStatusDTO(
                 size=len(self._queues.get(guild_id, [])),
-                items=[self._to_status_dto(item) for item in items],
+                items=[_build_status_dto(item) for item in items],
             )
 
     async def get_item_position(self, item_id: str) -> int:
@@ -157,6 +167,15 @@ class InMemoryAudioQueue(IAudioQueue):
                     if item.item_id == item_id:
                         return index
             return -1
+
+    async def update_item(self, item: AudioQueueItem) -> None:
+        async with self._lock:
+            guild_id = item.request.guild_id
+            history = self._history.get(guild_id, [])
+            for index, existing_item in enumerate(history):
+                if existing_item.item_id == item.item_id:
+                    history[index] = item
+                    break
 
     async def clear_completed(self, guild_id: Optional[int], older_than_seconds: int = 3600):
         async with self._lock:
@@ -192,16 +211,6 @@ class InMemoryAudioQueue(IAudioQueue):
         for index, remaining_item in enumerate(queue):
             remaining_item.position_in_queue = index
 
-    def _to_status_dto(self, item: AudioQueueItem) -> AudioQueueItemStatusDTO:
-        return AudioQueueItemStatusDTO(
-            id=item.item_id,
-            user_id=item.request.member_id,
-            status=item.status.value,
-            position=item.position_in_queue,
-            wait_time_seconds=round(item.wait_time_seconds, 1),
-        )
-
-
 class RedisAudioQueue(IAudioQueue):
     """Redis-backed FIFO queue with item metadata per guild."""
 
@@ -213,12 +222,14 @@ class RedisAudioQueue(IAudioQueue):
         max_queue_wait_seconds: int = 3600,
         key_prefix: str = "tts",
         guild_lock_ttl_seconds: int = 30,
+        completed_item_ttl_seconds: int = 900,
     ):
         self._redis = redis_client
         self._max_queue_size = max_queue_size
         self._max_queue_wait = max_queue_wait_seconds
         self._key_prefix = key_prefix
         self._guild_lock_ttl_seconds = guild_lock_ttl_seconds
+        self._completed_item_ttl_seconds = completed_item_ttl_seconds
 
     async def enqueue(self, item: AudioQueueItem) -> Optional[str]:
         guild_id = item.request.guild_id
@@ -262,10 +273,14 @@ class RedisAudioQueue(IAudioQueue):
     async def get_queue_status(self, guild_id: Optional[int]) -> AudioQueueStatusDTO:
         item_ids = await self._redis.lrange(self._items_key(guild_id), 0, -1)
         items = []
+        kept_ids: list[str] = []
         for raw_item_id in item_ids:
-            item = await self._load_item(self._decode(raw_item_id))
+            item_id = self._decode(raw_item_id)
+            item = await self._load_item(item_id)
             if item is not None:
-                items.append(self._to_status_dto(item))
+                kept_ids.append(item_id)
+                items.append(_build_status_dto(item))
+        await self._rewrite_item_index(guild_id, kept_ids)
         return AudioQueueStatusDTO(size=int(await self._redis.llen(self._queue_key(guild_id))), items=items)
 
     async def get_item_position(self, item_id: str) -> int:
@@ -276,6 +291,12 @@ class RedisAudioQueue(IAudioQueue):
                 if self._decode(raw_item_id) == item_id:
                     return index
         return -1
+
+    async def update_item(self, item: AudioQueueItem) -> None:
+        ttl_seconds = None
+        if item.status in (AudioQueueItemStatus.COMPLETED, AudioQueueItemStatus.FAILED):
+            ttl_seconds = self._completed_item_ttl_seconds
+        await self._store_item(item, ttl_seconds=ttl_seconds)
 
     async def clear_completed(self, guild_id: Optional[int], older_than_seconds: int = 3600):
         item_ids = await self._redis.lrange(self._items_key(guild_id), 0, -1)
@@ -295,9 +316,7 @@ class RedisAudioQueue(IAudioQueue):
                 await self._redis.delete(self._item_key(item_id))
 
         items_key = self._items_key(guild_id)
-        await self._redis.delete(items_key)
-        if kept_ids:
-            await self._redis.rpush(items_key, *kept_ids)
+        await self._rewrite_item_index(guild_id, kept_ids)
 
     async def list_guild_ids(self, include_empty: bool = False) -> list[Optional[int]]:
         guild_values = await self._redis.smembers(self._active_guilds_key())
@@ -334,8 +353,8 @@ class RedisAudioQueue(IAudioQueue):
             if asyncio.iscoroutine(maybe_result):
                 await maybe_result
 
-    async def _store_item(self, item: AudioQueueItem) -> None:
-        await self._redis.set(self._item_key(item.item_id), json.dumps(_item_to_payload(item)))
+    async def _store_item(self, item: AudioQueueItem, ttl_seconds: int | None = None) -> None:
+        await self._redis.set(self._item_key(item.item_id), json.dumps(_item_to_payload(item)), ex=ttl_seconds)
 
     async def _load_item(self, item_id: str) -> Optional[AudioQueueItem]:
         payload = await self._redis.get(self._item_key(item_id))
@@ -353,6 +372,12 @@ class RedisAudioQueue(IAudioQueue):
             item.position_in_queue = index
             if item.status == AudioQueueItemStatus.PENDING:
                 await self._store_item(item)
+
+    async def _rewrite_item_index(self, guild_id: Optional[int], item_ids: list[str]) -> None:
+        items_key = self._items_key(guild_id)
+        await self._redis.delete(items_key)
+        if item_ids:
+            await self._redis.rpush(items_key, *item_ids)
 
     def _queue_key(self, guild_id: Optional[int]) -> str:
         return f"{self._key_prefix}:queue:guild:{_normalize_guild_id(guild_id)}"
@@ -374,15 +399,6 @@ class RedisAudioQueue(IAudioQueue):
 
     def _guild_from_value(self, value: str) -> Optional[int]:
         return None if value == "noguild" else int(value)
-
-    def _to_status_dto(self, item: AudioQueueItem) -> AudioQueueItemStatusDTO:
-        return AudioQueueItemStatusDTO(
-            id=item.item_id,
-            user_id=item.request.member_id,
-            status=item.status.value,
-            position=item.position_in_queue,
-            wait_time_seconds=round(item.wait_time_seconds, 1),
-        )
 
     def _decode(self, value: Any) -> str:
         if isinstance(value, bytes):
