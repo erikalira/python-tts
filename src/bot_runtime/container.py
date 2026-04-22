@@ -152,6 +152,7 @@ class Container:
             for guild in self.discord_client.guilds:
                 logger.info("Guild connected: %s (ID: %s)", guild.name, guild.id)
             await self._sync_commands_once()
+            await self._start_queue_worker_once()
 
         @self.discord_client.event
         async def on_voice_state_update(member, before, after):
@@ -170,11 +171,14 @@ class Container:
         except Exception as exc:
             logger.error("Failed to sync commands: %s", exc)
 
-    async def start(self) -> None:
+    async def _start_queue_worker_once(self) -> None:
+        if self.queue_worker.is_running():
+            return
         await self.queue_worker.start()
 
     async def shutdown(self) -> None:
-        await self.queue_worker.stop()
+        if self.queue_worker.is_running():
+            await self.queue_worker.stop()
         close_queue = getattr(self.audio_queue, "aclose", None)
         if close_queue is not None:
             await close_queue()

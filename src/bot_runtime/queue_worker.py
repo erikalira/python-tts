@@ -39,6 +39,9 @@ class BotQueueWorker:
         self._stop_event.clear()
         self._runner_task = asyncio.create_task(self._run(), name="discord-bot-queue-worker")
 
+    def is_running(self) -> bool:
+        return self._runner_task is not None and not self._runner_task.done()
+
     async def stop(self) -> None:
         self._stop_event.set()
         tasks = [task for task in self._guild_tasks.values() if not task.done()]
