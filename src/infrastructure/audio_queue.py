@@ -315,7 +315,6 @@ class RedisAudioQueue(IAudioQueue):
             else:
                 await self._redis.delete(self._item_key(item_id))
 
-        items_key = self._items_key(guild_id)
         await self._rewrite_item_index(guild_id, kept_ids)
 
     async def list_guild_ids(self, include_empty: bool = False) -> list[Optional[int]]:
