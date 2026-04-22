@@ -212,6 +212,15 @@ class IAudioQueue(ABC):
             Position (0-indexed) or -1 if not found
         """
         pass
+
+    @abstractmethod
+    async def update_item(self, item: AudioQueueItem) -> None:
+        """Persist state changes for a queued item.
+
+        Args:
+            item: AudioQueueItem with updated status/metadata.
+        """
+        pass
     
     @abstractmethod
     async def clear_completed(self, guild_id: Optional[int], older_than_seconds: int = 3600):

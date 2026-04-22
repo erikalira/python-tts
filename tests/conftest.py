@@ -255,6 +255,13 @@ class MockAudioQueue(IAudioQueue):
             if item.item_id == item_id:
                 return i
         return -1
+
+    async def update_item(self, item: AudioQueueItem) -> None:
+        """Persist in-memory item updates for tests."""
+        for index, existing_item in enumerate(self.items):
+            if existing_item.item_id == item.item_id:
+                self.items[index] = item
+                return
     
     async def clear_completed(self, guild_id, older_than_seconds: int = 3600):
         """Clear completed items."""

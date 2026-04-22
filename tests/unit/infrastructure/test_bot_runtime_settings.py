@@ -95,6 +95,7 @@ def test_config_reads_redis_queue_settings(tmp_path):
                 "REDIS_DB=2",
                 "REDIS_PASSWORD=secret",
                 "REDIS_KEY_PREFIX=discord-tts",
+                "REDIS_COMPLETED_ITEM_TTL_SECONDS=120",
             ]
         ),
         encoding="utf-8",
@@ -110,6 +111,7 @@ def test_config_reads_redis_queue_settings(tmp_path):
     assert config.redis_db == 2
     assert config.redis_password == "secret"
     assert config.redis_key_prefix == "discord-tts"
+    assert config.redis_completed_item_ttl_seconds == 120
 
 
 def test_config_rejects_unknown_queue_backend(tmp_path):

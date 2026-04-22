@@ -133,6 +133,7 @@ class Container:
                 redis_client,
                 max_queue_size=config.tts_queue_max_size,
                 key_prefix=config.redis_key_prefix,
+                completed_item_ttl_seconds=config.redis_completed_item_ttl_seconds,
             )
 
         logger.info("[CONTAINER] Using in-memory audio queue")

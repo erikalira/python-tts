@@ -63,6 +63,7 @@ class Config:
         self.redis_db = int(os.getenv("REDIS_DB", "0"))
         self.redis_password: Optional[str] = os.getenv("REDIS_PASSWORD")
         self.redis_key_prefix = os.getenv("REDIS_KEY_PREFIX", "tts").strip() or "tts"
+        self.redis_completed_item_ttl_seconds = int(os.getenv("REDIS_COMPLETED_ITEM_TTL_SECONDS", "900"))
 
         # TTS settings
         self.tts_config = TTSConfig(
