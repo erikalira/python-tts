@@ -23,11 +23,17 @@ class BotQueueWorker:
         queue_orchestrator: TTSQueueOrchestrator,
         poll_interval_seconds: float = 0.2,
         guild_lock_ttl_seconds: int = 30,
+        guild_lock_renew_interval_seconds: float | None = None,
     ):
         self._audio_queue = audio_queue
         self._queue_orchestrator = queue_orchestrator
         self._poll_interval_seconds = poll_interval_seconds
         self._guild_lock_ttl_seconds = guild_lock_ttl_seconds
+        self._guild_lock_renew_interval_seconds = (
+            guild_lock_renew_interval_seconds
+            if guild_lock_renew_interval_seconds is not None
+            else max(1.0, guild_lock_ttl_seconds / 3)
+        )
         self._worker_token = uuid.uuid4().hex
         self._runner_task: asyncio.Task | None = None
         self._guild_tasks: dict[Optional[int], asyncio.Task] = {}
@@ -75,10 +81,15 @@ class BotQueueWorker:
 
     async def _drain_guild(self, guild_id: Optional[int]) -> None:
         lock_acquired = False
+        renew_task: asyncio.Task | None = None
         try:
             lock_acquired = await self._acquire_guild_lock(guild_id)
             if not lock_acquired:
                 return
+            renew_task = asyncio.create_task(
+                self._renew_guild_lock_loop(guild_id),
+                name=f"discord-bot-queue-lock-renew-{guild_id}",
+            )
 
             while not self._stop_event.is_set():
                 next_item = await self._audio_queue.peek_next(guild_id)
@@ -90,6 +101,9 @@ class BotQueueWorker:
         except Exception:
             logger.exception("[QUEUE_WORKER] Failed while draining guild %s", guild_id)
         finally:
+            if renew_task is not None:
+                renew_task.cancel()
+                await asyncio.gather(renew_task, return_exceptions=True)
             self._guild_tasks.pop(guild_id, None)
             if lock_acquired:
                 await self._release_guild_lock(guild_id)
@@ -111,3 +125,22 @@ class BotQueueWorker:
         if release_guild_lock is None:
             return
         await release_guild_lock(guild_id, self._worker_token)
+
+    async def _renew_guild_lock_loop(self, guild_id: Optional[int]) -> None:
+        renew_guild_lock = getattr(self._audio_queue, "renew_guild_lock", None)
+        if renew_guild_lock is None:
+            return
+
+        try:
+            while not self._stop_event.is_set():
+                await asyncio.sleep(self._guild_lock_renew_interval_seconds)
+                renewed = await renew_guild_lock(
+                    guild_id,
+                    self._worker_token,
+                    ttl_seconds=self._guild_lock_ttl_seconds,
+                )
+                if not renewed:
+                    logger.warning("[QUEUE_WORKER] Lost guild lock while draining guild %s", guild_id)
+                    return
+        except asyncio.CancelledError:
+            raise
