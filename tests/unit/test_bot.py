@@ -31,7 +31,6 @@ class TestBot:
             mock_container.voice_context_controller = Mock()
             mock_container.speak_controller.handle = AsyncMock()
             mock_container.voice_context_controller.handle = AsyncMock()
-            mock_container.start = AsyncMock()
             mock_container.shutdown = AsyncMock()
             mock_container.discord_client = Mock()
             # Make start raise an exception to stop the bot from running
@@ -60,7 +59,6 @@ class TestBot:
             )
             # Verify HTTP server was started
             mock_http_server.start.assert_called_once()
-            mock_container.start.assert_awaited_once()
             mock_container.shutdown.assert_awaited_once()
             mock_container.discord_client.close.assert_awaited_once()
     

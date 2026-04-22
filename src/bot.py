@@ -31,7 +31,6 @@ async def main():
     
     # Create dependency injection container
     container = Container(config)
-    await container.start()
     
     # Start HTTP server
     http_server = HTTPServer(
