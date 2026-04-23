@@ -100,9 +100,16 @@ class TestDiscordCommands:
         interaction.delete_original_response.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_handle_speak_hides_queue_message_when_playback_will_start_immediately(self, commands_instance):
+    async def test_handle_speak_hides_response_when_result_starts_immediately(self, commands_instance):
         commands_instance._speak_use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0, queue_size=1)
+            return_value=SpeakTextResult(
+                success=True,
+                code="queued",
+                queued=True,
+                starts_immediately=True,
+                position=0,
+                queue_size=1,
+            )
         )
 
         interaction = Mock()
@@ -124,7 +131,14 @@ class TestDiscordCommands:
     @pytest.mark.asyncio
     async def test_handle_speak_keeps_queue_message_when_there_is_backlog(self, commands_instance):
         commands_instance._speak_use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=1, queue_size=2)
+            return_value=SpeakTextResult(
+                success=True,
+                code="queued",
+                queued=True,
+                starts_immediately=False,
+                position=1,
+                queue_size=2,
+            )
         )
 
         interaction = Mock()

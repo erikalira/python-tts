@@ -229,6 +229,7 @@ class MockAudioQueue(IAudioQueue):
     def __init__(self):
         self.items = []
         self.completed = []
+        self.processing_guilds = set()
     
     async def enqueue(self, item: AudioQueueItem) -> str | None:
         """Add item to queue."""
@@ -267,6 +268,24 @@ class MockAudioQueue(IAudioQueue):
         """Renew a mock guild lock."""
         del ttl_seconds
         return True
+
+    async def acquire_processing_lease(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+        del owner_token, ttl_seconds
+        if guild_id in self.processing_guilds:
+            return False
+        self.processing_guilds.add(guild_id)
+        return True
+
+    async def release_processing_lease(self, guild_id, owner_token: str) -> None:
+        del owner_token
+        self.processing_guilds.discard(guild_id)
+
+    async def renew_processing_lease(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+        del owner_token, ttl_seconds
+        return guild_id in self.processing_guilds
+
+    async def is_guild_processing(self, guild_id) -> bool:
+        return guild_id in self.processing_guilds
     
     async def clear_completed(self, guild_id, older_than_seconds: int = 3600):
         """Clear completed items."""
@@ -327,6 +346,7 @@ def build_speak_use_case(mock_audio_cleanup):
         mock_config_repository,
         mock_audio_queue,
         max_text_length=None,
+        queue_runtime_is_active=None,
     ):
         voice_channel_resolution = VoiceChannelResolutionService(mock_channel_repository)
         queue_orchestrator = TTSQueueOrchestrator(
@@ -342,6 +362,7 @@ def build_speak_use_case(mock_audio_cleanup):
             voice_channel_resolution=voice_channel_resolution,
             queue_orchestrator=queue_orchestrator,
             max_text_length=max_text_length,
+            queue_runtime_is_active=queue_runtime_is_active or (lambda: True),
         )
 
     return _build

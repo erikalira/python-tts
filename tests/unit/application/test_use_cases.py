@@ -50,6 +50,7 @@ class TestSpeakTextUseCase:
         assert result.success is True
         assert result.code == SPEAK_RESULT_QUEUED
         assert result.queued is True
+        assert result.starts_immediately is True
         assert len(mock_tts_engine.calls) == 0
         assert len(mock_channel_repository.channel.played_audio) == 0
     
@@ -124,6 +125,7 @@ class TestSpeakTextUseCase:
 
         assert result.success is True
         assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is True
         assert mock_audio_queue.items[0].request.text == "abcde"
 
     async def test_execute_infers_guild_id_from_member_channel_when_missing(
@@ -147,6 +149,7 @@ class TestSpeakTextUseCase:
 
         assert result.success is True
         assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is True
         assert mock_audio_queue.items[0].request.guild_id == mock_channel_repository.channel.get_guild_id()
     
     async def test_execute_finds_by_channel_id(
@@ -167,10 +170,57 @@ class TestSpeakTextUseCase:
         
         request = SpeakTextInputDTO(text="test", channel_id=123456, guild_id=789012, member_id=345678)
         result = await use_case.execute(request)
-        
+
         assert result.success is True
         assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is True
         assert mock_audio_queue.items[0].request.channel_id == 123456
+
+    async def test_execute_marks_request_as_queued_when_guild_is_already_processing(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+        sample_tts_request,
+    ):
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+        )
+        mock_audio_queue.processing_guilds.add(sample_tts_request.guild_id)
+
+        result = await use_case.execute(sample_tts_request)
+
+        assert result.success is True
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is False
+
+    async def test_execute_keeps_queue_feedback_when_queue_worker_is_not_active(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+        sample_tts_request,
+    ):
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+            queue_runtime_is_active=lambda: False,
+        )
+
+        result = await use_case.execute(sample_tts_request)
+
+        assert result.success is True
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is False
 
     async def test_execute_returns_failure_when_queue_is_full(
         self,

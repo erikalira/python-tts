@@ -178,7 +178,7 @@ class DiscordCommands:
 
             try:
                 if result.code == SPEAK_RESULT_QUEUED:
-                    if self._should_hide_speak_response(result):
+                    if result.starts_immediately:
                         await interaction.delete_original_response()
                     else:
                         await interaction.edit_original_response(content=self._build_speak_message(result))
@@ -201,16 +201,6 @@ class DiscordCommands:
 
     def _build_speak_message(self, result) -> str:
         return self._speak_presenter.build_message(result)
-
-    def _should_hide_speak_response(self, result) -> bool:
-        if result.code == SPEAK_RESULT_OK:
-            return True
-        if result.code != SPEAK_RESULT_QUEUED:
-            return False
-
-        position = result.position or 0
-        queue_size = result.queue_size or 0
-        return position <= 0 and queue_size <= 1
 
     async def _handle_config(self, interaction: discord.Interaction, voz: str | None):
         await self._config_handler.handle(interaction, voz)

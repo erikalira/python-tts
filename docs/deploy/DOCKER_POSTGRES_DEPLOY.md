@@ -6,7 +6,7 @@ Postgres, and Redis using the repository files.
 ## Files involved
 
 - `Dockerfile`
-- `docker-compose.postgres.yml`
+- `docker-compose.prod.yml`
 - `deploy/postgres/001_bot_config_schema.sql`
 
 ## 1. Prepare environment
@@ -36,7 +36,7 @@ REDIS_COMPLETED_ITEM_TTL_SECONDS=900
 ```
 
 For the bundled compose file, the bot `DATABASE_URL` is built inside
-`docker-compose.postgres.yml` from the same `POSTGRES_*` variables used by the
+`docker-compose.prod.yml` from the same `POSTGRES_*` variables used by the
 database container, so you do not need to set `DATABASE_URL` separately.
 
 For the bundled Redis service, use `REDIS_HOST=redis`. Inside Docker, the bot
@@ -45,7 +45,7 @@ must connect to the Redis service name, not `127.0.0.1`.
 ## 2. Start the stack
 
 ```bash
-docker compose --env-file .env.prod -f docker-compose.postgres.yml up -d --build
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
 
 If you keep secrets in a different file, replace `.env.prod` with your
@@ -54,8 +54,8 @@ real env file.
 ## 3. Check status
 
 ```bash
-docker compose -f docker-compose.postgres.yml ps
-docker compose -f docker-compose.postgres.yml logs -f bot
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f bot
 ```
 
 The bot HTTP server will listen on port `10000` by default.
@@ -63,13 +63,13 @@ The bot HTTP server will listen on port `10000` by default.
 ## 4. Stop the stack
 
 ```bash
-docker compose -f docker-compose.postgres.yml down
+docker compose -f docker-compose.prod.yml down
 ```
 
 To stop and remove the Postgres volume too:
 
 ```bash
-docker compose -f docker-compose.postgres.yml down -v
+docker compose -f docker-compose.prod.yml down -v
 ```
 
 ## Notes for real production
@@ -97,8 +97,8 @@ Recovery options:
 1. If you do not need the existing database contents, recreate the volume:
 
 ```bash
-docker compose -f docker-compose.postgres.yml down -v
-docker compose --env-file .env.prod -f docker-compose.postgres.yml up -d --build
+docker compose -f docker-compose.prod.yml down -v
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
 
 2. If you need to keep the data, update the password inside Postgres instead

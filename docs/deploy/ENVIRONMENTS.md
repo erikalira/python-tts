@@ -86,7 +86,7 @@ Notes:
 
 ## Bundled Docker + Postgres + Redis Stack
 
-For `docker-compose.postgres.yml`, use `.env.prod.example` as the starting
+For `docker-compose.prod.yml`, use `.env.prod.example` as the starting
 point.
 
 Recommended minimum values:
