@@ -8,7 +8,7 @@ This project has two independent runtimes with different environment needs:
 Use the examples in the repository root as the starting point:
 
 - `.env.example`: local development defaults
-- `.env.prod.example`: Dockerized bot + Postgres example for the bundled compose stack
+- `.env.prod.example`: Dockerized bot + Postgres + Redis example for the bundled compose stack
 
 ## Environment Summary
 
@@ -31,6 +31,12 @@ Use the examples in the repository root as the starting point:
 | `DATABASE_URL` | No | Yes | Required with `CONFIG_STORAGE_BACKEND=postgres` | Postgres connection string for durable bot configuration. |
 | `POSTGRES_USER` | No | Docker Compose only | Required in practice for bundled Postgres | Compose credential used by the repository's bundled Postgres container. Keep it aligned with `DATABASE_URL`. |
 | `POSTGRES_PASSWORD` | No | Docker Compose only | Required in practice for bundled Postgres | Compose password used by the repository's bundled Postgres container. Keep it aligned with `DATABASE_URL`. |
+| `TTS_QUEUE_BACKEND` | Optional | Optional | No | `inmemory` for local simplicity, `redis` for a Dockerized durable queue backend. |
+| `REDIS_HOST` | Optional | Optional | Required with `TTS_QUEUE_BACKEND=redis` | Use `127.0.0.1` when the bot runs locally and Redis is published to the host; use `redis` when the bot runs inside the bundled compose stack. |
+| `REDIS_PORT` | Optional | Optional | Required with `TTS_QUEUE_BACKEND=redis` | Redis port. Defaults to `6379`. |
+| `REDIS_DB` | Optional | Optional | No | Redis logical database. Defaults to `0`. |
+| `REDIS_KEY_PREFIX` | Optional | Optional | No | Prefix for bot queue keys. Defaults to `tts`. |
+| `REDIS_COMPLETED_ITEM_TTL_SECONDS` | Optional | Optional | No | Retention for completed queue items in Redis. Defaults to `900`. |
 
 ## Local Development
 
@@ -78,7 +84,7 @@ Notes:
   `POSTGRES_USER` and `POSTGRES_PASSWORD` in the same `.env` file and match
   them with the credentials embedded in `DATABASE_URL`.
 
-## Bundled Docker + Postgres Stack
+## Bundled Docker + Postgres + Redis Stack
 
 For `docker-compose.postgres.yml`, use `.env.prod.example` as the starting
 point.
@@ -91,12 +97,16 @@ CONFIG_STORAGE_BACKEND=postgres
 POSTGRES_DB=tts_hotkey_windows
 POSTGRES_USER=tts_user
 POSTGRES_PASSWORD=change_me
+TTS_QUEUE_BACKEND=redis
+REDIS_HOST=redis
 ```
 
 Notes:
 
 - The bundled compose stack builds `DATABASE_URL` for the bot from
   `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
+- The bundled compose stack includes Redis. Use `REDIS_HOST=redis` so the bot
+  container connects through Docker service discovery.
 - With the bundled stack, do not maintain a second manual `DATABASE_URL` unless
   you are intentionally pointing the bot at a different database service.
 

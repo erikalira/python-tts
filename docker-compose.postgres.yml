@@ -1,4 +1,19 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: tts-hotkey-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["redis-server", "--appendonly", "yes"]
+
   postgres:
     image: postgres:17
     container_name: tts-bot-postgres
@@ -27,6 +42,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "10000:10000"
     environment:
@@ -40,6 +57,13 @@ services:
       TTS_VOICE_ID: ${TTS_VOICE_ID:-roa/pt-br}
       TTS_RATE: ${TTS_RATE:-180}
       MAX_TEXT_LENGTH: ${MAX_TEXT_LENGTH:-500}
+      TTS_QUEUE_BACKEND: ${TTS_QUEUE_BACKEND:-redis}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_KEY_PREFIX: ${REDIS_KEY_PREFIX:-tts}
+      REDIS_COMPLETED_ITEM_TTL_SECONDS: ${REDIS_COMPLETED_ITEM_TTL_SECONDS:-900}
 
 volumes:
   postgres_data:
+  redis_data:
