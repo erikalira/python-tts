@@ -1,7 +1,7 @@
-# Docker + Postgres Deploy
+# Docker + Postgres + Redis Deploy
 
-This guide shows the simplest way to run the Discord bot with Docker and
-Postgres using the repository files.
+This guide shows the simplest way to run the Discord bot with Docker,
+Postgres, and Redis using the repository files.
 
 ## Files involved
 
@@ -27,19 +27,28 @@ MAX_TEXT_LENGTH=500
 POSTGRES_DB=tts_hotkey_windows
 POSTGRES_USER=tts_user
 POSTGRES_PASSWORD=change_me
+TTS_QUEUE_BACKEND=redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_KEY_PREFIX=tts
+REDIS_COMPLETED_ITEM_TTL_SECONDS=900
 ```
 
 For the bundled compose file, the bot `DATABASE_URL` is built inside
 `docker-compose.postgres.yml` from the same `POSTGRES_*` variables used by the
 database container, so you do not need to set `DATABASE_URL` separately.
 
+For the bundled Redis service, use `REDIS_HOST=redis`. Inside Docker, the bot
+must connect to the Redis service name, not `127.0.0.1`.
+
 ## 2. Start the stack
 
 ```bash
-docker compose --env-file .env.prod.example -f docker-compose.postgres.yml up -d --build
+docker compose --env-file .env.prod -f docker-compose.postgres.yml up -d --build
 ```
 
-If you keep secrets in a different file, replace `.env.prod.example` with your
+If you keep secrets in a different file, replace `.env.prod` with your
 real env file.
 
 ## 3. Check status
@@ -67,6 +76,7 @@ docker compose -f docker-compose.postgres.yml down -v
 
 - Change `POSTGRES_PASSWORD` in your env file before the first startup.
 - Prefer a managed Postgres service in cloud production.
+- Prefer a managed Redis service in cloud production when available.
 - Keep the bot container stateless and let Postgres hold durable config.
 - Back up the Postgres volume or database.
 - If the schema already exists, the init SQL is ignored by Postgres container
