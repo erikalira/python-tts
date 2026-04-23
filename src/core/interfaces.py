@@ -232,6 +232,36 @@ class IAudioQueue(ABC):
             ttl_seconds: New lock TTL
         """
         pass
+
+    @abstractmethod
+    async def acquire_processing_lease(
+        self,
+        guild_id: Optional[int],
+        owner_token: str,
+        ttl_seconds: int = 30,
+    ) -> bool:
+        """Acquire the active-playback lease for a guild."""
+        pass
+
+    @abstractmethod
+    async def release_processing_lease(self, guild_id: Optional[int], owner_token: str) -> None:
+        """Release the active-playback lease for a guild."""
+        pass
+
+    @abstractmethod
+    async def renew_processing_lease(
+        self,
+        guild_id: Optional[int],
+        owner_token: str,
+        ttl_seconds: int = 30,
+    ) -> bool:
+        """Refresh the active-playback lease for a guild."""
+        pass
+
+    @abstractmethod
+    async def is_guild_processing(self, guild_id: Optional[int]) -> bool:
+        """Return whether the guild currently has an active playback lease."""
+        pass
     
     @abstractmethod
     async def clear_completed(self, guild_id: Optional[int], older_than_seconds: int = 3600):

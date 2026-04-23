@@ -81,6 +81,7 @@ class Container:
             max_text_length=config.max_text_length,
             voice_channel_resolution=self.voice_channel_resolution,
             queue_orchestrator=self.tts_queue_orchestrator,
+            queue_runtime_is_active=self.queue_worker.is_running,
         )
         self.config_use_case = ConfigureTTSUseCase(config_repository=self.config_repository)
         self.join_use_case = JoinVoiceChannelUseCase(channel_repository=self.voice_channel_repository)

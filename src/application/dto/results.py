@@ -71,6 +71,7 @@ class SpeakTextResult(ResultBase):
     success: bool
     code: str
     queued: bool
+    starts_immediately: bool = False
     position: Optional[int] = None
     queue_size: Optional[int] = None
     item_id: Optional[str] = None

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Optional
 
 from src.application.dto import (
@@ -32,12 +33,14 @@ class SpeakTextUseCase:
         voice_channel_resolution: VoiceChannelResolutionService,
         queue_orchestrator: TTSQueueOrchestrator,
         max_text_length: Optional[int] = None,
+        queue_runtime_is_active: Callable[[], bool] | None = None,
     ):
         self._channel_repository = channel_repository
         self._audio_queue = audio_queue
         self._max_text_length = max_text_length
         self._voice_channel_resolution = voice_channel_resolution
         self._queue_orchestrator = queue_orchestrator
+        self._queue_runtime_is_active = queue_runtime_is_active or (lambda: False)
 
     async def execute(self, request: SpeakTextInputDTO) -> SpeakTextResult:
         prepared_text = prepare_tts_text(request.text, self._max_text_length)
@@ -88,10 +91,16 @@ class SpeakTextUseCase:
         position = await self._audio_queue.get_item_position(item_id)
         guild_id = domain_request.guild_id
         status = await self._audio_queue.get_queue_status(guild_id)
+        starts_immediately = (
+            position == 0
+            and self._queue_runtime_is_active()
+            and not await self._audio_queue.is_guild_processing(guild_id)
+        )
         return SpeakTextResult(
             success=True,
             code=SPEAK_RESULT_QUEUED,
             queued=True,
+            starts_immediately=starts_immediately,
             position=position,
             queue_size=status.size,
             item_id=item_id,

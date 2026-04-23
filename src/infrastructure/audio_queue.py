@@ -109,6 +109,7 @@ class InMemoryAudioQueue(IAudioQueue):
         self._history: Dict[Optional[int], List[AudioQueueItem]] = {}
         self._lock = asyncio.Lock()
         self._guild_locks: dict[Optional[int], str] = {}
+        self._processing_leases: dict[Optional[int], str] = {}
         self._max_queue_size = max_queue_size
         self._max_queue_wait = max_queue_wait_seconds
 
@@ -210,6 +211,39 @@ class InMemoryAudioQueue(IAudioQueue):
         del ttl_seconds
         async with self._lock:
             return self._guild_locks.get(guild_id) == owner_token
+
+    async def acquire_processing_lease(
+        self,
+        guild_id: Optional[int],
+        owner_token: str,
+        ttl_seconds: int = 30,
+    ) -> bool:
+        del ttl_seconds
+        async with self._lock:
+            current = self._processing_leases.get(guild_id)
+            if current and current != owner_token:
+                return False
+            self._processing_leases[guild_id] = owner_token
+            return True
+
+    async def release_processing_lease(self, guild_id: Optional[int], owner_token: str) -> None:
+        async with self._lock:
+            if self._processing_leases.get(guild_id) == owner_token:
+                self._processing_leases.pop(guild_id, None)
+
+    async def renew_processing_lease(
+        self,
+        guild_id: Optional[int],
+        owner_token: str,
+        ttl_seconds: int = 30,
+    ) -> bool:
+        del ttl_seconds
+        async with self._lock:
+            return self._processing_leases.get(guild_id) == owner_token
+
+    async def is_guild_processing(self, guild_id: Optional[int]) -> bool:
+        async with self._lock:
+            return guild_id in self._processing_leases
 
     async def _refresh_positions_unlocked(self, guild_id: Optional[int]) -> None:
         queue = self._queues.get(guild_id, [])
@@ -405,6 +439,9 @@ class RedisAudioQueue(IAudioQueue):
     def _lock_key(self, guild_id: Optional[int]) -> str:
         return f"{self._key_prefix}:lock:guild:{_normalize_guild_id(guild_id)}"
 
+    def _processing_key(self, guild_id: Optional[int]) -> str:
+        return f"{self._key_prefix}:processing:guild:{_normalize_guild_id(guild_id)}"
+
     def _active_guilds_key(self) -> str:
         return f"{self._key_prefix}:guilds:active"
 
@@ -418,3 +455,37 @@ class RedisAudioQueue(IAudioQueue):
         if isinstance(value, bytes):
             return value.decode("utf-8")
         return str(value)
+
+    async def acquire_processing_lease(
+        self,
+        guild_id: Optional[int],
+        owner_token: str,
+        ttl_seconds: int = 30,
+    ) -> bool:
+        return bool(await self._redis.set(self._processing_key(guild_id), owner_token, ex=ttl_seconds, nx=True))
+
+    async def release_processing_lease(self, guild_id: Optional[int], owner_token: str) -> None:
+        processing_key = self._processing_key(guild_id)
+        current = await self._redis.get(processing_key)
+        if current is None:
+            return
+        if self._decode(current) == owner_token:
+            await self._redis.delete(processing_key)
+
+    async def renew_processing_lease(
+        self,
+        guild_id: Optional[int],
+        owner_token: str,
+        ttl_seconds: int = 30,
+    ) -> bool:
+        processing_key = self._processing_key(guild_id)
+        current = await self._redis.get(processing_key)
+        if current is None or self._decode(current) != owner_token:
+            return False
+        expire = getattr(self._redis, "expire", None)
+        if expire is None:
+            return bool(await self._redis.set(processing_key, owner_token, ex=ttl_seconds))
+        return bool(await expire(processing_key, ttl_seconds))
+
+    async def is_guild_processing(self, guild_id: Optional[int]) -> bool:
+        return await self._redis.get(self._processing_key(guild_id)) is not None

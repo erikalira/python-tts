@@ -234,3 +234,22 @@ class TestRedisAudioQueue:
 
         assert renewed is True
         assert fake_redis._expirations[queue._lock_key(1)] > original_expiration
+
+    async def test_processing_lease_reflects_active_guild_playback(self):
+        fake_redis = FakeRedis()
+        queue = RedisAudioQueue(fake_redis, max_queue_size=5, key_prefix="test")
+
+        assert await queue.is_guild_processing(1) is False
+        assert await queue.acquire_processing_lease(1, "worker-a", ttl_seconds=5) is True
+        assert await queue.is_guild_processing(1) is True
+        assert await queue.acquire_processing_lease(1, "worker-b", ttl_seconds=5) is False
+
+        original_expiration = fake_redis._expirations[queue._processing_key(1)]
+        renewed = await queue.renew_processing_lease(1, "worker-a", ttl_seconds=20)
+
+        assert renewed is True
+        assert fake_redis._expirations[queue._processing_key(1)] > original_expiration
+
+        await queue.release_processing_lease(1, "worker-a")
+
+        assert await queue.is_guild_processing(1) is False

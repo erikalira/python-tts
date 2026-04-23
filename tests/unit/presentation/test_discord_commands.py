@@ -98,6 +98,65 @@ class TestDiscordCommands:
         
         interaction.response.defer.assert_called_once()
         interaction.delete_original_response.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_speak_hides_response_when_result_starts_immediately(self, commands_instance):
+        commands_instance._speak_use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(
+                success=True,
+                code="queued",
+                queued=True,
+                starts_immediately=True,
+                position=0,
+                queue_size=1,
+            )
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 11111
+        interaction.user.name = "User"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.response = AsyncMock()
+        interaction.delete_original_response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_speak(interaction, "Test message")
+
+        interaction.response.defer.assert_called_once()
+        interaction.delete_original_response.assert_called_once()
+        interaction.edit_original_response.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_handle_speak_keeps_queue_message_when_there_is_backlog(self, commands_instance):
+        commands_instance._speak_use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(
+                success=True,
+                code="queued",
+                queued=True,
+                starts_immediately=False,
+                position=1,
+                queue_size=2,
+            )
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 11111
+        interaction.user.name = "User"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.response = AsyncMock()
+        interaction.delete_original_response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_speak(interaction, "Test message")
+
+        interaction.response.defer.assert_called_once()
+        interaction.delete_original_response.assert_not_called()
+        interaction.edit_original_response.assert_called_once()
+        assert "fila" in interaction.edit_original_response.call_args.kwargs["content"].lower()
     
     @pytest.mark.asyncio
     async def test_handle_speak_missing_dependencies(self, commands_instance):

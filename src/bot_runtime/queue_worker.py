@@ -95,7 +95,20 @@ class BotQueueWorker:
                 next_item = await self._audio_queue.peek_next(guild_id)
                 if next_item is None:
                     break
-                await self._queue_orchestrator.start_processing_for_item(guild_id)
+                processing_acquired = await self._acquire_processing_lease(guild_id)
+                if not processing_acquired:
+                    logger.debug("[QUEUE_WORKER] Guild %s already has an active processing lease", guild_id)
+                    break
+                processing_renew_task = asyncio.create_task(
+                    self._renew_processing_lease_loop(guild_id),
+                    name=f"discord-bot-processing-lease-renew-{guild_id}",
+                )
+                try:
+                    await self._queue_orchestrator.start_processing_for_item(guild_id)
+                finally:
+                    processing_renew_task.cancel()
+                    await asyncio.gather(processing_renew_task, return_exceptions=True)
+                    await self._release_processing_lease(guild_id)
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -141,6 +154,31 @@ class BotQueueWorker:
                 )
                 if not renewed:
                     logger.warning("[QUEUE_WORKER] Lost guild lock while draining guild %s", guild_id)
+                    return
+        except asyncio.CancelledError:
+            raise
+
+    async def _acquire_processing_lease(self, guild_id: Optional[int]) -> bool:
+        return await self._audio_queue.acquire_processing_lease(
+            guild_id,
+            self._worker_token,
+            ttl_seconds=self._guild_lock_ttl_seconds,
+        )
+
+    async def _release_processing_lease(self, guild_id: Optional[int]) -> None:
+        await self._audio_queue.release_processing_lease(guild_id, self._worker_token)
+
+    async def _renew_processing_lease_loop(self, guild_id: Optional[int]) -> None:
+        try:
+            while not self._stop_event.is_set():
+                await asyncio.sleep(self._guild_lock_renew_interval_seconds)
+                renewed = await self._audio_queue.renew_processing_lease(
+                    guild_id,
+                    self._worker_token,
+                    ttl_seconds=self._guild_lock_ttl_seconds,
+                )
+                if not renewed:
+                    logger.warning("[QUEUE_WORKER] Lost processing lease while handling guild %s", guild_id)
                     return
         except asyncio.CancelledError:
             raise

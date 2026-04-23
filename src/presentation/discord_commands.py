@@ -178,7 +178,10 @@ class DiscordCommands:
 
             try:
                 if result.code == SPEAK_RESULT_QUEUED:
-                    await interaction.edit_original_response(content=self._build_speak_message(result))
+                    if result.starts_immediately:
+                        await interaction.delete_original_response()
+                    else:
+                        await interaction.edit_original_response(content=self._build_speak_message(result))
                 elif result.code == SPEAK_RESULT_OK:
                     await interaction.delete_original_response()
                 else:
