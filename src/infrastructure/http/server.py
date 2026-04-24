@@ -13,6 +13,7 @@ from src.__version__ import __version__, __author__, __description__
 logger = logging.getLogger(__name__)
 
 RequestHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
+ObservabilitySnapshotProvider = Callable[[], dict[str, object]]
 
 
 class HTTPServer:
@@ -27,6 +28,7 @@ class HTTPServer:
         voice_context_handler: RequestHandler,
         port: int,
         host: str = "127.0.0.1",
+        observability_snapshot_provider: ObservabilitySnapshotProvider | None = None,
     ):
         """Initialize HTTP server.
         
@@ -40,6 +42,7 @@ class HTTPServer:
         self._voice_context_handler = voice_context_handler
         self._port = port
         self._host = host
+        self._observability_snapshot_provider = observability_snapshot_provider
         self._runner = None
         self._site = None
 
@@ -47,7 +50,8 @@ class HTTPServer:
         """Build aiohttp application with operational and integration endpoints."""
         app = web.Application()
         app.router.add_get('/', self._home)
-        app.router.add_get('/health', self._health)
+        app.router.add_get('/health', self._health, name='health')
+        app.router.add_get('/observability', self._observability, name='observability')
         app.router.add_get('/version', self._version)
         app.router.add_get('/about', self._about)
         app.router.add_get('/voice-context', self._voice_context_handler)
@@ -60,6 +64,12 @@ class HTTPServer:
     async def _health(self, request: web.Request) -> web.Response:
         """Health check endpoint for Docker/Render."""
         return web.json_response(asdict(BotHealthResponseDTO(status="healthy")))
+
+    async def _observability(self, request: web.Request) -> web.Response:
+        """Expose a compact runtime observability snapshot for operational baselines."""
+        if self._observability_snapshot_provider is None:
+            return web.json_response({"status": "disabled"})
+        return web.json_response(self._observability_snapshot_provider())
 
     async def _version(self, request: web.Request) -> web.Response:
         return web.json_response({

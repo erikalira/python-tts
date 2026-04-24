@@ -19,6 +19,7 @@ from src.application.dto import (
     SPEAK_RESULT_VOICE_PERMISSION_DENIED,
     SpeakTextResult,
 )
+from src.application.telemetry import BotRuntimeTelemetry, NoOpBotRuntimeTelemetry
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.core.entities import AudioQueueItem, TTSConfig
 from src.core.interfaces import IAudioFileCleanup, IAudioQueue, IConfigRepository, ITTSEngine
@@ -43,6 +44,7 @@ class TTSQueueOrchestrator:
         audio_cleanup: IAudioFileCleanup,
         generation_timeout_seconds: float = DEFAULT_BOT_TTS_GENERATION_TIMEOUT_SECONDS,
         playback_timeout_seconds: float = DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
+        telemetry: BotRuntimeTelemetry | None = None,
     ):
         self._tts_engine = tts_engine
         self._config_repository = config_repository
@@ -52,6 +54,7 @@ class TTSQueueOrchestrator:
         self._generation_timeout_seconds = generation_timeout_seconds
         self._playback_timeout_seconds = playback_timeout_seconds
         self._processing_guilds: set[Optional[int]] = set()
+        self._telemetry = telemetry or NoOpBotRuntimeTelemetry()
 
     def is_processing(self, guild_id: Optional[int]) -> bool:
         return guild_id in self._processing_guilds
@@ -170,6 +173,12 @@ class TTSQueueOrchestrator:
                 await asyncio.wait_for(voice_channel.play_audio(audio), timeout=self._playback_timeout_seconds)
                 item.mark_completed()
                 await self._audio_queue.update_item(item)
+                self._telemetry.record_processing_result(
+                    item=item,
+                    success=True,
+                    code=SPEAK_RESULT_OK,
+                    engine=config.engine,
+                )
                 return SpeakTextResult(
                     success=True,
                     code=SPEAK_RESULT_OK,
@@ -180,6 +189,12 @@ class TTSQueueOrchestrator:
                 error = "Tempo limite excedido durante reproducao"
                 item.mark_failed(error)
                 await self._audio_queue.update_item(item)
+                self._telemetry.record_processing_result(
+                    item=item,
+                    success=False,
+                    code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
+                    engine=config.engine,
+                )
                 logger.warning(
                     "[QUEUE_ORCHESTRATOR] Audio playback timed out for item %s after %ss",
                     item.item_id,
@@ -207,6 +222,12 @@ class TTSQueueOrchestrator:
             else:
                 code = SPEAK_RESULT_UNKNOWN_ERROR
 
+            self._telemetry.record_processing_result(
+                item=item,
+                success=False,
+                code=code,
+                engine=self._resolve_engine_name(item),
+            )
             return SpeakTextResult(
                 success=False,
                 code=code,
@@ -236,3 +257,9 @@ class TTSQueueOrchestrator:
             rate=override.rate,
             output_device=base_config.output_device,
         )
+
+    def _resolve_engine_name(self, item: AudioQueueItem) -> str:
+        override = item.request.config_override
+        if override is not None and override.engine:
+            return override.engine
+        return "configured_default"

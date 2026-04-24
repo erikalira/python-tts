@@ -14,6 +14,7 @@ from src.application.dto import (
     SpeakTextInputDTO,
     SpeakTextResult,
 )
+from src.application.telemetry import BotRuntimeTelemetry, NoOpBotRuntimeTelemetry
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.tts_text import prepare_tts_text
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
@@ -34,6 +35,7 @@ class SpeakTextUseCase:
         queue_orchestrator: TTSQueueOrchestrator,
         max_text_length: Optional[int] = None,
         queue_runtime_is_active: Callable[[], bool] | None = None,
+        telemetry: BotRuntimeTelemetry | None = None,
     ):
         self._channel_repository = channel_repository
         self._audio_queue = audio_queue
@@ -41,6 +43,7 @@ class SpeakTextUseCase:
         self._voice_channel_resolution = voice_channel_resolution
         self._queue_orchestrator = queue_orchestrator
         self._queue_runtime_is_active = queue_runtime_is_active or (lambda: False)
+        self._telemetry = telemetry or NoOpBotRuntimeTelemetry()
 
     async def execute(self, request: SpeakTextInputDTO) -> SpeakTextResult:
         prepared_text = prepare_tts_text(request.text, self._max_text_length)
@@ -68,10 +71,22 @@ class SpeakTextUseCase:
         )
 
         if not domain_request.text:
+            self._telemetry.record_submission_result(
+                request=domain_request,
+                accepted=False,
+                code=SPEAK_RESULT_MISSING_TEXT,
+                engine=self._resolve_requested_engine(domain_request),
+            )
             return SpeakTextResult(success=False, code=SPEAK_RESULT_MISSING_TEXT, queued=False)
 
         user_channel = await self._channel_repository.find_by_member_id(domain_request.member_id)
         if not user_channel:
+            self._telemetry.record_submission_result(
+                request=domain_request,
+                accepted=False,
+                code=SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+                engine=self._resolve_requested_engine(domain_request),
+            )
             return SpeakTextResult(
                 success=False,
                 code=SPEAK_RESULT_USER_NOT_IN_CHANNEL,
@@ -81,6 +96,12 @@ class SpeakTextUseCase:
         item = AudioQueueItem(request=domain_request)
         item_id = await self._audio_queue.enqueue(item)
         if item_id is None:
+            self._telemetry.record_submission_result(
+                request=domain_request,
+                accepted=False,
+                code=SPEAK_RESULT_QUEUE_FULL,
+                engine=self._resolve_requested_engine(domain_request),
+            )
             return SpeakTextResult(
                 success=False,
                 code=SPEAK_RESULT_QUEUE_FULL,
@@ -96,6 +117,12 @@ class SpeakTextUseCase:
             and self._queue_runtime_is_active()
             and not await self._audio_queue.is_guild_processing(guild_id)
         )
+        self._telemetry.record_submission_result(
+            request=domain_request,
+            accepted=True,
+            code=SPEAK_RESULT_QUEUED,
+            engine=self._resolve_requested_engine(domain_request),
+        )
         return SpeakTextResult(
             success=True,
             code=SPEAK_RESULT_QUEUED,
@@ -105,3 +132,9 @@ class SpeakTextUseCase:
             queue_size=status.size,
             item_id=item_id,
         )
+
+    def _resolve_requested_engine(self, request: TTSRequest) -> str:
+        override = request.config_override
+        if override is not None and override.engine:
+            return override.engine
+        return "configured_default"

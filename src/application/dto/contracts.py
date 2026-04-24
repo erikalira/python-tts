@@ -137,6 +137,32 @@ class BotHealthResponseDTO:
 
 
 @dataclass(frozen=True, slots=True)
+class BotRuntimeErrorRateDTO:
+    """Error-rate breakdown for a single guild or engine bucket."""
+
+    key: str
+    total_requests: int
+    failed_requests: int
+    error_rate: float
+
+
+@dataclass(frozen=True, slots=True)
+class BotRuntimeObservabilityDTO:
+    """Operational snapshot for baseline bot-runtime observability."""
+
+    status: str
+    total_requests: int
+    successful_playbacks: int
+    failed_requests: int
+    error_rate: float
+    enqueue_to_playback_sample_count: int
+    enqueue_to_playback_p95_ms: float | None
+    enqueue_to_playback_p99_ms: float | None
+    error_rate_by_guild: list[BotRuntimeErrorRateDTO]
+    error_rate_by_engine: list[BotRuntimeErrorRateDTO]
+
+
+@dataclass(frozen=True, slots=True)
 class BotErrorResponseDTO:
     """Normalized bot HTTP error payload."""
 

@@ -38,6 +38,7 @@ async def main():
         voice_context_handler=container.voice_context_controller.handle,
         port=config.http_port,
         host=config.http_host,
+        observability_snapshot_provider=container.runtime_telemetry.snapshot_payload,
     )
     await http_server.start()
     

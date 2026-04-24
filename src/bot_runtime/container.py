@@ -21,6 +21,7 @@ from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvail
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
 from src.infrastructure.persistence.postgres_storage import PostgreSQLConfigStorage
+from src.infrastructure.runtime_observability import InMemoryBotRuntimeTelemetry
 from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
 from src.infrastructure.tts.engines import RoutedTTSEngine
 from src.infrastructure.tts.voice_catalog import RuntimeTTSCatalog
@@ -60,6 +61,7 @@ class Container:
         self.audio_cleanup = FileAudioCleanup()
         self.tts_engine = RoutedTTSEngine()
         self.tts_catalog = RuntimeTTSCatalog()
+        self.runtime_telemetry = InMemoryBotRuntimeTelemetry()
         self.voice_channel_resolution = VoiceChannelResolutionService(self.voice_channel_repository)
         self.tts_queue_orchestrator = TTSQueueOrchestrator(
             tts_engine=self.tts_engine,
@@ -69,6 +71,7 @@ class Container:
             audio_cleanup=self.audio_cleanup,
             generation_timeout_seconds=config.tts_generation_timeout_seconds,
             playback_timeout_seconds=config.tts_playback_timeout_seconds,
+            telemetry=self.runtime_telemetry,
         )
         self.queue_worker = BotQueueWorker(
             audio_queue=self.audio_queue,
@@ -82,6 +85,7 @@ class Container:
             voice_channel_resolution=self.voice_channel_resolution,
             queue_orchestrator=self.tts_queue_orchestrator,
             queue_runtime_is_active=self.queue_worker.is_running,
+            telemetry=self.runtime_telemetry,
         )
         self.config_use_case = ConfigureTTSUseCase(config_repository=self.config_repository)
         self.join_use_case = JoinVoiceChannelUseCase(channel_repository=self.voice_channel_repository)
