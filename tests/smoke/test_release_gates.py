@@ -1,8 +1,11 @@
 from unittest.mock import AsyncMock, Mock
 
+from scripts.test.quality_gates import evaluate_observability_payload, load_quality_gate_config
 from src.desktop.app.desktop_app import DesktopApp
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.infrastructure.http.server import HTTPServer
+from src.infrastructure.runtime_observability import InMemoryBotRuntimeTelemetry
+from src.core.entities import AudioQueueItem, TTSRequest
 
 
 def test_bot_health_endpoint_smoke():
@@ -64,3 +67,25 @@ def test_desktop_runtime_startup_and_minimum_flow_smoke(monkeypatch):
 
     assert connection_result.success is True
     assert send_result.success is True
+
+
+def test_bot_observability_sli_baseline_smoke():
+    config = load_quality_gate_config("config/quality_gates.json")
+    telemetry = InMemoryBotRuntimeTelemetry()
+
+    for index, latency_ms in enumerate((900.0, 1100.0, 1300.0, 1800.0, 2200.0), start=1):
+        request = TTSRequest(text=f"texto-{index}", guild_id=1, member_id=index)
+        telemetry.record_submission_result(
+            request=request,
+            accepted=True,
+            code="queued",
+            engine="gtts",
+        )
+        item = AudioQueueItem(request=request, created_at=100.0 + index)
+        item.mark_completed()
+        item.completed_at = item.created_at + (latency_ms / 1000.0)
+        telemetry.record_processing_result(item=item, success=True, code="ok", engine="gtts")
+
+    failures = evaluate_observability_payload(telemetry.snapshot_payload(), config.sli)
+
+    assert failures == []

@@ -31,6 +31,9 @@ meant to make the current system measurable before deeper optimization work.
 
 ## Release Gates
 
+Repository thresholds are centralized in `config/quality_gates.json` so CI,
+local runs, and smoke checks enforce the same baseline.
+
 ### Discord bot
 
 - Required automated gate:
@@ -38,6 +41,18 @@ meant to make the current system measurable before deeper optimization work.
 - Minimum expectation:
   unit coverage stays green, critical integration paths stay green, and the
   bot health/observability endpoints remain available.
+- Coverage gate:
+  global covered lines must stay at or above `80%`.
+- Critical domain gates:
+  - `queue`: `src/application/tts_queue_orchestrator.py`,
+    `src/infrastructure/audio_queue.py`, and
+    `src/bot_runtime/queue_worker.py` aggregated at `>= 80%`
+  - `runtime_observability`: `src/application/runtime_telemetry.py` and
+    `src/infrastructure/runtime_observability.py` aggregated at `>= 95%`
+- SLI regression gate:
+  smoke checks fail if the baseline payload regresses past the configured
+  `error_rate`, `enqueue_to_playback_p95_ms`, or
+  `enqueue_to_playback_p99_ms` thresholds.
 
 ### Desktop app
 
@@ -49,6 +64,8 @@ meant to make the current system measurable before deeper optimization work.
 
 ## Notes
 
+- To validate coverage gates from a generated `coverage.xml`, run:
+  `.\.venv\Scripts\python.exe scripts/test/quality_gates.py coverage --coverage-xml coverage.xml --config config/quality_gates.json`
 - `GET /observability` is an in-memory runtime snapshot. It is intentionally
   lightweight and resets on process restart.
 - Engine breakdown uses the explicit request override when present and falls

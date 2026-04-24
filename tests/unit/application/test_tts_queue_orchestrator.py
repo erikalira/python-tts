@@ -4,12 +4,25 @@ import asyncio
 
 import pytest
 
-from src.application.dto import SPEAK_RESULT_GENERATION_TIMEOUT, SPEAK_RESULT_OK, SPEAK_RESULT_UNKNOWN_ERROR
+from src.application.dto import (
+    SPEAK_RESULT_CROSS_GUILD_CHANNEL,
+    SPEAK_RESULT_GENERATION_TIMEOUT,
+    SPEAK_RESULT_MISSING_GUILD_ID,
+    SPEAK_RESULT_OK,
+    SPEAK_RESULT_UNKNOWN_ERROR,
+    SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
+)
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.core.entities import AudioQueueItem, TTSConfig, TTSRequest
 from src.infrastructure.audio_queue import InMemoryAudioQueue
-from tests.conftest import MockAudioCleanup, MockConfigRepository, MockTTSEngine, MockVoiceChannelRepository
+from tests.conftest import (
+    MockAudioCleanup,
+    MockConfigRepository,
+    MockTTSEngine,
+    MockVoiceChannel,
+    MockVoiceChannelRepository,
+)
 
 
 class RecordingTelemetry:
@@ -128,6 +141,64 @@ class TestTTSQueueOrchestrator:
 
         assert result.code == SPEAK_RESULT_OK
         assert tts_engine.calls[0]["config"].engine == "pyttsx3"
+
+    async def test_process_item_rejects_requests_without_guild_id(self):
+        queue = InMemoryAudioQueue()
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=MockTTSEngine(),
+            config_repository=MockConfigRepository(),
+            audio_queue=queue,
+            voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository()),
+            audio_cleanup=MockAudioCleanup(),
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(text="sem guild", guild_id=None, member_id=345678, channel_id=123456)
+        )
+
+        result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_MISSING_GUILD_ID
+        assert result.success is False
+        assert item.status == "failed"
+
+    async def test_process_item_returns_not_found_when_voice_resolution_fails(self):
+        queue = InMemoryAudioQueue()
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=MockTTSEngine(),
+            config_repository=MockConfigRepository(),
+            audio_queue=queue,
+            voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository(return_none=True)),
+            audio_cleanup=MockAudioCleanup(),
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(text="sem canal", guild_id=789012, member_id=345678, channel_id=123456)
+        )
+
+        result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND
+        assert result.success is False
+        assert item.status == "failed"
+
+    async def test_process_item_rejects_cross_guild_voice_channel(self):
+        queue = InMemoryAudioQueue()
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=MockTTSEngine(),
+            config_repository=MockConfigRepository(),
+            audio_queue=queue,
+            voice_channel_resolution=VoiceChannelResolutionService(
+                MockVoiceChannelRepository(MockVoiceChannel(guild_id=999999))
+            ),
+            audio_cleanup=MockAudioCleanup(),
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(text="guild errado", guild_id=789012, member_id=345678, channel_id=123456)
+        )
+
+        result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_CROSS_GUILD_CHANNEL
+        assert result.success is False
 
     async def test_process_item_applies_per_request_voice_override_without_persisting_it(self):
         queue = InMemoryAudioQueue()
