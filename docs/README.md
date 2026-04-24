@@ -33,6 +33,7 @@ This directory contains the repository's supporting documentation. The root
 - [deploy/WINDOWS_BOT_DEPLOY.md](deploy/WINDOWS_BOT_DEPLOY.md): WinSW deployment guide for keeping the Discord bot running as a Windows service
 - [deploy/BOT_PRODUCTION_PERSISTENCE.md](deploy/BOT_PRODUCTION_PERSISTENCE.md): recommended persistence architecture for production bot deploys
 - [deploy/DOCKER_POSTGRES_DEPLOY.md](deploy/DOCKER_POSTGRES_DEPLOY.md): run the Discord bot with Docker and Postgres
+- [../docker-compose.postgres.yml](../docker-compose.postgres.yml): local Postgres-only compose file for testing `CONFIG_STORAGE_BACKEND=postgres`
 - [deploy/BACKUP_AND_RESTORE_DATABASE.md](deploy/BACKUP_AND_RESTORE_DATABASE.md): backup and restore flow for the Dockerized Postgres database
 - [deploy/STAGING_AND_ROLLBACK.md](deploy/STAGING_AND_ROLLBACK.md): staging promotion and rollback flow for the Docker production stack
 - [desktop/WINDOWS_BUILD_GUIDE.md](desktop/WINDOWS_BUILD_GUIDE.md): Windows executable build flow

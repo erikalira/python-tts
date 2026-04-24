@@ -3,6 +3,29 @@
 Use this guide when promoting the Docker production stack through staging and
 when rolling back a bad release.
 
+## Application Versioning
+
+The production compose file identifies the bot image with:
+
+```env
+BOT_IMAGE=tts-hotkey-windows-bot
+APP_VERSION=local
+VCS_REF=unknown
+```
+
+For real production, publish the bot image with an immutable application tag,
+for example:
+
+```env
+BOT_IMAGE=ghcr.io/your-org/tts-hotkey-windows-bot
+APP_VERSION=v2026.04.24-1
+VCS_REF=<git-sha>
+```
+
+Use the same `APP_VERSION` in staging and production only after the staging
+promotion gate passes. Keep the previous production `APP_VERSION` in the
+release notes so rollback is a config change, not a rebuild.
+
 ## Staging Baseline
 
 Staging should mirror the production stack shape:
@@ -69,8 +92,8 @@ Also confirm:
 
 Before deploying production, record:
 
-- current commit SHA or image tag
-- target commit SHA or image tag
+- current `APP_VERSION` and `VCS_REF`
+- target `APP_VERSION` and `VCS_REF`
 - env file change summary
 - latest Postgres backup path
 - rollback owner
@@ -91,14 +114,16 @@ powershell -ExecutionPolicy Bypass -File scripts/utils/backup_postgres.ps1 `
 Deploy the known staging-passed revision:
 
 ```powershell
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.prod -f docker-compose.prod.yml pull bot
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-build
 docker compose --env-file .env.prod -f docker-compose.prod.yml ps
 ```
 
 If only the bot changed:
 
 ```powershell
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps --build bot
+docker compose --env-file .env.prod -f docker-compose.prod.yml pull bot
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps --no-build bot
 ```
 
 ## Rollback
@@ -106,18 +131,20 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps -
 Use rollback when the release breaks health, readiness, queue processing,
 storage access, or the desktop-connected bot flow.
 
-1. Restore the previous code revision or image tag.
+1. Restore the previous application image tag in `.env.prod`.
 
-```powershell
-git checkout <known-good-sha-or-tag>
+```env
+APP_VERSION=<previous-known-good-version>
+VCS_REF=<previous-known-good-sha>
 ```
 
 2. Restore the previous env file if the incident is configuration-related.
 
-3. Rebuild and restart the bot.
+3. Pull and restart the bot without rebuilding.
 
 ```powershell
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps --build bot
+docker compose --env-file .env.prod -f docker-compose.prod.yml pull bot
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps --no-build bot
 ```
 
 4. Validate recovery.
@@ -142,4 +169,3 @@ A deploy or rollback is done only when:
 - a short TTS smoke request completes
 - the live observability SLI gate passes after smoke traffic
 - any validation gap is recorded in the release notes
-

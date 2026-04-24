@@ -1,6 +1,6 @@
 services:
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: tts-hotkey-redis
     restart: unless-stopped
     ports:
@@ -15,7 +15,7 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
 
   postgres:
-    image: postgres:17
+    image: postgres:17.9
     container_name: tts-bot-postgres
     restart: unless-stopped
     environment:
@@ -34,7 +34,7 @@ services:
       retries: 5
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    image: otel/opentelemetry-collector-contrib:0.139.0
     container_name: tts-bot-otel-collector
     restart: unless-stopped
     command: ["--config=/etc/otelcol/config.yaml"]
@@ -57,7 +57,7 @@ services:
       - tempo_data:/var/tempo
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.11.2
     container_name: tts-bot-prometheus
     restart: unless-stopped
     command:
@@ -70,7 +70,7 @@ services:
       - prometheus_data:/prometheus
 
   grafana:
-    image: grafana/grafana-oss:latest
+    image: grafana/grafana:12.4.2
     container_name: tts-bot-grafana
     restart: unless-stopped
     depends_on:
@@ -88,9 +88,13 @@ services:
       - grafana_data:/var/lib/grafana
 
   bot:
+    image: ${BOT_IMAGE:-tts-hotkey-windows-bot}:${APP_VERSION:-local}
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-local}
+        VCS_REF: ${VCS_REF:-unknown}
     container_name: tts-discord-bot
     restart: unless-stopped
     depends_on:

@@ -88,7 +88,37 @@ O caminho mostrado por `pip --version` deve apontar para `.venv`.
 
 Para o bot do Discord com voz, confirme tambem que `ffmpeg -version` funciona no mesmo terminal em que o bot sera executado.
 
-## 6.1. Redis opcional para a fila do bot
+## 6.1. Storage local do bot
+
+Por padrão, o bot local usa storage JSON:
+
+```env
+CONFIG_STORAGE_BACKEND=json
+CONFIG_STORAGE_DIR=configs
+```
+
+Se quiser testar o mesmo backend de persistência usado em produção, suba apenas
+o Postgres com Docker:
+
+```bash
+docker compose -f docker-compose.postgres.yml up -d
+```
+
+Depois configure o `.env` com:
+
+```env
+CONFIG_STORAGE_BACKEND=postgres
+DATABASE_URL=postgresql://tts_user:change_me@127.0.0.1:5432/tts_hotkey_windows
+POSTGRES_DB=tts_hotkey_windows
+POSTGRES_USER=tts_user
+POSTGRES_PASSWORD=change_me
+POSTGRES_PORT=5432
+```
+
+Se quiser voltar para storage local em arquivos, pare o Postgres se não for mais
+usar e retorne `CONFIG_STORAGE_BACKEND=json`.
+
+## 6.2. Redis opcional para a fila do bot
 
 Se quiser usar a fila Redis do bot localmente, suba apenas o Redis com Docker:
 
@@ -108,6 +138,23 @@ REDIS_COMPLETED_ITEM_TTL_SECONDS=900
 ```
 
 Se nao quiser Redis, mantenha `TTS_QUEUE_BACKEND=inmemory`.
+
+## 6.3. Stack completa de produção local
+
+Para validar o stack completo com bot, Postgres, Redis e observabilidade, use:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
+
+O `docker-compose.prod.yml` tambem aceita versionamento da imagem do bot via
+`BOT_IMAGE` e `APP_VERSION`. Em producao, publique uma imagem com tag imutavel e
+suba com essa versao registrada no `.env.prod`; para rollback, volte o
+`APP_VERSION` para a ultima versao boa.
+
+Para desenvolvimento diário, prefira escolher somente as dependências que você
+precisa: `docker-compose.postgres.yml` para Postgres e
+`docker-compose.redis.yml` para Redis.
 
 ## 7. Desativar quando terminar
 

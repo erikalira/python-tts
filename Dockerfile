@@ -1,6 +1,13 @@
 # Use Python 3.13 slim image
 FROM python:3.13-slim
 
+ARG APP_VERSION=local
+ARG VCS_REF=unknown
+
+LABEL org.opencontainers.image.title="tts-hotkey-windows-bot" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}"
+
 # Set working directory
 WORKDIR /app
 
