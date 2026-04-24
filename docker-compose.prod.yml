@@ -106,6 +106,12 @@ services:
         condition: service_started
     ports:
       - "10000:10000"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import json, urllib.request; response = urllib.request.urlopen('http://127.0.0.1:10000/ready', timeout=5); payload = json.load(response); raise SystemExit(0 if response.status == 200 and payload.get('status') == 'ready' else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DISCORD_BOT_HOST: 0.0.0.0

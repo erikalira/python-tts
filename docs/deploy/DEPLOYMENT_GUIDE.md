@@ -41,6 +41,9 @@ You will probably also need:
 - [ENVIRONMENTS.md](ENVIRONMENTS.md)
 - [BOT_PRODUCTION_PERSISTENCE.md](BOT_PRODUCTION_PERSISTENCE.md)
 - [BACKUP_AND_RESTORE_DATABASE.md](BACKUP_AND_RESTORE_DATABASE.md)
+- [../operations/PRODUCTION_RUNBOOKS.md](../operations/PRODUCTION_RUNBOOKS.md)
+- [../operations/DR_DRILLS.md](../operations/DR_DRILLS.md)
+- [../operations/RELEASE_CHECKLIST.md](../operations/RELEASE_CHECKLIST.md)
 
 ## I want to understand the recommended production architecture first
 
@@ -77,6 +80,21 @@ Choose this when:
 - you are operating the Dockerized Postgres flow
 - you need recovery procedure and retention guidance
 
+## I need production runbooks or release operations
+
+Use:
+
+- [../operations/PRODUCTION_RUNBOOKS.md](../operations/PRODUCTION_RUNBOOKS.md)
+- [../operations/DR_DRILLS.md](../operations/DR_DRILLS.md)
+- [../operations/RELEASE_CHECKLIST.md](../operations/RELEASE_CHECKLIST.md)
+
+Choose these when:
+
+- the bot is deployed with Redis, Postgres, health checks, and restart policy
+- you need incident procedures for lock starvation, stuck queues, or engine degradation
+- you need to rehearse Postgres restore, Redis recovery, or version rollback
+- you need the production release checklist for bot and desktop validation
+
 ## Recommended reading order
 
 If you are still unsure, read in this order:
@@ -89,6 +107,11 @@ If you are still unsure, read in this order:
    production decisions
 4. [BACKUP_AND_RESTORE_DATABASE.md](BACKUP_AND_RESTORE_DATABASE.md) if Postgres
    backup/recovery matters for your setup
+5. [../operations/RELEASE_CHECKLIST.md](../operations/RELEASE_CHECKLIST.md)
+   before each production release
+6. [../operations/PRODUCTION_RUNBOOKS.md](../operations/PRODUCTION_RUNBOOKS.md)
+   and [../operations/DR_DRILLS.md](../operations/DR_DRILLS.md) before the
+   stack handles production traffic
 
 ## Important scope note
 
