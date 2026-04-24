@@ -1,6 +1,6 @@
 """Tests for bot entry point."""
 import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import Mock, AsyncMock, patch
 
 
 @pytest.mark.asyncio
@@ -31,6 +31,7 @@ class TestBot:
             mock_container.voice_context_controller = Mock()
             mock_container.otel_runtime = Mock()
             mock_container.runtime_telemetry = Mock()
+            mock_container.readiness_payload = AsyncMock(return_value={"status": "ready", "dependencies": []})
             mock_container.speak_controller.handle = AsyncMock()
             mock_container.voice_context_controller.handle = AsyncMock()
             mock_container.shutdown = AsyncMock()
@@ -59,6 +60,7 @@ class TestBot:
                 port=10000,
                 host="127.0.0.1",
                 observability_snapshot_provider=mock_container.runtime_telemetry.snapshot_payload,
+                readiness_provider=mock_container.readiness_payload,
                 otel_runtime=mock_container.otel_runtime,
             )
             # Verify HTTP server was started

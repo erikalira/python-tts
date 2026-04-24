@@ -137,6 +137,24 @@ class BotHealthResponseDTO:
 
 
 @dataclass(frozen=True, slots=True)
+class BotDependencyReadinessDTO:
+    """Readiness state for one bot runtime dependency."""
+
+    name: str
+    status: str
+    required: bool = True
+    detail: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class BotReadinessResponseDTO:
+    """Wire contract for GET /ready responses."""
+
+    status: str
+    dependencies: list[BotDependencyReadinessDTO]
+
+
+@dataclass(frozen=True, slots=True)
 class BotRuntimeErrorRateDTO:
     """Error-rate breakdown for a single guild or engine bucket."""
 

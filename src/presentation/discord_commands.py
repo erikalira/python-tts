@@ -156,7 +156,8 @@ class DiscordCommands:
             interaction.user.name,
             interaction.guild.id if interaction.guild else "None",
         )
-        await interaction.response.defer(ephemeral=True, thinking=True)
+        if not await self._defer_speak_interaction(interaction):
+            return
 
         if not self._get_voice_runtime_status().is_available:
             self._log_voice_runtime_unavailable("speak")
@@ -198,6 +199,14 @@ class DiscordCommands:
                     await interaction.edit_original_response(content="❌ Erro inesperado")
             except Exception as send_error:
                 logger.debug("[SPEAK] Could not send error message: %s", send_error)
+
+    async def _defer_speak_interaction(self, interaction: discord.Interaction) -> bool:
+        try:
+            await interaction.response.defer(ephemeral=True, thinking=True)
+            return True
+        except discord.NotFound as exc:
+            logger.warning("[SPEAK] Interaction expired before initial defer: %s", exc)
+            return False
 
     def _build_speak_message(self, result) -> str:
         return self._speak_presenter.build_message(result)

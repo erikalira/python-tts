@@ -20,6 +20,7 @@ This directory contains the repository's supporting documentation. The root
 - [architecture/ARCHITECTURE_DIAGRAMS_GENERATED.md](architecture/ARCHITECTURE_DIAGRAMS_GENERATED.md): entrypoint for the automatic diagram set generated from code
 - [architecture/ARCHITECTURE_TRANSITIONS.md](architecture/ARCHITECTURE_TRANSITIONS.md): repository-specific examples for temporary facades, compatibility paths, and transition structure
 - [reference/ENGINEERING_REFERENCES.md](reference/ENGINEERING_REFERENCES.md): books and engineering concepts that inform repository design decisions
+- [adr/README.md](adr/README.md): architecture decision records for durable technical choices and tradeoffs
 
 ## Operar e fazer deploy
 
@@ -33,6 +34,7 @@ This directory contains the repository's supporting documentation. The root
 - [deploy/BOT_PRODUCTION_PERSISTENCE.md](deploy/BOT_PRODUCTION_PERSISTENCE.md): recommended persistence architecture for production bot deploys
 - [deploy/DOCKER_POSTGRES_DEPLOY.md](deploy/DOCKER_POSTGRES_DEPLOY.md): run the Discord bot with Docker and Postgres
 - [deploy/BACKUP_AND_RESTORE_DATABASE.md](deploy/BACKUP_AND_RESTORE_DATABASE.md): backup and restore flow for the Dockerized Postgres database
+- [deploy/STAGING_AND_ROLLBACK.md](deploy/STAGING_AND_ROLLBACK.md): staging promotion and rollback flow for the Docker production stack
 - [desktop/WINDOWS_BUILD_GUIDE.md](desktop/WINDOWS_BUILD_GUIDE.md): Windows executable build flow
 
 ## Manutencao
@@ -58,6 +60,7 @@ This directory contains the repository's supporting documentation. The root
 - `docs/operations/` contains operational baselines and release criteria
 - `docs/operations/` also contains production runbooks, DR drills, and release checklists
 - `docs/architecture/diagrams/` contains editable Mermaid architecture sources
+- `docs/adr/` contains architecture decision records for major technical choices
 - `.specify/` contains canonical project guidance and feature workflow templates
 - AI/tool-specific instruction files should remain derivative of `.specify/`
 

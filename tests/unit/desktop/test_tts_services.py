@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import ANY, Mock
 
-from src.application.dto import DesktopTTSServiceStatusDTO, DesktopTTSStatusDTO
+from src.application.dto import DesktopTTSStatusDTO
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
 from src.application.desktop_bot import DesktopBotConnectionStatus, DesktopBotVoiceContextStatus
 from src.application.tts_execution import (

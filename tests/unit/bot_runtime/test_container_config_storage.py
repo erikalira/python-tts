@@ -1,8 +1,9 @@
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
 from src.bot_runtime.container import Container
+from src.bot_runtime.readiness import BotReadinessProbe
 from src.infrastructure.audio_queue import InMemoryAudioQueue, RedisAudioQueue
 from src.infrastructure.persistence.config_storage import JSONConfigStorage
 from src.infrastructure.persistence.postgres_storage import PostgreSQLConfigStorage
@@ -73,3 +74,49 @@ def test_container_requires_redis_dependency_for_redis_backend(monkeypatch):
 
     with pytest.raises(RuntimeError, match="redis package is required"):
         container._build_audio_queue(config)
+
+
+@pytest.mark.asyncio
+async def test_readiness_payload_reports_ready_for_inmemory_runtime():
+    probe = BotReadinessProbe(
+        config=_build_config("json"),
+        config_repository=Mock(),
+        discord_client=Mock(is_ready=Mock(return_value=True)),
+        queue_worker=Mock(is_running=Mock(return_value=True)),
+        audio_queue=Mock(),
+    )
+
+    payload = await probe.payload()
+
+    assert payload["status"] == "ready"
+    assert {dependency["name"] for dependency in payload["dependencies"]} == {
+        "discord",
+        "queue_worker",
+        "config_storage",
+        "queue_backend",
+    }
+
+
+@pytest.mark.asyncio
+async def test_readiness_payload_reports_redis_failure():
+    config = _build_config("json")
+    config.tts_queue_backend = "redis"
+    redis_client = Mock()
+    redis_client.ping = AsyncMock(return_value=False)
+    audio_queue = Mock()
+    audio_queue._redis = redis_client
+    probe = BotReadinessProbe(
+        config=config,
+        config_repository=Mock(),
+        discord_client=Mock(is_ready=Mock(return_value=True)),
+        queue_worker=Mock(is_running=Mock(return_value=True)),
+        audio_queue=audio_queue,
+    )
+
+    payload = await probe.payload()
+
+    assert payload["status"] == "not_ready"
+    assert any(
+        dependency["name"] == "redis" and dependency["status"] == "not_ready"
+        for dependency in payload["dependencies"]
+    )

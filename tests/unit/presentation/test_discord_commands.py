@@ -1,6 +1,7 @@
 """Tests for Discord commands presentation layer."""
 import pytest
 from unittest.mock import Mock, AsyncMock
+import discord
 from discord import app_commands
 from src.application.dto import (
     ConfigureTTSResult,
@@ -14,7 +15,6 @@ from src.application.use_cases import (
     ConfigureTTSUseCase,
     JoinVoiceChannelUseCase,
     LeaveVoiceChannelUseCase,
-    SpeakTextUseCase,
 )
 
 
@@ -174,6 +174,25 @@ class TestDiscordCommands:
 
         interaction.edit_original_response.assert_called_once()
         assert "indispon" in interaction.edit_original_response.call_args.kwargs["content"].lower()
+
+    @pytest.mark.asyncio
+    async def test_handle_speak_ignores_expired_interaction_before_defer(self, commands_instance):
+        commands_instance._speak_use_case.execute = AsyncMock()
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 11111
+        interaction.user.name = "User"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.response = AsyncMock()
+        interaction.response.defer = AsyncMock(side_effect=discord.NotFound(Mock(), {"code": 10062, "message": "Unknown interaction"}))
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_speak(interaction, "Test")
+
+        interaction.response.defer.assert_awaited_once()
+        commands_instance._speak_use_case.execute.assert_not_awaited()
+        interaction.edit_original_response.assert_not_called()
     
     @pytest.mark.asyncio
     async def test_handle_speak_failure(self, commands_instance):

@@ -38,6 +38,14 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install -r requirements-test.txt
 
+      - name: Run lint gate
+        run: |
+          python -m ruff check .
+
+      - name: Run type-check gate
+        run: |
+          python -m pyright
+
       - name: Run critical test suite with coverage
         if: runner.os == 'Linux'
         env:

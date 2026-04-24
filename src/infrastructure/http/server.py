@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 RequestHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 ObservabilitySnapshotProvider = Callable[[], dict[str, object]]
+ReadinessProvider = Callable[[], Awaitable[dict[str, object]]]
 
 
 class HTTPServer:
@@ -30,6 +31,7 @@ class HTTPServer:
         port: int,
         host: str = "127.0.0.1",
         observability_snapshot_provider: ObservabilitySnapshotProvider | None = None,
+        readiness_provider: ReadinessProvider | None = None,
         otel_runtime: OpenTelemetryRuntime | None = None,
     ):
         """Initialize HTTP server.
@@ -45,6 +47,7 @@ class HTTPServer:
         self._port = port
         self._host = host
         self._observability_snapshot_provider = observability_snapshot_provider
+        self._readiness_provider = readiness_provider
         self._otel_runtime = otel_runtime
         self._runner = None
         self._site = None
@@ -54,6 +57,7 @@ class HTTPServer:
         app = web.Application()
         app.router.add_get('/', self._home)
         app.router.add_get('/health', self._health, name='health')
+        app.router.add_get('/ready', self._ready, name='ready')
         app.router.add_get('/observability', self._observability, name='observability')
         app.router.add_get('/version', self._version)
         app.router.add_get('/about', self._about)
@@ -78,6 +82,14 @@ class HTTPServer:
         if self._observability_snapshot_provider is None:
             return web.json_response({"status": "disabled"})
         return web.json_response(self._observability_snapshot_provider())
+
+    async def _ready(self, request: web.Request) -> web.Response:
+        """Readiness endpoint that checks configured external dependencies."""
+        if self._readiness_provider is None:
+            return web.json_response({"status": "unknown", "dependencies": []}, status=503)
+        payload = await self._readiness_provider()
+        status_code = 200 if payload.get("status") == "ready" else 503
+        return web.json_response(payload, status=status_code)
 
     async def _version(self, request: web.Request) -> web.Response:
         return web.json_response({

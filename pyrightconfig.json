@@ -1,0 +1,21 @@
+{
+  "include": [
+    "src/application/dto",
+    "src/bot_runtime/readiness.py",
+    "src/core",
+    "scripts/test/quality_gates.py",
+    "tests/unit/test_architecture_boundaries.py",
+    "tests/unit/test_quality_gates.py"
+  ],
+  "exclude": [
+    ".venv",
+    "htmlcov",
+    "__pycache__"
+  ],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic",
+  "reportMissingTypeStubs": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownVariableType": "none",
+  "reportUnknownArgumentType": "none"
+}
