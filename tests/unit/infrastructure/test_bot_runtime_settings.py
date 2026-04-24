@@ -129,3 +129,46 @@ def test_config_rejects_unknown_queue_backend(tmp_path):
     config = Config(env_file=env_file)
 
     assert config.validate() == (False, "Invalid TTS_QUEUE_BACKEND: unknown")
+
+
+def test_config_reads_opentelemetry_settings(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "OTEL_ENABLED=true",
+                "OTEL_SERVICE_NAME=discord-bot",
+                "OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.otel_enabled is True
+    assert config.otel_service_name == "discord-bot"
+    assert config.otel_exporter_otlp_endpoint == "http://collector:4318"
+
+
+def test_config_requires_otlp_endpoint_when_otel_is_enabled(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "TTS_QUEUE_BACKEND=inmemory",
+                "OTEL_ENABLED=true",
+                "OTEL_EXPORTER_OTLP_ENDPOINT=   ",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (
+        False,
+        "OTEL_EXPORTER_OTLP_ENDPOINT not set for OTEL_ENABLED=true",
+    )

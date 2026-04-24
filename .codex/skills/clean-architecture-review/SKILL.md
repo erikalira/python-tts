@@ -10,8 +10,8 @@ Read these first:
 - `.specify/README.md`
 - `.specify/memory/constitution.md`
 - `.specify/review-checklist.md`
-- `docs/ARCHITECTURE.md`
-- `docs/ARCHITECTURE_TRANSITIONS.md`
+- `docs/architecture/ARCHITECTURE.md`
+- `docs/architecture/ARCHITECTURE_TRANSITIONS.md`
 
 # When to use
 
@@ -33,6 +33,9 @@ explicit contracts, onboarding readability, and temporary-structure discipline.
 
 1. Identify the changed files and map each file to a layer
 2. Inspect imports and dependencies between those files
+   - Treat any direct import from `src.infrastructure/` into `src/application/`
+     or `src/presentation/` as a likely blocker unless the file is a documented
+     composition root outside those layers
 3. Mark any boundary violations, layer leakage, or duplicated logic
 4. Note weak contracts, lingering mapping-style payloads, or compatibility
    layers that may no longer be justified

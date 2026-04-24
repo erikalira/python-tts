@@ -194,6 +194,20 @@ class TestRedisAudioQueue:
         status = await queue.get_queue_status(1)
         assert status.items[0].status == AudioQueueItemStatus.COMPLETED.value
 
+    async def test_enqueue_and_dequeue_preserve_trace_context(self):
+        queue = RedisAudioQueue(FakeRedis(), max_queue_size=5, key_prefix="test")
+        item = AudioQueueItem(
+            request=TTSRequest(text="trace", guild_id=1, member_id=10),
+            item_id="item-trace",
+            trace_context={"traceparent": "00-abc-123-01"},
+        )
+
+        await queue.enqueue(item)
+        dequeued = await queue.dequeue(1)
+
+        assert dequeued is not None
+        assert dequeued.trace_context == {"traceparent": "00-abc-123-01"}
+
     async def test_completed_items_expire_after_observability_ttl(self):
         fake_redis = FakeRedis()
         queue = RedisAudioQueue(fake_redis, max_queue_size=5, key_prefix="test", completed_item_ttl_seconds=1)

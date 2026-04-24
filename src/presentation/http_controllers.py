@@ -5,6 +5,7 @@ import logging
 from aiohttp import web
 
 from src.application.dto import BotSpeakRequestDTO, SpeakTextInputDTO, VoiceContextQueryDTO
+from src.application.runtime_telemetry import NullRuntimeSpanContext, RuntimeTelemetry
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 from src.core.entities import TTSConfig
 from src.core.interfaces import IConfigRepository
@@ -20,39 +21,59 @@ class SpeakController:
         self,
         speak_use_case: SpeakTextUseCase,
         config_repository: IConfigRepository | None = None,
+        otel_runtime: RuntimeTelemetry | None = None,
     ):
         self._speak_use_case = speak_use_case
         self._config_repository = config_repository
         self._presenter = HTTPSpeakPresenter()
+        self._otel_runtime = otel_runtime
 
     async def handle(self, request: web.Request) -> web.Response:
-        try:
-            data = await request.json()
-        except Exception as exc:
-            logger.error("Invalid JSON: %s", exc)
-            return web.Response(text="invalid json", status=400)
+        headers = getattr(request, "headers", {}) or {}
+        with self._otel_runtime.start_http_span(
+            "http.speak",
+            headers=headers,
+            attributes={"http.route": "/speak", "http.method": "POST"},
+        ) if self._otel_runtime is not None else NullRuntimeSpanContext() as span:
+            try:
+                data = await request.json()
+            except Exception as exc:
+                logger.error("Invalid JSON: %s", exc)
+                span.set_attribute("result_code", "invalid_json")
+                if self._otel_runtime is not None:
+                    self._otel_runtime.mark_span_error(span, exc)
+                return web.Response(text="invalid json", status=400)
 
-        guild_id = self._parse_int(data.get("guild_id"))
-        member_id_value = data.get("member_id") or data.get("user_id")
-        request_dto = BotSpeakRequestDTO(
-            text=self._parse_text(data.get("text")),
-            channel_id=self._parse_int(data.get("channel_id")),
-            guild_id=guild_id,
-            member_id=str(member_id_value) if member_id_value is not None else None,
-            config_override=self._parse_config_override(data, guild_id, self._parse_int(member_id_value)),
-        )
-        tts_request = SpeakTextInputDTO(
-            text=request_dto.text,
-            channel_id=request_dto.channel_id,
-            guild_id=request_dto.guild_id,
-            member_id=self._parse_int(request_dto.member_id),
-            config_override=request_dto.config_override,
-        )
-        result = await self._speak_use_case.execute(tts_request)
-        return web.Response(
-            text=self._presenter.build_message(result),
-            status=self._presenter.get_status_code(result),
-        )
+            guild_id = self._parse_int(data.get("guild_id"))
+            member_id_value = data.get("member_id") or data.get("user_id")
+            config_override = self._parse_config_override(data, guild_id, self._parse_int(member_id_value))
+            request_dto = BotSpeakRequestDTO(
+                text=self._parse_text(data.get("text")),
+                channel_id=self._parse_int(data.get("channel_id")),
+                guild_id=guild_id,
+                member_id=str(member_id_value) if member_id_value is not None else None,
+                config_override=config_override,
+            )
+            span.set_attribute("guild_id", str(guild_id) if guild_id is not None else "unknown")
+            span.set_attribute(
+                "engine",
+                config_override.engine if config_override is not None else "configured_default",
+            )
+            tts_request = SpeakTextInputDTO(
+                text=request_dto.text,
+                channel_id=request_dto.channel_id,
+                guild_id=request_dto.guild_id,
+                member_id=self._parse_int(request_dto.member_id),
+                config_override=request_dto.config_override,
+                trace_context=self._otel_runtime.inject_current_context() if self._otel_runtime is not None else None,
+            )
+            result = await self._speak_use_case.execute(tts_request)
+            span.set_attribute("result_code", result.code)
+            span.set_attribute("timeout_flag", result.code in {"generation_timeout", "playback_timeout"})
+            return web.Response(
+                text=self._presenter.build_message(result),
+                status=self._presenter.get_status_code(result),
+            )
 
     def _parse_int(self, value) -> int | None:
         if value is None:

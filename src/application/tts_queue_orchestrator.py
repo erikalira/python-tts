@@ -19,6 +19,7 @@ from src.application.dto import (
     SPEAK_RESULT_VOICE_PERMISSION_DENIED,
     SpeakTextResult,
 )
+from src.application.runtime_telemetry import NullRuntimeSpanContext, RuntimeTelemetry
 from src.application.telemetry import BotRuntimeTelemetry, NoOpBotRuntimeTelemetry
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.core.entities import AudioQueueItem, TTSConfig
@@ -45,6 +46,7 @@ class TTSQueueOrchestrator:
         generation_timeout_seconds: float = DEFAULT_BOT_TTS_GENERATION_TIMEOUT_SECONDS,
         playback_timeout_seconds: float = DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
         telemetry: BotRuntimeTelemetry | None = None,
+        otel_runtime: RuntimeTelemetry | None = None,
     ):
         self._tts_engine = tts_engine
         self._config_repository = config_repository
@@ -55,6 +57,7 @@ class TTSQueueOrchestrator:
         self._playback_timeout_seconds = playback_timeout_seconds
         self._processing_guilds: set[Optional[int]] = set()
         self._telemetry = telemetry or NoOpBotRuntimeTelemetry()
+        self._otel_runtime = otel_runtime
 
     def is_processing(self, guild_id: Optional[int]) -> bool:
         return guild_id in self._processing_guilds
@@ -88,163 +91,228 @@ class TTSQueueOrchestrator:
         request = item.request
         audio = None
 
-        try:
-            if not request.guild_id:
-                error = "Guild ID nao foi fornecido - isolamento de servidor falhou"
-                item.mark_failed(error)
-                await self._audio_queue.update_item(item)
-                return SpeakTextResult(
-                    success=False,
-                    code=SPEAK_RESULT_MISSING_GUILD_ID,
-                    queued=True,
-                    item_id=item.item_id,
-                    error_detail=error,
-                )
-
-            resolution = await self._voice_channel_resolution.resolve_for_request(request)
-            if not resolution:
-                error = "Bot nao conseguiu encontrar sua sala de voz"
-                item.mark_failed(error)
-                await self._audio_queue.update_item(item)
-                return SpeakTextResult(
-                    success=False,
-                    code=SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
-                    queued=True,
-                    item_id=item.item_id,
-                    error_detail=error,
-                )
-
-            voice_channel = resolution.channel
-            channel_guild_id = voice_channel.get_guild_id()
-            if channel_guild_id != request.guild_id:
-                error = "Canal de voz pertence a servidor diferente"
-                item.mark_failed(error)
-                await self._audio_queue.update_item(item)
-                return SpeakTextResult(
-                    success=False,
-                    code=SPEAK_RESULT_CROSS_GUILD_CHANNEL,
-                    queued=True,
-                    item_id=item.item_id,
-                    error_detail=error,
-                )
-
-            config = await self._config_repository.load_config_async(request.guild_id, user_id=request.member_id)
-            config = self._apply_request_override(config, request.config_override)
+        with self._otel_runtime.start_internal_span(
+            "tts_queue.process_item",
+            attributes={
+                "guild_id": str(request.guild_id) if request.guild_id is not None else "unknown",
+                "engine": self._resolve_engine_name(item),
+            },
+        ) if self._otel_runtime is not None else NullRuntimeSpanContext() as processing_span:
             try:
-                audio = await asyncio.wait_for(
-                    self._tts_engine.generate_audio(request.text, config),
-                    timeout=self._generation_timeout_seconds,
-                )
-            except asyncio.TimeoutError:
-                error = "Tempo limite excedido durante geracao do audio"
-                item.mark_failed(error)
-                await self._audio_queue.update_item(item)
-                logger.warning(
-                    "[QUEUE_ORCHESTRATOR] Audio generation timed out for item %s after %ss",
-                    item.item_id,
-                    self._generation_timeout_seconds,
-                )
-                return SpeakTextResult(
-                    success=False,
-                    code=SPEAK_RESULT_GENERATION_TIMEOUT,
-                    queued=True,
-                    item_id=item.item_id,
-                    error_detail=error,
-                )
-
-            if not voice_channel.is_connected():
-                await voice_channel.connect()
-
-            if request.member_id and not await self._voice_channel_resolution.is_member_in_channel(
-                request.member_id, voice_channel
-            ):
-                error = "Voce saiu do canal de voz"
-                item.mark_failed(error)
-                await self._audio_queue.update_item(item)
-                return SpeakTextResult(
-                    success=False,
-                    code=SPEAK_RESULT_USER_LEFT_CHANNEL,
-                    queued=True,
-                    item_id=item.item_id,
-                    error_detail=error,
-                )
-
-            try:
-                await asyncio.wait_for(voice_channel.play_audio(audio), timeout=self._playback_timeout_seconds)
-                item.mark_completed()
-                await self._audio_queue.update_item(item)
-                self._telemetry.record_processing_result(
-                    item=item,
-                    success=True,
-                    code=SPEAK_RESULT_OK,
-                    engine=config.engine,
-                )
-                return SpeakTextResult(
-                    success=True,
-                    code=SPEAK_RESULT_OK,
-                    queued=False,
-                    item_id=item.item_id,
-                )
-            except asyncio.TimeoutError:
-                error = "Tempo limite excedido durante reproducao"
-                item.mark_failed(error)
-                await self._audio_queue.update_item(item)
-                self._telemetry.record_processing_result(
-                    item=item,
-                    success=False,
-                    code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
-                    engine=config.engine,
-                )
-                logger.warning(
-                    "[QUEUE_ORCHESTRATOR] Audio playback timed out for item %s after %ss",
-                    item.item_id,
-                    self._playback_timeout_seconds,
-                )
-                return SpeakTextResult(
-                    success=False,
-                    code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
-                    queued=True,
-                    item_id=item.item_id,
-                    error_detail=error,
-                )
-        except Exception as exc:
-            error_msg = str(exc)
-            item.mark_failed(error_msg)
-            await self._audio_queue.update_item(item)
-
-            error_lower = error_msg.lower()
-            if "4017" in error_lower or "dave" in error_lower:
-                code = SPEAK_RESULT_VOICE_CONNECTION_FAILED
-            elif "not connected" in error_lower or "connection" in error_lower:
-                code = SPEAK_RESULT_VOICE_CONNECTION_FAILED
-            elif "permission" in error_lower:
-                code = SPEAK_RESULT_VOICE_PERMISSION_DENIED
-            else:
-                code = SPEAK_RESULT_UNKNOWN_ERROR
-
-            self._telemetry.record_processing_result(
-                item=item,
-                success=False,
-                code=code,
-                engine=self._resolve_engine_name(item),
-            )
-            return SpeakTextResult(
-                success=False,
-                code=code,
-                queued=True,
-                item_id=item.item_id,
-                error_detail=error_msg,
-            )
-        finally:
-            if audio:
-                try:
-                    await self._audio_cleanup.cleanup(audio)
-                except Exception as cleanup_error:
-                    logger.warning(
-                        "[QUEUE_ORCHESTRATOR] Error cleaning up audio file %s: %s",
-                        audio.path,
-                        cleanup_error,
+                if not request.guild_id:
+                    error = "Guild ID nao foi fornecido - isolamento de servidor falhou"
+                    item.mark_failed(error)
+                    await self._audio_queue.update_item(item)
+                    processing_span.set_attribute("result_code", SPEAK_RESULT_MISSING_GUILD_ID)
+                    return SpeakTextResult(
+                        success=False,
+                        code=SPEAK_RESULT_MISSING_GUILD_ID,
+                        queued=True,
+                        item_id=item.item_id,
+                        error_detail=error,
                     )
+
+                resolution = await self._voice_channel_resolution.resolve_for_request(request)
+                if not resolution:
+                    error = "Bot nao conseguiu encontrar sua sala de voz"
+                    item.mark_failed(error)
+                    await self._audio_queue.update_item(item)
+                    processing_span.set_attribute("result_code", SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND)
+                    return SpeakTextResult(
+                        success=False,
+                        code=SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
+                        queued=True,
+                        item_id=item.item_id,
+                        error_detail=error,
+                    )
+
+                voice_channel = resolution.channel
+                channel_guild_id = voice_channel.get_guild_id()
+                if channel_guild_id != request.guild_id:
+                    error = "Canal de voz pertence a servidor diferente"
+                    item.mark_failed(error)
+                    await self._audio_queue.update_item(item)
+                    processing_span.set_attribute("result_code", SPEAK_RESULT_CROSS_GUILD_CHANNEL)
+                    return SpeakTextResult(
+                        success=False,
+                        code=SPEAK_RESULT_CROSS_GUILD_CHANNEL,
+                        queued=True,
+                        item_id=item.item_id,
+                        error_detail=error,
+                    )
+
+                config = await self._config_repository.load_config_async(request.guild_id, user_id=request.member_id)
+                config = self._apply_request_override(config, request.config_override)
+                try:
+                    with self._otel_runtime.start_internal_span(
+                        "tts_engine.generate_audio",
+                        attributes={"guild_id": str(request.guild_id), "engine": config.engine},
+                    ) if self._otel_runtime is not None else NullRuntimeSpanContext() as generate_span:
+                        audio = await asyncio.wait_for(
+                            self._tts_engine.generate_audio(request.text, config),
+                            timeout=self._generation_timeout_seconds,
+                        )
+                        generate_span.set_attribute("result_code", "ok")
+                except asyncio.TimeoutError:
+                    error = "Tempo limite excedido durante geracao do audio"
+                    item.mark_failed(error)
+                    await self._audio_queue.update_item(item)
+                    processing_span.set_attribute("result_code", SPEAK_RESULT_GENERATION_TIMEOUT)
+                    processing_span.set_attribute("timeout_flag", True)
+                    if self._otel_runtime is not None:
+                        self._otel_runtime.record_queue_item_processed(
+                            guild_id=request.guild_id,
+                            engine=config.engine,
+                            result_code=SPEAK_RESULT_GENERATION_TIMEOUT,
+                            success=False,
+                            timeout_flag=True,
+                        )
+                    logger.warning(
+                        "[QUEUE_ORCHESTRATOR] Audio generation timed out for item %s after %ss",
+                        item.item_id,
+                        self._generation_timeout_seconds,
+                    )
+                    return SpeakTextResult(
+                        success=False,
+                        code=SPEAK_RESULT_GENERATION_TIMEOUT,
+                        queued=True,
+                        item_id=item.item_id,
+                        error_detail=error,
+                    )
+
+                if not voice_channel.is_connected():
+                    await voice_channel.connect()
+
+                if request.member_id and not await self._voice_channel_resolution.is_member_in_channel(
+                    request.member_id, voice_channel
+                ):
+                    error = "Voce saiu do canal de voz"
+                    item.mark_failed(error)
+                    await self._audio_queue.update_item(item)
+                    processing_span.set_attribute("result_code", SPEAK_RESULT_USER_LEFT_CHANNEL)
+                    return SpeakTextResult(
+                        success=False,
+                        code=SPEAK_RESULT_USER_LEFT_CHANNEL,
+                        queued=True,
+                        item_id=item.item_id,
+                        error_detail=error,
+                    )
+
+                try:
+                    with self._otel_runtime.start_internal_span(
+                        "tts_engine.play_audio",
+                        attributes={"guild_id": str(request.guild_id), "engine": config.engine},
+                    ) if self._otel_runtime is not None else NullRuntimeSpanContext() as playback_span:
+                        await asyncio.wait_for(voice_channel.play_audio(audio), timeout=self._playback_timeout_seconds)
+                        playback_span.set_attribute("result_code", "ok")
+                    item.mark_completed()
+                    await self._audio_queue.update_item(item)
+                    processing_span.set_attribute("result_code", SPEAK_RESULT_OK)
+                    processing_span.set_attribute("timeout_flag", False)
+                    self._telemetry.record_processing_result(
+                        item=item,
+                        success=True,
+                        code=SPEAK_RESULT_OK,
+                        engine=config.engine,
+                    )
+                    if self._otel_runtime is not None:
+                        self._otel_runtime.record_queue_item_processed(
+                            guild_id=request.guild_id,
+                            engine=config.engine,
+                            result_code=SPEAK_RESULT_OK,
+                            success=True,
+                            timeout_flag=False,
+                        )
+                    return SpeakTextResult(
+                        success=True,
+                        code=SPEAK_RESULT_OK,
+                        queued=False,
+                        item_id=item.item_id,
+                    )
+                except asyncio.TimeoutError:
+                    error = "Tempo limite excedido durante reproducao"
+                    item.mark_failed(error)
+                    await self._audio_queue.update_item(item)
+                    processing_span.set_attribute("result_code", SPEAK_RESULT_PLAYBACK_TIMEOUT)
+                    processing_span.set_attribute("timeout_flag", True)
+                    self._telemetry.record_processing_result(
+                        item=item,
+                        success=False,
+                        code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
+                        engine=config.engine,
+                    )
+                    if self._otel_runtime is not None:
+                        self._otel_runtime.record_queue_item_processed(
+                            guild_id=request.guild_id,
+                            engine=config.engine,
+                            result_code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
+                            success=False,
+                            timeout_flag=True,
+                        )
+                    logger.warning(
+                        "[QUEUE_ORCHESTRATOR] Audio playback timed out for item %s after %ss",
+                        item.item_id,
+                        self._playback_timeout_seconds,
+                    )
+                    return SpeakTextResult(
+                        success=False,
+                        code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
+                        queued=True,
+                        item_id=item.item_id,
+                        error_detail=error,
+                    )
+            except Exception as exc:
+                error_msg = str(exc)
+                item.mark_failed(error_msg)
+                await self._audio_queue.update_item(item)
+
+                error_lower = error_msg.lower()
+                if "4017" in error_lower or "dave" in error_lower:
+                    code = SPEAK_RESULT_VOICE_CONNECTION_FAILED
+                elif "not connected" in error_lower or "connection" in error_lower:
+                    code = SPEAK_RESULT_VOICE_CONNECTION_FAILED
+                elif "permission" in error_lower:
+                    code = SPEAK_RESULT_VOICE_PERMISSION_DENIED
+                else:
+                    code = SPEAK_RESULT_UNKNOWN_ERROR
+
+                self._telemetry.record_processing_result(
+                    item=item,
+                    success=False,
+                    code=code,
+                    engine=self._resolve_engine_name(item),
+                )
+                processing_span.set_attribute("result_code", code)
+                processing_span.set_attribute(
+                    "timeout_flag",
+                    code in {SPEAK_RESULT_GENERATION_TIMEOUT, SPEAK_RESULT_PLAYBACK_TIMEOUT},
+                )
+                if self._otel_runtime is not None:
+                    self._otel_runtime.mark_span_error(processing_span, exc)
+                    self._otel_runtime.record_queue_item_processed(
+                        guild_id=request.guild_id,
+                        engine=self._resolve_engine_name(item),
+                        result_code=code,
+                        success=False,
+                        timeout_flag=code in {SPEAK_RESULT_GENERATION_TIMEOUT, SPEAK_RESULT_PLAYBACK_TIMEOUT},
+                    )
+                return SpeakTextResult(
+                    success=False,
+                    code=code,
+                    queued=True,
+                    item_id=item.item_id,
+                    error_detail=error_msg,
+                )
+            finally:
+                if audio:
+                    try:
+                        await self._audio_cleanup.cleanup(audio)
+                    except Exception as cleanup_error:
+                        logger.warning(
+                            "[QUEUE_ORCHESTRATOR] Error cleaning up audio file %s: %s",
+                            audio.path,
+                            cleanup_error,
+                        )
 
     def _apply_request_override(self, base_config: TTSConfig, override: TTSConfig | None) -> TTSConfig:
         if override is None:

@@ -5,7 +5,9 @@ from unittest.mock import Mock, AsyncMock
 from aiohttp import web
 
 from src.core.entities import TTSConfig
+from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 from src.presentation.http_controllers import SpeakController, VoiceContextController
+from src.application.dto import SpeakTextResult
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 
 
@@ -204,6 +206,26 @@ class TestSpeakController:
         
         assert response.status == 200
 
+    async def test_handle_injects_trace_context_when_otel_is_available(self):
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
+        )
+        otel_runtime = Mock(spec=OpenTelemetryRuntime)
+        otel_runtime.start_http_span.return_value = _FakeSpanContext()
+        otel_runtime.inject_current_context.return_value = {"traceparent": "00-abc-123-01"}
+        controller = SpeakController(use_case, otel_runtime=otel_runtime)
+
+        request = Mock(spec=web.Request)
+        request.headers = {}
+        request.json = AsyncMock(return_value={"text": "Hello", "guild_id": 789012, "member_id": 345678})
+
+        response = await controller.handle(request)
+
+        assert response.status == 200
+        execute_dto = use_case.execute.await_args.args[0]
+        assert execute_dto.trace_context == {"traceparent": "00-abc-123-01"}
+
     async def test_parse_int_with_invalid_values(
         self,
         mock_tts_engine,
@@ -337,3 +359,17 @@ class TestVoiceContextController:
         response = await controller.handle(request)
 
         assert response.status == 400
+
+
+class _FakeSpan:
+    def set_attribute(self, key, value):
+        del key, value
+
+
+class _FakeSpanContext:
+    def __enter__(self):
+        return _FakeSpan()
+
+    def __exit__(self, exc_type, exc, tb):
+        del exc_type, exc, tb
+        return False

@@ -9,6 +9,7 @@ from aiohttp import web
 
 from src.application.dto import BotHealthResponseDTO
 from src.__version__ import __version__, __author__, __description__
+from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class HTTPServer:
         port: int,
         host: str = "127.0.0.1",
         observability_snapshot_provider: ObservabilitySnapshotProvider | None = None,
+        otel_runtime: OpenTelemetryRuntime | None = None,
     ):
         """Initialize HTTP server.
         
@@ -43,6 +45,7 @@ class HTTPServer:
         self._port = port
         self._host = host
         self._observability_snapshot_provider = observability_snapshot_provider
+        self._otel_runtime = otel_runtime
         self._runner = None
         self._site = None
 
@@ -63,7 +66,12 @@ class HTTPServer:
 
     async def _health(self, request: web.Request) -> web.Response:
         """Health check endpoint for Docker/Render."""
-        return web.json_response(asdict(BotHealthResponseDTO(status="healthy")))
+        with self._otel_runtime.start_http_span(
+            "http.health",
+            headers=getattr(request, "headers", {}) or {},
+            attributes={"http.route": "/health", "http.method": "GET"},
+        ) if self._otel_runtime is not None else _null_span_context():
+            return web.json_response(asdict(BotHealthResponseDTO(status="healthy")))
 
     async def _observability(self, request: web.Request) -> web.Response:
         """Expose a compact runtime observability snapshot for operational baselines."""
@@ -103,3 +111,12 @@ class HTTPServer:
         """Stop HTTP server."""
         if self._runner:
             await self._runner.cleanup()
+
+
+class _null_span_context:
+    def __enter__(self) -> "_null_span_context":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        del exc_type, exc, tb
+        return False

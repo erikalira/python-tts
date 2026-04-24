@@ -16,3 +16,4 @@ class SpeakTextInputDTO:
     guild_id: int | None = None
     member_id: int | None = None
     config_override: TTSConfig | None = None
+    trace_context: dict[str, str] | None = None

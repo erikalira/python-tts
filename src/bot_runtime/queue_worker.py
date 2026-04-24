@@ -9,6 +9,7 @@ from typing import Optional
 
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.core.interfaces import IAudioQueue
+from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class BotQueueWorker:
         poll_interval_seconds: float = 0.2,
         guild_lock_ttl_seconds: int = 30,
         guild_lock_renew_interval_seconds: float | None = None,
+        otel_runtime: OpenTelemetryRuntime | None = None,
     ):
         self._audio_queue = audio_queue
         self._queue_orchestrator = queue_orchestrator
@@ -38,6 +40,7 @@ class BotQueueWorker:
         self._runner_task: asyncio.Task | None = None
         self._guild_tasks: dict[Optional[int], asyncio.Task] = {}
         self._stop_event = asyncio.Event()
+        self._otel_runtime = otel_runtime
 
     async def start(self) -> None:
         if self._runner_task and not self._runner_task.done():
@@ -64,7 +67,10 @@ class BotQueueWorker:
     async def _run(self) -> None:
         try:
             while not self._stop_event.is_set():
-                guild_ids = await self._list_guild_ids()
+                with self._otel_runtime.start_internal_span(
+                    "queue_worker.poll"
+                ) if self._otel_runtime is not None else _null_span_context():
+                    guild_ids = await self._list_guild_ids()
                 for guild_id in guild_ids:
                     task = self._guild_tasks.get(guild_id)
                     if task and not task.done():
@@ -95,20 +101,31 @@ class BotQueueWorker:
                 next_item = await self._audio_queue.peek_next(guild_id)
                 if next_item is None:
                     break
-                processing_acquired = await self._acquire_processing_lease(guild_id)
-                if not processing_acquired:
-                    logger.debug("[QUEUE_WORKER] Guild %s already has an active processing lease", guild_id)
-                    break
-                processing_renew_task = asyncio.create_task(
-                    self._renew_processing_lease_loop(guild_id),
-                    name=f"discord-bot-processing-lease-renew-{guild_id}",
-                )
-                try:
-                    await self._queue_orchestrator.start_processing_for_item(guild_id)
-                finally:
-                    processing_renew_task.cancel()
-                    await asyncio.gather(processing_renew_task, return_exceptions=True)
-                    await self._release_processing_lease(guild_id)
+                with self._otel_runtime.start_consumer_span(
+                    "queue_worker.process_guild_item",
+                    carrier=next_item.trace_context,
+                    attributes={
+                        "guild_id": str(guild_id) if guild_id is not None else "unknown",
+                        "engine": self._resolve_engine_name(next_item),
+                    },
+                ) if self._otel_runtime is not None else _null_span_context() as span:
+                    processing_acquired = await self._acquire_processing_lease(guild_id)
+                    if not processing_acquired:
+                        logger.debug("[QUEUE_WORKER] Guild %s already has an active processing lease", guild_id)
+                        span.set_attribute("result_code", "lease_busy")
+                        break
+                    processing_renew_task = asyncio.create_task(
+                        self._renew_processing_lease_loop(guild_id),
+                        name=f"discord-bot-processing-lease-renew-{guild_id}",
+                    )
+                    try:
+                        result = await self._queue_orchestrator.start_processing_for_item(guild_id)
+                        span.set_attribute("result_code", result.code)
+                        span.set_attribute("timeout_flag", result.code in {"generation_timeout", "playback_timeout"})
+                    finally:
+                        processing_renew_task.cancel()
+                        await asyncio.gather(processing_renew_task, return_exceptions=True)
+                        await self._release_processing_lease(guild_id)
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -154,6 +171,8 @@ class BotQueueWorker:
                 )
                 if not renewed:
                     logger.warning("[QUEUE_WORKER] Lost guild lock while draining guild %s", guild_id)
+                    if self._otel_runtime is not None:
+                        self._otel_runtime.record_lock_loss(guild_id=guild_id, lock_kind="guild_lock")
                     return
         except asyncio.CancelledError:
             raise
@@ -179,6 +198,26 @@ class BotQueueWorker:
                 )
                 if not renewed:
                     logger.warning("[QUEUE_WORKER] Lost processing lease while handling guild %s", guild_id)
+                    if self._otel_runtime is not None:
+                        self._otel_runtime.record_lock_loss(guild_id=guild_id, lock_kind="processing_lease")
                     return
         except asyncio.CancelledError:
             raise
+
+    def _resolve_engine_name(self, item) -> str:
+        override = item.request.config_override
+        if override is not None and override.engine:
+            return override.engine
+        return "configured_default"
+
+
+class _null_span_context:
+    def __enter__(self) -> "_null_span_context":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        del exc_type, exc, tb
+        return False
+
+    def set_attribute(self, key: str, value) -> None:
+        del key, value

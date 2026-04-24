@@ -54,6 +54,7 @@ class AudioQueueItem:
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
     error_message: Optional[str] = None
+    trace_context: Optional[dict[str, str]] = None
     position_in_queue: int = 0  # Posição na fila (0 = próximo a processar)
     
     def mark_processing(self):

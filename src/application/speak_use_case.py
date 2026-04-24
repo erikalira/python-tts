@@ -93,7 +93,7 @@ class SpeakTextUseCase:
                 queued=False,
             )
 
-        item = AudioQueueItem(request=domain_request)
+        item = AudioQueueItem(request=domain_request, trace_context=getattr(request, "trace_context", None))
         item_id = await self._audio_queue.enqueue(item)
         if item_id is None:
             self._telemetry.record_submission_result(

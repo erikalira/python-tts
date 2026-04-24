@@ -54,6 +54,21 @@ class TestContainer:
         container.queue_worker.stop.assert_awaited_once()
         container.audio_queue.aclose.assert_awaited_once()
 
+    async def test_shutdown_flushes_otel_runtime_when_available(self):
+        container = Container.__new__(Container)
+        container.queue_worker = type("Worker", (), {})()
+        container.queue_worker.stop = AsyncMock()
+        container.queue_worker.is_running = Mock(return_value=False)
+        container.audio_queue = type("Queue", (), {})()
+        container.audio_queue.aclose = AsyncMock()
+        container.otel_runtime = type("OTel", (), {})()
+        container.otel_runtime.shutdown = Mock()
+
+        await Container.shutdown(container)
+
+        container.audio_queue.aclose.assert_awaited_once()
+        container.otel_runtime.shutdown.assert_called_once_with()
+
     async def test_start_queue_worker_restarts_when_previous_runner_died(self):
         container = Container.__new__(Container)
         container.queue_worker = type("Worker", (), {})()
