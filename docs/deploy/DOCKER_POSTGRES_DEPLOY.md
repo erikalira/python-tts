@@ -8,6 +8,7 @@ using the repository files.
 
 - `Dockerfile`
 - `docker-compose.prod.yml`
+- `docker-compose.postgres.yml`
 - `deploy/postgres/001_bot_config_schema.sql`
 - `deploy/otel/collector-config.yaml`
 - `deploy/observability/tempo.yaml`
@@ -22,6 +23,9 @@ Minimum values:
 
 ```env
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+BOT_IMAGE=ghcr.io/your-org/tts-hotkey-windows-bot
+APP_VERSION=v2026.04.24-1
+VCS_REF=<git-sha>
 POSTGRES_USER=tts_user
 POSTGRES_PASSWORD=change_me_in_production
 TTS_ENGINE=gtts
@@ -59,6 +63,14 @@ bot must connect to the collector service name, not `127.0.0.1`.
 Grafana will be available at `http://localhost:3000`, Prometheus at
 `http://localhost:9090`, and Tempo at `http://localhost:3200`.
 
+The production compose stack pins dependency images to explicit tags instead of
+using `latest`. Update image versions intentionally and validate the stack after
+each tag change.
+
+The bot image is versioned separately through `BOT_IMAGE` and `APP_VERSION`.
+For production rollback, keep `APP_VERSION` immutable and record the previous
+known-good value before every deploy.
+
 ## 2. Start the stack
 
 ```bash
@@ -67,6 +79,32 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 
 If you keep secrets in a different file, replace `.env.prod` with your
 real env file.
+
+For a production host that pulls a prebuilt image from a registry, use:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml pull bot
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-build
+```
+
+## 2.1. Local Postgres only
+
+If you want to run the bot locally from `.venv` but use Postgres instead of JSON
+config files, start only the Postgres dependency:
+
+```bash
+docker compose -f docker-compose.postgres.yml up -d
+```
+
+Then configure `.env` with:
+
+```env
+CONFIG_STORAGE_BACKEND=postgres
+DATABASE_URL=postgresql://tts_user:change_me@127.0.0.1:5432/tts_hotkey_windows
+```
+
+For the simplest local flow, keep `CONFIG_STORAGE_BACKEND=json` and skip
+Postgres entirely.
 
 ## 3. Check status
 
@@ -123,6 +161,8 @@ docker compose -f docker-compose.prod.yml down -v
 - The bundled stack now stores traces in Tempo local storage and metrics in
   Prometheus TSDB volumes, which is fine for a single-node deployment but not
   a substitute for a HA observability platform.
+- The current pinned image tags are intentionally conservative and should be
+  reviewed as part of dependency maintenance.
 
 ## Credential change note
 

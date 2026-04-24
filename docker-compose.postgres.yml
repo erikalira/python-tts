@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:17.9
+    container_name: tts-bot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tts_hotkey_windows}
+      POSTGRES_USER: ${POSTGRES_USER:-tts_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/001_bot_config_schema.sql:/docker-entrypoint-initdb.d/001_bot_config_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+

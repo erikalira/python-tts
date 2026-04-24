@@ -46,6 +46,18 @@ You will probably also need:
 - [../operations/DR_DRILLS.md](../operations/DR_DRILLS.md)
 - [../operations/RELEASE_CHECKLIST.md](../operations/RELEASE_CHECKLIST.md)
 
+## I want only local Postgres
+
+Use:
+
+- [DOCKER_POSTGRES_DEPLOY.md](DOCKER_POSTGRES_DEPLOY.md#21-local-postgres-only)
+
+Choose this when:
+
+- you want to run `python -m src.bot` locally
+- you want Postgres persistence instead of JSON config files
+- you do not want to start Redis, Grafana, Prometheus, Tempo, or the bot container
+
 ## I want to understand the recommended production architecture first
 
 Use:

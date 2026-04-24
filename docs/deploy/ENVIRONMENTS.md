@@ -15,6 +15,9 @@ Use the examples in the repository root as the starting point:
 | Variable | Local `.env` | Cloud bot service | Required | Notes |
 | --- | --- | --- | --- | --- |
 | `DISCORD_TOKEN` | Yes | Yes | Yes for bot | Required by the Discord bot runtime. |
+| `BOT_IMAGE` | Optional | Docker Compose only | Recommended for production Compose | Bot image repository/name used by `docker-compose.prod.yml`. Use a registry path in production. |
+| `APP_VERSION` | Optional | Docker Compose only | Recommended for production Compose | Immutable application version tag for the bot image. Rollbacks should return to a known-good value. |
+| `VCS_REF` | Optional | Docker Compose only | Recommended for production Compose | Git SHA/revision recorded as image metadata when building. |
 | `DISCORD_BOT_URL` | Yes | No | No | Used by the Desktop App to reach the bot API. |
 | `DISCORD_BOT_PORT` | Optional | Usually no | No | Local fallback when `PORT` is absent. |
 | `PORT` | No | Usually yes | Recommended in cloud deploys | Many platforms provide this automatically. |
@@ -28,9 +31,11 @@ Use the examples in the repository root as the starting point:
 | `MAX_TEXT_LENGTH` | Optional | Optional | No | Bot runtime limit for incoming text. |
 | `CONFIG_STORAGE_BACKEND` | Optional | Yes | Yes in practice for production | `json` for local dev, `postgres` for production-grade bot persistence. |
 | `CONFIG_STORAGE_DIR` | Optional | No | No | Directory used only by the JSON config backend. |
-| `DATABASE_URL` | No | Yes | Required with `CONFIG_STORAGE_BACKEND=postgres` | Postgres connection string for durable bot configuration. |
-| `POSTGRES_USER` | No | Docker Compose only | Required in practice for bundled Postgres | Compose credential used by the repository's bundled Postgres container. Keep it aligned with `DATABASE_URL`. |
-| `POSTGRES_PASSWORD` | No | Docker Compose only | Required in practice for bundled Postgres | Compose password used by the repository's bundled Postgres container. Keep it aligned with `DATABASE_URL`. |
+| `DATABASE_URL` | Optional | Yes | Required with `CONFIG_STORAGE_BACKEND=postgres` | Postgres connection string for durable bot configuration. For local `docker-compose.postgres.yml`, use `postgresql://tts_user:change_me@127.0.0.1:5432/tts_hotkey_windows`. |
+| `POSTGRES_DB` | Optional | Docker Compose only | Required in practice for bundled Postgres | Compose database name for the repository's bundled Postgres container. |
+| `POSTGRES_USER` | Optional | Docker Compose only | Required in practice for bundled Postgres | Compose credential used by the repository's bundled Postgres container. Keep it aligned with `DATABASE_URL`. |
+| `POSTGRES_PASSWORD` | Optional | Docker Compose only | Required in practice for bundled Postgres | Compose password used by the repository's bundled Postgres container. Keep it aligned with `DATABASE_URL`. |
+| `POSTGRES_PORT` | Optional | No | No | Host port used only by `docker-compose.postgres.yml`. Defaults to `5432`. |
 | `TTS_QUEUE_BACKEND` | Optional | Optional | No | `inmemory` for local simplicity, `redis` for a Dockerized durable queue backend. |
 | `REDIS_HOST` | Optional | Optional | Required with `TTS_QUEUE_BACKEND=redis` | Use `127.0.0.1` when the bot runs locally and Redis is published to the host; use `redis` when the bot runs inside the bundled compose stack. |
 | `REDIS_PORT` | Optional | Optional | Required with `TTS_QUEUE_BACKEND=redis` | Redis port. Defaults to `6379`. |
@@ -61,6 +66,9 @@ Notes:
 - `DISCORD_BOT_PORT` is used as the bot HTTP port when `PORT` is not set.
 - `DISCORD_MEMBER_ID` is the only Desktop App identifier still needed for Discord voice-context detection.
 - `CONFIG_STORAGE_BACKEND=json` remains the simplest local default.
+- To test Postgres locally without the full production stack, run
+  `docker compose -f docker-compose.postgres.yml up -d` and set
+  `CONFIG_STORAGE_BACKEND=postgres`.
 
 ## Cloud Production
 
@@ -98,6 +106,9 @@ Recommended minimum values:
 
 ```env
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+BOT_IMAGE=ghcr.io/your-org/tts-hotkey-windows-bot
+APP_VERSION=v2026.04.24-1
+VCS_REF=<git-sha>
 CONFIG_STORAGE_BACKEND=postgres
 POSTGRES_DB=tts_hotkey_windows
 POSTGRES_USER=tts_user
@@ -112,6 +123,9 @@ GRAFANA_ADMIN_PASSWORD=change_me
 
 Notes:
 
+- `APP_VERSION` should be an immutable release tag, not `latest`. Rollback is
+  done by restoring the previous known-good `APP_VERSION` and restarting the
+  bot without rebuilding.
 - The bundled compose stack builds `DATABASE_URL` for the bot from
   `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
 - The bundled compose stack includes Redis. Use `REDIS_HOST=redis` so the bot
@@ -123,6 +137,32 @@ Notes:
   self-hosted OSS observability path.
 - With the bundled stack, do not maintain a second manual `DATABASE_URL` unless
   you are intentionally pointing the bot at a different database service.
+- Docker images in the compose files are pinned to explicit tags. Update those
+  tags intentionally through the dependency maintenance workflow instead of
+  switching back to `latest`.
+
+## Local Postgres Only
+
+Use `docker-compose.postgres.yml` when you want local Postgres persistence but
+still want to run the bot from the Python virtual environment.
+
+```powershell
+docker compose -f docker-compose.postgres.yml up -d
+```
+
+Then set:
+
+```env
+CONFIG_STORAGE_BACKEND=postgres
+DATABASE_URL=postgresql://tts_user:change_me@127.0.0.1:5432/tts_hotkey_windows
+```
+
+To return to file-backed local storage:
+
+```env
+CONFIG_STORAGE_BACKEND=json
+CONFIG_STORAGE_DIR=configs
+```
 
 ## Runtime Sources
 
