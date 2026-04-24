@@ -129,7 +129,7 @@ jobs:
           REDIS_PORT: "6379"
           REDIS_DB: "15"
         run: |
-          pytest tests/integration/infrastructure/test_audio_queue_redis_integration.py --tb=short -v --no-cov
+          pytest tests/integration/infrastructure/test_audio_queue_redis_integration.py tests/integration/bot_runtime/test_queue_worker_redis_integration.py --tb=short -v --no-cov
 
   external-integrations:
     name: External Integrations (${{ matrix.name }})

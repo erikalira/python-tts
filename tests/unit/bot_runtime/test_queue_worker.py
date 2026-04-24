@@ -5,13 +5,17 @@ import asyncio
 import pytest
 
 from src.application.dto import SPEAK_RESULT_OK, SpeakTextResult
-from src.bot_runtime.queue_worker import BotQueueWorker
+from src.bot_runtime.queue_worker import BotQueueWorker, _default_lock_renew_interval_seconds
 from src.core.entities import AudioQueueItem, TTSRequest
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 
 
 @pytest.mark.asyncio
 class TestBotQueueWorker:
+    async def test_default_renew_interval_stays_below_one_second_ttl(self):
+        assert _default_lock_renew_interval_seconds(1) < 1
+        assert _default_lock_renew_interval_seconds(1) == pytest.approx(1 / 3, rel=1e-6)
+
     async def test_worker_drains_single_guild_in_fifo_order(self):
         queue = InMemoryAudioQueue()
         await queue.enqueue(AudioQueueItem(request=TTSRequest(text="first", guild_id=1, member_id=10)))
@@ -191,6 +195,63 @@ class TestBotQueueWorker:
         await worker.stop()
 
         assert telemetry.lock_losses == [(1, "guild_lock")]
+
+    async def test_worker_uses_dedicated_processing_lease_ttl_and_renew_interval(self):
+        class LeaseQueue(InMemoryAudioQueue):
+            def __init__(self):
+                super().__init__()
+                self.acquire_ttls = []
+                self.renew_ttls = []
+                self.processing_owner = None
+
+            async def acquire_processing_lease(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+                del guild_id
+                self.acquire_ttls.append(ttl_seconds)
+                if self.processing_owner is not None:
+                    return False
+                self.processing_owner = owner_token
+                return True
+
+            async def renew_processing_lease(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+                del guild_id
+                self.renew_ttls.append(ttl_seconds)
+                return self.processing_owner == owner_token
+
+            async def release_processing_lease(self, guild_id, owner_token: str) -> None:
+                del guild_id
+                if self.processing_owner == owner_token:
+                    self.processing_owner = None
+
+        queue = LeaseQueue()
+        await queue.enqueue(AudioQueueItem(request=TTSRequest(text="lease", guild_id=1, member_id=10)))
+        release = asyncio.Event()
+
+        class FakeOrchestrator:
+            async def start_processing_for_item(self, guild_id):
+                item = await queue.dequeue(guild_id)
+                if item is None:
+                    return SpeakTextResult(success=True, code=SPEAK_RESULT_OK, queued=False)
+                await release.wait()
+                return SpeakTextResult(success=True, code=SPEAK_RESULT_OK, queued=False)
+
+        worker = BotQueueWorker(
+            audio_queue=queue,
+            queue_orchestrator=FakeOrchestrator(),
+            poll_interval_seconds=0.01,
+            guild_lock_ttl_seconds=30,
+            guild_lock_renew_interval_seconds=1,
+            processing_lease_ttl_seconds=6,
+            processing_lease_renew_interval_seconds=0.01,
+        )
+        await worker.start()
+        await asyncio.sleep(0.05)
+        release.set()
+        await asyncio.sleep(0.05)
+        await worker.stop()
+
+        assert queue.acquire_ttls == [6]
+        assert queue.renew_ttls
+        assert all(ttl == 6 for ttl in queue.renew_ttls)
 
 
 class _FakeSpan:

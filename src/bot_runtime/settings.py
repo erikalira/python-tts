@@ -58,6 +58,20 @@ class Config:
         )
         self.tts_queue_backend = os.getenv("TTS_QUEUE_BACKEND", "inmemory").strip().lower() or "inmemory"
         self.tts_queue_max_size = int(os.getenv("TTS_QUEUE_MAX_SIZE", "50"))
+        self.queue_guild_lock_ttl_seconds = int(os.getenv("QUEUE_GUILD_LOCK_TTL_SECONDS", "30"))
+        guild_lock_renew = os.getenv("QUEUE_GUILD_LOCK_RENEW_INTERVAL_SECONDS")
+        self.queue_guild_lock_renew_interval_seconds = (
+            float(guild_lock_renew.strip()) if guild_lock_renew and guild_lock_renew.strip() else None
+        )
+        self.queue_processing_lease_ttl_seconds = int(
+            os.getenv("QUEUE_PROCESSING_LEASE_TTL_SECONDS", str(self.queue_guild_lock_ttl_seconds))
+        )
+        processing_lease_renew = os.getenv("QUEUE_PROCESSING_LEASE_RENEW_INTERVAL_SECONDS")
+        self.queue_processing_lease_renew_interval_seconds = (
+            float(processing_lease_renew.strip())
+            if processing_lease_renew and processing_lease_renew.strip()
+            else None
+        )
         self.redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
         self.redis_port = int(os.getenv("REDIS_PORT", "6379"))
         self.redis_db = int(os.getenv("REDIS_DB", "0"))

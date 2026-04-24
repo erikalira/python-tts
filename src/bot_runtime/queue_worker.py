@@ -14,6 +14,12 @@ from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 logger = logging.getLogger(__name__)
 
 
+def _default_lock_renew_interval_seconds(ttl_seconds: float) -> float:
+    """Return a safe renew cadence for distributed locks and leases."""
+
+    return max(0.1, ttl_seconds / 3)
+
+
 class BotQueueWorker:
     """Poll queue backends and drain pending guild queues."""
 
@@ -25,6 +31,8 @@ class BotQueueWorker:
         poll_interval_seconds: float = 0.2,
         guild_lock_ttl_seconds: int = 30,
         guild_lock_renew_interval_seconds: float | None = None,
+        processing_lease_ttl_seconds: int | None = None,
+        processing_lease_renew_interval_seconds: float | None = None,
         otel_runtime: OpenTelemetryRuntime | None = None,
     ):
         self._audio_queue = audio_queue
@@ -34,7 +42,17 @@ class BotQueueWorker:
         self._guild_lock_renew_interval_seconds = (
             guild_lock_renew_interval_seconds
             if guild_lock_renew_interval_seconds is not None
-            else max(1.0, guild_lock_ttl_seconds / 3)
+            else _default_lock_renew_interval_seconds(guild_lock_ttl_seconds)
+        )
+        self._processing_lease_ttl_seconds = (
+            processing_lease_ttl_seconds
+            if processing_lease_ttl_seconds is not None
+            else guild_lock_ttl_seconds
+        )
+        self._processing_lease_renew_interval_seconds = (
+            processing_lease_renew_interval_seconds
+            if processing_lease_renew_interval_seconds is not None
+            else _default_lock_renew_interval_seconds(self._processing_lease_ttl_seconds)
         )
         self._worker_token = uuid.uuid4().hex
         self._runner_task: asyncio.Task | None = None
@@ -181,7 +199,7 @@ class BotQueueWorker:
         return await self._audio_queue.acquire_processing_lease(
             guild_id,
             self._worker_token,
-            ttl_seconds=self._guild_lock_ttl_seconds,
+            ttl_seconds=self._processing_lease_ttl_seconds,
         )
 
     async def _release_processing_lease(self, guild_id: Optional[int]) -> None:
@@ -190,11 +208,11 @@ class BotQueueWorker:
     async def _renew_processing_lease_loop(self, guild_id: Optional[int]) -> None:
         try:
             while not self._stop_event.is_set():
-                await asyncio.sleep(self._guild_lock_renew_interval_seconds)
+                await asyncio.sleep(self._processing_lease_renew_interval_seconds)
                 renewed = await self._audio_queue.renew_processing_lease(
                     guild_id,
                     self._worker_token,
-                    ttl_seconds=self._guild_lock_ttl_seconds,
+                    ttl_seconds=self._processing_lease_ttl_seconds,
                 )
                 if not renewed:
                     logger.warning("[QUEUE_WORKER] Lost processing lease while handling guild %s", guild_id)

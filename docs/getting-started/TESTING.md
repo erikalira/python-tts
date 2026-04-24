@@ -97,7 +97,7 @@ $env:RUN_REDIS_INTEGRATION_TESTS="1"
 $env:REDIS_HOST="127.0.0.1"
 $env:REDIS_PORT="6379"
 $env:REDIS_DB="15"
-.\.venv\Scripts\python.exe -m pytest tests/integration/infrastructure/test_audio_queue_redis_integration.py
+.\.venv\Scripts\python.exe -m pytest tests/integration/infrastructure/test_audio_queue_redis_integration.py tests/integration/bot_runtime/test_queue_worker_redis_integration.py
 ```
 
 ## Running Smoke Tests
