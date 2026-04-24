@@ -90,6 +90,16 @@ Use integration tests explicitly when you want to validate real providers, OS bi
 .\.venv\Scripts\python.exe -m pytest tests/integration
 ```
 
+To run only the Redis-backed integration suite against a real Redis instance:
+
+```powershell
+$env:RUN_REDIS_INTEGRATION_TESTS="1"
+$env:REDIS_HOST="127.0.0.1"
+$env:REDIS_PORT="6379"
+$env:REDIS_DB="15"
+.\.venv\Scripts\python.exe -m pytest tests/integration/infrastructure/test_audio_queue_redis_integration.py
+```
+
 ## Running Smoke Tests
 
 Use smoke tests explicitly when you want a release-style startup validation pass.
@@ -109,8 +119,11 @@ For everyday development:
 
 For CI or automation:
 
-- treat `tests/unit` as the default required suite
+- treat `tests/unit` plus `tests/smoke` as the default required cross-platform suite
+- keep the critical suite running on both Linux and Windows
+- keep Redis-backed integration coverage in a dedicated CI job with a real Redis service
 - add integration suites explicitly only in environments that provide the required dependencies and platform capabilities
+- keep network- and OS-dependent integrations in separate CI jobs so they do not blur the default local developer workflow
 - avoid making integration tests look flaky unit tests by keeping them in separate directories and commands
 
 ## VS Code Testing Panel

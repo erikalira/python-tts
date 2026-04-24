@@ -3,27 +3,29 @@ name: Test Workflow
 on: [push, pull_request]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  critical-tests:
+    name: Critical Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-test.txt
 
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install system dependencies
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -36,26 +38,32 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install -r requirements-test.txt
 
-      - name: Run tests with coverage
+      - name: Run critical test suite with coverage
+        if: runner.os == 'Linux'
         env:
           CI: true
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          pytest --tb=short -v --cov --cov-report=xml
+          pytest tests/unit tests/smoke --tb=short -v
 
-      - name: Check coverage output
-        if: always()
+      - name: Run critical test suite
+        if: runner.os == 'Windows'
+        env:
+          CI: true
+          PYTHONPATH: ${{ github.workspace }}
         run: |
-          if [ -f coverage.xml ]; then
-            echo "Coverage file exists"
-            ls -la coverage.xml
-          else
-            echo "Coverage file not found"
-            exit 1
-          fi
+          pytest tests/unit tests/smoke --tb=short -v --no-cov
+
+      - name: Upload coverage artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: critical-coverage-xml
+          path: coverage.xml
+          if-no-files-found: error
 
       - name: Upload coverage to Codacy
-        if: always()
+        if: runner.os == 'Linux'
         continue-on-error: true
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
@@ -67,3 +75,107 @@ jobs:
             echo "CODACY_PROJECT_TOKEN not set, skipping coverage upload"
           fi
 
+  redis-integration:
+    name: Redis Integration
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-test.txt
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            espeak-ng \
+            ffmpeg \
+            redis-tools
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-test.txt
+
+      - name: Wait for Redis service
+        run: |
+          redis-cli -h 127.0.0.1 -p 6379 ping
+
+      - name: Run Redis integration suite
+        env:
+          CI: true
+          PYTHONPATH: ${{ github.workspace }}
+          RUN_REDIS_INTEGRATION_TESTS: "1"
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: "6379"
+          REDIS_DB: "15"
+        run: |
+          pytest tests/integration/infrastructure/test_audio_queue_redis_integration.py --tb=short -v --no-cov
+
+  external-integrations:
+    name: External Integrations (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: network-linux
+            os: ubuntu-latest
+            pytest_args: tests/integration/infrastructure/test_engines_integration.py -m "integration and network"
+          - name: windows-os
+            os: windows-latest
+            pytest_args: tests/integration/infrastructure/test_engines_integration.py -k "Pyttsx3"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-test.txt
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            espeak-ng \
+            ffmpeg
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-test.txt
+
+      - name: Run external integration slice
+        env:
+          CI: true
+          PYTHONPATH: ${{ github.workspace }}
+          RUN_NETWORK_INTEGRATION_TESTS: ${{ runner.os == 'Linux' && '1' || '0' }}
+        run: |
+          pytest ${{ matrix.pytest_args }} --tb=short -v --no-cov
