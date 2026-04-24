@@ -121,10 +121,21 @@ For CI or automation:
 
 - treat `tests/unit` plus `tests/smoke` as the default required cross-platform suite
 - keep the critical suite running on both Linux and Windows
+- keep the global coverage gate at `80%` or higher and raise it gradually toward the `85%` target once the suite supports it
+- enforce dedicated coverage gates for the critical `queue` and `runtime_observability` domains instead of relying only on one repository-wide percentage
 - keep Redis-backed integration coverage in a dedicated CI job with a real Redis service
 - add integration suites explicitly only in environments that provide the required dependencies and platform capabilities
 - keep network- and OS-dependent integrations in separate CI jobs so they do not blur the default local developer workflow
 - avoid making integration tests look flaky unit tests by keeping them in separate directories and commands
+
+To validate the repository quality gates against an existing `coverage.xml`:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/test/quality_gates.py coverage --coverage-xml coverage.xml --config config/quality_gates.json
+```
+
+The release-gate smoke suite also checks the bot observability baseline against
+the configured SLI thresholds in `config/quality_gates.json`.
 
 ## VS Code Testing Panel
 

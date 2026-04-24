@@ -46,6 +46,13 @@ jobs:
         run: |
           pytest tests/unit tests/smoke --tb=short -v
 
+      - name: Enforce coverage quality gates
+        if: runner.os == 'Linux'
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          python scripts/test/quality_gates.py coverage --coverage-xml coverage.xml --config config/quality_gates.json
+
       - name: Run critical test suite
         if: runner.os == 'Windows'
         env:
