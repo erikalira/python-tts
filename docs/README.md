@@ -25,6 +25,9 @@ This directory contains the repository's supporting documentation. The root
 
 - [deploy/DEPLOYMENT_GUIDE.md](deploy/DEPLOYMENT_GUIDE.md): entrypoint for choosing the right server deployment guide
 - [operations/BASELINE_AND_RELEASE_GATES.md](operations/BASELINE_AND_RELEASE_GATES.md): Phase 0 baseline, initial SLI/SLO definitions, and release gates for bot and desktop
+- [operations/PRODUCTION_RUNBOOKS.md](operations/PRODUCTION_RUNBOOKS.md): incident runbooks for lock starvation, stuck queues, and TTS engine degradation
+- [operations/DR_DRILLS.md](operations/DR_DRILLS.md): production recovery drills for Postgres restore, Redis recovery, and version rollback
+- [operations/RELEASE_CHECKLIST.md](operations/RELEASE_CHECKLIST.md): release checklist covering bot, desktop, deploy, and post-deploy metrics
 - [deploy/ENVIRONMENTS.md](deploy/ENVIRONMENTS.md): local and production environment variables for bot and Desktop App
 - [deploy/WINDOWS_BOT_DEPLOY.md](deploy/WINDOWS_BOT_DEPLOY.md): WinSW deployment guide for keeping the Discord bot running as a Windows service
 - [deploy/BOT_PRODUCTION_PERSISTENCE.md](deploy/BOT_PRODUCTION_PERSISTENCE.md): recommended persistence architecture for production bot deploys
@@ -53,6 +56,7 @@ This directory contains the repository's supporting documentation. The root
 
 - `docs/` contains durable architecture and operational guides
 - `docs/operations/` contains operational baselines and release criteria
+- `docs/operations/` also contains production runbooks, DR drills, and release checklists
 - `docs/architecture/diagrams/` contains editable Mermaid architecture sources
 - `.specify/` contains canonical project guidance and feature workflow templates
 - AI/tool-specific instruction files should remain derivative of `.specify/`

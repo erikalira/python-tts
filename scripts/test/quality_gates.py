@@ -7,6 +7,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.request import urlopen
 from xml.etree import ElementTree
 
 
@@ -49,7 +50,7 @@ class QualityGateConfig:
 
 
 def load_quality_gate_config(config_path: str | Path) -> QualityGateConfig:
-    raw = json.loads(Path(config_path).read_text(encoding="utf-8"))
+    raw = _load_json_file(config_path)
     coverage = raw["coverage"]
     sli = raw["sli"]
     return QualityGateConfig(
@@ -70,6 +71,10 @@ def load_quality_gate_config(config_path: str | Path) -> QualityGateConfig:
             max_enqueue_to_playback_p99_ms=float(sli["max_enqueue_to_playback_p99_ms"]),
         ),
     )
+
+
+def _load_json_file(path: str | Path) -> dict[str, Any]:
+    return json.loads(Path(path).read_text(encoding="utf-8-sig"))
 
 
 def _normalize_path(path: str) -> str:
@@ -185,6 +190,14 @@ def evaluate_observability_payload(
     return failures
 
 
+def fetch_observability_payload(url: str, *, timeout_seconds: float = 10.0) -> dict[str, Any]:
+    with urlopen(url, timeout=timeout_seconds) as response:
+        status = getattr(response, "status", None)
+        if status is not None and int(status) >= 400:
+            raise ValueError(f"Observability endpoint returned HTTP {status}")
+        return json.loads(response.read().decode("utf-8"))
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Enforce repository quality gates.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -207,10 +220,20 @@ def _build_parser() -> argparse.ArgumentParser:
         default="config/quality_gates.json",
         help="Path to the quality gate configuration JSON.",
     )
-    observability_parser.add_argument(
+    observability_source = observability_parser.add_mutually_exclusive_group(required=True)
+    observability_source.add_argument(
         "--payload",
-        required=True,
         help="Path to a JSON file that contains an observability payload.",
+    )
+    observability_source.add_argument(
+        "--url",
+        help="URL for a live observability endpoint, for example http://127.0.0.1:10000/observability.",
+    )
+    observability_parser.add_argument(
+        "--timeout-seconds",
+        type=float,
+        default=10.0,
+        help="Timeout for --url requests.",
     )
     return parser
 
@@ -244,15 +267,28 @@ def _run_coverage_gate(config: QualityGateConfig, coverage_xml_path: str | Path)
     return 0
 
 
-def _run_observability_gate(config: QualityGateConfig, payload_path: str | Path) -> int:
-    payload = json.loads(Path(payload_path).read_text(encoding="utf-8"))
+def _run_observability_gate(
+    config: QualityGateConfig,
+    *,
+    payload_path: str | Path | None = None,
+    url: str | None = None,
+    timeout_seconds: float = 10.0,
+) -> int:
+    if url is not None:
+        payload = fetch_observability_payload(url, timeout_seconds=timeout_seconds)
+    elif payload_path is not None:
+        payload = _load_json_file(payload_path)
+    else:
+        raise ValueError("Either payload_path or url is required")
+
     failures = evaluate_observability_payload(payload, config.sli)
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}")
         return 1
 
-    print("PASS: observability payload satisfied configured SLI gates.")
+    source = url if url is not None else str(payload_path)
+    print(f"PASS: observability payload from {source} satisfied configured SLI gates.")
     return 0
 
 
@@ -264,7 +300,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "coverage":
         return _run_coverage_gate(config, args.coverage_xml)
     if args.command == "observability":
-        return _run_observability_gate(config, args.payload)
+        return _run_observability_gate(
+            config,
+            payload_path=args.payload,
+            url=args.url,
+            timeout_seconds=args.timeout_seconds,
+        )
     parser.error(f"Unsupported command: {args.command}")
     return 2
 

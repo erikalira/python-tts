@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import Mock
 
 from scripts.test import quality_gates
 
@@ -172,6 +173,27 @@ def test_evaluate_observability_payload_accepts_payload_within_thresholds():
     assert failures == []
 
 
+def test_run_observability_gate_accepts_utf8_bom_payload(tmp_path: Path):
+    payload = tmp_path / "observability.json"
+    payload.write_text(
+        '{"error_rate":0.0,"enqueue_to_playback_sample_count":1,"enqueue_to_playback_p95_ms":10.0,"enqueue_to_playback_p99_ms":10.0}',
+        encoding="utf-8-sig",
+    )
+    config = quality_gates.QualityGateConfig(
+        coverage=quality_gates.CoverageGateConfig(
+            global_minimum_percent=80.0,
+            critical_domains=(),
+        ),
+        sli=quality_gates.SLIGateConfig(
+            max_error_rate=0.05,
+            max_enqueue_to_playback_p95_ms=5000.0,
+            max_enqueue_to_playback_p99_ms=15000.0,
+        ),
+    )
+
+    assert quality_gates._run_observability_gate(config, payload_path=payload) == 0
+
+
 def test_evaluate_observability_payload_reports_sli_regressions():
     failures = quality_gates.evaluate_observability_payload(
         {
@@ -192,3 +214,25 @@ def test_evaluate_observability_payload_reports_sli_regressions():
         "enqueue_to_playback_p95_ms exceeded: 6000.00 > 5000.00",
         "enqueue_to_playback_p99_ms exceeded: 20000.00 > 15000.00",
     ]
+
+
+def test_fetch_observability_payload_reads_live_endpoint(monkeypatch):
+    class FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return b'{"error_rate": 0.0, "enqueue_to_playback_sample_count": 1, "enqueue_to_playback_p95_ms": 1, "enqueue_to_playback_p99_ms": 1}'
+
+    urlopen = Mock(return_value=FakeResponse())
+    monkeypatch.setattr(quality_gates, "urlopen", urlopen)
+
+    payload = quality_gates.fetch_observability_payload("http://127.0.0.1:10000/observability", timeout_seconds=2.5)
+
+    assert payload["error_rate"] == 0.0
+    urlopen.assert_called_once_with("http://127.0.0.1:10000/observability", timeout=2.5)
