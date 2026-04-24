@@ -2,11 +2,14 @@ from __future__ import annotations
 
 """Interfaces (abstract base classes) following Dependency Inversion Principle."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, Protocol
 from .entities import TTSConfig, AudioFile, AudioQueueItem
 
-if TYPE_CHECKING:
-    from src.application.dto import AudioQueueStatusDTO
+
+class AudioQueueStatusView(Protocol):
+    """Core-facing view of queue status without depending on application DTOs."""
+
+    size: int
 
 
 class ITTSEngine(ABC):
@@ -190,7 +193,7 @@ class IAudioQueue(ABC):
         pass
     
     @abstractmethod
-    async def get_queue_status(self, guild_id: Optional[int]) -> AudioQueueStatusDTO:
+    async def get_queue_status(self, guild_id: Optional[int]) -> AudioQueueStatusView:
         """Get current queue status for a guild.
         
         Args:

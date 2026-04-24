@@ -41,6 +41,7 @@ You will probably also need:
 - [ENVIRONMENTS.md](ENVIRONMENTS.md)
 - [BOT_PRODUCTION_PERSISTENCE.md](BOT_PRODUCTION_PERSISTENCE.md)
 - [BACKUP_AND_RESTORE_DATABASE.md](BACKUP_AND_RESTORE_DATABASE.md)
+- [STAGING_AND_ROLLBACK.md](STAGING_AND_ROLLBACK.md)
 - [../operations/PRODUCTION_RUNBOOKS.md](../operations/PRODUCTION_RUNBOOKS.md)
 - [../operations/DR_DRILLS.md](../operations/DR_DRILLS.md)
 - [../operations/RELEASE_CHECKLIST.md](../operations/RELEASE_CHECKLIST.md)
@@ -95,6 +96,18 @@ Choose these when:
 - you need to rehearse Postgres restore, Redis recovery, or version rollback
 - you need the production release checklist for bot and desktop validation
 
+## I need staging or rollback guidance
+
+Use:
+
+- [STAGING_AND_ROLLBACK.md](STAGING_AND_ROLLBACK.md)
+
+Choose this when:
+
+- you are preparing a production release
+- you need staging validation before deploy
+- you need to define or execute a rollback point
+
 ## Recommended reading order
 
 If you are still unsure, read in this order:
@@ -109,7 +122,9 @@ If you are still unsure, read in this order:
    backup/recovery matters for your setup
 5. [../operations/RELEASE_CHECKLIST.md](../operations/RELEASE_CHECKLIST.md)
    before each production release
-6. [../operations/PRODUCTION_RUNBOOKS.md](../operations/PRODUCTION_RUNBOOKS.md)
+6. [STAGING_AND_ROLLBACK.md](STAGING_AND_ROLLBACK.md) before promoting a
+   release to production
+7. [../operations/PRODUCTION_RUNBOOKS.md](../operations/PRODUCTION_RUNBOOKS.md)
    and [../operations/DR_DRILLS.md](../operations/DR_DRILLS.md) before the
    stack handles production traffic
 

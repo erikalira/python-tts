@@ -6,8 +6,8 @@ import logging
 import discord
 from discord import app_commands
 
-from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
+from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.use_cases import (
     ConfigureTTSUseCase,
     GetCurrentVoiceContextUseCase,
@@ -15,6 +15,7 @@ from src.application.use_cases import (
     LeaveVoiceChannelUseCase,
     SpeakTextUseCase,
 )
+from src.bot_runtime.readiness import BotReadinessProbe
 from src.bot_runtime.queue_worker import BotQueueWorker
 from src.infrastructure.audio_queue import InMemoryAudioQueue, RedisAudioQueue
 from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvailability
@@ -89,6 +90,13 @@ class Container:
             processing_lease_ttl_seconds=config.queue_processing_lease_ttl_seconds,
             processing_lease_renew_interval_seconds=config.queue_processing_lease_renew_interval_seconds,
             otel_runtime=self.otel_runtime,
+        )
+        self.readiness_probe = BotReadinessProbe(
+            config=config,
+            discord_client=self.discord_client,
+            queue_worker=self.queue_worker,
+            config_repository=self.config_repository,
+            audio_queue=self.audio_queue,
         )
 
         self.speak_use_case = SpeakTextUseCase(
@@ -213,3 +221,6 @@ class Container:
         otel_shutdown = getattr(otel_runtime, "shutdown", None)
         if callable(otel_shutdown):
             otel_shutdown()
+
+    async def readiness_payload(self) -> dict[str, object]:
+        return await self.readiness_probe.payload()

@@ -39,6 +39,7 @@ async def main():
         port=config.http_port,
         host=config.http_host,
         observability_snapshot_provider=container.runtime_telemetry.snapshot_payload,
+        readiness_provider=container.readiness_payload,
         otel_runtime=container.otel_runtime,
     )
     await http_server.start()

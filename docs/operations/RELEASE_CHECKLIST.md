@@ -13,6 +13,7 @@ Record before deploying:
 - expected config changes
 - migration or restore risk
 - rollback point
+- staging validation result
 
 ## Pre-Release Gates
 
@@ -52,6 +53,18 @@ Before deploy, confirm:
 - bot and desktop entrypoints remain independently runnable
 - durable docs changed when deploy, runtime, or operational behavior changed
 - `.env.prod.example` changed if new production env vars were introduced
+
+### Staging
+
+Before production deploy, run the staging flow in
+[../deploy/STAGING_AND_ROLLBACK.md](../deploy/STAGING_AND_ROLLBACK.md).
+
+Required result:
+
+- staging `/health` returns healthy
+- staging `/ready` returns ready
+- staging live observability gate passes after smoke traffic
+- rollback point is recorded
 
 ## Deploy
 
@@ -169,8 +182,9 @@ checks:
 - desktop app cannot start after a shared change
 - a data migration or config change produced unexpected state
 
-Use [DR_DRILLS.md](DR_DRILLS.md) for the rollback procedure and record the
-rollback point.
+Use [../deploy/STAGING_AND_ROLLBACK.md](../deploy/STAGING_AND_ROLLBACK.md) for
+the immediate rollback procedure. Use [DR_DRILLS.md](DR_DRILLS.md) when the
+rollback requires database restore or dependency recovery.
 
 ## Closeout
 

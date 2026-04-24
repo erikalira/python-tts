@@ -18,9 +18,7 @@ from src.application.use_cases import (
     ConfigureTTSUseCase,
     JoinVoiceChannelUseCase,
     LeaveVoiceChannelUseCase,
-    SpeakTextUseCase,
 )
-from src.core.entities import TTSConfig
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 
 

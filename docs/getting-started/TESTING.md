@@ -120,6 +120,7 @@ For everyday development:
 For CI or automation:
 
 - treat `tests/unit` plus `tests/smoke` as the default required cross-platform suite
+- run mandatory lint and type-check gates before the critical test suite
 - keep the critical suite running on both Linux and Windows
 - keep the global coverage gate at `80%` or higher and raise it gradually toward the `85%` target once the suite supports it
 - enforce dedicated coverage gates for the critical `queue` and `runtime_observability` domains instead of relying only on one repository-wide percentage
@@ -127,6 +128,19 @@ For CI or automation:
 - add integration suites explicitly only in environments that provide the required dependencies and platform capabilities
 - keep network- and OS-dependent integrations in separate CI jobs so they do not blur the default local developer workflow
 - avoid making integration tests look flaky unit tests by keeping them in separate directories and commands
+
+Static quality gates:
+
+```powershell
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m pyright
+```
+
+`ruff` currently enforces high-signal correctness rules such as syntax and
+undefined-name failures. `pyright` is intentionally scoped in
+`pyrightconfig.json` to typed contracts, core interfaces, and quality-gate
+helpers. Expand the checked surface area as modules become type-clean instead
+of disabling the gate when legacy typing gaps appear.
 
 To validate the repository quality gates against an existing `coverage.xml`:
 

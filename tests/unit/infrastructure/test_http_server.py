@@ -2,7 +2,7 @@
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 from src.infrastructure.http.server import HTTPServer
 
@@ -16,10 +16,11 @@ async def test_http_server_exposes_health_version_and_about_routes():
         voice_context_handler=voice_context_handler,
         port=10000,
         observability_snapshot_provider=lambda: {"status": "enabled", "total_requests": 3},
+        readiness_provider=AsyncMock(return_value={"status": "ready", "dependencies": []}),
     )
 
     app = server._build_app()
-    for path in ("/health", "/observability", "/version", "/about", "/voice-context"):
+    for path in ("/health", "/ready", "/observability", "/version", "/about", "/voice-context"):
         request = make_mocked_request("GET", path, app=app)
         match_info = await app.router.resolve(request)
         response = await match_info.handler(request)
@@ -32,6 +33,8 @@ async def test_http_server_exposes_health_version_and_about_routes():
 
         if path == "/health":
             assert response.text == '{"status": "healthy"}'
+        elif path == "/ready":
+            assert response.text == '{"status": "ready", "dependencies": []}'
         elif path == "/observability":
             assert '"status": "enabled"' in response.text
             assert '"total_requests": 3' in response.text
@@ -79,3 +82,45 @@ async def test_http_server_returns_disabled_observability_when_provider_is_missi
 
     assert response.status == 200
     assert response.text == '{"status": "disabled"}'
+
+
+@pytest.mark.asyncio
+async def test_http_server_returns_503_when_readiness_provider_is_missing():
+    server = HTTPServer(
+        speak_handler=AsyncMock(),
+        voice_context_handler=AsyncMock(),
+        port=10000,
+    )
+
+    app = server._build_app()
+    request = make_mocked_request("GET", "/ready", app=app)
+    match_info = await app.router.resolve(request)
+
+    response = await match_info.handler(request)
+
+    assert response.status == 503
+    assert response.text == '{"status": "unknown", "dependencies": []}'
+
+
+@pytest.mark.asyncio
+async def test_http_server_returns_503_when_readiness_provider_reports_not_ready():
+    server = HTTPServer(
+        speak_handler=AsyncMock(),
+        voice_context_handler=AsyncMock(),
+        port=10000,
+        readiness_provider=AsyncMock(
+            return_value={
+                "status": "not_ready",
+                "dependencies": [{"name": "redis", "status": "not_ready", "required": True}],
+            }
+        ),
+    )
+
+    app = server._build_app()
+    request = make_mocked_request("GET", "/ready", app=app)
+    match_info = await app.router.resolve(request)
+
+    response = await match_info.handler(request)
+
+    assert response.status == 503
+    assert '"status": "not_ready"' in response.text
