@@ -12,6 +12,27 @@ from src.infrastructure.audio_queue import InMemoryAudioQueue
 from tests.conftest import MockAudioCleanup, MockConfigRepository, MockTTSEngine, MockVoiceChannelRepository
 
 
+class RecordingTelemetry:
+    def __init__(self):
+        self.processing_results = []
+
+    def record_submission_result(self, *, request, accepted: bool, code: str, engine: str) -> None:
+        del request, accepted, code, engine
+
+    def record_processing_result(self, *, item: AudioQueueItem, success: bool, code: str, engine: str) -> None:
+        self.processing_results.append(
+            {
+                "item_id": item.item_id,
+                "success": success,
+                "code": code,
+                "engine": engine,
+            }
+        )
+
+    def snapshot(self):
+        return None
+
+
 @pytest.mark.asyncio
 class TestTTSQueueOrchestrator:
     async def test_start_processing_returns_unknown_error_when_item_disappears(self):
@@ -165,3 +186,36 @@ class TestTTSQueueOrchestrator:
         assert result.code == SPEAK_RESULT_GENERATION_TIMEOUT
         assert result.success is False
         assert cleanup.cleaned_paths == []
+
+    async def test_process_item_records_generation_timeout_in_runtime_telemetry(self):
+        class HangingTTSEngine(MockTTSEngine):
+            async def generate_audio(self, text: str, config: TTSConfig):
+                self.calls.append({"text": text, "config": config})
+                await asyncio.Future()
+
+        queue = InMemoryAudioQueue()
+        telemetry = RecordingTelemetry()
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=HangingTTSEngine(),
+            config_repository=MockConfigRepository(),
+            audio_queue=queue,
+            voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository()),
+            audio_cleanup=MockAudioCleanup(),
+            generation_timeout_seconds=0.01,
+            telemetry=telemetry,
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(text="edge hang", guild_id=789012, member_id=345678, channel_id=123456)
+        )
+
+        result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_GENERATION_TIMEOUT
+        assert telemetry.processing_results == [
+            {
+                "item_id": item.item_id,
+                "success": False,
+                "code": SPEAK_RESULT_GENERATION_TIMEOUT,
+                "engine": "configured_default",
+            }
+        ]
