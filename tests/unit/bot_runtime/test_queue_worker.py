@@ -141,3 +141,67 @@ class TestBotQueueWorker:
         await worker.stop()
 
         assert queue.renew_calls > 0
+
+    async def test_worker_records_lock_loss_metric_when_guild_lock_is_lost(self):
+        class LossQueue(InMemoryAudioQueue):
+            async def renew_guild_lock(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+                del guild_id, owner_token, ttl_seconds
+                return False
+
+        class FakeTelemetry:
+            def __init__(self):
+                self.lock_losses = []
+
+            def start_internal_span(self, name):
+                del name
+                return _FakeSpanContext()
+
+            def start_consumer_span(self, name, *, carrier=None, attributes=None):
+                del name, carrier, attributes
+                return _FakeSpanContext()
+
+            def record_lock_loss(self, *, guild_id, lock_kind):
+                self.lock_losses.append((guild_id, lock_kind))
+
+        queue = LossQueue()
+        await queue.enqueue(AudioQueueItem(request=TTSRequest(text="long", guild_id=1, member_id=10)))
+        release = asyncio.Event()
+
+        class FakeOrchestrator:
+            async def start_processing_for_item(self, guild_id):
+                item = await queue.dequeue(guild_id)
+                if item is None:
+                    return SpeakTextResult(success=True, code=SPEAK_RESULT_OK, queued=False)
+                await release.wait()
+                return SpeakTextResult(success=True, code=SPEAK_RESULT_OK, queued=False)
+
+        telemetry = FakeTelemetry()
+        worker = BotQueueWorker(
+            audio_queue=queue,
+            queue_orchestrator=FakeOrchestrator(),
+            poll_interval_seconds=0.01,
+            guild_lock_ttl_seconds=3,
+            guild_lock_renew_interval_seconds=0.01,
+            otel_runtime=telemetry,
+        )
+        await worker.start()
+        await asyncio.sleep(0.05)
+        release.set()
+        await asyncio.sleep(0.05)
+        await worker.stop()
+
+        assert telemetry.lock_losses == [(1, "guild_lock")]
+
+
+class _FakeSpan:
+    def set_attribute(self, key, value):
+        del key, value
+
+
+class _FakeSpanContext:
+    def __enter__(self):
+        return _FakeSpan()
+
+    def __exit__(self, exc_type, exc, tb):
+        del exc_type, exc, tb
+        return False

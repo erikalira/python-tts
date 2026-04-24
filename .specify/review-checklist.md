@@ -5,6 +5,7 @@ Use this checklist during code review, self-review, or AI review guidance.
 ## Core questions
 
 1. Does the change preserve architecture boundaries?
+2. Did any file in `src/application/` or `src/presentation/` start importing `src.infrastructure/`?
 2. Are module contracts explicit and predictable?
 3. Did the change reduce duplication or accidentally introduce more?
 4. Is responsibility clearer after the change?
@@ -40,6 +41,7 @@ Prefer:
 
 Watch for:
 
+- direct imports from `src.infrastructure/` into `src/application/` or `src/presentation/`
 - implicit dictionaries crossing reusable boundaries
 - mapping compatibility left behind without a reason
 - hidden assumptions about keys, flags, or shape
@@ -85,6 +87,8 @@ Check when relevant:
 - logs help distinguish transport, configuration, and business-rule failures
 - bot and desktop failure modes remain understandable to contributors
 - compatibility code keeps failure behavior narrow and visible
+- observability, transport, or provider integrations enter shared flows through
+  contracts or middleware rather than direct adapter imports from inner layers
 
 ## Documentation
 

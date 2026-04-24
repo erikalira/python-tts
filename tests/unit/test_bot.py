@@ -29,6 +29,7 @@ class TestBot:
             mock_container = Mock()
             mock_container.speak_controller = Mock()
             mock_container.voice_context_controller = Mock()
+            mock_container.otel_runtime = Mock()
             mock_container.runtime_telemetry = Mock()
             mock_container.speak_controller.handle = AsyncMock()
             mock_container.voice_context_controller.handle = AsyncMock()
@@ -58,6 +59,7 @@ class TestBot:
                 port=10000,
                 host="127.0.0.1",
                 observability_snapshot_provider=mock_container.runtime_telemetry.snapshot_payload,
+                otel_runtime=mock_container.otel_runtime,
             )
             # Verify HTTP server was started
             mock_http_server.start.assert_called_once()

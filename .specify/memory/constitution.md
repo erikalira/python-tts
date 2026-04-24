@@ -39,6 +39,12 @@ infrastructure code MUST delegate instead of absorbing product policy.
 Rationale: This repository already supports two runtimes. Boundary drift makes
 the bot and desktop app harder to evolve independently.
 
+Direct imports from `src.infrastructure/` into `src/application/` or
+`src/presentation/` MUST be treated as architecture blockers unless the file is
+an explicitly documented composition root or runtime bootstrap module outside
+those layers. Shared logic MUST depend on contracts defined inward, not on
+concrete adapters.
+
 ### II. Shared Logic Before Duplication
 Behavior reused by the Discord bot and Windows desktop app MUST be extracted into
 shared interfaces, use cases, or services before copy-paste is introduced or
@@ -113,6 +119,10 @@ it.
   contracts, hidden coupling, stale temporary compatibility code, missing
   validation for either runtime, stale documentation, and abstractions that add
   ceremony without reducing repository risk.
+- Reviews and implementation checks MUST explicitly ask whether any file in
+  `src/application/` or `src/presentation/` newly imports `src.infrastructure/`;
+  if yes, the change SHOULD be blocked until that dependency is removed or the
+  owning module is moved to an appropriate runtime/composition layer.
 
 ## Decision Standard For Humans And AI
 

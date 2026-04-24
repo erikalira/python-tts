@@ -19,6 +19,7 @@ from src.bot_runtime.queue_worker import BotQueueWorker
 from src.infrastructure.audio_queue import InMemoryAudioQueue, RedisAudioQueue
 from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvailability
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
+from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
 from src.infrastructure.persistence.postgres_storage import PostgreSQLConfigStorage
 from src.infrastructure.runtime_observability import InMemoryBotRuntimeTelemetry
@@ -48,6 +49,12 @@ class Container:
         intents.voice_states = True
         self.discord_client = discord.Client(intents=intents)
         self.command_tree = app_commands.CommandTree(self.discord_client)
+        self.otel_runtime = OpenTelemetryRuntime(
+            enabled=config.otel_enabled,
+            service_name=config.otel_service_name,
+            queue_backend=config.tts_queue_backend,
+            otlp_endpoint=config.otel_exporter_otlp_endpoint,
+        )
 
         config_storage = self._build_config_storage(config)
         self.config_repository = GuildConfigRepository(default_config=config.tts_config, storage=config_storage)
@@ -72,10 +79,12 @@ class Container:
             generation_timeout_seconds=config.tts_generation_timeout_seconds,
             playback_timeout_seconds=config.tts_playback_timeout_seconds,
             telemetry=self.runtime_telemetry,
+            otel_runtime=self.otel_runtime,
         )
         self.queue_worker = BotQueueWorker(
             audio_queue=self.audio_queue,
             queue_orchestrator=self.tts_queue_orchestrator,
+            otel_runtime=self.otel_runtime,
         )
 
         self.speak_use_case = SpeakTextUseCase(
@@ -92,7 +101,11 @@ class Container:
         self.leave_use_case = LeaveVoiceChannelUseCase(channel_repository=self.voice_channel_repository)
         self.voice_context_use_case = GetCurrentVoiceContextUseCase(channel_repository=self.voice_channel_repository)
 
-        self.speak_controller = SpeakController(self.speak_use_case, self.config_repository)
+        self.speak_controller = SpeakController(
+            self.speak_use_case,
+            self.config_repository,
+            otel_runtime=self.otel_runtime,
+        )
         self.voice_context_controller = VoiceContextController(self.voice_context_use_case)
         self.voice_runtime_availability = DependencyVoiceRuntimeAvailability()
         self.discord_commands = DiscordCommands(
@@ -117,6 +130,7 @@ class Container:
         return JSONConfigStorage(storage_dir=config.config_storage_dir)
 
     def _build_audio_queue(self, config: Config):
+        otel_runtime = getattr(self, "otel_runtime", None)
         if config.tts_queue_backend == "redis":
             if Redis is None:
                 raise RuntimeError("redis package is required for TTS_QUEUE_BACKEND=redis")
@@ -139,10 +153,14 @@ class Container:
                 max_queue_size=config.tts_queue_max_size,
                 key_prefix=config.redis_key_prefix,
                 completed_item_ttl_seconds=config.redis_completed_item_ttl_seconds,
+                telemetry=otel_runtime,
             )
 
         logger.info("[CONTAINER] Using in-memory audio queue")
-        return InMemoryAudioQueue(max_queue_size=config.tts_queue_max_size)
+        return InMemoryAudioQueue(
+            max_queue_size=config.tts_queue_max_size,
+            telemetry=otel_runtime,
+        )
 
     def _log_voice_runtime_status(self) -> None:
         has_davey = importlib.util.find_spec("davey") is not None
@@ -187,3 +205,7 @@ class Container:
         close_queue = getattr(self.audio_queue, "aclose", None)
         if close_queue is not None:
             await close_queue()
+        otel_runtime = getattr(self, "otel_runtime", None)
+        otel_shutdown = getattr(otel_runtime, "shutdown", None)
+        if callable(otel_shutdown):
+            otel_shutdown()

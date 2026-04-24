@@ -64,6 +64,12 @@ class Config:
         self.redis_password: Optional[str] = os.getenv("REDIS_PASSWORD")
         self.redis_key_prefix = os.getenv("REDIS_KEY_PREFIX", "tts").strip() or "tts"
         self.redis_completed_item_ttl_seconds = int(os.getenv("REDIS_COMPLETED_ITEM_TTL_SECONDS", "900"))
+        self.otel_enabled = os.getenv("OTEL_ENABLED", "").strip().lower() in {"1", "true", "yes", "on"}
+        self.otel_service_name = (
+            os.getenv("OTEL_SERVICE_NAME", "tts-hotkey-windows-bot").strip() or "tts-hotkey-windows-bot"
+        )
+        otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+        self.otel_exporter_otlp_endpoint: Optional[str] = otlp_endpoint.strip() if otlp_endpoint else None
 
         # TTS settings
         self.tts_config = TTSConfig(
@@ -96,5 +102,8 @@ class Config:
 
         if self.tts_queue_backend not in ["inmemory", "redis"]:
             return False, f"Invalid TTS_QUEUE_BACKEND: {self.tts_queue_backend}"
+
+        if self.otel_enabled and not self.otel_exporter_otlp_endpoint:
+            return False, "OTEL_EXPORTER_OTLP_ENDPOINT not set for OTEL_ENABLED=true"
 
         return True, ""

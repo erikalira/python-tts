@@ -33,6 +33,10 @@ This file is a derivative summary. If guidance conflicts, `.specify/` wins.
 9. Remove obsolete paths when safe instead of normalizing permanent dual flows
 10. Improve onboarding readability for the next contributor, not only the immediate change
 
+Hard boundary:
+- `src/application/` and `src/presentation/` must not import `src/infrastructure/` directly.
+- If shared logic needs infrastructure behavior, define a contract inward and bind the concrete adapter in a composition root or runtime layer.
+
 # Tech Lead Posture
 
 - Choose the smallest architecture-safe change with clear ownership

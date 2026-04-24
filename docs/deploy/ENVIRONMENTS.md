@@ -37,6 +37,11 @@ Use the examples in the repository root as the starting point:
 | `REDIS_DB` | Optional | Optional | No | Redis logical database. Defaults to `0`. |
 | `REDIS_KEY_PREFIX` | Optional | Optional | No | Prefix for bot queue keys. Defaults to `tts`. |
 | `REDIS_COMPLETED_ITEM_TTL_SECONDS` | Optional | Optional | No | Retention for completed queue items in Redis. Defaults to `900`. |
+| `OTEL_ENABLED` | Optional | Optional | No | Enables manual OpenTelemetry tracing and metrics when set to `true` and an OTLP endpoint is configured. |
+| `OTEL_SERVICE_NAME` | Optional | Optional | No | OpenTelemetry service name. Defaults to `tts-hotkey-windows-bot`. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional | Optional | Required when `OTEL_ENABLED=true` | Base OTLP HTTP collector endpoint, for example `http://collector:4318`. |
+| `GRAFANA_ADMIN_USER` | No | Docker Compose only | No | Admin username for the bundled Grafana instance. Defaults to `admin`. |
+| `GRAFANA_ADMIN_PASSWORD` | No | Docker Compose only | Recommended with bundled Grafana | Admin password for the bundled Grafana instance. |
 
 ## Local Development
 
@@ -99,6 +104,10 @@ POSTGRES_USER=tts_user
 POSTGRES_PASSWORD=change_me
 TTS_QUEUE_BACKEND=redis
 REDIS_HOST=redis
+OTEL_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=change_me
 ```
 
 Notes:
@@ -107,6 +116,11 @@ Notes:
   `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
 - The bundled compose stack includes Redis. Use `REDIS_HOST=redis` so the bot
   container connects through Docker service discovery.
+- For OpenTelemetry, set `OTEL_ENABLED=true` and point
+  `OTEL_EXPORTER_OTLP_ENDPOINT` to an OTLP HTTP collector such as
+  `http://otel-collector:4318`.
+- The bundled compose stack also includes Grafana, Prometheus, and Tempo for a
+  self-hosted OSS observability path.
 - With the bundled stack, do not maintain a second manual `DATABASE_URL` unless
   you are intentionally pointing the bot at a different database service.
 
