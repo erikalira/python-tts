@@ -84,6 +84,10 @@ class Container:
         self.queue_worker = BotQueueWorker(
             audio_queue=self.audio_queue,
             queue_orchestrator=self.tts_queue_orchestrator,
+            guild_lock_ttl_seconds=config.queue_guild_lock_ttl_seconds,
+            guild_lock_renew_interval_seconds=config.queue_guild_lock_renew_interval_seconds,
+            processing_lease_ttl_seconds=config.queue_processing_lease_ttl_seconds,
+            processing_lease_renew_interval_seconds=config.queue_processing_lease_renew_interval_seconds,
             otel_runtime=self.otel_runtime,
         )
 

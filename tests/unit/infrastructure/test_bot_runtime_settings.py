@@ -90,6 +90,10 @@ def test_config_reads_redis_queue_settings(tmp_path):
                 "DISCORD_TOKEN=test-token",
                 "TTS_QUEUE_BACKEND=redis",
                 "TTS_QUEUE_MAX_SIZE=99",
+                "QUEUE_GUILD_LOCK_TTL_SECONDS=45",
+                "QUEUE_GUILD_LOCK_RENEW_INTERVAL_SECONDS=12.5",
+                "QUEUE_PROCESSING_LEASE_TTL_SECONDS=75",
+                "QUEUE_PROCESSING_LEASE_RENEW_INTERVAL_SECONDS=20",
                 "REDIS_HOST=redis.local",
                 "REDIS_PORT=6380",
                 "REDIS_DB=2",
@@ -106,6 +110,10 @@ def test_config_reads_redis_queue_settings(tmp_path):
     assert config.validate() == (True, "")
     assert config.tts_queue_backend == "redis"
     assert config.tts_queue_max_size == 99
+    assert config.queue_guild_lock_ttl_seconds == 45
+    assert config.queue_guild_lock_renew_interval_seconds == 12.5
+    assert config.queue_processing_lease_ttl_seconds == 75
+    assert config.queue_processing_lease_renew_interval_seconds == 20
     assert config.redis_host == "redis.local"
     assert config.redis_port == 6380
     assert config.redis_db == 2
