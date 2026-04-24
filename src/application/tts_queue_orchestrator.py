@@ -6,8 +6,9 @@ import asyncio
 import logging
 from typing import Optional
 
-from src.application.results import (
+from src.application.dto import (
     SPEAK_RESULT_CROSS_GUILD_CHANNEL,
+    SPEAK_RESULT_GENERATION_TIMEOUT,
     SPEAK_RESULT_MISSING_GUILD_ID,
     SPEAK_RESULT_OK,
     SPEAK_RESULT_PLAYBACK_TIMEOUT,
@@ -19,8 +20,12 @@ from src.application.results import (
     SpeakTextResult,
 )
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
-from src.core.entities import AudioQueueItem
+from src.core.entities import AudioQueueItem, TTSConfig
 from src.core.interfaces import IAudioFileCleanup, IAudioQueue, IConfigRepository, ITTSEngine
+from src.core.timeouts import (
+    DEFAULT_BOT_TTS_GENERATION_TIMEOUT_SECONDS,
+    DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +41,16 @@ class TTSQueueOrchestrator:
         audio_queue: IAudioQueue,
         voice_channel_resolution: VoiceChannelResolutionService,
         audio_cleanup: IAudioFileCleanup,
+        generation_timeout_seconds: float = DEFAULT_BOT_TTS_GENERATION_TIMEOUT_SECONDS,
+        playback_timeout_seconds: float = DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
     ):
         self._tts_engine = tts_engine
         self._config_repository = config_repository
         self._audio_queue = audio_queue
         self._voice_channel_resolution = voice_channel_resolution
         self._audio_cleanup = audio_cleanup
-        self._guild_processors: dict[Optional[int], asyncio.Task] = {}
+        self._generation_timeout_seconds = generation_timeout_seconds
+        self._playback_timeout_seconds = playback_timeout_seconds
         self._processing_guilds: set[Optional[int]] = set()
 
     def is_processing(self, guild_id: Optional[int]) -> bool:
@@ -62,44 +70,18 @@ class TTSQueueOrchestrator:
                 )
 
             result = await self._process_item(item)
-            self._ensure_guild_processor(guild_id)
+            self._clear_guild_processing(guild_id)
             return result
         except Exception:
             self._clear_guild_processing(guild_id)
             raise
 
-    async def _process_queue_items(self, guild_id: Optional[int]) -> None:
-        try:
-            while True:
-                next_item = await self._audio_queue.peek_next(guild_id)
-                if not next_item:
-                    logger.debug("[QUEUE_ORCHESTRATOR] Queue empty for guild %s", guild_id)
-                    break
-
-                item = await self._audio_queue.dequeue(guild_id)
-                if item:
-                    logger.info("[QUEUE_ORCHESTRATOR] Processing queued item %s", item.item_id)
-                    await self._process_item(item)
-                    await asyncio.sleep(0.5)
-        except Exception as exc:
-            logger.error("[QUEUE_ORCHESTRATOR] Error draining queue for guild %s: %s", guild_id, exc, exc_info=True)
-        finally:
-            self._clear_guild_processing(guild_id)
-
-    def _ensure_guild_processor(self, guild_id: Optional[int]) -> None:
-        existing_task = self._guild_processors.get(guild_id)
-        if existing_task and not existing_task.done():
-            return
-
-        task = asyncio.create_task(self._process_queue_items(guild_id))
-        self._guild_processors[guild_id] = task
-
     def _clear_guild_processing(self, guild_id: Optional[int]) -> None:
         self._processing_guilds.discard(guild_id)
-        self._guild_processors.pop(guild_id, None)
 
     async def _process_item(self, item: AudioQueueItem) -> SpeakTextResult:
         item.mark_processing()
+        await self._audio_queue.update_item(item)
         request = item.request
         audio = None
 
@@ -107,6 +89,7 @@ class TTSQueueOrchestrator:
             if not request.guild_id:
                 error = "Guild ID nao foi fornecido - isolamento de servidor falhou"
                 item.mark_failed(error)
+                await self._audio_queue.update_item(item)
                 return SpeakTextResult(
                     success=False,
                     code=SPEAK_RESULT_MISSING_GUILD_ID,
@@ -119,6 +102,7 @@ class TTSQueueOrchestrator:
             if not resolution:
                 error = "Bot nao conseguiu encontrar sua sala de voz"
                 item.mark_failed(error)
+                await self._audio_queue.update_item(item)
                 return SpeakTextResult(
                     success=False,
                     code=SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
@@ -132,6 +116,7 @@ class TTSQueueOrchestrator:
             if channel_guild_id != request.guild_id:
                 error = "Canal de voz pertence a servidor diferente"
                 item.mark_failed(error)
+                await self._audio_queue.update_item(item)
                 return SpeakTextResult(
                     success=False,
                     code=SPEAK_RESULT_CROSS_GUILD_CHANNEL,
@@ -140,8 +125,29 @@ class TTSQueueOrchestrator:
                     error_detail=error,
                 )
 
-            config = await self._config_repository.load_config_async(request.guild_id)
-            audio = await self._tts_engine.generate_audio(request.text, config)
+            config = await self._config_repository.load_config_async(request.guild_id, user_id=request.member_id)
+            config = self._apply_request_override(config, request.config_override)
+            try:
+                audio = await asyncio.wait_for(
+                    self._tts_engine.generate_audio(request.text, config),
+                    timeout=self._generation_timeout_seconds,
+                )
+            except asyncio.TimeoutError:
+                error = "Tempo limite excedido durante geracao do audio"
+                item.mark_failed(error)
+                await self._audio_queue.update_item(item)
+                logger.warning(
+                    "[QUEUE_ORCHESTRATOR] Audio generation timed out for item %s after %ss",
+                    item.item_id,
+                    self._generation_timeout_seconds,
+                )
+                return SpeakTextResult(
+                    success=False,
+                    code=SPEAK_RESULT_GENERATION_TIMEOUT,
+                    queued=True,
+                    item_id=item.item_id,
+                    error_detail=error,
+                )
 
             if not voice_channel.is_connected():
                 await voice_channel.connect()
@@ -151,6 +157,7 @@ class TTSQueueOrchestrator:
             ):
                 error = "Voce saiu do canal de voz"
                 item.mark_failed(error)
+                await self._audio_queue.update_item(item)
                 return SpeakTextResult(
                     success=False,
                     code=SPEAK_RESULT_USER_LEFT_CHANNEL,
@@ -160,8 +167,9 @@ class TTSQueueOrchestrator:
                 )
 
             try:
-                await asyncio.wait_for(voice_channel.play_audio(audio), timeout=60)
+                await asyncio.wait_for(voice_channel.play_audio(audio), timeout=self._playback_timeout_seconds)
                 item.mark_completed()
+                await self._audio_queue.update_item(item)
                 return SpeakTextResult(
                     success=True,
                     code=SPEAK_RESULT_OK,
@@ -171,6 +179,12 @@ class TTSQueueOrchestrator:
             except asyncio.TimeoutError:
                 error = "Tempo limite excedido durante reproducao"
                 item.mark_failed(error)
+                await self._audio_queue.update_item(item)
+                logger.warning(
+                    "[QUEUE_ORCHESTRATOR] Audio playback timed out for item %s after %ss",
+                    item.item_id,
+                    self._playback_timeout_seconds,
+                )
                 return SpeakTextResult(
                     success=False,
                     code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
@@ -181,6 +195,7 @@ class TTSQueueOrchestrator:
         except Exception as exc:
             error_msg = str(exc)
             item.mark_failed(error_msg)
+            await self._audio_queue.update_item(item)
 
             error_lower = error_msg.lower()
             if "4017" in error_lower or "dave" in error_lower:
@@ -209,3 +224,15 @@ class TTSQueueOrchestrator:
                         audio.path,
                         cleanup_error,
                     )
+
+    def _apply_request_override(self, base_config: TTSConfig, override: TTSConfig | None) -> TTSConfig:
+        if override is None:
+            return base_config
+
+        return TTSConfig(
+            engine=override.engine,
+            language=override.language,
+            voice_id=override.voice_id,
+            rate=override.rate,
+            output_device=base_config.output_device,
+        )

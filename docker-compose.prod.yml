@@ -1,0 +1,69 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: tts-hotkey-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["redis-server", "--appendonly", "yes"]
+
+  postgres:
+    image: postgres:17
+    container_name: tts-bot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/001_bot_config_schema.sql:/docker-entrypoint-initdb.d/001_bot_config_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tts-discord-bot
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "10000:10000"
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_BOT_HOST: 0.0.0.0
+      PORT: 10000
+      CONFIG_STORAGE_BACKEND: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-tts_hotkey_windows}
+      TTS_ENGINE: ${TTS_ENGINE:-gtts}
+      TTS_LANGUAGE: ${TTS_LANGUAGE:-pt}
+      TTS_VOICE_ID: ${TTS_VOICE_ID:-roa/pt-br}
+      TTS_RATE: ${TTS_RATE:-180}
+      MAX_TEXT_LENGTH: ${MAX_TEXT_LENGTH:-500}
+      TTS_QUEUE_BACKEND: ${TTS_QUEUE_BACKEND:-redis}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_KEY_PREFIX: ${REDIS_KEY_PREFIX:-tts}
+      REDIS_COMPLETED_ITEM_TTL_SECONDS: ${REDIS_COMPLETED_ITEM_TTL_SECONDS:-900}
+
+volumes:
+  postgres_data:
+  redis_data:

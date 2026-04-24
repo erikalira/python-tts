@@ -9,7 +9,9 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Callable, Optional, Protocol
 
+from src.application.dto import DesktopTTSStatusDTO
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
+from src.infrastructure.tts.pyttsx3_support import Pyttsx3EngineLike
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter, is_pyttsx3_available
@@ -52,7 +54,7 @@ class LocalPyTTSX3Engine(TTSEngine):
     def __init__(self, config: DesktopAppConfig, adapter: Optional[Pyttsx3Adapter] = None):
         self._config = config
         self._adapter = adapter or Pyttsx3Adapter()
-        self._engine: Optional[object] = None
+        self._engine: Optional[Pyttsx3EngineLike] = None
         self._lock = threading.Lock()
         self._last_error_message: str | None = None
 
@@ -164,7 +166,7 @@ class DesktopAppTTSService:
         """Check if TTS service is available."""
         return self._flow_service.is_available()
 
-    def get_status_info(self) -> dict:
+    def get_status_info(self) -> DesktopTTSStatusDTO:
         """Get status information about available engines."""
         return DesktopTTSStatusUseCase(_DesktopAppTTSStatusGateway(self)).execute()
 

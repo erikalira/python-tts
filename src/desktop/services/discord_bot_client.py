@@ -4,7 +4,15 @@ import logging
 from dataclasses import dataclass
 from typing import Optional, Protocol
 
-from src.application.desktop_bot import DesktopBotConnectionStatus, DesktopBotVoiceContextStatus
+from src.application.dto import (
+    BotErrorResponseDTO,
+    BotHealthResponseDTO,
+    BotSpeakRequestDTO,
+    BotVoiceContextResponseDTO,
+    DesktopBotConnectionStatusDTO,
+    DesktopBotVoiceContextStatusDTO,
+)
+from src.core.entities import TTSConfig
 
 try:
     import requests
@@ -18,20 +26,15 @@ from ..config.desktop_config import DesktopAppConfig
 
 logger = logging.getLogger(__name__)
 
+DiscordSpeakRequestDTO = BotSpeakRequestDTO
 
 @dataclass(frozen=True)
-class DiscordSpeakRequest:
-    """Payload for the Discord bot speak endpoint."""
+class DiscordBotHttpResponse:
+    """Minimal normalized HTTP response used by the desktop bot client."""
 
-    text: str
-    member_id: Optional[str] = None
-
-    def to_payload(self) -> dict:
-        """Serialize request to the JSON payload expected by the bot."""
-        payload = {"text": self.text}
-        if self.member_id:
-            payload["member_id"] = self.member_id
-        return payload
+    ok: bool
+    status_code: int
+    text: str = ""
 
 
 class DiscordBotClient(Protocol):
@@ -40,27 +43,154 @@ class DiscordBotClient(Protocol):
     def is_available(self) -> bool:
         """Return whether the bot client is ready for requests."""
 
-    def build_request(self, text: str) -> DiscordSpeakRequest:
+    def build_request(self, text: str) -> BotSpeakRequestDTO:
         """Build a speak request from the provided text."""
 
-    def send_speak_request(self, request: DiscordSpeakRequest) -> bool:
+    def send_speak_request(self, request: BotSpeakRequestDTO) -> bool:
         """Send a speak request to the Discord bot."""
 
-    def check_connection(self) -> DesktopBotConnectionStatus:
+    def check_connection(self) -> DesktopBotConnectionStatusDTO:
         """Check whether the bot runtime is reachable."""
 
-    def fetch_voice_context(self) -> DesktopBotVoiceContextStatus:
+    def fetch_voice_context(self) -> DesktopBotVoiceContextStatusDTO:
         """Fetch the current voice context for the configured member."""
 
     def get_last_error_message(self) -> Optional[str]:
         """Return the latest human-readable error from the bot client."""
 
 
-class HttpDiscordBotClient:
-    """HTTP adapter for the Discord bot speak endpoint."""
+class DiscordBotHttpTransport:
+    """Thin HTTP transport for bot runtime requests."""
 
     def __init__(self, config: DesktopAppConfig):
         self._config = config
+
+    def post_speak(self, url: str, request_dto: BotSpeakRequestDTO) -> DiscordBotHttpResponse:
+        response = requests.post(
+            url,
+            json=request_dto.to_payload(),
+            timeout=self._config.network.request_timeout,
+            headers={"User-Agent": self._config.network.user_agent},
+        )
+        return DiscordBotHttpResponse(
+            ok=response.ok,
+            status_code=response.status_code,
+            text=self._extract_text(response),
+        )
+
+    def get_health(self, url: str) -> tuple[DiscordBotHttpResponse, BotHealthResponseDTO | BotErrorResponseDTO | None]:
+        response = requests.get(
+            url,
+            timeout=self._config.network.request_timeout,
+            headers={"User-Agent": self._config.network.user_agent},
+        )
+        http_response = DiscordBotHttpResponse(
+            ok=response.ok,
+            status_code=response.status_code,
+            text=self._extract_text(response),
+        )
+        return http_response, self._parse_health_payload(response)
+
+    def get_voice_context(
+        self,
+        url: str,
+        *,
+        member_id: str,
+    ) -> tuple[DiscordBotHttpResponse, BotVoiceContextResponseDTO | BotErrorResponseDTO | None]:
+        response = requests.get(
+            url,
+            params={"member_id": member_id},
+            timeout=self._config.network.request_timeout,
+            headers={"User-Agent": self._config.network.user_agent},
+        )
+        http_response = DiscordBotHttpResponse(
+            ok=response.ok,
+            status_code=response.status_code,
+            text=self._extract_text(response),
+        )
+        return http_response, self._parse_voice_context_payload(response)
+
+    def _extract_text(self, response) -> str:
+        text = getattr(response, "text", "")
+        if text is None:
+            return ""
+        return str(text).strip()
+
+    def _extract_payload(self, response) -> dict[str, object] | None:
+        try:
+            payload = response.json()
+        except Exception:
+            return None
+        if isinstance(payload, dict):
+            return payload
+        return None
+
+    def _parse_health_payload(self, response) -> BotHealthResponseDTO | BotErrorResponseDTO | None:
+        payload = self._extract_payload(response)
+        if payload is None:
+            return None
+        if "status" in payload:
+            return BotHealthResponseDTO(status=str(payload.get("status") or "unknown"))
+        return BotErrorResponseDTO(
+            success=self._parse_optional_bool(payload.get("success")),
+            code=self._parse_optional_str(payload.get("code")),
+            message=self._parse_optional_str(payload.get("message")),
+        )
+
+    def _parse_voice_context_payload(self, response) -> BotVoiceContextResponseDTO | BotErrorResponseDTO | None:
+        payload = self._extract_payload(response)
+        if payload is None:
+            return None
+        if "guild_name" in payload or "channel_name" in payload or "member_id" in payload or "code" in payload:
+            return BotVoiceContextResponseDTO(
+                success=bool(payload.get("success")),
+                code=str(payload.get("code") or "unknown"),
+                member_id=self._parse_optional_int(payload.get("member_id")),
+                guild_id=self._parse_optional_int(payload.get("guild_id")),
+                guild_name=self._parse_optional_str(payload.get("guild_name")),
+                channel_id=self._parse_optional_int(payload.get("channel_id")),
+                channel_name=self._parse_optional_str(payload.get("channel_name")),
+                message=self._parse_optional_str(payload.get("message")),
+            )
+        return BotErrorResponseDTO(
+            success=self._parse_optional_bool(payload.get("success")),
+            code=self._parse_optional_str(payload.get("code")),
+            message=self._parse_optional_str(payload.get("message")),
+        )
+
+    def _parse_optional_int(self, value: object) -> int | None:
+        if value is None:
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _parse_optional_str(self, value: object) -> str | None:
+        if value is None:
+            return None
+        return str(value)
+
+    def _parse_optional_bool(self, value: object) -> bool | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"true", "1", "yes"}:
+                return True
+            if normalized in {"false", "0", "no"}:
+                return False
+        return bool(value)
+
+
+class HttpDiscordBotClient:
+    """HTTP adapter for the Discord bot speak endpoint."""
+
+    def __init__(self, config: DesktopAppConfig, transport: DiscordBotHttpTransport | None = None):
+        self._config = config
+        self._transport = transport or DiscordBotHttpTransport(config)
         self._last_error_message: Optional[str] = None
 
     def is_available(self) -> bool:
@@ -79,11 +209,17 @@ class HttpDiscordBotClient:
         """Return whether the HTTP transport dependency is installed."""
         return _requests_available
 
-    def build_request(self, text: str) -> DiscordSpeakRequest:
+    def build_request(self, text: str) -> BotSpeakRequestDTO:
         """Build a speak request from Desktop App configuration."""
-        return DiscordSpeakRequest(
+        return BotSpeakRequestDTO(
             text=text,
             member_id=self._config.discord.member_id,
+            config_override=TTSConfig(
+                engine=self._config.tts.engine,
+                language=self._config.tts.language,
+                voice_id=self._config.tts.voice_id,
+                rate=self._config.tts.rate,
+            ),
         )
 
     def send_text(self, text: str) -> bool:
@@ -102,23 +238,17 @@ class HttpDiscordBotClient:
         """Return the bot voice-context endpoint URL."""
         return self._config.discord.bot_url.rstrip("/") + "/voice-context"
 
-    def send_speak_request(self, request: DiscordSpeakRequest) -> bool:
+    def send_speak_request(self, request: BotSpeakRequestDTO) -> bool:
         """Send a speak request to the configured Discord bot."""
         if not self.is_available():
             logger.debug("[DISCORD_BOT_CLIENT] Bot client unavailable for speak request")
             self._last_error_message = "Cliente do bot indisponivel"
             return False
 
-        payload = request.to_payload()
         logger.info("[DISCORD_BOT_CLIENT] Sending TTS request to Discord bot")
 
         try:
-            response = requests.post(
-                self.get_speak_url(),
-                json=payload,
-                timeout=self._config.network.request_timeout,
-                headers={"User-Agent": self._config.network.user_agent},
-            )
+            response = self._transport.post_speak(self.get_speak_url(), request)
         except requests.exceptions.Timeout:
             logger.warning("[DISCORD_BOT_CLIENT] Timeout while connecting to Discord bot")
             self._last_error_message = "Timeout ao conectar no bot"
@@ -133,133 +263,124 @@ class HttpDiscordBotClient:
             logger.info("[DISCORD_BOT_CLIENT] Discord bot accepted the TTS request")
             return True
 
-        response_text = self._extract_response_text(response)
         self._last_error_message = self._build_http_error_message(
             response.status_code,
-            response_text,
+            response.text,
         )
         logger.warning(
             "[DISCORD_BOT_CLIENT] Discord bot returned HTTP %s: %s",
             response.status_code,
-            response_text or "<no response body>",
+            response.text or "<no response body>",
         )
         return False
 
-    def check_connection(self) -> DesktopBotConnectionStatus:
+    def check_connection(self) -> DesktopBotConnectionStatusDTO:
         """Check whether the bot runtime is reachable and healthy."""
         if not self.has_transport():
-            return DesktopBotConnectionStatus(
+            return DesktopBotConnectionStatusDTO(
                 success=False,
                 message="Biblioteca requests nao esta disponivel",
             )
 
         if not self._config.discord.bot_url:
-            return DesktopBotConnectionStatus(success=False, message="Bot URL nao configurada")
+            return DesktopBotConnectionStatusDTO(success=False, message="Bot URL nao configurada")
 
         try:
-            response = requests.get(
-                self.get_health_url(),
-                timeout=self._config.network.request_timeout,
-                headers={"User-Agent": self._config.network.user_agent},
-            )
+            response, payload = self._transport.get_health(self.get_health_url())
         except requests.exceptions.Timeout:
             logger.warning("[DISCORD_BOT_CLIENT] Timeout while checking bot health")
-            return DesktopBotConnectionStatus(success=False, message="Timeout ao conectar no bot")
+            return DesktopBotConnectionStatusDTO(success=False, message="Timeout ao conectar no bot")
         except Exception as exc:
             logger.error("[DISCORD_BOT_CLIENT] Failed to check bot health: %s", exc)
-            return DesktopBotConnectionStatus(success=False, message=f"Falha ao conectar: {exc}")
+            return DesktopBotConnectionStatusDTO(success=False, message=f"Falha ao conectar: {exc}")
 
         if response.ok:
-            return DesktopBotConnectionStatus(
+            return DesktopBotConnectionStatusDTO(
                 success=True,
-                message="Conexao com o bot validada com sucesso",
+                message=(
+                    "Conexao com o bot validada com sucesso"
+                    if not isinstance(payload, BotHealthResponseDTO) or payload.status == "healthy"
+                    else f"Bot respondeu status {payload.status}"
+                ),
             )
 
-        return DesktopBotConnectionStatus(
+        return DesktopBotConnectionStatusDTO(
             success=False,
             message=f"Bot respondeu HTTP {response.status_code}",
         )
 
-    def fetch_voice_context(self) -> DesktopBotVoiceContextStatus:
+    def fetch_voice_context(self) -> DesktopBotVoiceContextStatusDTO:
         """Fetch the current guild/channel detected for the configured member."""
         if not self.has_transport():
-            return DesktopBotVoiceContextStatus(
+            return DesktopBotVoiceContextStatusDTO(
                 success=False,
                 message="Biblioteca requests nao esta disponivel",
             )
 
         if not self._config.discord.bot_url:
-            return DesktopBotVoiceContextStatus(success=False, message="Bot URL nao configurada")
+            return DesktopBotVoiceContextStatusDTO(success=False, message="Bot URL nao configurada")
 
         if not self._config.discord.member_id:
-            return DesktopBotVoiceContextStatus(success=False, message="User ID nao configurado")
+            return DesktopBotVoiceContextStatusDTO(success=False, message="User ID nao configurado")
 
         try:
-            response = requests.get(
+            response, payload = self._transport.get_voice_context(
                 self.get_voice_context_url(),
-                params={"member_id": self._config.discord.member_id},
-                timeout=self._config.network.request_timeout,
-                headers={"User-Agent": self._config.network.user_agent},
+                member_id=self._config.discord.member_id,
             )
         except requests.exceptions.Timeout:
             logger.warning("[DISCORD_BOT_CLIENT] Timeout while fetching voice context")
-            return DesktopBotVoiceContextStatus(
+            return DesktopBotVoiceContextStatusDTO(
                 success=False,
                 message="Timeout ao consultar canal de voz",
             )
         except Exception as exc:
             logger.error("[DISCORD_BOT_CLIENT] Failed to fetch voice context: %s", exc)
-            return DesktopBotVoiceContextStatus(
+            return DesktopBotVoiceContextStatusDTO(
                 success=False,
                 message=f"Falha ao consultar canal de voz: {exc}",
             )
 
-        try:
-            payload = response.json()
-        except Exception:
-            payload = {}
-
-        if response.ok:
-            guild_name = payload.get("guild_name") or "Servidor desconhecido"
-            channel_name = payload.get("channel_name") or "Canal desconhecido"
-            guild_id = payload.get("guild_id")
-            channel_id = payload.get("channel_id")
-            return DesktopBotVoiceContextStatus(
+        if response.ok and isinstance(payload, BotVoiceContextResponseDTO):
+            guild_name = payload.guild_name or "Servidor desconhecido"
+            channel_name = payload.channel_name or "Canal desconhecido"
+            return DesktopBotVoiceContextStatusDTO(
                 success=True,
                 message=f"Canal detectado: {guild_name} / {channel_name}",
                 guild_name=guild_name,
-                guild_id=guild_id,
+                guild_id=payload.guild_id,
                 channel_name=channel_name,
-                channel_id=channel_id,
+                channel_id=payload.channel_id,
             )
 
-        if response.status_code == 404 and payload.get("code") == "not_in_channel":
-            return DesktopBotVoiceContextStatus(
+        if (
+            response.status_code == 404
+            and isinstance(payload, BotVoiceContextResponseDTO)
+            and payload.code == "not_in_channel"
+        ):
+            return DesktopBotVoiceContextStatusDTO(
                 success=False,
                 message="Usuario nao esta conectado a nenhum canal de voz",
             )
 
         if response.status_code == 404:
-            return DesktopBotVoiceContextStatus(
+            return DesktopBotVoiceContextStatusDTO(
                 success=False,
                 message="Endpoint de deteccao de canal nao esta disponivel no bot. Atualize o bot.",
             )
 
-        message = payload.get("message") if isinstance(payload, dict) else None
+        message = None
+        if isinstance(payload, BotVoiceContextResponseDTO):
+            message = payload.message
+        elif isinstance(payload, BotErrorResponseDTO):
+            message = payload.message
         if not message:
             message = f"Bot respondeu HTTP {response.status_code}"
-        return DesktopBotVoiceContextStatus(success=False, message=message)
+        return DesktopBotVoiceContextStatusDTO(success=False, message=message)
 
     def get_last_error_message(self) -> Optional[str]:
         """Return the latest human-readable error from the bot client."""
         return self._last_error_message
-
-    def _extract_response_text(self, response) -> str:
-        """Safely read and normalize the bot response body for diagnostics."""
-        text = getattr(response, "text", "")
-        if text is None:
-            return ""
-        return str(text).strip()
 
     def _build_http_error_message(self, status_code: int, response_text: str) -> str:
         """Build a user-facing error message from an HTTP failure."""

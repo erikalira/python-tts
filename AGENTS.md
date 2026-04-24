@@ -1,4 +1,4 @@
-# Project overview
+# Project Overview
 
 This repository contains two independent applications:
 
@@ -7,49 +7,47 @@ This repository contains two independent applications:
 
 Both must keep working independently after changes.
 
-# Source of truth
+# Canonical Guidance
 
-Use `.specify/` as the canonical source of project guidance:
+Use `.specify/` as the source of truth for repository workflow and AI guidance:
 
 - `.specify/README.md`
 - `.specify/memory/constitution.md`
-- `.specify/templates/plan-template.md`
 - `.specify/templates/spec-template.md`
+- `.specify/templates/plan-template.md`
 - `.specify/templates/tasks-template.md`
+- `.specify/review-checklist.md`
 
-Tool-specific instructions should summarize and point to those docs instead of redefining policy.
+This file is a derivative summary. If guidance conflicts, `.specify/` wins.
 
-# Core operating rules
+# Senior/Staff Operating Standard
 
-1. Preserve clean architecture boundaries
-2. Avoid duplication between `src/desktop/` and shared modules in `src/`
-3. Prefer extracting shared interfaces, use cases, or services over copy-paste
-4. Keep business logic out of presentation and infrastructure layers
-5. Prefer small, incremental refactors
-6. Validate both application modes before finishing relevant changes
-7. Favor explicit contracts and typed results over implicit mapping-style payloads
-8. Improve the repo's readability for the next contributor, not only the immediate change
-9. Treat compatibility code as temporary by default and note when it should be removed
+1. Optimize for repository-level maintainability, not local cleverness
+2. Preserve clean architecture boundaries and inward dependency flow
+3. Avoid duplication between `src/desktop/` and shared modules in `src/`
+4. Prefer extracting shared interfaces, use cases, or services over copy-paste
+5. Keep business logic out of presentation, infrastructure, and GUI layers
+6. Favor explicit contracts and typed results over implicit mapping-style payloads
+7. Prefer the smallest reversible refactor that meaningfully improves the codebase
+8. Treat compatibility code as temporary, narrow, and documented with the intended steady state
+9. Remove obsolete paths when safe instead of normalizing permanent dual flows
+10. Improve onboarding readability for the next contributor, not only the immediate change
 
-# Tech lead posture
+# Tech Lead Posture
 
-- Optimize for consistency, predictability, and ease of future change
-- Prefer the smallest change that improves architecture, clarity, or maintainability
-- Avoid cosmetic refactors without a clear payoff in boundaries, contracts, onboarding, or validation
-- When a module is large but acceptable as a composition root or runtime entrypoint, avoid splitting it without a concrete gain
-- When a temporary facade, fallback, or compatibility path is introduced, keep it narrow and document the intended steady state
+- Choose the smallest architecture-safe change with clear ownership
+- Introduce abstractions only when they remove duplication, shrink ambiguity, or lower future change cost
+- Avoid cosmetic refactors without a concrete payoff in boundaries, contracts, validation, or readability
+- When a file is acting as a composition root or runtime coordinator, do not split it unless that split reduces real complexity
+- Make non-goals, tradeoffs, and cleanup expectations explicit when the change could drift or leave residue behind
 
-# Review emphasis
+# Validation
 
-When evaluating code quality, prioritize:
+- Validate both application modes before finishing relevant changes
+- Run the tests that cover the changed path directly
+- Call out any validation gap explicitly if full runtime validation is not possible
 
-1. boundary integrity
-2. explicit contracts between modules
-3. clarity of ownership and responsibility per module
-4. onboarding readability for a new contributor
-5. whether the change leaves the repo easier to evolve than before
-
-# Important paths
+# Important Paths
 
 - `src/bot.py`
 - `app.py`
@@ -59,9 +57,10 @@ When evaluating code quality, prioritize:
 - `src/presentation/`
 - `src/desktop/`
 
-# Documentation rule
+# Documentation Rule
 
 - Use top-level `docs/` for durable guides and architecture material
 - Use `specs/` for feature execution artifacts and planning outputs
+- Keep stable AI governance in `.specify/`, not scattered across tool-specific files
 - Do not keep implementation-history writeups in `docs/`
 - Update `docs/README.md` when documentation structure or navigation changes

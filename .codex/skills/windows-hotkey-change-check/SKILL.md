@@ -7,10 +7,11 @@ description: Validate changes that may impact Windows hotkey app behavior and in
 
 Read these first:
 
-- `docs/ai/project-context.md`
-- `docs/ai/architecture-rules.md`
-- `docs/ai/change-playbooks.md`
-- `docs/ai/documentation-policy.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/review-checklist.md`
+- `docs/README_DESKTOP_APP.md`
+- `docs/RUNTIME_FLOWS.md`
 
 # When to use
 
@@ -26,7 +27,8 @@ Use when modifying:
 2. Validate hotkey capture, text input, and TTS trigger flow
 3. Check for blocking work, crashes, or desktop-specific regressions
 4. Confirm shared logic changes still fit both runtimes
-5. Call out feature docs that belong in `docs/features/`
+5. Flag durable docs updates when runtime behavior, contracts, or boundaries
+   changed
 
 # Output
 

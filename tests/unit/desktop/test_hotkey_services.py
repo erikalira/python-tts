@@ -1,6 +1,7 @@
 ﻿from types import SimpleNamespace
 from unittest.mock import Mock
 
+from src.application.dto import HotkeyManagerStatusDTO
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.services.hotkey_services import (
     HotkeyManager,
@@ -91,6 +92,9 @@ def test_hotkey_manager_status_before_initialization():
 
     status = manager.get_status()
 
-    assert status["initialized"] is False
-    assert status["active"] is False
+    assert status == HotkeyManagerStatusDTO(
+        initialized=False,
+        active=False,
+        keyboard_available=status.keyboard_available,
+    )
 

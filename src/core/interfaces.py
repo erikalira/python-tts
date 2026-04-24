@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 """Interfaces (abstract base classes) following Dependency Inversion Principle."""
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from .entities import TTSConfig, AudioFile, AudioQueueItem
+
+if TYPE_CHECKING:
+    from src.application.dto import AudioQueueStatusDTO
 
 
 class ITTSEngine(ABC):
@@ -97,23 +102,33 @@ class IConfigRepository(ABC):
     """Interface for guild-scoped TTS configuration management."""
     
     @abstractmethod
-    def get_config(self, guild_id: Optional[int] = None) -> TTSConfig:
-        """Get TTS configuration for a guild or the global default."""
+    def get_config(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
+        """Get resolved TTS configuration for a guild/user scope or the global default."""
         pass
 
     @abstractmethod
-    async def load_config_async(self, guild_id: Optional[int] = None) -> TTSConfig:
-        """Load TTS configuration asynchronously for a guild or the global default."""
+    async def load_config_async(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
+        """Load resolved TTS configuration asynchronously for a guild/user scope or the global default."""
         pass
     
     @abstractmethod
-    def set_config(self, guild_id: int, config: TTSConfig) -> None:
-        """Set TTS configuration for a specific guild."""
+    def set_config(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> None:
+        """Set TTS configuration for a specific guild or guild/user scope."""
         pass
 
     @abstractmethod
-    async def save_config_async(self, guild_id: int, config: TTSConfig) -> bool:
-        """Persist TTS configuration asynchronously for a specific guild."""
+    async def save_config_async(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> bool:
+        """Persist TTS configuration asynchronously for a specific guild or guild/user scope."""
+        pass
+
+    @abstractmethod
+    async def delete_config_async(self, guild_id: int, user_id: Optional[int] = None) -> bool:
+        """Delete TTS configuration for a specific guild or guild/user scope."""
+        pass
+
+    @abstractmethod
+    def get_effective_scope(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> str:
+        """Return whether the resolved config comes from user, guild, or default scope."""
         pass
 
 
@@ -175,14 +190,14 @@ class IAudioQueue(ABC):
         pass
     
     @abstractmethod
-    async def get_queue_status(self, guild_id: Optional[int]) -> dict:
+    async def get_queue_status(self, guild_id: Optional[int]) -> AudioQueueStatusDTO:
         """Get current queue status for a guild.
         
         Args:
             guild_id: Guild identifier
             
         Returns:
-            dict with 'size' (int) and 'items' (list of dicts)
+            Queue details for the given guild.
         """
         pass
     
@@ -196,6 +211,56 @@ class IAudioQueue(ABC):
         Returns:
             Position (0-indexed) or -1 if not found
         """
+        pass
+
+    @abstractmethod
+    async def update_item(self, item: AudioQueueItem) -> None:
+        """Persist state changes for a queued item.
+
+        Args:
+            item: AudioQueueItem with updated status/metadata.
+        """
+        pass
+
+    @abstractmethod
+    async def renew_guild_lock(self, guild_id: Optional[int], owner_token: str, ttl_seconds: int = 30) -> bool:
+        """Refresh the distributed guild lock while processing is still active.
+
+        Args:
+            guild_id: Guild identifier
+            owner_token: Lock owner token
+            ttl_seconds: New lock TTL
+        """
+        pass
+
+    @abstractmethod
+    async def acquire_processing_lease(
+        self,
+        guild_id: Optional[int],
+        owner_token: str,
+        ttl_seconds: int = 30,
+    ) -> bool:
+        """Acquire the active-playback lease for a guild."""
+        pass
+
+    @abstractmethod
+    async def release_processing_lease(self, guild_id: Optional[int], owner_token: str) -> None:
+        """Release the active-playback lease for a guild."""
+        pass
+
+    @abstractmethod
+    async def renew_processing_lease(
+        self,
+        guild_id: Optional[int],
+        owner_token: str,
+        ttl_seconds: int = 30,
+    ) -> bool:
+        """Refresh the active-playback lease for a guild."""
+        pass
+
+    @abstractmethod
+    async def is_guild_processing(self, guild_id: Optional[int]) -> bool:
+        """Return whether the guild currently has an active playback lease."""
         pass
     
     @abstractmethod

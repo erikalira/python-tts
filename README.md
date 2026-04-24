@@ -18,7 +18,7 @@ e o restante de `src`.
 - `app.py`: inicia o Desktop App Windows
 - `src/`: camadas principais da aplicacao
 - `docs/`: documentacao complementar
-- `docs/BUILD_GUIDE.md`: guia de build do executavel Windows
+- `docs/desktop/WINDOWS_BUILD_GUIDE.md`: guia de build do executavel Windows
 
 ## Requisitos
 
@@ -37,6 +37,15 @@ pip install -r requirements.txt
 winget install ffmpeg
 ```
 
+### Windows (CMD)
+
+```cmd
+python -m venv .venv
+.\.venv\Scripts\activate.bat
+pip install -r requirements.txt
+winget install ffmpeg
+```
+
 ### Linux/macOS
 
 ```bash
@@ -51,7 +60,7 @@ Para voz no Discord localmente, tambem pode ser necessario:
 pip install pynacl
 ```
 
-Para o passo a passo completo, consulte [docs/SETUP.md](docs/SETUP.md).
+Para o passo a passo completo, consulte [docs/getting-started/SETUP.md](docs/getting-started/SETUP.md).
 
 ## Execucao rapida
 
@@ -61,6 +70,23 @@ Configure um arquivo `.env` com pelo menos:
 DISCORD_TOKEN=seu_token_aqui
 DISCORD_BOT_URL=http://127.0.0.1:10000
 DISCORD_BOT_PORT=10000
+```
+
+Para usar fila Redis no bot localmente:
+
+```bash
+docker compose -f docker-compose.redis.yml up -d
+```
+
+E adicione ao `.env`:
+
+```env
+TTS_QUEUE_BACKEND=redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_KEY_PREFIX=tts
+REDIS_COMPLETED_ITEM_TTL_SECONDS=900
 ```
 
 Suba o bot:
@@ -81,7 +107,7 @@ python app.py
 pytest
 ```
 
-Detalhes de estrutura e execucao estao em [docs/TESTING.md](docs/TESTING.md).
+Detalhes de estrutura e execucao estao em [docs/getting-started/TESTING.md](docs/getting-started/TESTING.md).
 
 ## Build do executavel Windows
 
@@ -100,16 +126,22 @@ especificos. A pasta `docs/` fica reservada para guias duraveis; artefatos de
 planejamento e execucao de features devem ir em `specs/`.
 
 - [Indice da documentacao](docs/README.md)
-- [Guia de setup do ambiente](docs/SETUP.md)
-- [Guia de testes](docs/TESTING.md)
-- [Deploy do bot como servico Windows com WinSW](docs/WINDOWS_BOT_SERVICE.md)
+- [Guia de setup do ambiente](docs/getting-started/SETUP.md)
+- [Guia de testes](docs/getting-started/TESTING.md)
+- [Guia de deploy no servidor](docs/deploy/DEPLOYMENT_GUIDE.md)
+- [Arquitetura do projeto](docs/architecture/ARCHITECTURE.md)
+- [Guia do Desktop App](docs/desktop/DESKTOP_APP_GUIDE.md)
 - [Constituicao e workflow canonicos](.specify/README.md)
-- [Guia de build do executavel Windows](docs/BUILD_GUIDE.md)
-- [Arquitetura do projeto](docs/ARCHITECTURE.md)
-- [Fluxos de runtime e composition roots](docs/RUNTIME_FLOWS.md)
-- [Guia de transicoes arquiteturais e compatibilidade temporaria](docs/ARCHITECTURE_TRANSITIONS.md)
-- [Guia do Desktop App](docs/README_DESKTOP_APP.md)
-- [Configuracao de hotkeys](docs/HOTKEY_SETUP.md)
+
+## Governanca para contribuidores e IA
+
+As regras canonicas de arquitetura, workflow e instrucao para agentes ficam em
+`.specify/`.
+
+- [Indice canonico de governanca](.specify/README.md)
+- [Constituicao do repositorio](.specify/memory/constitution.md)
+- [Checklist de review](.specify/review-checklist.md)
+- [Resumo derivado para agentes](AGENTS.md)
 
 ## Observacoes
 

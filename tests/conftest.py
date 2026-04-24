@@ -1,6 +1,8 @@
 """Test fixtures and mocks shared across tests."""
 import pytest
+from src.application.dto import AudioQueueStatusDTO
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
+from src.application.tts_voice_catalog import TTSVoiceOption
 from src.application.use_cases import SpeakTextUseCase
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.core.interfaces import ITTSEngine, IVoiceChannel, IVoiceChannelRepository, IConfigRepository, IAudioQueue, IAudioFileCleanup
@@ -95,6 +97,7 @@ class MockConfigRepository(IConfigRepository):
     
     def __init__(self):
         self.configs = {}
+        self.user_configs = {}
         self.default_config = TTSConfig(
             engine='gtts',
             language='pt',
@@ -102,8 +105,10 @@ class MockConfigRepository(IConfigRepository):
             rate=180
         )
     
-    def get_config(self, guild_id: int = None) -> TTSConfig:
+    def get_config(self, guild_id: int = None, user_id: int | None = None) -> TTSConfig:
         """Get config by guild ID."""
+        if guild_id and user_id and (guild_id, user_id) in self.user_configs:
+            return self.user_configs[(guild_id, user_id)]
         if guild_id and guild_id in self.configs:
             return self.configs[guild_id]
         return TTSConfig(
@@ -113,32 +118,46 @@ class MockConfigRepository(IConfigRepository):
             rate=self.default_config.rate
         )
 
-    async def load_config_async(self, guild_id: int = None) -> TTSConfig:
+    async def load_config_async(self, guild_id: int = None, user_id: int | None = None) -> TTSConfig:
         """Load config through the async repository contract."""
-        return self.get_config(guild_id)
+        return self.get_config(guild_id, user_id=user_id)
     
-    def set_config(self, guild_id: int, config: TTSConfig) -> None:
+    def set_config(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> None:
         """Set config by guild ID."""
-        self.configs[guild_id] = TTSConfig(
+        target = TTSConfig(
             engine=config.engine,
             language=config.language,
             voice_id=config.voice_id,
             rate=config.rate
         )
+        if user_id is not None:
+            self.user_configs[(guild_id, user_id)] = target
+            return
+        self.configs[guild_id] = target
     
-    async def load_from_storage(self, guild_id: int) -> TTSConfig:
+    async def load_from_storage(self, guild_id: int, user_id: int | None = None) -> TTSConfig:
         """Load config from storage mock."""
-        return self.get_config(guild_id)
+        return self.get_config(guild_id, user_id=user_id)
     
-    async def save_config_async(self, guild_id: int, config: TTSConfig) -> bool:
+    async def save_config_async(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> bool:
         """Save config async mock."""
-        self.set_config(guild_id, config)
+        self.set_config(guild_id, config, user_id=user_id)
         return True
     
-    async def delete_config_async(self, guild_id: int) -> bool:
+    async def delete_config_async(self, guild_id: int, user_id: int | None = None) -> bool:
         """Delete config async mock."""
+        if user_id is not None:
+            self.user_configs.pop((guild_id, user_id), None)
+            return True
         self.configs.pop(guild_id, None)
         return True
+
+    def get_effective_scope(self, guild_id: int = None, user_id: int | None = None) -> str:
+        if guild_id and user_id and (guild_id, user_id) in self.user_configs:
+            return "user"
+        if guild_id and guild_id in self.configs:
+            return "guild"
+        return "default"
 
 
 class MockAudioCleanup(IAudioFileCleanup):
@@ -150,12 +169,67 @@ class MockAudioCleanup(IAudioFileCleanup):
     async def cleanup(self, audio: AudioFile) -> None:
         self.cleaned_paths.append(audio.path)
 
+
+class MockTTSCatalog:
+    """Mock catalog for presentation tests that expose voice options."""
+
+    def __init__(self):
+        self.options = {
+            "gtts:pt:roa-pt-br": TTSVoiceOption(
+                key="gtts:pt:roa-pt-br",
+                engine="gtts",
+                label="Google TTS - Portugues (Brasil)",
+                language="pt",
+                voice_id="roa/pt-br",
+            ),
+            "pyttsx3:david": TTSVoiceOption(
+                key="pyttsx3:david",
+                engine="pyttsx3",
+                label="R.E.P.O. - Microsoft David",
+                language="system",
+                voice_id="David",
+            ),
+            "pyttsx3:maria": TTSVoiceOption(
+                key="pyttsx3:maria",
+                engine="pyttsx3",
+                label="R.E.P.O. - Microsoft Maria",
+                language="system",
+                voice_id="Maria",
+            ),
+            "edge-tts:pt-br-francisca": TTSVoiceOption(
+                key="edge-tts:pt-br-francisca",
+                engine="edge-tts",
+                label="Edge TTS - Francisca (PT-BR Neural)",
+                language="pt-BR",
+                voice_id="pt-BR-FranciscaNeural",
+            ),
+        }
+
+    def list_voice_options(self) -> list[TTSVoiceOption]:
+        return list(self.options.values())
+
+    def get_voice_option(self, key: str) -> TTSVoiceOption | None:
+        return self.options.get(key)
+
+    def find_voice_option(self, *, engine: str, language: str, voice_id: str) -> TTSVoiceOption | None:
+        for option in self.options.values():
+            if option.engine == engine and option.language == language and option.voice_id == voice_id:
+                return option
+        return None
+
+    def is_voice_available(self, *, engine: str, voice_id: str) -> bool:
+        return any(
+            option.engine == engine and option.voice_id.lower() == voice_id.lower()
+            for option in self.options.values()
+        )
+
 class MockAudioQueue(IAudioQueue):
     """Mock audio queue for testing."""
     
     def __init__(self):
         self.items = []
         self.completed = []
+        self.processing_guilds = set()
     
     async def enqueue(self, item: AudioQueueItem) -> str | None:
         """Add item to queue."""
@@ -174,7 +248,7 @@ class MockAudioQueue(IAudioQueue):
     
     async def get_queue_status(self, guild_id):
         """Get queue status."""
-        return {"size": len(self.items), "items": []}
+        return AudioQueueStatusDTO(size=len(self.items), items=[])
     
     async def get_item_position(self, item_id: str) -> int:
         """Get item position."""
@@ -182,6 +256,36 @@ class MockAudioQueue(IAudioQueue):
             if item.item_id == item_id:
                 return i
         return -1
+
+    async def update_item(self, item: AudioQueueItem) -> None:
+        """Persist in-memory item updates for tests."""
+        for index, existing_item in enumerate(self.items):
+            if existing_item.item_id == item.item_id:
+                self.items[index] = item
+                return
+
+    async def renew_guild_lock(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+        """Renew a mock guild lock."""
+        del ttl_seconds
+        return True
+
+    async def acquire_processing_lease(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+        del owner_token, ttl_seconds
+        if guild_id in self.processing_guilds:
+            return False
+        self.processing_guilds.add(guild_id)
+        return True
+
+    async def release_processing_lease(self, guild_id, owner_token: str) -> None:
+        del owner_token
+        self.processing_guilds.discard(guild_id)
+
+    async def renew_processing_lease(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+        del owner_token, ttl_seconds
+        return guild_id in self.processing_guilds
+
+    async def is_guild_processing(self, guild_id) -> bool:
+        return guild_id in self.processing_guilds
     
     async def clear_completed(self, guild_id, older_than_seconds: int = 3600):
         """Clear completed items."""
@@ -226,6 +330,12 @@ def mock_audio_cleanup():
 
 
 @pytest.fixture
+def mock_tts_catalog():
+    """Fixture for mock TTS catalog."""
+    return MockTTSCatalog()
+
+
+@pytest.fixture
 def build_speak_use_case(mock_audio_cleanup):
     """Factory for SpeakTextUseCase with explicit collaborators."""
 
@@ -236,6 +346,7 @@ def build_speak_use_case(mock_audio_cleanup):
         mock_config_repository,
         mock_audio_queue,
         max_text_length=None,
+        queue_runtime_is_active=None,
     ):
         voice_channel_resolution = VoiceChannelResolutionService(mock_channel_repository)
         queue_orchestrator = TTSQueueOrchestrator(
@@ -251,6 +362,7 @@ def build_speak_use_case(mock_audio_cleanup):
             voice_channel_resolution=voice_channel_resolution,
             queue_orchestrator=queue_orchestrator,
             max_text_length=max_text_length,
+            queue_runtime_is_active=queue_runtime_is_active or (lambda: True),
         )
 
     return _build

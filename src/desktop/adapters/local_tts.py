@@ -4,7 +4,7 @@
 import logging
 
 from src.core.entities import TTSConfig
-from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
+from src.infrastructure.tts.pyttsx3_support import Pyttsx3EngineLike, configure_pyttsx3_engine
 
 try:
     import pyttsx3
@@ -21,13 +21,13 @@ class Pyttsx3Adapter:
         """Return whether pyttsx3 is installed."""
         return _pyttsx3_available and pyttsx3 is not None
 
-    def create_engine(self) -> object:
+    def create_engine(self) -> Pyttsx3EngineLike:
         """Create a pyttsx3 engine instance."""
         if pyttsx3 is None:
             raise RuntimeError("pyttsx3 unavailable")
         return pyttsx3.init()
 
-    def create_configured_engine(self, config: TTSConfig, logger: logging.Logger) -> object:
+    def create_configured_engine(self, config: TTSConfig, logger: logging.Logger) -> Pyttsx3EngineLike:
         """Create and configure a pyttsx3 engine instance."""
         engine = self.create_engine()
         configure_pyttsx3_engine(engine, config, logger)

@@ -1,7 +1,10 @@
 """Tests for HTTP controllers."""
+
 import pytest
 from unittest.mock import Mock, AsyncMock
 from aiohttp import web
+
+from src.core.entities import TTSConfig
 from src.presentation.http_controllers import SpeakController, VoiceContextController
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 
@@ -63,6 +66,56 @@ class TestSpeakController:
         
         response = await controller.handle(request)
         
+        assert response.status == 400
+        assert response.text == "missing text"
+
+    async def test_handle_null_text_as_missing_text(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """Test handling request with null text payload."""
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+        )
+        controller = SpeakController(use_case)
+
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": None})
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert response.text == "missing text"
+
+    async def test_handle_non_string_text_as_missing_text(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """Test handling request with non-string text payload."""
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+        )
+        controller = SpeakController(use_case)
+
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": 123})
+
+        response = await controller.handle(request)
+
         assert response.status == 400
         assert response.text == "missing text"
     
@@ -150,7 +203,7 @@ class TestSpeakController:
         response = await controller.handle(request)
         
         assert response.status == 200
-    
+
     async def test_parse_int_with_invalid_values(
         self,
         mock_tts_engine,
@@ -183,6 +236,56 @@ class TestSpeakController:
         # Test float
         assert controller._parse_int(789.5) == 789
 
+    def test_parse_config_override_reads_nested_payload(self):
+        controller = SpeakController(Mock(spec=SpeakTextUseCase))
+
+        override = controller._parse_config_override(
+            {
+                "config_override": {
+                    "engine": "edge-tts",
+                    "language": "pt-BR",
+                    "voice_id": "pt-BR-FranciscaNeural",
+                    "rate": 210,
+                }
+            }
+        )
+
+        assert override is not None
+        assert override.engine == "edge-tts"
+        assert override.language == "pt-BR"
+        assert override.voice_id == "pt-BR-FranciscaNeural"
+        assert override.rate == 210
+
+    def test_parse_config_override_merges_partial_payload_with_guild_config(self, mock_config_repository):
+        mock_config_repository.set_config(
+            789012,
+            TTSConfig(
+                engine="edge-tts",
+                language="pt-BR",
+                voice_id="pt-BR-FranciscaNeural",
+                rate=210,
+            ),
+        )
+        controller = SpeakController(
+            Mock(spec=SpeakTextUseCase),
+            config_repository=mock_config_repository,
+        )
+
+        override = controller._parse_config_override(
+            {
+                "config_override": {
+                    "voice_id": "pt-BR-AntonioNeural",
+                }
+            },
+            guild_id=789012,
+        )
+
+        assert override is not None
+        assert override.engine == "edge-tts"
+        assert override.language == "pt-BR"
+        assert override.voice_id == "pt-BR-AntonioNeural"
+        assert override.rate == 210
+
 
 @pytest.mark.asyncio
 class TestVoiceContextController:
@@ -198,6 +301,18 @@ class TestVoiceContextController:
         assert response.status == 200
         assert "Mock Guild" in response.text
         assert "Mock Voice" in response.text
+
+    async def test_handle_accepts_user_id_alias(self, mock_channel_repository):
+        controller = VoiceContextController(
+            GetCurrentVoiceContextUseCase(mock_channel_repository)
+        )
+        request = Mock(spec=web.Request)
+        request.query = {"user_id": "345678"}
+
+        response = await controller.handle(request)
+
+        assert response.status == 200
+        assert "Mock Guild" in response.text
 
     async def test_handle_returns_not_found_when_member_not_in_voice(self):
         from tests.conftest import MockVoiceChannelRepository

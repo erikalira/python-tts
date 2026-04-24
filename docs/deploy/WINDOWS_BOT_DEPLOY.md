@@ -1,4 +1,4 @@
-# Windows Bot Service with WinSW
+# Windows Bot Deploy With WinSW
 
 This guide documents the recommended way to keep the Discord bot running on a Windows server by wrapping `python -m src.bot` as a Windows service with WinSW.
 
@@ -14,7 +14,7 @@ For this repository, WinSW is a good fit because:
 - it keeps service logs in a predictable location
 - it does not require changing the bot architecture or entrypoint
 
-The bot runtime already starts through [`src/bot.py`](../src/bot.py), so the service only needs to launch the existing command:
+The bot runtime already starts through [`src/bot.py`](../../src/bot.py), so the service only needs to launch the existing command:
 
 ```powershell
 python -m src.bot
@@ -52,7 +52,7 @@ Before installing the service:
 
 Setup references:
 
-- [SETUP.md](SETUP.md)
+- [../getting-started/SETUP.md](../getting-started/SETUP.md)
 - [ENVIRONMENTS.md](ENVIRONMENTS.md)
 
 Minimum `.env` for a Windows-hosted bot:

@@ -1,79 +1,82 @@
-﻿# Scripts Directory
+# Scripts Directory
 
-Esta pasta contem scripts de build, teste manual e utilitarios para o Desktop App.
+Esta pasta contém scripts de build, teste manual e utilitários para o Desktop App e para a operação do bot.
 
-## CompilaÃ§Ã£o para Windows
+## Compilação para Windows
 
 ```powershell
 # Build recomendado (Clean Architecture + SOLID principles)
 powershell scripts/build/build_clean_architecture.ps1
 ```
 
-O executÃ¡vel serÃ¡ criado em `dist/HotkeyTTS.exe`
+O executável será criado em `dist/HotkeyTTS.exe`.
 
-## CaracterÃ­sticas IncluÃ­das
+## Características Incluídas
 
-- âœ… Clean Architecture completa
-- âœ… Interface grÃ¡fica Tkinter
-- âœ… System tray e notificaÃ§Ãµes
-- âœ… Multi-engine TTS (gTTS + pyttsx3)
-- âœ… ConfiguraÃ§Ã£o persistente em AppData/Local/DesktopApp/
-- âœ… Hotkeys globais
-- âœ… Entry point do Desktop App Ãºnico
+- Clean Architecture completa
+- Interface gráfica Tkinter
+- System tray e notificações
+- Multi-engine TTS (`gTTS` + `pyttsx3`)
+- Configuração persistente em `AppData/Local/DesktopApp/`
+- Hotkeys globais
+- Entry point único do Desktop App
 
-### ðŸ› ï¸ Utils
+## Utils
 
-- **create_icon.py**: Gera Ã­cones para os executÃ¡veis
-- **dependency_maintenance.py**: inspeciona versoes, reescreve constraints de `requirements*.txt` e executa validacao pos-migracao
+- `create_icon.py`: gera ícones para os executáveis
+- `backup_postgres.ps1`: gera backup lógico do Postgres em container com retenção local
+- `restore_postgres.ps1`: restaura um backup `.dump` para o Postgres em container
+- `dependency_maintenance.py`: inspeciona versões, reescreve constraints de `requirements*.txt` e executa validação pós-migração
+- `migrate_json_config_to_postgres.py`: migra configs `guild_*.json` do bot para o backend Postgres
 
-### ðŸ§ª Testes manuais
+## Testes manuais
 
-- **scripts/test/manual_integration_check.py**: smoke check manual de integracao e dependencias
-- **scripts/test/manual_security_check.py**: validacao manual do cenario de seguranca do bot
+- `scripts/test/manual_integration_check.py`: smoke check manual de integração e dependências
+- `scripts/test/manual_security_check.py`: validação manual do cenário de segurança do bot
 
 ## Requisitos
 
-### Para Scripts de Build
+### Para scripts de build
 
-- **PowerShell** (pwsh ou powershell)
-- **PyInstaller**: `pip install pyinstaller`
-- **DependÃªncias**: Execute `pip install -r requirements.txt`
+- `PowerShell` (`pwsh` ou `powershell`)
+- `PyInstaller`: `pip install pyinstaller`
+- Dependências do projeto: `pip install -r requirements.txt`
 
-### Para Scripts de Teste
+### Para scripts de teste
 
-- **Pytest**: Para testes unitÃ¡rios
-- **Python 3.8+**: VersÃ£o mÃ­nima suportada
-- **VariÃ¡veis de ambiente**: Configure `.env` adequadamente
+- `Pytest`
+- `Python 3.8+`
+- Variáveis de ambiente configuradas adequadamente
 
-## Comandos RÃ¡pidos
+## Comandos rápidos
 
 ```bash
-# Instalar dependÃªncias
+# Instalar dependências
 pip install -r requirements.txt
 pip install -r requirements-test.txt
 
-# Desenvolvimento diÃ¡rio com o ambiente virtual do projeto
+# Desenvolvimento diário com o ambiente virtual do projeto
 ./.venv/bin/python -m pytest tests
 
 # Foco no Desktop App
 ./.venv/bin/python -m pytest tests/unit/desktop
 
-# Build do executÃ¡vel no Windows
+# Build do executável no Windows
 pwsh -File scripts/build/build_clean_architecture.ps1
 ```
 
-## IntegraÃ§Ã£o com CI/CD
+## Integração com CI/CD
 
-Os scripts foram projetados para funcionar tanto localmente quanto em ambientes de CI/CD:
+Os scripts foram pensados para funcionar tanto localmente quanto em ambientes de CI/CD:
 
-- **GitHub Actions**: Use `scripts/build/build_clean_architecture.ps1`
-- **Local Development**: Use comandos diretos de Python e PowerShell
-- **Windows**: Use PowerShell para builds
-- **Linux/macOS**: Use Python para desenvolvimento e o workflow Windows para gerar o `.exe`
+- GitHub Actions: use `scripts/build/build_clean_architecture.ps1`
+- Local development: use comandos diretos de Python e PowerShell
+- Windows: use PowerShell para builds
+- Linux/macOS: use Python para desenvolvimento e o workflow Windows para gerar o `.exe`
 
 ## Troubleshooting
 
-### PowerShell nÃ£o encontrado
+### PowerShell não encontrado
 
 ```bash
 # Ubuntu/Debian
@@ -83,18 +86,16 @@ sudo apt install powershell
 brew install powershell
 ```
 
-### PermissÃµes no Linux
+### Permissões no Linux
 
 ```bash
-# Tornar scripts executÃ¡veis
 chmod +x scripts.sh
 chmod +x scripts/test/*.sh
 ```
 
-### Erros de DependÃªncias
+### Erros de dependências
 
 ```bash
-# Reinstalar dependÃªncias
 pip install -r requirements.txt
 pip install -r requirements-test.txt
 
@@ -103,20 +104,16 @@ source .venv/bin/activate
 pip list
 ```
 
-## ContribuiÃ§Ã£o
+## Contribuição
 
 Para adicionar novos scripts:
 
-1. **Build scripts**: Adicione em `scripts/build/`
-2. **Test scripts**: Adicione em `scripts/test/`
-3. **Utils**: Adicione em `scripts/utils/`
-4. **Atualize**: Modifique este README e a documentaÃ§Ã£o relacionada
-5. **Documente**: Atualize este README
+1. Adicione em `scripts/build/`, `scripts/test/` ou `scripts/utils/`
+2. Atualize este README
+3. Atualize a documentação relacionada quando necessário
 
-## Links Ãšteis
+## Links úteis
 
-- [DocumentaÃ§Ã£o Principal](../README.md)
+- [Documentação principal](../README.md)
 - [Arquitetura](../docs/ARCHITECTURE.md)
-- [Troubleshooting](../docs/TROUBLESHOOTING.md)
 - [Setup Hotkeys](../docs/HOTKEY_SETUP.md)
-

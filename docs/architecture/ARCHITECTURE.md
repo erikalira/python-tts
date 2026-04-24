@@ -133,4 +133,4 @@ Observacoes:
 
 ## Referencias
 
-- [README_DESKTOP_APP.md](README_DESKTOP_APP.md)
+- [../desktop/DESKTOP_APP_GUIDE.md](../desktop/DESKTOP_APP_GUIDE.md)

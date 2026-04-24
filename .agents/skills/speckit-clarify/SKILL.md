@@ -16,6 +16,16 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Repository-Specific Guidance
+
+Prioritize clarification questions that reduce rework risk in this repository:
+
+- affected runtime(s): Discord bot, Desktop App, or both
+- whether behavior belongs in shared layers or is truly runtime-specific
+- contract boundaries between modules or between the Desktop App and bot
+- validation expectations for startup, runtime flow, or external adapters
+- documentation or governance impact when contributor workflow changes
+
 ## Outline
 
 Goal: Detect and reduce ambiguity or missing decision points in the active feature specification and record the clarifications directly in the spec file.
@@ -95,6 +105,9 @@ Execution steps:
     - Only include questions whose answers materially impact architecture, data modeling, task decomposition, test design, UX behavior, operational readiness, or compliance validation.
     - Ensure category coverage balance: attempt to cover the highest impact unresolved categories first; avoid asking two low-impact questions when a single high-impact area (e.g., security posture) is unresolved.
     - Exclude questions already answered, trivial stylistic preferences, or plan-level execution details (unless blocking correctness).
+    - Favor one high-impact repository-specific question about runtime ownership
+      or shared-vs-specific placement over multiple lower-impact style
+      questions.
     - Favor clarifications that reduce downstream rework risk or prevent misaligned acceptance tests.
     - If more than 5 categories remain unresolved, select the top 5 by (Impact * Uncertainty) heuristic.
 
@@ -141,6 +154,9 @@ Execution steps:
        - Under it, create (if not present) a `### Session YYYY-MM-DD` subheading for today.
     - Append a bullet line immediately after acceptance: `- Q: <question> → A: <final answer>`.
     - Then immediately apply the clarification to the most appropriate section(s):
+      - Runtime ownership ambiguity -> Update Functional Requirements,
+        Assumptions, or Non-Goals so the affected runtime(s) and shared-layer
+        expectations are explicit.
        - Functional ambiguity → Update or add a bullet in Functional Requirements.
        - User interaction / actor distinction → Update User Stories or Actors subsection (if present) with clarified role, constraint, or scenario.
        - Data shape / entities → Update Data Model (add fields, types, relationships) preserving ordering; note added constraints succinctly.

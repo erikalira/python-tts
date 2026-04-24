@@ -16,6 +16,19 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Repository-Specific Guidance
+
+When implementing in this repository:
+
+- Keep business logic out of presentation, infrastructure, and GUI code.
+- Preserve independent execution of the Discord bot and the Windows desktop app.
+- Prefer explicit contracts and typed boundaries when work crosses reusable
+  modules or runtime integrations.
+- Work incrementally. If a task implies broad cleanup, still keep each slice
+  small and reversible.
+- Do not generate generic project scaffolding that is unrelated to the current
+  plan or already exists in the repository.
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before implementation)**:
@@ -94,7 +107,9 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **IF EXISTS**: Read quickstart.md for integration scenarios
 
 4. **Project Setup Verification**:
-   - **REQUIRED**: Create/verify ignore files based on actual project setup:
+   - **REQUIRED**: Verify repository setup only where it is relevant to the
+     active plan. Do not create generic scaffolding or ignore files unless the
+     task plan or current change actually requires it.
 
    **Detection & Creation Logic**:
    - Check if the following command succeeds to determine if the repository is a git repo (create/verify .gitignore if so):
@@ -156,6 +171,8 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Core development**: Implement models, services, CLI commands, endpoints
    - **Integration work**: Database connections, middleware, logging, external services
    - **Polish and validation**: Unit tests, performance optimization, documentation
+   - **Repository-specific validation**: When relevant, validate bot startup,
+     desktop startup, shared runtime flows, and explicit contract boundaries
 
 8. Progress tracking and error handling:
    - Report progress after each completed task
@@ -171,6 +188,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
    - Report final status with summary of completed work
+   - Explicitly call out any remaining runtime validation gap
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
 

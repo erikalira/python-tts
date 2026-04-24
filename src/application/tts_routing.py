@@ -3,15 +3,25 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable
+from typing import Iterable, Protocol
+
+
+class TTSDeliveryEngine(Protocol):
+    """Contract for Desktop App delivery engines used by the fallback chain."""
+
+    def speak(self, text: str) -> bool:
+        """Speak the provided text."""
+
+    def is_available(self) -> bool:
+        """Return whether the engine can be used."""
 
 
 def build_tts_engine_chain(
     preferred_engine: str,
     *,
-    discord_engine: object | None = None,
-    local_engine: object | None = None,
-) -> list[object]:
+    discord_engine: TTSDeliveryEngine | None = None,
+    local_engine: TTSDeliveryEngine | None = None,
+) -> list[TTSDeliveryEngine]:
     """Order available TTS engines based on the preferred configuration."""
     candidates = {
         "discord": discord_engine,
@@ -30,7 +40,7 @@ def build_tts_engine_chain(
 class TTSFallbackChain:
     """Try TTS engines in order until one succeeds."""
 
-    def __init__(self, engines: Iterable[object], logger: logging.Logger | None = None):
+    def __init__(self, engines: Iterable[TTSDeliveryEngine], logger: logging.Logger | None = None):
         self._engines = list(engines)
         self._logger = logger or logging.getLogger(__name__)
         self._last_error_message: str | None = None
@@ -61,7 +71,7 @@ class TTSFallbackChain:
         return self._last_error_message
 
     @staticmethod
-    def _read_engine_error(engine: object) -> str | None:
+    def _read_engine_error(engine: TTSDeliveryEngine) -> str | None:
         """Read an optional human-friendly error message from an engine."""
         reader = getattr(engine, "get_last_error_message", None)
         if not callable(reader):

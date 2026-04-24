@@ -5,7 +5,9 @@ import logging
 import discord
 from discord import app_commands
 
-from src.application.results import SPEAK_RESULT_OK, SPEAK_RESULT_QUEUED
+from src.application.discord_speak_request_builder import DiscordSpeakRequestBuilder
+from src.application.dto import SPEAK_RESULT_OK, SPEAK_RESULT_QUEUED
+from src.application.tts_voice_catalog import TTSCatalog
 from src.application.use_cases import (
     ConfigureTTSUseCase,
     JoinVoiceChannelUseCase,
@@ -13,10 +15,10 @@ from src.application.use_cases import (
     SpeakTextUseCase,
 )
 from src.application.voice_runtime import VoiceRuntimeAvailability, VoiceRuntimeStatus
-from src.core.entities import TTSRequest
 from src.presentation.discord_command_handlers import (
     DiscordAboutCommandHandler,
     DiscordConfigCommandHandler,
+    DiscordServerConfigCommandHandler,
 )
 from src.presentation.discord_presenters import (
     DiscordJoinPresenter,
@@ -42,6 +44,7 @@ class DiscordCommands:
         join_use_case: JoinVoiceChannelUseCase,
         leave_use_case: LeaveVoiceChannelUseCase,
         voice_runtime_availability: VoiceRuntimeAvailability,
+        tts_catalog: TTSCatalog,
     ):
         self._tree = tree
         self._speak_use_case = speak_use_case
@@ -49,11 +52,14 @@ class DiscordCommands:
         self._join_use_case = join_use_case
         self._leave_use_case = leave_use_case
         self._voice_runtime_availability = voice_runtime_availability
+        self._tts_catalog = tts_catalog
         self._join_presenter = DiscordJoinPresenter()
         self._leave_presenter = DiscordLeavePresenter()
         self._speak_presenter = DiscordSpeakPresenter()
-        self._config_handler = DiscordConfigCommandHandler(config_use_case)
+        self._config_handler = DiscordConfigCommandHandler(config_use_case, tts_catalog)
+        self._server_config_handler = DiscordServerConfigCommandHandler(config_use_case, tts_catalog)
         self._about_handler = DiscordAboutCommandHandler()
+        self._speak_request_builder = DiscordSpeakRequestBuilder(config_use_case, tts_catalog)
         self._register_commands()
 
     def _register_commands(self):
@@ -66,46 +72,30 @@ class DiscordCommands:
             await self._handle_leave(interaction)
 
         @self._tree.command(name="speak", description="Make the bot speak the given text in voice channel")
-        @app_commands.describe(text="Text to speak")
-        async def speak(interaction: discord.Interaction, text: str):
-            await self._handle_speak(interaction, text)
+        @app_commands.describe(text="Text to speak", voz="Escolha uma voz apenas para esta fala")
+        @app_commands.autocomplete(voz=self._autocomplete_voz)
+        async def speak(interaction: discord.Interaction, text: str, voz: str = None):
+            await self._handle_speak(interaction, text, voz)
 
         @self._tree.command(name="config", description="Configure your personal TTS settings")
-        @app_commands.describe(
-            voz="Escolha a voz do TTS",
-            idioma="Escolha o idioma (apenas para Mulher do Google)",
-            sotaque="Escolha o sotaque (apenas para R.E.P.O.)",
-        )
-        @app_commands.choices(
-            voz=[
-                app_commands.Choice(name="Mulher do Google (melhor qualidade)", value="gtts"),
-                app_commands.Choice(name="R.E.P.O. (rob\u00f3tico, mais r\u00e1pido)", value="pyttsx3"),
-            ]
-        )
-        @app_commands.choices(
-            idioma=[
-                app_commands.Choice(name="Portugu\u00eas", value="pt"),
-                app_commands.Choice(name="Ingl\u00eas", value="en"),
-                app_commands.Choice(name="Espanhol", value="es"),
-                app_commands.Choice(name="Franc\u00eas", value="fr"),
-                app_commands.Choice(name="Alem\u00e3o", value="de"),
-                app_commands.Choice(name="Italiano", value="it"),
-                app_commands.Choice(name="Japon\u00eas", value="ja"),
-                app_commands.Choice(name="Coreano", value="ko"),
-                app_commands.Choice(name="Chin\u00eas", value="zh"),
-            ]
-        )
-        @app_commands.choices(
-            sotaque=[
-                app_commands.Choice(name="Portugu\u00eas (Brasil)", value="roa/pt-br"),
-                app_commands.Choice(name="Ingl\u00eas (EUA)", value="en-us"),
-                app_commands.Choice(name="Ingl\u00eas (Reino Unido)", value="en-gb"),
-                app_commands.Choice(name="Espanhol", value="roa/es"),
-                app_commands.Choice(name="Franc\u00eas", value="roa/fr"),
-            ]
-        )
-        async def config(interaction: discord.Interaction, voz: str = None, idioma: str = None, sotaque: str = None):
-            await self._handle_config(interaction, voz, idioma, sotaque)
+        @app_commands.describe(voz="Escolha a voz completa que o bot deve usar")
+        @app_commands.autocomplete(voz=self._autocomplete_voz)
+        async def config(interaction: discord.Interaction, voz: str = None):
+            await self._handle_config(interaction, voz)
+
+        @self._tree.command(name="config-reset", description="Reset your personal voice override")
+        async def config_reset(interaction: discord.Interaction):
+            await self._handle_config_reset(interaction)
+
+        @self._tree.command(name="server-config", description="Configure the default server voice")
+        @app_commands.describe(voz="Escolha a voz padrão para usuários sem configuração pessoal")
+        @app_commands.autocomplete(voz=self._autocomplete_voz)
+        async def server_config(interaction: discord.Interaction, voz: str = None):
+            await self._handle_server_config(interaction, voz)
+
+        @self._tree.command(name="server-config-reset", description="Reset the default server voice")
+        async def server_config_reset(interaction: discord.Interaction):
+            await self._handle_server_config_reset(interaction)
 
         @self._tree.command(name="about", description="Show bot information and version")
         async def about(interaction: discord.Interaction):
@@ -159,7 +149,7 @@ class DiscordCommands:
         result = await self._leave_use_case.execute(guild_id=guild_id)
         await interaction.response.send_message(self._leave_presenter.build_message(result), ephemeral=True)
 
-    async def _handle_speak(self, interaction: discord.Interaction, text: str):
+    async def _handle_speak(self, interaction: discord.Interaction, text: str, voz: str | None = None):
         logger.info(
             "[SPEAK] Command from user %s (%s) in guild %s",
             interaction.user.id,
@@ -174,16 +164,24 @@ class DiscordCommands:
             return
 
         try:
-            if not interaction.guild or not interaction.guild.id:
-                await interaction.edit_original_response(content="\u274c Erro: N\u00e3o foi poss\u00edvel determinar o servidor.")
+            prepared_request = self._speak_request_builder.build(
+                text=text,
+                guild_id=interaction.guild.id if interaction.guild else None,
+                member_id=interaction.user.id if interaction.user else None,
+                voice_key=voz,
+            )
+            if prepared_request.error_message:
+                await interaction.edit_original_response(content=prepared_request.error_message)
                 return
 
-            tts_request = TTSRequest(text=text, guild_id=interaction.guild.id, member_id=interaction.user.id)
-            result = await self._speak_use_case.execute(tts_request)
+            result = await self._speak_use_case.execute(prepared_request.request)
 
             try:
                 if result.code == SPEAK_RESULT_QUEUED:
-                    await interaction.edit_original_response(content=self._build_speak_message(result))
+                    if result.starts_immediately:
+                        await interaction.delete_original_response()
+                    else:
+                        await interaction.edit_original_response(content=self._build_speak_message(result))
                 elif result.code == SPEAK_RESULT_OK:
                     await interaction.delete_original_response()
                 else:
@@ -204,8 +202,39 @@ class DiscordCommands:
     def _build_speak_message(self, result) -> str:
         return self._speak_presenter.build_message(result)
 
-    async def _handle_config(self, interaction: discord.Interaction, voz: str | None, idioma: str | None, sotaque: str | None):
-        await self._config_handler.handle(interaction, voz, idioma, sotaque)
+    async def _handle_config(self, interaction: discord.Interaction, voz: str | None):
+        await self._config_handler.handle(interaction, voz)
+
+    async def _handle_config_reset(self, interaction: discord.Interaction):
+        await self._config_handler.handle_reset(interaction)
+
+    async def _handle_server_config(self, interaction: discord.Interaction, voz: str | None):
+        await self._server_config_handler.handle(interaction, voz)
+
+    async def _handle_server_config_reset(self, interaction: discord.Interaction):
+        await self._server_config_handler.handle_reset(interaction)
 
     async def _handle_about(self, interaction: discord.Interaction):
         await self._about_handler.handle(interaction, self._get_voice_runtime_status())
+
+    async def _autocomplete_voz(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        options = self._tts_catalog.list_voice_options()
+        current_normalized = current.lower().strip()
+
+        if current_normalized:
+            options = [
+                option
+                for option in options
+                if current_normalized in option.label.lower()
+                or current_normalized in option.voice_id.lower()
+                or current_normalized in option.key.lower()
+            ]
+
+        return [
+            app_commands.Choice(name=option.label, value=option.key)
+            for option in options[:25]
+        ]

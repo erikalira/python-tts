@@ -7,10 +7,11 @@ description: Validate changes that may impact Discord bot behavior and execution
 
 Read these first:
 
-- `docs/ai/project-context.md`
-- `docs/ai/architecture-rules.md`
-- `docs/ai/change-playbooks.md`
-- `docs/ai/documentation-policy.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/review-checklist.md`
+- `docs/RUNTIME_FLOWS.md`
+- `docs/ARCHITECTURE.md`
 
 # When to use
 
@@ -27,7 +28,8 @@ Use when modifying:
 2. Check affected dependencies and async flow
 3. Confirm shared logic changes did not become Discord-specific
 4. Validate bot startup and the changed runtime path
-5. Flag docs that should move to `docs/features/` when the change is feature-specific
+5. Flag durable docs updates when runtime behavior, contracts, or boundaries
+   changed
 
 # Output
 

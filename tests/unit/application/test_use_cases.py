@@ -1,19 +1,17 @@
 """Tests for application use cases."""
-import asyncio
 
 import pytest
-from src.application.results import (
+from src.application.dto import (
     ConfigureTTSResult,
     JOIN_RESULT_OK,
     JOIN_RESULT_USER_NOT_IN_CHANNEL,
     LEAVE_RESULT_NOT_CONNECTED,
     LEAVE_RESULT_OK,
     SPEAK_RESULT_MISSING_TEXT,
-    SPEAK_RESULT_OK,
     SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_QUEUE_FULL,
     SPEAK_RESULT_USER_NOT_IN_CHANNEL,
-    SpeakTextResult,
+    SpeakTextInputDTO,
     TTSConfigurationData,
 )
 from src.application.use_cases import (
@@ -22,7 +20,7 @@ from src.application.use_cases import (
     LeaveVoiceChannelUseCase,
     SpeakTextUseCase,
 )
-from src.core.entities import TTSRequest, TTSConfig
+from src.core.entities import TTSConfig
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 
 
@@ -50,10 +48,11 @@ class TestSpeakTextUseCase:
         result = await use_case.execute(sample_tts_request)
         
         assert result.success is True
-        assert result.code == SPEAK_RESULT_OK
-        assert result.queued is False
-        assert len(mock_tts_engine.calls) == 1
-        assert len(mock_channel_repository.channel.played_audio) == 1
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert result.queued is True
+        assert result.starts_immediately is True
+        assert len(mock_tts_engine.calls) == 0
+        assert len(mock_channel_repository.channel.played_audio) == 0
     
     async def test_execute_missing_text(
         self,
@@ -71,7 +70,7 @@ class TestSpeakTextUseCase:
             mock_audio_queue=mock_audio_queue,
         )
         
-        request = TTSRequest(text="")
+        request = SpeakTextInputDTO(text="")
         result = await use_case.execute(request)
         
         assert result.success is False
@@ -121,11 +120,13 @@ class TestSpeakTextUseCase:
             max_text_length=5,
         )
 
-        request = TTSRequest(text="  abcdefgh  ", channel_id=123456, guild_id=789012, member_id=345678)
+        request = SpeakTextInputDTO(text="  abcdefgh  ", channel_id=123456, guild_id=789012, member_id=345678)
         result = await use_case.execute(request)
 
         assert result.success is True
-        assert mock_tts_engine.calls[0]["text"] == "abcde"
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is True
+        assert mock_audio_queue.items[0].request.text == "abcde"
 
     async def test_execute_infers_guild_id_from_member_channel_when_missing(
         self,
@@ -143,12 +144,13 @@ class TestSpeakTextUseCase:
             mock_audio_queue=mock_audio_queue,
         )
 
-        request = TTSRequest(text="test", member_id=345678)
+        request = SpeakTextInputDTO(text="test", member_id=345678)
         result = await use_case.execute(request)
 
         assert result.success is True
-        assert mock_tts_engine.calls[0]["config"].language == "pt"
-        assert mock_channel_repository.channel.played_audio
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is True
+        assert mock_audio_queue.items[0].request.guild_id == mock_channel_repository.channel.get_guild_id()
     
     async def test_execute_finds_by_channel_id(
         self,
@@ -166,82 +168,59 @@ class TestSpeakTextUseCase:
             mock_audio_queue=mock_audio_queue,
         )
         
-        request = TTSRequest(text="test", channel_id=123456, guild_id=789012, member_id=345678)
+        request = SpeakTextInputDTO(text="test", channel_id=123456, guild_id=789012, member_id=345678)
         result = await use_case.execute(request)
-        
-        assert result.success is True
-        assert mock_channel_repository.channel.is_connected()
 
-    async def test_execute_keeps_processing_flag_while_background_queue_is_draining(
+        assert result.success is True
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is True
+        assert mock_audio_queue.items[0].request.channel_id == 123456
+
+    async def test_execute_marks_request_as_queued_when_guild_is_already_processing(
         self,
         mock_tts_engine,
         mock_channel_repository,
         mock_config_repository,
+        mock_audio_queue,
         build_speak_use_case,
-        sample_tts_request
+        sample_tts_request,
     ):
-        """A new request must stay queued while a background item is still playing."""
-        audio_queue = InMemoryAudioQueue()
         use_case = build_speak_use_case(
             mock_tts_engine=mock_tts_engine,
             mock_channel_repository=mock_channel_repository,
             mock_config_repository=mock_config_repository,
-            mock_audio_queue=audio_queue,
+            mock_audio_queue=mock_audio_queue,
+        )
+        mock_audio_queue.processing_guilds.add(sample_tts_request.guild_id)
+
+        result = await use_case.execute(sample_tts_request)
+
+        assert result.success is True
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is False
+
+    async def test_execute_keeps_queue_feedback_when_queue_worker_is_not_active(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+        sample_tts_request,
+    ):
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+            queue_runtime_is_active=lambda: False,
         )
 
-        first_started = asyncio.Event()
-        first_release = asyncio.Event()
-        second_started = asyncio.Event()
-        second_release = asyncio.Event()
-        process_order = []
+        result = await use_case.execute(sample_tts_request)
 
-        async def fake_process_audio(item):
-            process_order.append(item.request.text)
-            if item.request.text == "first":
-                first_started.set()
-                await first_release.wait()
-            elif item.request.text == "second":
-                second_started.set()
-                await second_release.wait()
-
-            return SpeakTextResult(
-                success=True,
-                code=SPEAK_RESULT_OK,
-                queued=False,
-                item_id=item.item_id,
-            )
-
-        use_case._queue_orchestrator._process_item = fake_process_audio
-
-        first_request = TTSRequest(text="first", channel_id=123456, guild_id=789012, member_id=345678)
-        second_request = TTSRequest(text="second", channel_id=123456, guild_id=789012, member_id=345678)
-        third_request = TTSRequest(text="third", channel_id=123456, guild_id=789012, member_id=345678)
-
-        first_task = asyncio.create_task(use_case.execute(first_request))
-        await asyncio.wait_for(first_started.wait(), timeout=1)
-
-        second_result = await use_case.execute(second_request)
-        assert second_result.queued is True
-        assert second_result.code == SPEAK_RESULT_QUEUED
-        assert second_result.position == 0
-
-        first_release.set()
-        first_result = await asyncio.wait_for(first_task, timeout=1)
-        assert first_result.success is True
-
-        await asyncio.wait_for(second_started.wait(), timeout=1)
-
-        third_result = await use_case.execute(third_request)
-        assert third_result.success is True
-        assert third_result.queued is True
-        assert third_result.code == SPEAK_RESULT_QUEUED
-        assert third_result.position == 0
-        assert process_order == ["first", "second"]
-
-        second_release.set()
-        await asyncio.sleep(0.6)
-
-        assert process_order == ["first", "second", "third"]
+        assert result.success is True
+        assert result.code == SPEAK_RESULT_QUEUED
+        assert result.starts_immediately is False
 
     async def test_execute_returns_failure_when_queue_is_full(
         self,
@@ -286,6 +265,7 @@ class TestConfigureTTSUseCase:
                 voice_id="roa/pt-br",
                 rate=180,
             ),
+            scope="default",
         )
         assert result.config is not None
         assert result.config.engine == "gtts"
@@ -327,6 +307,39 @@ class TestConfigureTTSUseCase:
         assert result.success is True
         assert result.config is not None
         assert result.config.voice_id == "en-us"
+
+    @pytest.mark.asyncio
+    async def test_update_user_scoped_voice_id(self, mock_config_repository):
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(guild_id=123, user_id=999, voice_id="Maria")
+
+        assert result.success is True
+        assert mock_config_repository.get_config(123, user_id=999).voice_id == "Maria"
+
+    @pytest.mark.asyncio
+    async def test_reset_user_scoped_voice_id(self, mock_config_repository):
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+        await use_case.update_config_async(guild_id=123, user_id=999, voice_id="Maria")
+        await use_case.update_config_async(guild_id=123, voice_id="David")
+
+        result = await use_case.reset_config_async(guild_id=123, user_id=999)
+
+        assert result.success is True
+        assert result.scope == "guild"
+        assert result.config is not None
+        assert result.config.voice_id == "David"
+
+    @pytest.mark.asyncio
+    async def test_update_edge_tts_engine(self, mock_config_repository):
+        """Test updating TTS engine to edge-tts."""
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(guild_id=123, engine="edge-tts")
+
+        assert result.success is True
+        assert result.config is not None
+        assert result.config.engine == "edge-tts"
     
     @pytest.mark.asyncio
     async def test_invalid_engine(self, mock_config_repository):
@@ -337,7 +350,7 @@ class TestConfigureTTSUseCase:
         
         assert result == ConfigureTTSResult(
             success=False,
-            message="Invalid engine. Use 'gtts' or 'pyttsx3'",
+            message="Invalid engine. Use 'gtts', 'pyttsx3' or 'edge-tts'",
         )
         assert result.message is not None
         assert "Invalid engine" in result.message

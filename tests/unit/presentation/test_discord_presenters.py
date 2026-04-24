@@ -1,8 +1,9 @@
 """Unit tests for Discord presenters."""
 
-from src.application.results import (
+from src.application.dto import (
     JOIN_RESULT_USER_NOT_IN_CHANNEL,
     LEAVE_RESULT_VOICE_CONNECTION_FAILED,
+    SPEAK_RESULT_GENERATION_TIMEOUT,
     SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_VOICE_PERMISSION_DENIED,
     JoinVoiceChannelResult,
@@ -36,6 +37,15 @@ class TestDiscordSpeakPresenter:
         )
 
         assert "permiss" in message.lower()
+
+    def test_builds_generation_timeout_message(self):
+        presenter = DiscordSpeakPresenter()
+
+        message = presenter.build_message(
+            SpeakTextResult(success=False, code=SPEAK_RESULT_GENERATION_TIMEOUT, queued=False)
+        )
+
+        assert "geracao" in message.lower()
 
 
 class TestDiscordJoinPresenter:

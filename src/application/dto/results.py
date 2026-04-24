@@ -14,6 +14,7 @@ SPEAK_RESULT_MISSING_GUILD_ID = "missing_guild_id"
 SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND = "voice_channel_not_found"
 SPEAK_RESULT_CROSS_GUILD_CHANNEL = "cross_guild_channel"
 SPEAK_RESULT_USER_LEFT_CHANNEL = "user_left_channel"
+SPEAK_RESULT_GENERATION_TIMEOUT = "generation_timeout"
 SPEAK_RESULT_PLAYBACK_TIMEOUT = "playback_timeout"
 SPEAK_RESULT_VOICE_CONNECTION_FAILED = "voice_connection_failed"
 SPEAK_RESULT_VOICE_PERMISSION_DENIED = "voice_permission_denied"
@@ -70,6 +71,7 @@ class SpeakTextResult(ResultBase):
     success: bool
     code: str
     queued: bool
+    starts_immediately: bool = False
     position: Optional[int] = None
     queue_size: Optional[int] = None
     item_id: Optional[str] = None
@@ -90,3 +92,4 @@ class ConfigureTTSResult(ResultBase):
     guild_id: Optional[int] = None
     config: Optional[TTSConfigurationData] = None
     message: Optional[str] = None
+    scope: Optional[str] = None

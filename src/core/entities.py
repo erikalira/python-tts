@@ -1,8 +1,9 @@
 """Domain entities - pure business objects without external dependencies."""
 from dataclasses import dataclass, field
-from typing import Optional
 from enum import Enum
 import time
+from typing import Optional
+from uuid import uuid4
 
 
 @dataclass
@@ -12,6 +13,7 @@ class TTSRequest:
     channel_id: Optional[int] = None
     guild_id: Optional[int] = None
     member_id: Optional[int] = None
+    config_override: Optional["TTSConfig"] = None
 
 
 @dataclass
@@ -46,7 +48,7 @@ class AudioQueueItem:
     supporting queue-based execution for multiple users.
     """
     request: TTSRequest
-    item_id: str = field(default_factory=lambda: f"audio_{int(time.time() * 1000)}")
+    item_id: str = field(default_factory=lambda: f"audio_{uuid4().hex}")
     status: AudioQueueItemStatus = AudioQueueItemStatus.PENDING
     created_at: float = field(default_factory=time.time)
     started_at: Optional[float] = None

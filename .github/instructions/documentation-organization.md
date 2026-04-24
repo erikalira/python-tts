@@ -1,6 +1,7 @@
 # Documentation Organization
 
-Use `.specify/README.md` and `.specify/memory/constitution.md` as the canonical policy for documentation placement.
+Use `.specify/README.md` and `.specify/memory/constitution.md` as the canonical
+policy for documentation placement.
 
 ## Rules
 
@@ -10,6 +11,8 @@ Use `.specify/README.md` and `.specify/memory/constitution.md` as the canonical 
 - Do not keep implementation-history notes in `docs/`
 - Update `docs/README.md` whenever documentation structure or navigation changes
 - Update root links if a documentation move affects `README.md`
+- Keep stable AI governance in `.specify/`, not in `docs/ai/`, `docs/features/`,
+  or other ad-hoc locations
 
 ## Quick examples
 

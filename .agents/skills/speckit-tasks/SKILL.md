@@ -16,6 +16,21 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Repository-Specific Guidance
+
+When generating tasks for this repository:
+
+- Prefer tasks that preserve clean architecture boundaries and keep shared logic
+  in `src/core/` or `src/application/` when reused.
+- Include validation work whenever a shared module, startup path, external
+  adapter, or runtime coordinator is affected.
+- Add documentation tasks when behavior, architecture, contracts, or
+  contributor guidance changes.
+- Avoid tasks that normalize duplication between `src/desktop/` and shared
+  modules in `src/`.
+- Prefer one clear cleanup task when a story can remove or narrow temporary
+  compatibility code.
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before tasks generation)**:
@@ -90,6 +105,8 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Independent test criteria for each story
    - Suggested MVP scope (typically just User Story 1)
    - Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
+   - Repository validation summary: confirm affected runtime(s), docs updates,
+     and any compatibility cleanup are covered by tasks
 
 6. **Check for extension hooks**: After tasks.md is generated, check if `.specify/extensions.yml` exists in the project root.
    - If it exists, read it and look for entries under the `hooks.after_tasks` key
@@ -129,6 +146,10 @@ The tasks.md should be immediately executable - each task must be specific enoug
 **CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
 
 **Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+
+For this repository, still generate validation tasks whenever runtime behavior,
+shared modules, or external integrations are affected, even if full TDD is not
+requested.
 
 ### Checklist Format (REQUIRED)
 

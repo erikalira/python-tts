@@ -1,8 +1,10 @@
 """Infrastructure layer - TTS engines implementation."""
-import tempfile
 import asyncio
 import logging
+import os
+import tempfile
 from typing import Optional
+
 import pyttsx3
 from gtts import gTTS
 from src.core.interfaces import ITTSEngine
@@ -10,6 +12,29 @@ from src.core.entities import TTSConfig, AudioFile
 from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
 
 logger = logging.getLogger(__name__)
+
+
+def _create_temp_audio_path(suffix: str) -> str:
+    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+    tmpname = tmp.name
+    tmp.close()
+    return tmpname
+
+
+def _remove_temp_audio_file(path: str) -> None:
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        logger.warning("Failed to remove temporary audio file %s: %s", path, exc)
+
+
+def _cleanup_temp_audio_file_when_done(future: asyncio.Future, path: str) -> None:
+    def _cleanup(_future) -> None:
+        _remove_temp_audio_file(path)
+
+    future.add_done_callback(_cleanup)
 
 
 class GTTSEngine(ITTSEngine):
@@ -28,15 +53,20 @@ class GTTSEngine(ITTSEngine):
         Returns:
             AudioFile with generated audio path
         """
-        tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
-        tmpname = tmp.name
-        tmp.close()
-        
-        # Run in executor to avoid blocking
         loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, self._generate_sync, text, config, tmpname)
-        
-        return AudioFile(path=tmpname)
+        tmpname = _create_temp_audio_path(".wav")
+        generation_future = loop.run_in_executor(None, self._generate_sync, text, config, tmpname)
+
+        try:
+            await asyncio.shield(generation_future)
+            return AudioFile(path=tmpname)
+        except asyncio.CancelledError:
+            logger.warning("gTTS audio generation cancelled; scheduling cleanup for %s", tmpname)
+            _cleanup_temp_audio_file_when_done(generation_future, tmpname)
+            raise
+        except Exception:
+            _remove_temp_audio_file(tmpname)
+            raise
     
     def _generate_sync(self, text: str, config: TTSConfig, output_path: str):
         """Synchronous audio generation."""
@@ -87,16 +117,23 @@ class Pyttsx3Engine(ITTSEngine):
             AudioFile with generated audio path
         """
         self._initialize_engine(config)
+        if self._engine:
+            configure_pyttsx3_engine(self._engine, config, logger)
         
-        tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
-        tmpname = tmp.name
-        tmp.close()
-        
-        # Run in executor to avoid blocking
         loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, self._generate_sync, text, tmpname)
-        
-        return AudioFile(path=tmpname)
+        tmpname = _create_temp_audio_path(".wav")
+        generation_future = loop.run_in_executor(None, self._generate_sync, text, tmpname)
+
+        try:
+            await asyncio.shield(generation_future)
+            return AudioFile(path=tmpname)
+        except asyncio.CancelledError:
+            logger.warning("pyttsx3 audio generation cancelled; scheduling cleanup for %s", tmpname)
+            _cleanup_temp_audio_file_when_done(generation_future, tmpname)
+            raise
+        except Exception:
+            _remove_temp_audio_file(tmpname)
+            raise
     
     def _generate_sync(self, text: str, output_path: str):
         """Synchronous audio generation."""
@@ -105,6 +142,57 @@ class Pyttsx3Engine(ITTSEngine):
         
         self._engine.save_to_file(text, output_path)
         self._engine.runAndWait()
+
+
+class EdgeTTSEngine(ITTSEngine):
+    """Microsoft Edge online TTS engine implementation."""
+
+    async def generate_audio(self, text: str, config: TTSConfig) -> AudioFile:
+        try:
+            import edge_tts
+        except ImportError as exc:
+            raise RuntimeError("edge-tts is not installed") from exc
+
+        tmpname = _create_temp_audio_path(".mp3")
+
+        communicate = edge_tts.Communicate(
+            text=text,
+            voice=config.voice_id,
+            rate=self._map_rate(config.rate),
+        )
+        try:
+            await communicate.save(tmpname)
+            return AudioFile(path=tmpname)
+        except asyncio.CancelledError:
+            logger.warning("edge-tts audio generation cancelled; cleaning up %s", tmpname)
+            _remove_temp_audio_file(tmpname)
+            raise
+        except Exception:
+            _remove_temp_audio_file(tmpname)
+            raise
+
+    @staticmethod
+    def _map_rate(rate: int) -> str:
+        baseline = 180
+        delta = int(round(((rate - baseline) / baseline) * 100))
+        clamped = max(-50, min(100, delta))
+        sign = "+" if clamped >= 0 else ""
+        return f"{sign}{clamped}%"
+
+
+class RoutedTTSEngine(ITTSEngine):
+    """Route audio generation to the engine requested by the current config."""
+
+    def __init__(self):
+        self._engines: dict[str, ITTSEngine] = {}
+
+    async def generate_audio(self, text: str, config: TTSConfig) -> AudioFile:
+        engine_key = config.engine.lower()
+        engine = self._engines.get(engine_key)
+        if engine is None:
+            engine = TTSEngineFactory.create(config)
+            self._engines[engine_key] = engine
+        return await engine.generate_audio(text, config)
 
 
 class TTSEngineFactory:
@@ -130,5 +218,7 @@ class TTSEngineFactory:
             return GTTSEngine()
         elif config.engine == 'pyttsx3':
             return Pyttsx3Engine()
+        elif config.engine == 'edge-tts':
+            return EdgeTTSEngine()
         else:
             raise ValueError(f"Unknown TTS engine: {config.engine}")

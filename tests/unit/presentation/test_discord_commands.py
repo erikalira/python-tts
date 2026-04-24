@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import Mock, AsyncMock
 from discord import app_commands
-from src.application.results import (
+from src.application.dto import (
     ConfigureTTSResult,
     JoinVoiceChannelResult,
     LeaveVoiceChannelResult,
@@ -40,6 +40,7 @@ class TestDiscordCommands:
         mock_audio_queue,
         build_speak_use_case,
         voice_runtime_availability,
+        mock_tts_catalog,
     ):
         """Create a DiscordCommands instance for testing."""
         speak_use_case = build_speak_use_case(
@@ -62,6 +63,7 @@ class TestDiscordCommands:
             join_use_case,
             leave_use_case,
             voice_runtime_availability,
+            mock_tts_catalog,
         )
     
     def test_initialization(self, commands_instance):
@@ -96,6 +98,65 @@ class TestDiscordCommands:
         
         interaction.response.defer.assert_called_once()
         interaction.delete_original_response.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_speak_hides_response_when_result_starts_immediately(self, commands_instance):
+        commands_instance._speak_use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(
+                success=True,
+                code="queued",
+                queued=True,
+                starts_immediately=True,
+                position=0,
+                queue_size=1,
+            )
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 11111
+        interaction.user.name = "User"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.response = AsyncMock()
+        interaction.delete_original_response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_speak(interaction, "Test message")
+
+        interaction.response.defer.assert_called_once()
+        interaction.delete_original_response.assert_called_once()
+        interaction.edit_original_response.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_handle_speak_keeps_queue_message_when_there_is_backlog(self, commands_instance):
+        commands_instance._speak_use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(
+                success=True,
+                code="queued",
+                queued=True,
+                starts_immediately=False,
+                position=1,
+                queue_size=2,
+            )
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 11111
+        interaction.user.name = "User"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.response = AsyncMock()
+        interaction.delete_original_response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_speak(interaction, "Test message")
+
+        interaction.response.defer.assert_called_once()
+        interaction.delete_original_response.assert_not_called()
+        interaction.edit_original_response.assert_called_once()
+        assert "fila" in interaction.edit_original_response.call_args.kwargs["content"].lower()
     
     @pytest.mark.asyncio
     async def test_handle_speak_missing_dependencies(self, commands_instance):
@@ -132,6 +193,28 @@ class TestDiscordCommands:
         await commands_instance._handle_speak(interaction, "Test")
         
         interaction.edit_original_response.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_speak_with_voice_override_passes_request_config(self, commands_instance):
+        commands_instance._speak_use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="ok", queued=False)
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 11111
+        interaction.user.name = "User"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.response = AsyncMock()
+        interaction.delete_original_response = AsyncMock()
+
+        await commands_instance._handle_speak(interaction, "Test message", "edge-tts:pt-br-francisca")
+
+        request = commands_instance._speak_use_case.execute.await_args.args[0]
+        assert request.config_override is not None
+        assert request.config_override.engine == "edge-tts"
+        assert request.config_override.voice_id == "pt-BR-FranciscaNeural"
 
     @pytest.mark.asyncio
     async def test_handle_speak_shutdown_fallback_ignores_non_http_send_errors(self, commands_instance):
@@ -171,7 +254,7 @@ class TestDiscordCommands:
         interaction.guild.name = "Test Guild"
         interaction.response = AsyncMock()
         
-        await commands_instance._handle_config(interaction, None, None, None)
+        await commands_instance._handle_config(interaction, None)
         
         interaction.response.send_message.assert_called_once()
         call_kwargs = interaction.response.send_message.call_args[1]
@@ -193,14 +276,15 @@ class TestDiscordCommands:
         interaction.response = AsyncMock()
         interaction.edit_original_response = AsyncMock()
         
-        await commands_instance._handle_config(interaction, "pyttsx3", None, None)
+        await commands_instance._handle_config(interaction, "pyttsx3:david")
         
         # Should call defer and then edit_original_response
         interaction.response.defer.assert_called_once()
         interaction.edit_original_response.assert_called_once()
         
-        config = mock_config_repository.get_config(67890)
+        config = mock_config_repository.get_config(67890, user_id=67890)
         assert config.engine == "pyttsx3"
+        assert config.voice_id == "David"
     
     @pytest.mark.asyncio
     async def test_handle_config_failure(self, commands_instance):
@@ -219,8 +303,93 @@ class TestDiscordCommands:
             return_value=ConfigureTTSResult(success=False, message="Config error")
         )
         
-        await commands_instance._handle_config(interaction, "invalid", None, None)
+        await commands_instance._handle_config(interaction, "invalid")
         
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_server_config_requires_manage_guild(self, commands_instance):
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.user.guild_permissions = Mock(manage_guild=False)
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
+        interaction.response = AsyncMock()
+
+        await commands_instance._handle_server_config(interaction, None)
+
+        interaction.response.send_message.assert_called_once()
+        assert "permiss" in interaction.response.send_message.call_args.args[0].lower()
+
+    @pytest.mark.asyncio
+    async def test_handle_server_config_update_engine(
+        self,
+        commands_instance,
+        mock_config_repository
+    ):
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.user.guild_permissions = Mock(manage_guild=True)
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
+        interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_server_config(interaction, "pyttsx3:david")
+
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
+
+        config = mock_config_repository.get_config(67890)
+        assert config.engine == "pyttsx3"
+        assert config.voice_id == "David"
+
+    @pytest.mark.asyncio
+    async def test_handle_config_reset(self, commands_instance, mock_config_repository):
+        await commands_instance._config_use_case.update_config_async(
+            guild_id=67890,
+            user_id=67890,
+            voice_id="Maria",
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
+        interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_config_reset(interaction)
+
+        interaction.response.defer.assert_called_once()
+        interaction.edit_original_response.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_server_config_reset(self, commands_instance):
+        await commands_instance._config_use_case.update_config_async(
+            guild_id=67890,
+            voice_id="David",
+        )
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.user.guild_permissions = Mock(manage_guild=True)
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.guild.name = "Test Guild"
+        interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_server_config_reset(interaction)
+
         interaction.response.defer.assert_called_once()
         interaction.edit_original_response.assert_called_once()
     
@@ -322,3 +491,46 @@ class TestDiscordCommands:
         interaction.response.send_message.assert_called_once()
         call_kwargs = interaction.response.send_message.call_args[1]
         assert "embed" in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_autocomplete_voz_uses_catalog(self, commands_instance):
+        interaction = Mock()
+
+        choices = await commands_instance._autocomplete_voz(interaction, "davi")
+
+        assert choices
+        assert choices[0].value == "pyttsx3:david"
+
+    @pytest.mark.asyncio
+    async def test_autocomplete_voz_returns_edge_tts_profiles(self, commands_instance):
+        interaction = Mock()
+
+        choices = await commands_instance._autocomplete_voz(interaction, "francisca")
+
+        assert choices
+        assert choices[0].value == "edge-tts:pt-br-francisca"
+
+    def test_config_embed_warns_when_pyttsx3_voice_is_missing(self, commands_instance):
+        result = ConfigureTTSResult(
+            success=True,
+            guild_id=67890,
+            config=type("Cfg", (), {"engine": "pyttsx3", "language": "en", "voice_id": "UnknownVoice", "rate": 180})(),
+        )
+
+        embed = commands_instance._config_handler._build_updated_config_embed("Test Guild", 67890, result)
+
+        resolution_field = next(field for field in embed.fields if field.name == "Resolução da Voz")
+        assert "voz padrão do windows" in resolution_field.value.lower()
+
+    def test_config_embed_describes_edge_tts_voice(self, commands_instance):
+        result = ConfigureTTSResult(
+            success=True,
+            guild_id=67890,
+            config=type("Cfg", (), {"engine": "edge-tts", "language": "pt-BR", "voice_id": "pt-BR-FranciscaNeural", "rate": 180})(),
+        )
+
+        embed = commands_instance._config_handler._build_updated_config_embed("Test Guild", 67890, result)
+
+        resolution_field = next(field for field in embed.fields if field.name == "Resolução da Voz")
+        assert "edge tts" in resolution_field.value.lower()
+        assert "francisca" in resolution_field.value.lower()

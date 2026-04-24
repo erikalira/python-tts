@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import ANY, Mock
 
+from src.application.dto import DesktopTTSServiceStatusDTO, DesktopTTSStatusDTO
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
 from src.application.desktop_bot import DesktopBotConnectionStatus, DesktopBotVoiceContextStatus
 from src.application.tts_execution import (
@@ -13,7 +14,7 @@ from src.application.tts_execution import (
 from src.application.tts_routing import build_tts_engine_chain
 from src.desktop.app.tts_runtime import DesktopAppTTSProcessor
 from src.desktop.config.desktop_config import DesktopAppConfig, get_default_discord_bot_url
-from src.desktop.services.discord_bot_client import DiscordSpeakRequest, HttpDiscordBotClient
+from src.desktop.services.discord_bot_client import DiscordSpeakRequestDTO, HttpDiscordBotClient
 from src.desktop.services.tts_services import (
     DesktopAppTTSService,
     DiscordTTSService,
@@ -47,7 +48,7 @@ class FakeDiscordBotClient:
         return self.available
 
     def build_request(self, text):
-        return DiscordSpeakRequest(text=text, member_id="20")
+        return DiscordSpeakRequestDTO(text=text, member_id="20")
 
     def send_speak_request(self, request):
         self.requests.append(request)
@@ -61,17 +62,33 @@ def test_http_discord_bot_client_builds_payload_and_url():
     config = DesktopAppConfig.create_default()
     config.discord.bot_url = get_default_discord_bot_url().rstrip("/") + "/"
     config.discord.member_id = "20"
+    config.tts.engine = "edge-tts"
+    config.tts.language = "pt-BR"
+    config.tts.voice_id = "pt-BR-FranciscaNeural"
+    config.tts.rate = 210
 
     client = HttpDiscordBotClient(config)
     request = client.build_request("hello")
 
-    assert request.to_payload() == {"text": "hello", "member_id": "20"}
+    assert request.to_payload() == {
+        "text": "hello",
+        "member_id": "20",
+        "config_override": {
+            "engine": "edge-tts",
+            "language": "pt-BR",
+            "voice_id": "pt-BR-FranciscaNeural",
+            "rate": 210,
+        },
+    }
     assert client.get_speak_url() == get_default_discord_bot_url().rstrip("/") + "/speak"
     assert client.get_health_url() == get_default_discord_bot_url().rstrip("/") + "/health"
 
 
 def test_discord_tts_service_builds_payload_and_sends_request():
     config = DesktopAppConfig.create_default()
+    config.tts.engine = "pyttsx3"
+    config.tts.language = "system"
+    config.tts.voice_id = "David"
     bot_client = FakeDiscordBotClient(available=True, result=True)
     service = DiscordTTSService(config, bot_client=bot_client)
 
@@ -324,8 +341,8 @@ def test_desktop_app_tts_service_reports_local_voice_as_disabled_by_default():
 
     status = DesktopAppTTSService(config, bot_client=FakeDiscordBotClient()).get_status_info()
 
-    assert status["local_tts_enabled"] is False
-    assert status["local_available"] is False
+    assert status.local_tts_enabled is False
+    assert status.local_available is False
 
 
 def test_desktop_app_tts_service_exposes_status_contract_without_private_access():
@@ -359,14 +376,14 @@ def test_desktop_tts_status_use_case_builds_status_payload():
 
     status = DesktopTTSStatusUseCase(gateway).execute()
 
-    assert status == {
-        "discord_available": True,
-        "local_tts_enabled": True,
-        "local_available": True,
-        "pyttsx3_installed": True,
-        "requests_installed": True,
-        "bot_url_configured": True,
-    }
+    assert status == DesktopTTSStatusDTO(
+        discord_available=True,
+        local_tts_enabled=True,
+        local_available=True,
+        pyttsx3_installed=True,
+        requests_installed=True,
+        bot_url_configured=True,
+    )
 
 
 def test_keyboard_cleanup_service_reports_suppression():
@@ -384,7 +401,14 @@ def test_speak_text_execution_use_case_delegates_to_tts_service():
     tts_service = Mock()
     tts_service.speak_text.return_value = True
     tts_service.is_available.return_value = True
-    tts_service.get_status_info.return_value = {"local_available": True}
+    tts_service.get_status_info.return_value = DesktopTTSStatusDTO(
+        discord_available=False,
+        local_tts_enabled=True,
+        local_available=True,
+        pyttsx3_installed=True,
+        requests_installed=False,
+        bot_url_configured=False,
+    )
     tts_service.get_last_error_message.return_value = None
 
     execution = SpeakTextExecutionUseCase(tts_service)
@@ -393,7 +417,36 @@ def test_speak_text_execution_use_case_delegates_to_tts_service():
 
     assert result == TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK)
     assert execution.is_available() is True
-    assert execution.get_status_info() == {"local_available": True}
+    assert execution.get_status_info() == DesktopTTSStatusDTO(
+        discord_available=False,
+        local_tts_enabled=True,
+        local_available=True,
+        pyttsx3_installed=True,
+        requests_installed=False,
+        bot_url_configured=False,
+    )
+    tts_service.speak_text.assert_called_once_with("hello")
+
+
+def test_speak_text_execution_use_case_normalizes_text_before_delegating():
+    tts_service = Mock()
+    tts_service.speak_text.return_value = True
+    tts_service.is_available.return_value = True
+    tts_service.get_status_info.return_value = DesktopTTSStatusDTO(
+        discord_available=False,
+        local_tts_enabled=False,
+        local_available=False,
+        pyttsx3_installed=False,
+        requests_installed=False,
+        bot_url_configured=False,
+    )
+    tts_service.get_last_error_message.return_value = None
+
+    execution = SpeakTextExecutionUseCase(tts_service)
+
+    result = execution.execute("  hello  ")
+
+    assert result == TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK)
     tts_service.speak_text.assert_called_once_with("hello")
 
 

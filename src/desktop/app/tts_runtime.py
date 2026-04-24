@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Callable, Optional
+from typing import Callable, Optional, Protocol
 
+from src.application.dto import DesktopTTSServiceStatusDTO, DesktopTTSStatusDTO
 from src.application.tts_execution import (
     TTS_EXECUTION_RESULT_FAILED,
     TTS_EXECUTION_RESULT_MISSING_TEXT,
@@ -20,6 +21,29 @@ from ..services.notification_services import SystemTrayService
 from ..services.tts_services import DesktopAppTTSService, KeyboardCleanupService
 
 logger = logging.getLogger(__name__)
+
+
+class DesktopTTSExecutionService(Protocol):
+    """Contract used by the Desktop App TTS processor."""
+
+    def execute(self, text: str | None) -> TTSExecutionResult:
+        """Execute TTS for the given text."""
+
+    def is_available(self) -> bool:
+        """Return whether TTS is currently available."""
+
+    def get_status_info(self) -> DesktopTTSStatusDTO:
+        """Return typed TTS status information."""
+
+
+class KeyboardCleanupPort(Protocol):
+    """Contract used to cleanup typed text after successful TTS."""
+
+    def cleanup_typed_text(self, backspace_count: int) -> None:
+        """Remove the captured text from the active window."""
+
+    def is_suppressing_events(self) -> bool:
+        """Return whether keyboard events are being suppressed."""
 
 
 class DesktopAppTTSResultPresenter:
@@ -67,8 +91,8 @@ class DesktopAppTTSProcessor:
     def __init__(
         self,
         tts_service: Optional[DesktopAppTTSService] = None,
-        cleanup_service: Optional[KeyboardCleanupService] = None,
-        execution_service: Optional[SpeakTextExecutionUseCase] = None,
+        cleanup_service: Optional[KeyboardCleanupPort] = None,
+        execution_service: Optional[DesktopTTSExecutionService] = None,
     ):
         if cleanup_service is None:
             raise ValueError(
@@ -106,12 +130,12 @@ class DesktopAppTTSProcessor:
         """Check if keyboard events are currently suppressed by cleanup."""
         return self._cleanup_service.is_suppressing_events()
 
-    def get_service_status(self) -> dict:
+    def get_service_status(self) -> DesktopTTSServiceStatusDTO:
         """Expose execution and engine availability for status views."""
-        return {
-            "tts_available": self._execution_service.is_available(),
-            "engines_info": self._execution_service.get_status_info(),
-        }
+        return DesktopTTSServiceStatusDTO(
+            tts_available=self._execution_service.is_available(),
+            engines_info=self._execution_service.get_status_info(),
+        )
 
 
 class DesktopAppHotkeyHandler:

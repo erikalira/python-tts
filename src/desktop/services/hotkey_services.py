@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, Optional, Protocol
 
+from src.application.dto import HotkeyManagerStatusDTO, HotkeyServiceStatusDTO
 from ..adapters.keyboard_backend import KeyboardHookBackend, is_keyboard_backend_available
 from ..config.desktop_config import DesktopAppConfig
 from .hotkey_capture import HotkeyTextCaptureSession
@@ -177,15 +178,15 @@ class HotkeyService:
         if isinstance(self._monitor, StandardKeyboardMonitor):
             self._monitor.set_external_suppression_check(check_func)
 
-    def get_status(self) -> dict:
+    def get_status(self) -> HotkeyServiceStatusDTO:
         """Get status information about the hotkey service."""
-        return {
-            "active": self._active,
-            "monitoring": self._monitor.is_monitoring(),
-            "keyboard_available": is_keyboard_backend_available(),
-            "trigger_open": self._config.hotkey.trigger_open,
-            "trigger_close": self._config.hotkey.trigger_close,
-        }
+        return HotkeyServiceStatusDTO(
+            active=self._active,
+            monitoring=self._monitor.is_monitoring(),
+            keyboard_available=is_keyboard_backend_available(),
+            trigger_open=self._config.hotkey.trigger_open,
+            trigger_close=self._config.hotkey.trigger_close,
+        )
 
 
 class HotkeyManager:
@@ -246,15 +247,21 @@ class HotkeyManager:
             self._service = self._service_factory(new_config, self._handler)
             self.start()
 
-    def get_status(self) -> dict:
+    def get_status(self) -> HotkeyManagerStatusDTO:
         """Get comprehensive status information."""
         if not self._service:
-            return {
-                "initialized": False,
-                "active": False,
-                "keyboard_available": is_keyboard_backend_available(),
-            }
+            return HotkeyManagerStatusDTO(
+                initialized=False,
+                active=False,
+                keyboard_available=is_keyboard_backend_available(),
+            )
 
         status = self._service.get_status()
-        status["initialized"] = True
-        return status
+        return HotkeyManagerStatusDTO(
+            initialized=True,
+            active=status.active,
+            monitoring=status.monitoring,
+            keyboard_available=status.keyboard_available,
+            trigger_open=status.trigger_open,
+            trigger_close=status.trigger_close,
+        )

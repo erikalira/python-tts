@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from src.core.timeouts import DEFAULT_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
+
 from .models import (
     DesktopAppConfig,
     DiscordConfig,
@@ -60,7 +62,7 @@ class ConfigurationRepository:
                     local_tts_enabled=data.get("local_tts_enabled", False),
                 ),
                 network=NetworkConfig(
-                    request_timeout=data.get("request_timeout", 10),
+                    request_timeout=data.get("request_timeout", DEFAULT_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS),
                     user_agent=data.get("user_agent", "DesktopApp/2.0"),
                     max_text_length=data.get("max_text_length", 500),
                 ),

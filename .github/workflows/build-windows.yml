@@ -30,7 +30,7 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Building current Desktop App executable from app.py..."
-          ./scripts/build/build_clean_architecture.ps1 -SkipTests
+          ./scripts/build/build_clean_architecture.ps1
 
       - name: Test executable
         shell: pwsh

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from src.application.results import ConfigureTTSResult, TTSConfigurationData
+from src.application.dto import ConfigureTTSResult, TTSConfigurationData
 from src.core.interfaces import IConfigRepository
 
 logger = logging.getLogger(__name__)
@@ -17,11 +17,11 @@ class ConfigureTTSUseCase:
     def __init__(self, config_repository: IConfigRepository):
         self._config_repository = config_repository
 
-    def get_config(self, guild_id: int) -> ConfigureTTSResult:
+    def get_config(self, guild_id: int, user_id: Optional[int] = None) -> ConfigureTTSResult:
         if guild_id is None:
             return ConfigureTTSResult(success=False, message="Guild ID is required")
 
-        config = self._config_repository.get_config(guild_id)
+        config = self._config_repository.get_config(guild_id, user_id=user_id)
         return ConfigureTTSResult(
             success=True,
             guild_id=guild_id,
@@ -31,11 +31,13 @@ class ConfigureTTSUseCase:
                 voice_id=config.voice_id,
                 rate=config.rate,
             ),
+            scope=self._config_repository.get_effective_scope(guild_id, user_id=user_id),
         )
 
     async def update_config_async(
         self,
         guild_id: int,
+        user_id: Optional[int] = None,
         engine: Optional[str] = None,
         language: Optional[str] = None,
         voice_id: Optional[str] = None,
@@ -45,13 +47,13 @@ class ConfigureTTSUseCase:
             return ConfigureTTSResult(success=False, message="Guild ID is required")
 
         logger.info("[CONFIG_USE_CASE] Updating config for guild %s", guild_id)
-        current_config = self._config_repository.get_config(guild_id)
+        current_config = self._config_repository.get_config(guild_id, user_id=user_id)
 
         if engine is not None:
-            if engine.lower() not in ["gtts", "pyttsx3"]:
+            if engine.lower() not in ["gtts", "pyttsx3", "edge-tts"]:
                 return ConfigureTTSResult(
                     success=False,
-                    message="Invalid engine. Use 'gtts' or 'pyttsx3'",
+                    message="Invalid engine. Use 'gtts', 'pyttsx3' or 'edge-tts'",
                 )
             current_config.engine = engine.lower()
         if language is not None:
@@ -66,7 +68,7 @@ class ConfigureTTSUseCase:
                 )
             current_config.rate = rate
 
-        saved = await self._config_repository.save_config_async(guild_id, current_config)
+        saved = await self._config_repository.save_config_async(guild_id, current_config, user_id=user_id)
         if not saved:
             logger.error("[CONFIG_USE_CASE] Failed to persist config for guild %s", guild_id)
             return ConfigureTTSResult(success=False, message="Failed to save configuration")
@@ -80,4 +82,26 @@ class ConfigureTTSUseCase:
                 voice_id=current_config.voice_id,
                 rate=current_config.rate,
             ),
+            scope="user" if user_id is not None else "guild",
+        )
+
+    async def reset_config_async(self, guild_id: int, user_id: Optional[int] = None) -> ConfigureTTSResult:
+        if guild_id is None:
+            return ConfigureTTSResult(success=False, message="Guild ID is required")
+
+        deleted = await self._config_repository.delete_config_async(guild_id, user_id=user_id)
+        if not deleted:
+            return ConfigureTTSResult(success=False, message="Failed to reset configuration")
+
+        config = self._config_repository.get_config(guild_id, user_id=user_id)
+        return ConfigureTTSResult(
+            success=True,
+            guild_id=guild_id,
+            config=TTSConfigurationData(
+                engine=config.engine,
+                language=config.language,
+                voice_id=config.voice_id,
+                rate=config.rate,
+            ),
+            scope=self._config_repository.get_effective_scope(guild_id, user_id=user_id),
         )

@@ -4,14 +4,66 @@ from __future__ import annotations
 
 import logging
 import queue
-from typing import Callable, Optional
+from typing import Callable, Optional, Protocol
 
-from src.application.desktop_bot import DesktopBotActionResult, DesktopBotVoiceContextResult
+from src.application.dto import (
+    DesktopAppRuntimeStatusDTO,
+    DesktopBotActionResultDTO,
+    DesktopBotVoiceContextResultDTO,
+    DesktopConfigurationSaveResultDTO,
+)
 from ..config.desktop_config import DesktopAppConfig
 from ..gui.main_window import DesktopAppMainWindow
 from ..results import DesktopConfigurationSaveResult
 
 logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
+
+
+class NotificationInfoPort(Protocol):
+    """Contract needed to show tray status notifications."""
+
+    def notify_info(self, title: str, message: str) -> None:
+        """Show an informational notification."""
+
+
+class HotkeyManagerLike(Protocol):
+    """Contract needed for configure flows triggered from the tray."""
+
+    def is_active(self) -> bool:
+        """Return whether hotkeys are active."""
+
+    def stop(self) -> None:
+        """Pause hotkeys."""
+
+    def start(self) -> bool:
+        """Resume hotkeys."""
+
+
+class NotificationFeedbackPort(Protocol):
+    """Contract used to show configuration feedback."""
+
+    def notify_error(self, title: str, message: str) -> None:
+        """Show an error notification."""
+
+    def notify_success(self, title: str, message: str) -> None:
+        """Show a success notification."""
+
+
+class ConfigurationCoordinatorLike(Protocol):
+    """Contract for the tray-triggered configuration flow."""
+
+    def reconfigure(
+        self,
+        current_config: DesktopAppConfig,
+        hotkeys_were_active: bool,
+        resume_hotkeys: Callable[[], None],
+        notify_error: Optional[Callable[[str, str], None]] = None,
+        notify_success: Optional[Callable[[str, str], None]] = None,
+        are_hotkeys_active: Optional[Callable[[], bool]] = None,
+    ) -> tuple[Optional[DesktopAppConfig], bool]:
+        """Run the configuration flow and return the updated config."""
 
 
 class DesktopAppUIRuntimeCoordinator:
@@ -33,10 +85,10 @@ class DesktopAppUIRuntimeCoordinator:
         self,
         *,
         config: DesktopAppConfig,
-        on_save: Callable[[DesktopAppConfig], DesktopConfigurationSaveResult],
-        on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResult],
-        on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResult],
-        on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResult],
+        on_save: Callable[[DesktopAppConfig], DesktopConfigurationSaveResultDTO],
+        on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResultDTO],
+        on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResultDTO],
+        on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResultDTO],
     ) -> None:
         """Create and show the main Desktop App window."""
         self._main_window = DesktopAppMainWindow(
@@ -56,8 +108,8 @@ class DesktopAppUIRuntimeCoordinator:
     def show_status(
         self,
         *,
-        get_status: Callable[[], dict],
-        notification_service: object,
+        get_status: Callable[[], DesktopAppRuntimeStatusDTO],
+        notification_service: NotificationInfoPort | None,
     ) -> None:
         """Show current app status via the main window or tray notifications."""
         if self._main_window:
@@ -66,9 +118,9 @@ class DesktopAppUIRuntimeCoordinator:
             return
 
         status = get_status()
-        mode = "Discord" if status["discord_configured"] else "Local"
-        hotkeys = "ativas" if status["hotkey_active"] else "inativas"
-        tts = "disponivel" if status["tts_available"] else "indisponivel"
+        mode = "Discord" if status.discord_configured else "Local"
+        hotkeys = "ativas" if status.hotkey_active else "inativas"
+        tts = "disponivel" if status.tts_available else "indisponivel"
         summary = f"Modo {mode} | Hotkeys {hotkeys} | TTS {tts}"
         logger.info("[DESKTOP_APP] Status solicitado: %s", summary)
         if notification_service:
@@ -78,11 +130,11 @@ class DesktopAppUIRuntimeCoordinator:
         self,
         *,
         ensure_action_coordinators: Callable[[], None],
-        hotkey_manager: object,
-        get_configuration_coordinator: Callable[[], object],
-        current_config: object,
-        notification_service: object,
-    ) -> tuple[Optional[object], bool]:
+        hotkey_manager: HotkeyManagerLike | None,
+        get_configuration_coordinator: Callable[[], ConfigurationCoordinatorLike | None],
+        current_config: DesktopAppConfig,
+        notification_service: NotificationFeedbackPort | None,
+    ) -> tuple[Optional[DesktopAppConfig], bool]:
         """Handle configure requests from tray or fallback UI flow."""
         if self._main_window:
             self._main_window.focus()

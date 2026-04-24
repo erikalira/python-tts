@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Protocol
 
+from src.application.dto import DesktopTTSStatusDTO
+
 from .tts_routing import TTSFallbackChain, build_tts_engine_chain
 from .tts_text import prepare_tts_text
 
@@ -95,13 +97,13 @@ class DesktopTTSStatusUseCase:
     def __init__(self, gateway: DesktopTTSStatusGateway):
         self._gateway = gateway
 
-    def execute(self) -> dict:
-        """Return a neutral status payload for Desktop App runtime views."""
-        return {
-            "discord_available": self._gateway.is_remote_available(),
-            "local_tts_enabled": self._gateway.is_local_enabled(),
-            "local_available": self._gateway.is_local_available(),
-            "pyttsx3_installed": self._gateway.is_local_dependency_installed(),
-            "requests_installed": self._gateway.has_transport(),
-            "bot_url_configured": self._gateway.has_bot_url(),
-        }
+    def execute(self) -> DesktopTTSStatusDTO:
+        """Return the typed TTS status for Desktop App runtime views."""
+        return DesktopTTSStatusDTO(
+            discord_available=self._gateway.is_remote_available(),
+            local_tts_enabled=self._gateway.is_local_enabled(),
+            local_available=self._gateway.is_local_available(),
+            pyttsx3_installed=self._gateway.is_local_dependency_installed(),
+            requests_installed=self._gateway.has_transport(),
+            bot_url_configured=self._gateway.has_bot_url(),
+        )

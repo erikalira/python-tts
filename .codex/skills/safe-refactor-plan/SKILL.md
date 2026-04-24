@@ -7,14 +7,16 @@ description: Generate a safe, step-by-step refactor plan minimizing risk and pre
 
 Read these first:
 
-- `docs/ai/project-context.md`
-- `docs/ai/architecture-rules.md`
-- `docs/ai/engineering-standards.md`
-- `docs/ai/change-playbooks.md`
+- `.specify/README.md`
+- `.specify/memory/constitution.md`
+- `.specify/templates/plan-template.md`
+- `.specify/review-checklist.md`
+- `docs/ARCHITECTURE_TRANSITIONS.md`
 
 # When to use
 
-Use when refactoring code that affects multiple modules, especially shared logic between the desktop runtime and the shared layers in `src`.
+Use when refactoring code that affects multiple modules, especially shared logic
+between the desktop runtime and the shared layers in `src`.
 
 # Planning flow
 

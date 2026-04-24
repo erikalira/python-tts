@@ -9,7 +9,8 @@
 ## Summary
 
 [Extract from feature spec: primary requirement, affected runtime(s), and the
-smallest architecture-safe approach.]
+smallest architecture-safe approach. Call out the intended steady state if a
+temporary migration or compatibility path is required.]
 
 ## Technical Context
 
@@ -24,7 +25,9 @@ smallest architecture-safe approach.]
 **Scale/Scope**: [files/modules/runtimes affected]  
 **Affected Runtime(s)**: [bot | desktop | both]  
 **Documentation Impact**: [docs to update or `None`]  
-**Validation Scope**: [unit, integration, startup smoke checks, manual runtime checks]
+**Validation Scope**: [unit, integration, startup smoke checks, manual runtime checks]  
+**Risk/Tradeoffs**: [main architectural or runtime risks and the tradeoff accepted]  
+**Rollback/Compatibility Plan**: [direct cutover, narrow compatibility path, or `None`]
 
 ## Constitution Check
 
@@ -42,6 +45,10 @@ smallest architecture-safe approach.]
       and agent guidance updates are identified where relevant.
 - [ ] Incremental change strategy chosen: the plan favors small, reversible
       steps and explains any temporary compatibility path that remains.
+- [ ] Ownership is clear: each changed module has an obvious reason to exist and
+      the plan avoids abstraction growth without payoff.
+- [ ] Steady state is explicit: obsolete paths to delete, preserve, or narrow
+      are identified up front.
 
 ## Project Structure
 
@@ -81,7 +88,8 @@ docs/
 
 **Structure Decision**: [Document the exact modules and docs touched by this
 feature. Prefer extracting to shared layers instead of adding logic inside
-desktop-specific runtime code.]
+desktop-specific runtime code. Explain why each touched module is the right
+owner and note any obsolete path that should be removed or narrowed.]
 
 ## Complexity Tracking
 

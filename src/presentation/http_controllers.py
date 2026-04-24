@@ -4,8 +4,10 @@ import logging
 
 from aiohttp import web
 
+from src.application.dto import BotSpeakRequestDTO, SpeakTextInputDTO, VoiceContextQueryDTO
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
-from src.core.entities import TTSRequest
+from src.core.entities import TTSConfig
+from src.core.interfaces import IConfigRepository
 from src.presentation.http_presenters import HTTPSpeakPresenter, HTTPVoiceContextPresenter
 
 logger = logging.getLogger(__name__)
@@ -14,8 +16,13 @@ logger = logging.getLogger(__name__)
 class SpeakController:
     """Controller for /speak endpoint."""
 
-    def __init__(self, speak_use_case: SpeakTextUseCase):
+    def __init__(
+        self,
+        speak_use_case: SpeakTextUseCase,
+        config_repository: IConfigRepository | None = None,
+    ):
         self._speak_use_case = speak_use_case
+        self._config_repository = config_repository
         self._presenter = HTTPSpeakPresenter()
 
     async def handle(self, request: web.Request) -> web.Response:
@@ -25,11 +32,21 @@ class SpeakController:
             logger.error("Invalid JSON: %s", exc)
             return web.Response(text="invalid json", status=400)
 
-        tts_request = TTSRequest(
-            text=data.get("text", ""),
+        guild_id = self._parse_int(data.get("guild_id"))
+        member_id_value = data.get("member_id") or data.get("user_id")
+        request_dto = BotSpeakRequestDTO(
+            text=self._parse_text(data.get("text")),
             channel_id=self._parse_int(data.get("channel_id")),
-            guild_id=self._parse_int(data.get("guild_id")),
-            member_id=self._parse_int(data.get("member_id") or data.get("user_id")),
+            guild_id=guild_id,
+            member_id=str(member_id_value) if member_id_value is not None else None,
+            config_override=self._parse_config_override(data, guild_id, self._parse_int(member_id_value)),
+        )
+        tts_request = SpeakTextInputDTO(
+            text=request_dto.text,
+            channel_id=request_dto.channel_id,
+            guild_id=request_dto.guild_id,
+            member_id=self._parse_int(request_dto.member_id),
+            config_override=request_dto.config_override,
         )
         result = await self._speak_use_case.execute(tts_request)
         return web.Response(
@@ -45,6 +62,43 @@ class SpeakController:
         except (ValueError, TypeError):
             return None
 
+    def _parse_text(self, value) -> str:
+        if isinstance(value, str):
+            return value
+        return ""
+
+    def _parse_config_override(
+        self,
+        data: dict,
+        guild_id: int | None = None,
+        member_id: int | None = None,
+    ) -> TTSConfig | None:
+        override = data.get("config_override")
+        if not isinstance(override, dict):
+            override = data
+
+        engine = override.get("engine")
+        language = override.get("language")
+        voice_id = override.get("voice_id")
+        rate = override.get("rate")
+
+        if engine is None and language is None and voice_id is None and rate is None:
+            return None
+
+        base_config = self._get_base_config(guild_id, member_id)
+        return TTSConfig(
+            engine=str(engine or base_config.engine),
+            language=str(language or base_config.language),
+            voice_id=str(voice_id or base_config.voice_id),
+            rate=self._parse_int(rate) or base_config.rate,
+            output_device=base_config.output_device,
+        )
+
+    def _get_base_config(self, guild_id: int | None, member_id: int | None = None) -> TTSConfig:
+        if self._config_repository is None:
+            return TTSConfig()
+        return self._config_repository.get_config(guild_id, user_id=member_id)
+
 
 class VoiceContextController:
     """Controller for querying the current voice context for a member."""
@@ -54,8 +108,10 @@ class VoiceContextController:
         self._presenter = HTTPVoiceContextPresenter()
 
     async def handle(self, request: web.Request) -> web.Response:
-        member_id = self._parse_int(request.query.get("member_id") or request.query.get("user_id"))
-        result = await self._voice_context_use_case.execute(member_id)
+        query = VoiceContextQueryDTO(
+            member_id=self._parse_int(request.query.get("member_id") or request.query.get("user_id"))
+        )
+        result = await self._voice_context_use_case.execute(query)
         return web.json_response(
             self._presenter.to_payload(result),
             status=self._presenter.get_status_code(result),

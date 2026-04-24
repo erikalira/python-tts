@@ -7,17 +7,20 @@ from typing import Callable, Optional
 
 from src.application.desktop_bot import (
     CheckDesktopBotConnectionUseCase,
-    DesktopBotActionResult,
     DesktopBotGateway,
-    DesktopBotVoiceContextResult,
     FetchDesktopBotVoiceContextUseCase,
     SendDesktopBotTestMessageUseCase,
+)
+from src.application.dto import (
+    DesktopAppRuntimeStatusDTO,
+    DesktopBotActionResultDTO,
+    DesktopBotVoiceContextResultDTO,
+    DesktopConfigurationSaveResultDTO,
 )
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
 from ..gui.configuration_service import ConfigurationService
 from ..gui.tk_support import TKINTER_AVAILABLE
-from ..results import DesktopConfigurationSaveResult
 from ..services.discord_bot_client import HttpDiscordBotClient
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
@@ -213,11 +216,11 @@ class DesktopApp:
             on_refresh_voice_context=self._refresh_voice_context,
         )
 
-    def _save_configuration_from_ui(self, updated_config: DesktopAppConfig) -> DesktopConfigurationSaveResult:
+    def _save_configuration_from_ui(self, updated_config: DesktopAppConfig) -> DesktopConfigurationSaveResultDTO:
         """Validate, persist, and apply config changes from the main window."""
         self._ensure_action_coordinators()
         if self._configuration_coordinator is None:
-            return DesktopConfigurationSaveResult(
+            return DesktopConfigurationSaveResultDTO(
                 success=False,
                 message="Coordenador de configuracao indisponivel",
             )
@@ -227,7 +230,7 @@ class DesktopApp:
             self._config = updated_config
         return result
 
-    def _test_bot_connection(self, config: DesktopAppConfig) -> DesktopBotActionResult:
+    def _test_bot_connection(self, config: DesktopAppConfig) -> DesktopBotActionResultDTO:
         """Test connectivity against the bot health endpoint."""
         result = CheckDesktopBotConnectionUseCase(self._build_bot_gateway(config)).execute()
         if result.success:
@@ -239,7 +242,7 @@ class DesktopApp:
             )
         return result
 
-    def _send_test_message(self, config: DesktopAppConfig) -> DesktopBotActionResult:
+    def _send_test_message(self, config: DesktopAppConfig) -> DesktopBotActionResultDTO:
         """Send a short manual test message through the bot."""
         result = SendDesktopBotTestMessageUseCase(self._build_bot_gateway(config)).execute()
         if result.success:
@@ -251,7 +254,7 @@ class DesktopApp:
             )
         return result
 
-    def _refresh_voice_context(self, config: DesktopAppConfig) -> DesktopBotVoiceContextResult:
+    def _refresh_voice_context(self, config: DesktopAppConfig) -> DesktopBotVoiceContextResultDTO:
         """Refresh the currently detected Discord voice context."""
         result = FetchDesktopBotVoiceContextUseCase(self._build_bot_gateway(config)).execute()
         if result.success:
@@ -348,7 +351,7 @@ class DesktopApp:
         logger.info("[DESKTOP_APP] Encerrando via system tray...")
         self._shutdown()
 
-    def _get_application_status(self) -> dict:
+    def _get_application_status(self) -> DesktopAppRuntimeStatusDTO:
         """Get a compact view of current runtime status."""
         return self._status_builder.build(
             initialized=self._initialized,

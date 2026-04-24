@@ -19,10 +19,26 @@
   - [ ] Discord bot
   - [ ] Windows hotkey desktop app
   - [ ] Shared layers in `src/`
+- Runtime summary:
+  - [ ] Bot only
+  - [ ] Desktop only
+  - [ ] Both runtimes
 - Architecture notes:
   - Did this change move, extract, or duplicate logic?
   - Were any clean architecture boundaries touched?
   - If desktop-specific code changed, why can it not live in shared code?
+- Contracts:
+  - [ ] No reusable contract changed
+  - [ ] Existing contract changed
+  - [ ] New explicit contract introduced
+  - Contract notes:
+    - `...`
+- Compatibility:
+  - [ ] No temporary compatibility path
+  - [ ] Temporary compatibility path introduced
+  - [ ] Temporary compatibility path removed or narrowed
+  - Cleanup trigger or intended steady state:
+    - `...`
 
 ## Validation
 
@@ -36,6 +52,8 @@
   - [ ] Discord bot path validated
   - [ ] Windows desktop app path validated
   - [ ] Not applicable, with reason explained below
+- Validation gaps or unrun checks:
+  - `...`
 
 ## Risks and Review Focus
 
@@ -51,6 +69,7 @@
 - [ ] No documentation update needed
 - [ ] Documentation updated in `docs/`
 - [ ] Workflow or guidance updated in `.specify/`
+- [ ] Derivative instruction files updated (`AGENTS.md`, `.github/`, skills)
 
 <!-- If instructions or governance changed, keep `.specify/` as the source of truth.
 Update tool-specific instruction files only to point back to the canonical docs. -->

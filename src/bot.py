@@ -56,6 +56,14 @@ async def main():
             await http_server.stop()
         except Exception as e:
             logger.error(f"Error stopping HTTP server: {e}")
+        try:
+            await container.shutdown()
+        except Exception as e:
+            logger.error(f"Error stopping queue worker: {e}")
+        try:
+            await container.discord_client.close()
+        except Exception as e:
+            logger.error(f"Error closing Discord client: {e}")
 
 
 def run():
