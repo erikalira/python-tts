@@ -143,6 +143,7 @@ class TTSQueueOrchestrator:
 
                 config = await self._config_repository.load_config_async(request.guild_id, user_id=request.member_id)
                 config = self._apply_request_override(config, request.config_override)
+                telemetry_engine = self._resolve_engine_name(item)
                 try:
                     with self._otel_runtime.start_internal_span(
                         "tts_engine.generate_audio",
@@ -159,6 +160,12 @@ class TTSQueueOrchestrator:
                     await self._audio_queue.update_item(item)
                     processing_span.set_attribute("result_code", SPEAK_RESULT_GENERATION_TIMEOUT)
                     processing_span.set_attribute("timeout_flag", True)
+                    self._telemetry.record_processing_result(
+                        item=item,
+                        success=False,
+                        code=SPEAK_RESULT_GENERATION_TIMEOUT,
+                        engine=telemetry_engine,
+                    )
                     if self._otel_runtime is not None:
                         self._otel_runtime.record_queue_item_processed(
                             guild_id=request.guild_id,
@@ -213,7 +220,7 @@ class TTSQueueOrchestrator:
                         item=item,
                         success=True,
                         code=SPEAK_RESULT_OK,
-                        engine=config.engine,
+                        engine=telemetry_engine,
                     )
                     if self._otel_runtime is not None:
                         self._otel_runtime.record_queue_item_processed(
@@ -239,7 +246,7 @@ class TTSQueueOrchestrator:
                         item=item,
                         success=False,
                         code=SPEAK_RESULT_PLAYBACK_TIMEOUT,
-                        engine=config.engine,
+                        engine=telemetry_engine,
                     )
                     if self._otel_runtime is not None:
                         self._otel_runtime.record_queue_item_processed(

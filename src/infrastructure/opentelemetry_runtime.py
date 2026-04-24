@@ -48,7 +48,7 @@ class OpenTelemetryRuntime:
             return
 
         try:
-            from opentelemetry import propagate, trace
+            from opentelemetry import propagate
             from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
             from opentelemetry.sdk.metrics import MeterProvider
