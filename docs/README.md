@@ -24,6 +24,7 @@ This directory contains the repository's supporting documentation. The root
 ## Operar e fazer deploy
 
 - [deploy/DEPLOYMENT_GUIDE.md](deploy/DEPLOYMENT_GUIDE.md): entrypoint for choosing the right server deployment guide
+- [operations/BASELINE_AND_RELEASE_GATES.md](operations/BASELINE_AND_RELEASE_GATES.md): Phase 0 baseline, initial SLI/SLO definitions, and release gates for bot and desktop
 - [deploy/ENVIRONMENTS.md](deploy/ENVIRONMENTS.md): local and production environment variables for bot and Desktop App
 - [deploy/WINDOWS_BOT_DEPLOY.md](deploy/WINDOWS_BOT_DEPLOY.md): WinSW deployment guide for keeping the Discord bot running as a Windows service
 - [deploy/BOT_PRODUCTION_PERSISTENCE.md](deploy/BOT_PRODUCTION_PERSISTENCE.md): recommended persistence architecture for production bot deploys
@@ -51,6 +52,7 @@ This directory contains the repository's supporting documentation. The root
 ## Conventions
 
 - `docs/` contains durable architecture and operational guides
+- `docs/operations/` contains operational baselines and release criteria
 - `docs/architecture/diagrams/` contains editable Mermaid architecture sources
 - `.specify/` contains canonical project guidance and feature workflow templates
 - AI/tool-specific instruction files should remain derivative of `.specify/`

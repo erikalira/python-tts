@@ -9,6 +9,7 @@ The repository separates test suites by confidence level, execution cost, and en
 - Unit tests are the default safety net. They should be fast, deterministic, and runnable across Windows, Ubuntu, WSL, and CI without relying on real external services or OS-specific runtime setup.
 - Integration tests validate real integrations such as network-backed providers, platform TTS bindings, or other environment-dependent adapters. They are intentionally explicit and should not be mixed into the default unit workflow.
 - Manual validation complements automation when runtime behavior depends on GUI interaction, audio devices, tray behavior, hotkeys, or external platform state that is not practical to stabilize in automated tests.
+- Smoke tests provide lightweight release gates for startup and minimum-path validation across the bot and desktop runtimes.
 
 ## Test Types
 
@@ -47,6 +48,16 @@ Use manual validation when the change touches:
 
 Record the manual validation path in the change summary when automation is not sufficient.
 
+### Smoke tests
+
+Use smoke tests when validating:
+
+- bot startup wiring and operational endpoints such as `GET /health`
+- desktop startup and the minimum supported runtime flow
+- release-gate checks that should stay lightweight and fast
+
+Smoke tests belong under `tests/smoke/`.
+
 ## Environment
 
 The local test environment uses `.env` as a source of variables.
@@ -77,6 +88,14 @@ Use integration tests explicitly when you want to validate real providers, OS bi
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/integration
+```
+
+## Running Smoke Tests
+
+Use smoke tests explicitly when you want a release-style startup validation pass.
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/smoke
 ```
 
 ## Recommended Execution Flow
@@ -137,6 +156,7 @@ To run the desktop app test suite using the local virtual environment:
 - `tests/unit/application/`: use cases plus extracted shared collaborators such as resolvers and queue orchestrators
 - `tests/unit/presentation/`: controllers, commands, and transport presenters
 - `tests/integration/`: environment-dependent integration tests
+- `tests/smoke/`: lightweight startup and minimum-flow release checks
 - `tests/unit/desktop/`: tests for the desktop app internal runtime
 - `tests/conftest.py`: shared fixtures and helpers
 
