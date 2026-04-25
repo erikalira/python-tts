@@ -7,8 +7,10 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 from urllib.request import urlopen
-from xml.etree import ElementTree
+
+from defusedxml.ElementTree import fromstring as parse_xml  # type: ignore[reportMissingModuleSource]
 
 
 @dataclass(frozen=True)
@@ -81,7 +83,7 @@ def _normalize_path(path: str) -> str:
     return path.replace("\\", "/").lstrip("./").lower()
 
 
-def _coverage_line_totals(class_element: ElementTree.Element) -> tuple[int, int]:
+def _coverage_line_totals(class_element: Any) -> tuple[int, int]:
     total = 0
     covered = 0
     for line in class_element.findall("./lines/line"):
@@ -102,7 +104,7 @@ def _class_matches_path(filename: str, configured_path: str) -> bool:
 
 
 def _evaluate_domain_gate(
-    coverage_root: ElementTree.Element,
+    coverage_root: Any,
     domain: CoverageDomainGate,
 ) -> CoverageGateResult:
     covered_lines = 0
@@ -142,13 +144,21 @@ def evaluate_coverage_gates(
     coverage_xml_path: str | Path,
     config: QualityGateConfig,
 ) -> tuple[float, list[CoverageGateResult]]:
-    coverage_root = ElementTree.fromstring(Path(coverage_xml_path).read_text(encoding="utf-8"))
+    coverage_root = parse_xml(Path(coverage_xml_path).read_text(encoding="utf-8"))
     global_percent = round(float(coverage_root.attrib["line-rate"]) * 100, 2)
     domain_results = [
         _evaluate_domain_gate(coverage_root, domain)
         for domain in config.coverage.critical_domains
     ]
     return global_percent, domain_results
+
+
+def _validate_http_url(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        raise ValueError("Observability URL must use http or https")
+    if not parsed.netloc:
+        raise ValueError("Observability URL must include a host")
 
 
 def evaluate_observability_payload(
@@ -191,6 +201,7 @@ def evaluate_observability_payload(
 
 
 def fetch_observability_payload(url: str, *, timeout_seconds: float = 10.0) -> dict[str, Any]:
+    _validate_http_url(url)
     with urlopen(url, timeout=timeout_seconds) as response:
         status = getattr(response, "status", None)
         if status is not None and int(status) >= 400:
