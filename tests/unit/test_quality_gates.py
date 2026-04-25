@@ -236,3 +236,17 @@ def test_fetch_observability_payload_reads_live_endpoint(monkeypatch):
 
     assert payload["error_rate"] == 0.0
     urlopen.assert_called_once_with("http://127.0.0.1:10000/observability", timeout=2.5)
+
+
+def test_fetch_observability_payload_rejects_non_http_urls(monkeypatch):
+    urlopen = Mock()
+    monkeypatch.setattr(quality_gates, "urlopen", urlopen)
+
+    try:
+        quality_gates.fetch_observability_payload("file:///tmp/observability.json")
+    except ValueError as exc:
+        assert "http or https" in str(exc)
+    else:
+        raise AssertionError("Expected non-HTTP observability URL to be rejected")
+
+    urlopen.assert_not_called()
