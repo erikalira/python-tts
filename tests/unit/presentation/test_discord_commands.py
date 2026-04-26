@@ -193,6 +193,31 @@ class TestDiscordCommands:
         interaction.response.defer.assert_awaited_once()
         commands_instance._speak_use_case.execute.assert_not_awaited()
         interaction.edit_original_response.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_handle_speak_ignores_already_acknowledged_interaction_before_defer(self, commands_instance):
+        commands_instance._speak_use_case.execute = AsyncMock()
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 11111
+        interaction.user.name = "User"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.response = Mock()
+        interaction.response.is_done = Mock(return_value=False)
+        interaction.response.defer = AsyncMock(
+            side_effect=discord.HTTPException(
+                Mock(),
+                {"code": 40060, "message": "Interaction has already been acknowledged."},
+            )
+        )
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_speak(interaction, "Test")
+
+        interaction.response.defer.assert_awaited_once()
+        commands_instance._speak_use_case.execute.assert_not_awaited()
+        interaction.edit_original_response.assert_not_called()
     
     @pytest.mark.asyncio
     async def test_handle_speak_failure(self, commands_instance):
