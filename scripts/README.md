@@ -115,5 +115,5 @@ Para adicionar novos scripts:
 ## Links úteis
 
 - [Documentação principal](../README.md)
-- [Arquitetura](../docs/ARCHITECTURE.md)
-- [Setup Hotkeys](../docs/HOTKEY_SETUP.md)
+- [Arquitetura](../docs/architecture/ARCHITECTURE.md)
+- [Guia do Desktop App](../docs/desktop/DESKTOP_APP_GUIDE.md)

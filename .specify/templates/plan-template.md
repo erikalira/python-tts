@@ -43,6 +43,8 @@ temporary migration or compatibility path is required.]
       desktop app is identified, including which runtime(s) must be validated.
 - [ ] Documentation impact captured: `docs/`, `docs/README.md`, `README.md`,
       and agent guidance updates are identified where relevant.
+- [ ] AI guidance sync captured: derivative instruction files and local agent
+      assets are identified when canonical `.specify/` guidance changes.
 - [ ] Incremental change strategy chosen: the plan favors small, reversible
       steps and explains any temporary compatibility path that remains.
 - [ ] Ownership is clear: each changed module has an obvious reason to exist and

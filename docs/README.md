@@ -47,6 +47,8 @@ This directory contains the repository's supporting documentation. The root
 
 - [../.specify/README.md](../.specify/README.md): canonical Spec Kit governance and workflow index
 - [../.specify/memory/constitution.md](../.specify/memory/constitution.md): repository constitution and non-negotiable rules
+- [../.specify/memory/ai-pitfalls.md](../.specify/memory/ai-pitfalls.md): common AI-assisted change pitfalls to avoid
+- [../.specify/sync-report-template.md](../.specify/sync-report-template.md): template for constitution sync reports
 - [../.specify/templates/spec-template.md](../.specify/templates/spec-template.md): feature specification standard
 - [../.specify/templates/plan-template.md](../.specify/templates/plan-template.md): implementation plan standard
 - [../.specify/templates/tasks-template.md](../.specify/templates/tasks-template.md): task breakdown standard
@@ -65,6 +67,8 @@ This directory contains the repository's supporting documentation. The root
 - `docs/adr/` contains architecture decision records for major technical choices
 - `.specify/` contains canonical project guidance and feature workflow templates
 - AI/tool-specific instruction files should remain derivative of `.specify/`
+- `.agents/` and `.codex/` contain project-specific agent skills and playbooks
+  that remain derivative of `.specify/` for repository policy
 
 ## Navigation
 

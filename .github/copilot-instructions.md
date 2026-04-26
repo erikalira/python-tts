@@ -1,3 +1,6 @@
+<!-- Based on .specify/memory/constitution.md v1.2.1 -->
+<!-- Last synced: 2026-04-26 -->
+
 # GitHub Copilot Instructions
 
 This repository is a two-runtime Python platform:
@@ -15,6 +18,7 @@ The canonical source of project guidance lives in `.specify/`.
 - `.specify/templates/spec-template.md`
 - `.specify/templates/tasks-template.md`
 - `.specify/review-checklist.md`
+- `.specify/memory/ai-pitfalls.md`
 - `docs/architecture/ARCHITECTURE.md`
 
 This file is a derivative summary. If it disagrees with `.specify/`, follow
@@ -67,3 +71,9 @@ Before closing a relevant change:
 - Do not keep implementation-history writeups in `docs/`
 - Keep `docs/README.md` in sync with navigation changes
 - Keep stable AI governance in `.specify/`, not in ad-hoc tool-specific files
+
+## Local agent assets
+
+- `.agents/` contains Spec Kit skills and agent workflow helpers
+- `.codex/` contains Codex skills and architecture/review playbooks
+- Treat both as derivative of `.specify/` for repository policy

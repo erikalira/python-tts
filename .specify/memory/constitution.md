@@ -1,12 +1,12 @@
 <!--
 Sync Impact Report
-- Version change: 1.1.0 -> 1.2.0
+- Version change: 1.2.0 -> 1.2.1
 - Modified principles:
-  - III. Incremental Change With Explicit Contracts -> III. Incremental Change With Explicit Contracts
   - V. Documentation As Operational Memory -> V. Documentation As Operational Memory
 - Added sections:
-  - Decision Standard For Humans And AI
-  - Instruction Hierarchy And Sync Discipline
+  - Project-Specific Guidance Locations
+  - Instruction File Maintenance
+  - Constitution Sync Checklist
 - Removed sections:
   - None
 - Templates requiring updates:
@@ -20,6 +20,8 @@ Sync Impact Report
   - updated: .github/copilot-instructions.md
   - updated: .github/copilot-workspace.yml
   - updated: .github/instructions/documentation-organization.md
+  - updated: .specify/sync-report-template.md
+  - updated: .specify/memory/ai-pitfalls.md
   - updated: docs/README.md
   - updated: README.md
 - Follow-up TODOs:
@@ -162,8 +164,8 @@ before work is considered done.
 
 `.specify/` is the repository's guidance authority for humans and AI agents.
 Derivative files such as `AGENTS.md`, `.github/copilot-instructions.md`,
-`.github/copilot-workspace.yml`, and project-specific skill summaries MUST not
-silently diverge from it.
+`.github/copilot-workspace.yml`, `.github/instructions/*.md`, and
+project-specific skill summaries MUST not silently diverge from it.
 
 - If canonical guidance changes, derivative instruction files MUST be reviewed
   and updated in the same change when relevant.
@@ -173,6 +175,57 @@ silently diverge from it.
   outward only as concise derivative summaries.
 - Stale references to retired guidance locations or alternate canonical sources
   MUST be removed instead of left as historical clutter.
+
+## Project-Specific Guidance Locations
+
+The repository may include tool-specific agent assets, but they are derivative
+unless this constitution explicitly says otherwise.
+
+- `.agents/` contains agent-facing workflows and Spec Kit skills.
+- `.codex/` contains Codex skills, domain review playbooks, and local
+  architecture checks.
+- `.github/` contains GitHub and Copilot-facing summaries, templates, and
+  automation wiring.
+
+These locations MUST reference `.specify/` as the authority when they encode
+repository policy. They MAY contain tool-specific execution details, but they
+MUST NOT redefine architecture, documentation, validation, or governance rules
+in a way that conflicts with `.specify/`.
+
+## Instruction File Maintenance
+
+Instruction and governance Markdown files MUST be maintained as operational
+artifacts, not informal notes.
+
+- Markdown in `.specify/` SHOULD use consistent headings, checklist syntax, and
+  relative links that work from the file location.
+- Derivative instruction files MUST link back to `.specify/` and identify the
+  constitution version they summarize.
+- Derivative instruction files SHOULD include a last-synced date when they are
+  manually maintained.
+- Canonical instruction files SHOULD identify their main derivative consumers
+  when that helps future synchronization.
+- New durable instruction files MUST be added to the governance or docs index
+  that makes them discoverable.
+
+## Constitution Sync Checklist
+
+When `constitution.md` changes, the same change SHOULD review and update the
+following files where relevant. Use `.specify/sync-report-template.md` for a
+durable report when the update spans multiple files.
+
+- [ ] `AGENTS.md`
+- [ ] `.github/copilot-instructions.md`
+- [ ] `.github/copilot-workspace.yml`
+- [ ] `.github/instructions/*.md`
+- [ ] `.agents/` and `.codex/` project-specific skills or summaries
+- [ ] `.specify/templates/*`
+- [ ] `.specify/README.md`
+- [ ] `.specify/review-checklist.md`
+- [ ] `docs/README.md` if navigation changes
+- [ ] `README.md` if governance or contributor entrypoints change
+
+Current sync target: constitution v1.2.1. Update status: DONE.
 
 ## Architecture And Design Heuristics
 
@@ -226,4 +279,4 @@ tests and local validation.
 - New durable guidance SHOULD be encoded as project-specific rules or checklists
   instead of book quotations or theory-heavy summaries.
 
-**Version**: 1.2.0 | **Ratified**: 2026-04-08 | **Last Amended**: 2026-04-17
+**Version**: 1.2.1 | **Ratified**: 2026-04-08 | **Last Amended**: 2026-04-26

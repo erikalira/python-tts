@@ -140,6 +140,7 @@ As regras canonicas de arquitetura, workflow e instrucao para agentes ficam em
 
 - [Indice canonico de governanca](.specify/README.md)
 - [Constituicao do repositorio](.specify/memory/constitution.md)
+- [Pitfalls comuns para IA](.specify/memory/ai-pitfalls.md)
 - [Checklist de review](.specify/review-checklist.md)
 - [Resumo derivado para agentes](AGENTS.md)
 

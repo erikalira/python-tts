@@ -17,11 +17,14 @@ second authority.
 ## Canonical files
 
 - `memory/constitution.md`: non-negotiable rules, review gates, and governance
+- `memory/ai-pitfalls.md`: common AI failure modes to check before changes
 - `templates/spec-template.md`: required shape for feature specifications
 - `templates/plan-template.md`: required shape for implementation plans
 - `templates/tasks-template.md`: required shape for execution task lists
 - `templates/agent-file-template.md`: pattern for derivative agent guidance
 - `review-checklist.md`: review and self-review rubric for code changes
+- `sync-report-template.md`: report template for constitution and derivative
+  instruction synchronization
 - `transition-cleanup.md`: temporary compatibility and cleanup rule
 - `change-map.md`: where to start for each kind of change
 - `change-examples.md`: concrete examples of starting points and target layers
@@ -32,13 +35,38 @@ When instructions appear in multiple places, use this order of precedence:
 
 1. `.specify/memory/constitution.md`
 2. `.specify/templates/*.md`
-3. `.specify/review-checklist.md`, `transition-cleanup.md`, `change-map.md`,
-   and `change-examples.md`
+3. `.specify/review-checklist.md`, `memory/ai-pitfalls.md`,
+   `transition-cleanup.md`, `change-map.md`, and `change-examples.md`
 4. Derivative files such as `AGENTS.md`, `.github/copilot-instructions.md`,
    and `.github/copilot-workspace.yml`
 
 If a derivative file drifts from `.specify/`, `.specify/` wins and the
 derivative file should be corrected.
+
+## Project-Specific Agent Assets
+
+- `.agents/` contains Spec Kit skills and agent-facing workflow helpers.
+- `.codex/` contains Codex skills, review playbooks, and local architecture
+  checks.
+- `.github/` contains GitHub and Copilot-facing derivative summaries and
+  automation wiring.
+
+These locations may include tool-specific execution details, but repository
+policy in them must stay aligned with `.specify/`.
+
+## Sync Workflow
+
+When `.specify/memory/constitution.md` changes:
+
+1. Review `AGENTS.md`, `.github/copilot-instructions.md`,
+   `.github/copilot-workspace.yml`, and `.github/instructions/*.md`.
+2. Review project-specific assets under `.agents/` and `.codex/` when the
+   change affects agent behavior.
+3. Review `.specify/templates/*`, `.specify/review-checklist.md`,
+   `docs/README.md`, and `README.md` when workflow, navigation, validation, or
+   documentation placement changes.
+4. Use `.specify/sync-report-template.md` when the sync has enough scope to
+   need an auditable status report.
 
 ## Staff-Level Working Standard
 
