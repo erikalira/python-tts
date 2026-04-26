@@ -1,7 +1,7 @@
 param(
     [string]$ContainerName = "tts-bot-postgres",
     [string]$DatabaseName = "tts_hotkey_windows",
-    [string]$DatabaseUser = "tts_user",
+    [string]$DatabaseUser = $(if ($env:POSTGRES_USER) { $env:POSTGRES_USER } else { "tts_user" }),
     [string]$BackupDirectory = "C:\Backups\tts-bot",
     [int]$RetentionDays = 30
 )
