@@ -1,6 +1,9 @@
 """Discord bot commands."""
 
+import inspect
 import logging
+from datetime import datetime, timedelta
+from typing import Callable
 
 import discord
 from discord import app_commands
@@ -45,6 +48,7 @@ class DiscordCommands:
         leave_use_case: LeaveVoiceChannelUseCase,
         voice_runtime_availability: VoiceRuntimeAvailability,
         tts_catalog: TTSCatalog,
+        runtime_context_provider: Callable[[], dict[str, str]] | None = None,
     ):
         self._tree = tree
         self._speak_use_case = speak_use_case
@@ -53,6 +57,7 @@ class DiscordCommands:
         self._leave_use_case = leave_use_case
         self._voice_runtime_availability = voice_runtime_availability
         self._tts_catalog = tts_catalog
+        self._runtime_context_provider = runtime_context_provider
         self._join_presenter = DiscordJoinPresenter()
         self._leave_presenter = DiscordLeavePresenter()
         self._speak_presenter = DiscordSpeakPresenter()
@@ -150,14 +155,29 @@ class DiscordCommands:
         await interaction.response.send_message(self._leave_presenter.build_message(result), ephemeral=True)
 
     async def _handle_speak(self, interaction: discord.Interaction, text: str, voz: str | None = None):
+        runtime_context = self._runtime_log_context()
         logger.info(
-            "[SPEAK] Command from user %s (%s) in guild %s",
+            "[SPEAK] Received interaction_id=%s from user %s (%s) in guild %s | process=%s | session_id=%s",
+            interaction.id,
             interaction.user.id,
             interaction.user.name,
             interaction.guild.id if interaction.guild else "None",
+            runtime_context["process"],
+            runtime_context["session_id"],
         )
+
         if not await self._defer_speak_interaction(interaction):
             return
+
+        logger.info(
+            "[SPEAK] Deferred interaction_id=%s from user %s (%s) in guild %s | process=%s | session_id=%s",
+            interaction.id,
+            interaction.user.id,
+            interaction.user.name,
+            interaction.guild.id if interaction.guild else "None",
+            runtime_context["process"],
+            runtime_context["session_id"],
+        )
 
         if not self._get_voice_runtime_status().is_available:
             self._log_voice_runtime_unavailable("speak")
@@ -201,12 +221,86 @@ class DiscordCommands:
                 logger.debug("[SPEAK] Could not send error message: %s", send_error)
 
     async def _defer_speak_interaction(self, interaction: discord.Interaction) -> bool:
+        runtime_context = self._runtime_log_context()
+        response_done = await self._interaction_response_done(interaction)
+        if response_done:
+            logger.warning(
+                "[SPEAK] Interaction already acknowledged before defer attempt | guild=%s | user=%s | process=%s | session_id=%s",
+                interaction.guild.id if interaction.guild else "None",
+                interaction.user.id if interaction.user else "None",
+                runtime_context["process"],
+                runtime_context["session_id"],
+            )
+            return False
+
         try:
             await interaction.response.defer(ephemeral=True, thinking=True)
             return True
         except discord.NotFound as exc:
-            logger.warning("[SPEAK] Interaction expired before initial defer: %s", exc)
+            created_at = getattr(interaction, "created_at", None)
+            interaction_age_ms = None
+            if isinstance(created_at, datetime):
+                interaction_age = discord.utils.utcnow() - created_at
+                interaction_age_ms = max(int(interaction_age / timedelta(milliseconds=1)), 0)
+
+            logger.warning(
+                "[SPEAK] Interaction expired before initial defer: %s | age_ms=%s | response_done=%s | guild=%s | user=%s | process=%s | session_id=%s",
+                exc,
+                interaction_age_ms if interaction_age_ms is not None else "unknown",
+                interaction.response.is_done() if hasattr(interaction.response, "is_done") else "unknown",
+                interaction.guild.id if interaction.guild else "None",
+                interaction.user.id if interaction.user else "None",
+                runtime_context["process"],
+                runtime_context["session_id"],
+            )
             return False
+        except discord.HTTPException as exc:
+            if getattr(exc, "code", None) == 40060:
+                created_at = getattr(interaction, "created_at", None)
+                interaction_age_ms = None
+                if isinstance(created_at, datetime):
+                    interaction_age = discord.utils.utcnow() - created_at
+                    interaction_age_ms = max(int(interaction_age / timedelta(milliseconds=1)), 0)
+
+                logger.warning(
+                    "[SPEAK] Interaction already acknowledged during defer attempt: %s | age_ms=%s | response_done=%s | guild=%s | user=%s | process=%s | session_id=%s",
+                    exc,
+                    interaction_age_ms if interaction_age_ms is not None else "unknown",
+                    await self._interaction_response_done(interaction),
+                    interaction.guild.id if interaction.guild else "None",
+                    interaction.user.id if interaction.user else "None",
+                    runtime_context["process"],
+                    runtime_context["session_id"],
+                )
+                return False
+
+            raise
+
+    async def _interaction_response_done(self, interaction: discord.Interaction) -> bool:
+        response = getattr(interaction, "response", None)
+        if response is None or not hasattr(response, "is_done"):
+            return False
+
+        is_done_result = response.is_done()
+        if inspect.isawaitable(is_done_result):
+            is_done_result = await is_done_result
+        if isinstance(is_done_result, bool):
+            return is_done_result
+        return False
+
+    def _runtime_log_context(self) -> dict[str, str]:
+        if self._runtime_context_provider is None:
+            return {"process": "unknown", "session_id": "unknown"}
+
+        try:
+            context = self._runtime_context_provider() or {}
+        except Exception:
+            return {"process": "unknown", "session_id": "unknown"}
+
+        return {
+            "process": str(context.get("process", "unknown")),
+            "session_id": str(context.get("session_id", "unknown")),
+        }
 
     def _build_speak_message(self, result) -> str:
         return self._speak_presenter.build_message(result)

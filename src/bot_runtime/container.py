@@ -2,6 +2,8 @@
 
 import importlib.util
 import logging
+import os
+import uuid
 
 import discord
 from discord import app_commands
@@ -45,6 +47,7 @@ class Container:
 
     def __init__(self, config: Config):
         self.config = config
+        self.process_marker = f"pid={os.getpid()} run={uuid.uuid4().hex[:8]}"
         self._commands_synced = False
         intents = discord.Intents.default()
         intents.voice_states = True
@@ -128,6 +131,7 @@ class Container:
             leave_use_case=self.leave_use_case,
             voice_runtime_availability=self.voice_runtime_availability,
             tts_catalog=self.tts_catalog,
+            runtime_context_provider=self._runtime_context,
         )
 
         self._log_voice_runtime_status()
@@ -181,8 +185,21 @@ class Container:
 
     def _register_events(self):
         @self.discord_client.event
+        async def on_connect():
+            logger.info(
+                "[GATEWAY] Connected to Discord gateway | process=%s | session_id=%s",
+                self.process_marker,
+                self._gateway_session_id(),
+            )
+
+        @self.discord_client.event
         async def on_ready():
-            logger.info("Discord bot ready as %s", self.discord_client.user)
+            logger.info(
+                "Discord bot ready as %s | process=%s | session_id=%s",
+                self.discord_client.user,
+                self.process_marker,
+                self._gateway_session_id(),
+            )
             logger.info("Connected to %s guild(s)", len(self.discord_client.guilds))
             for guild in self.discord_client.guilds:
                 logger.info("Guild connected: %s (ID: %s)", guild.name, guild.id)
@@ -190,8 +207,36 @@ class Container:
             await self._start_queue_worker_once()
 
         @self.discord_client.event
+        async def on_resumed():
+            logger.info(
+                "[GATEWAY] Discord gateway session resumed | process=%s | session_id=%s",
+                self.process_marker,
+                self._gateway_session_id(),
+            )
+
+        @self.discord_client.event
+        async def on_disconnect():
+            logger.warning(
+                "[GATEWAY] Disconnected from Discord gateway | process=%s | session_id=%s | client_ready=%s",
+                self.process_marker,
+                self._gateway_session_id(),
+                self.discord_client.is_ready(),
+            )
+
+        @self.discord_client.event
         async def on_voice_state_update(member, before, after):
             self.voice_channel_repository.update_member_cache(member.id, after.channel)
+
+    def _gateway_session_id(self) -> str:
+        ws = getattr(self.discord_client, "ws", None)
+        session_id = getattr(ws, "session_id", None)
+        return session_id or "unknown"
+
+    def _runtime_context(self) -> dict[str, str]:
+        return {
+            "process": self.process_marker,
+            "session_id": self._gateway_session_id(),
+        }
 
     async def _sync_commands_once(self) -> None:
         """Sync slash commands only once per process to avoid reconnect churn."""
