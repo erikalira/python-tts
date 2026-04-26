@@ -1,5 +1,6 @@
 """Configuration management using environment variables."""
 
+import logging
 import os
 from pathlib import Path
 from typing import Optional
@@ -84,6 +85,7 @@ class Config:
         )
         otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
         self.otel_exporter_otlp_endpoint: Optional[str] = otlp_endpoint.strip() if otlp_endpoint else None
+        self.log_level = self._parse_log_level(os.getenv("LOG_LEVEL", "INFO"))
 
         # TTS settings
         self.tts_config = TTSConfig(
@@ -121,3 +123,9 @@ class Config:
             return False, "OTEL_EXPORTER_OTLP_ENDPOINT not set for OTEL_ENABLED=true"
 
         return True, ""
+
+    def _parse_log_level(self, raw_level: str | None) -> str:
+        normalized = (raw_level or "INFO").strip().upper() or "INFO"
+        if normalized in logging.getLevelNamesMapping():
+            return normalized
+        return "INFO"

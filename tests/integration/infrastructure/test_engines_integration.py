@@ -39,7 +39,7 @@ class TestGTTSEngineIntegration:
         assert audio is not None
         assert audio.path is not None
         assert os.path.exists(audio.path)
-        assert audio.path.endswith(".wav")
+        assert audio.path.endswith(".mp3")
 
         await cleanup.cleanup(audio)
         assert not os.path.exists(audio.path)

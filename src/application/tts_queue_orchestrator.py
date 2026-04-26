@@ -32,8 +32,6 @@ from src.core.timeouts import (
 
 logger = logging.getLogger(__name__)
 
-_FAST_GENERATION_SKIP_REVALIDATION_THRESHOLD_MS = 400.0
-
 
 class TTSQueueOrchestrator:
     """Coordinate queue draining and playback per guild."""
@@ -210,24 +208,14 @@ class TTSQueueOrchestrator:
                     )
 
                 connect_ms = 0.0
-                connected_during_processing = False
                 if not voice_channel.is_connected():
                     connect_started_at = time.perf_counter()
                     await voice_channel.connect()
                     connect_ms = (time.perf_counter() - connect_started_at) * 1000
-                    connected_during_processing = True
 
-                should_revalidate_member = (
-                    request.member_id is not None
-                    and (
-                        resolution.revalidation_recommended
-                        or connected_during_processing
-                        or generation_ms > _FAST_GENERATION_SKIP_REVALIDATION_THRESHOLD_MS
-                    )
-                )
-                member_validation_status = "skipped"
+                member_validation_status = "not_needed"
                 member_validation_ms = 0.0
-                if should_revalidate_member:
+                if request.member_id is not None:
                     member_validation_started_at = time.perf_counter()
                     if not await self._voice_channel_resolution.is_member_in_channel(
                         request.member_id, voice_channel
@@ -249,13 +237,6 @@ class TTSQueueOrchestrator:
                         )
                     member_validation_ms = (time.perf_counter() - member_validation_started_at) * 1000
                     member_validation_status = "executed"
-                elif request.member_id is not None:
-                    logger.info(
-                        "[QUEUE_ORCHESTRATOR] Skipped final member validation for item %s | guild_id=%s | generation_ms=%.2f",
-                        item.item_id,
-                        request.guild_id,
-                        generation_ms,
-                    )
 
                 try:
                     playback_started_at = time.perf_counter()
