@@ -31,7 +31,7 @@ test_espeak_voices.py
 # Coverage reports
 htmlcov/
 .coverage
-coverage.xml
+coverage.*
 .pytest_cache/
 .test-artifacts/
 

@@ -15,7 +15,7 @@ from src.application.dto import (
 )
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
-from src.core.entities import AudioQueueItem, TTSConfig, TTSRequest
+from src.core.entities import AudioFile, AudioQueueItem, TTSConfig, TTSRequest
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 from tests.conftest import (
     MockAudioCleanup,
@@ -79,6 +79,24 @@ class RecordingOtelRuntime:
 class RecordingSpan:
     def set_attribute(self, key: str, value) -> None:
         del key, value
+
+
+class CountingVoiceChannelResolutionService(VoiceChannelResolutionService):
+    def __init__(self, channel_repository):
+        super().__init__(channel_repository)
+        self.member_validation_calls = 0
+
+    async def is_member_in_channel(self, member_id: int, channel) -> bool:
+        self.member_validation_calls += 1
+        return await super().is_member_in_channel(member_id, channel)
+
+
+class MemberOnlyVoiceChannelRepository(MockVoiceChannelRepository):
+    def __init__(self, channel=None):
+        super().__init__(channel=channel)
+
+    async def find_connected_channel(self):
+        return None
 
 
 @pytest.mark.asyncio
@@ -176,6 +194,77 @@ class TestTTSQueueOrchestrator:
 
         assert result.code == SPEAK_RESULT_OK
         assert tts_engine.calls[0]["config"].engine == "pyttsx3"
+
+    async def test_process_item_skips_final_member_revalidation_for_fast_reused_channel(self):
+        queue = InMemoryAudioQueue()
+        channel = MockVoiceChannel()
+        channel.connected = True
+        resolution_service = CountingVoiceChannelResolutionService(
+            MockVoiceChannelRepository(channel=channel)
+        )
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=MockTTSEngine(),
+            config_repository=MockConfigRepository(),
+            audio_queue=queue,
+            voice_channel_resolution=resolution_service,
+            audio_cleanup=MockAudioCleanup(),
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(text="fast reuse", guild_id=789012, member_id=345678, channel_id=123456)
+        )
+
+        result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_OK
+        assert resolution_service.member_validation_calls == 1
+
+    async def test_process_item_keeps_final_member_revalidation_after_initial_connection(self):
+        queue = InMemoryAudioQueue()
+        resolution_service = CountingVoiceChannelResolutionService(MemberOnlyVoiceChannelRepository())
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=MockTTSEngine(),
+            config_repository=MockConfigRepository(),
+            audio_queue=queue,
+            voice_channel_resolution=resolution_service,
+            audio_cleanup=MockAudioCleanup(),
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(text="initial connect", guild_id=789012, member_id=345678, channel_id=123456)
+        )
+
+        result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_OK
+        assert resolution_service.member_validation_calls == 1
+
+    async def test_process_item_keeps_final_member_revalidation_after_slow_generation(self):
+        class SlowTTSEngine(MockTTSEngine):
+            async def generate_audio(self, text: str, config: TTSConfig):
+                self.calls.append({"text": text, "config": config})
+                await asyncio.sleep(0.45)
+                return AudioFile(path="/tmp/mock_audio.wav")
+
+        queue = InMemoryAudioQueue()
+        channel = MockVoiceChannel()
+        channel.connected = True
+        resolution_service = CountingVoiceChannelResolutionService(
+            MockVoiceChannelRepository(channel=channel)
+        )
+        orchestrator = TTSQueueOrchestrator(
+            tts_engine=SlowTTSEngine(),
+            config_repository=MockConfigRepository(),
+            audio_queue=queue,
+            voice_channel_resolution=resolution_service,
+            audio_cleanup=MockAudioCleanup(),
+        )
+        item = AudioQueueItem(
+            request=TTSRequest(text="slow reuse", guild_id=789012, member_id=345678, channel_id=123456)
+        )
+
+        result = await orchestrator._process_item(item)
+
+        assert result.code == SPEAK_RESULT_OK
+        assert resolution_service.member_validation_calls == 2
 
     async def test_process_item_rejects_requests_without_guild_id(self):
         queue = InMemoryAudioQueue()

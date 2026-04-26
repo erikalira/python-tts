@@ -236,10 +236,13 @@ class DiscordCommands:
 
     async def _defer_speak_interaction(self, interaction: discord.Interaction) -> bool:
         runtime_context = self._runtime_log_context()
+        defer_attempt_started_at = time.perf_counter()
         response_done = await self._interaction_response_done(interaction)
+        pre_defer_check_ms = (time.perf_counter() - defer_attempt_started_at) * 1000
         if response_done:
             logger.warning(
-                "[SPEAK] Interaction already acknowledged before defer attempt | guild=%s | user=%s | process=%s | session_id=%s",
+                "[SPEAK] Interaction already acknowledged before defer attempt | pre_defer_check_ms=%.2f | guild=%s | user=%s | process=%s | session_id=%s",
+                pre_defer_check_ms,
                 interaction.guild.id if interaction.guild else "None",
                 interaction.user.id if interaction.user else "None",
                 runtime_context["process"],
@@ -248,7 +251,17 @@ class DiscordCommands:
             return False
 
         try:
+            api_defer_started_at = time.perf_counter()
             await interaction.response.defer(ephemeral=True, thinking=True)
+            api_defer_ms = (time.perf_counter() - api_defer_started_at) * 1000
+            total_defer_attempt_ms = (time.perf_counter() - defer_attempt_started_at) * 1000
+            logger.info(
+                "[SPEAK] Defer timing interaction_id=%s | pre_defer_check_ms=%.2f | api_defer_ms=%.2f | total_defer_attempt_ms=%.2f",
+                interaction.id,
+                pre_defer_check_ms,
+                api_defer_ms,
+                total_defer_attempt_ms,
+            )
             return True
         except discord.NotFound as exc:
             created_at = getattr(interaction, "created_at", None)
@@ -256,11 +269,14 @@ class DiscordCommands:
             if isinstance(created_at, datetime):
                 interaction_age = discord.utils.utcnow() - created_at
                 interaction_age_ms = max(int(interaction_age / timedelta(milliseconds=1)), 0)
+            total_defer_attempt_ms = (time.perf_counter() - defer_attempt_started_at) * 1000
 
             logger.warning(
-                "[SPEAK] Interaction expired before initial defer: %s | age_ms=%s | response_done=%s | guild=%s | user=%s | process=%s | session_id=%s",
+                "[SPEAK] Interaction expired before initial defer: %s | age_ms=%s | pre_defer_check_ms=%.2f | total_defer_attempt_ms=%.2f | response_done=%s | guild=%s | user=%s | process=%s | session_id=%s",
                 exc,
                 interaction_age_ms if interaction_age_ms is not None else "unknown",
+                pre_defer_check_ms,
+                total_defer_attempt_ms,
                 interaction.response.is_done() if hasattr(interaction.response, "is_done") else "unknown",
                 interaction.guild.id if interaction.guild else "None",
                 interaction.user.id if interaction.user else "None",
@@ -275,11 +291,14 @@ class DiscordCommands:
                 if isinstance(created_at, datetime):
                     interaction_age = discord.utils.utcnow() - created_at
                     interaction_age_ms = max(int(interaction_age / timedelta(milliseconds=1)), 0)
+                total_defer_attempt_ms = (time.perf_counter() - defer_attempt_started_at) * 1000
 
                 logger.warning(
-                    "[SPEAK] Interaction already acknowledged during defer attempt: %s | age_ms=%s | response_done=%s | guild=%s | user=%s | process=%s | session_id=%s",
+                    "[SPEAK] Interaction already acknowledged during defer attempt: %s | age_ms=%s | pre_defer_check_ms=%.2f | total_defer_attempt_ms=%.2f | response_done=%s | guild=%s | user=%s | process=%s | session_id=%s",
                     exc,
                     interaction_age_ms if interaction_age_ms is not None else "unknown",
+                    pre_defer_check_ms,
+                    total_defer_attempt_ms,
                     await self._interaction_response_done(interaction),
                     interaction.guild.id if interaction.guild else "None",
                     interaction.user.id if interaction.user else "None",

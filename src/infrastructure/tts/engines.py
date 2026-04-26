@@ -42,7 +42,7 @@ class GTTSEngine(ITTSEngine):
     
     Follows Single Responsibility: only handles gTTS audio generation.
     """
-    
+
     async def generate_audio(self, text: str, config: TTSConfig) -> AudioFile:
         """Generate audio using Google TTS.
         
@@ -54,7 +54,7 @@ class GTTSEngine(ITTSEngine):
             AudioFile with generated audio path
         """
         loop = asyncio.get_running_loop()
-        tmpname = _create_temp_audio_path(".wav")
+        tmpname = _create_temp_audio_path(".mp3")
         generation_future = loop.run_in_executor(None, self._generate_sync, text, config, tmpname)
 
         try:

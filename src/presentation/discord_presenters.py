@@ -39,7 +39,7 @@ class DiscordSpeakPresenter:
         if code == SPEAK_RESULT_QUEUED:
             position = (result.position or 0) + 1
             queue_size = result.queue_size or position
-            return f"Sua mensagem esta na **fila** (posicao **{position}**/{queue_size}). Sera reproduzida em breve!"
+            return f"Sua mensagem entrou na **fila** (**{position}**/{queue_size})."
         if code == SPEAK_RESULT_MISSING_TEXT:
             return "Texto nao informado."
         if code == SPEAK_RESULT_USER_NOT_IN_CHANNEL:

@@ -156,7 +156,9 @@ class TestDiscordCommands:
         interaction.response.defer.assert_called_once()
         interaction.delete_original_response.assert_not_called()
         interaction.edit_original_response.assert_called_once()
-        assert "fila" in interaction.edit_original_response.call_args.kwargs["content"].lower()
+        content = interaction.edit_original_response.call_args.kwargs["content"].lower()
+        assert "fila" in content
+        assert "entrou" in content
     
     @pytest.mark.asyncio
     async def test_handle_speak_missing_dependencies(self, commands_instance):
