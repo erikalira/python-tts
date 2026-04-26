@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Optional
 
 from src.application.dto import (
@@ -90,6 +91,7 @@ class TTSQueueOrchestrator:
         await self._audio_queue.update_item(item)
         request = item.request
         audio = None
+        processing_started_at = time.perf_counter()
 
         with self._otel_runtime.start_internal_span(
             "tts_queue.process_item",
@@ -116,7 +118,9 @@ class TTSQueueOrchestrator:
                         error_detail=error,
                     )
 
+                resolution_started_at = time.perf_counter()
                 resolution = await self._voice_channel_resolution.resolve_for_request(request)
+                resolution_ms = (time.perf_counter() - resolution_started_at) * 1000
                 if not resolution:
                     error = "Bot nao conseguiu encontrar sua sala de voz"
                     item.mark_failed(error)
@@ -153,10 +157,13 @@ class TTSQueueOrchestrator:
                         error_detail=error,
                     )
 
+                config_started_at = time.perf_counter()
                 config = await self._config_repository.load_config_async(request.guild_id, user_id=request.member_id)
+                config_load_ms = (time.perf_counter() - config_started_at) * 1000
                 config = self._apply_request_override(config, request.config_override)
                 telemetry_engine = self._resolve_engine_name(item)
                 try:
+                    generation_started_at = time.perf_counter()
                     with self._otel_runtime.start_internal_span(
                         "tts_engine.generate_audio",
                         attributes={"guild_id": str(request.guild_id), "engine": config.engine},
@@ -166,6 +173,7 @@ class TTSQueueOrchestrator:
                             timeout=self._generation_timeout_seconds,
                         )
                         generate_span.set_attribute("result_code", "ok")
+                    generation_ms = (time.perf_counter() - generation_started_at) * 1000
                 except asyncio.TimeoutError:
                     error = "Tempo limite excedido durante geracao do audio"
                     item.mark_failed(error)
@@ -199,9 +207,13 @@ class TTSQueueOrchestrator:
                         error_detail=error,
                     )
 
+                connect_ms = 0.0
                 if not voice_channel.is_connected():
+                    connect_started_at = time.perf_counter()
                     await voice_channel.connect()
+                    connect_ms = (time.perf_counter() - connect_started_at) * 1000
 
+                member_validation_started_at = time.perf_counter()
                 if request.member_id and not await self._voice_channel_resolution.is_member_in_channel(
                     request.member_id, voice_channel
                 ):
@@ -220,8 +232,10 @@ class TTSQueueOrchestrator:
                         item_id=item.item_id,
                         error_detail=error,
                     )
+                member_validation_ms = (time.perf_counter() - member_validation_started_at) * 1000
 
                 try:
+                    playback_started_at = time.perf_counter()
                     with self._otel_runtime.start_internal_span(
                         "tts_engine.play_audio",
                         attributes={"guild_id": str(request.guild_id), "engine": config.engine},
@@ -230,6 +244,21 @@ class TTSQueueOrchestrator:
                         playback_span.set_attribute("result_code", "ok")
                     item.mark_completed()
                     await self._audio_queue.update_item(item)
+                    playback_ms = (time.perf_counter() - playback_started_at) * 1000
+                    total_processing_ms = (time.perf_counter() - processing_started_at) * 1000
+                    logger.info(
+                        "[QUEUE_ORCHESTRATOR] Item %s processed | guild_id=%s | engine=%s | resolution_ms=%.2f | config_load_ms=%.2f | generation_ms=%.2f | connect_ms=%.2f | member_validation_ms=%.2f | playback_ms=%.2f | total_processing_ms=%.2f",
+                        item.item_id,
+                        request.guild_id,
+                        config.engine,
+                        resolution_ms,
+                        config_load_ms,
+                        generation_ms,
+                        connect_ms,
+                        member_validation_ms,
+                        playback_ms,
+                        total_processing_ms,
+                    )
                     processing_span.set_attribute("result_code", SPEAK_RESULT_OK)
                     processing_span.set_attribute("timeout_flag", False)
                     self._telemetry.record_processing_result(

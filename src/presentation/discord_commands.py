@@ -2,6 +2,7 @@
 
 import inspect
 import logging
+import time
 from datetime import datetime, timedelta
 from typing import Callable
 
@@ -155,6 +156,7 @@ class DiscordCommands:
         await interaction.response.send_message(self._leave_presenter.build_message(result), ephemeral=True)
 
     async def _handle_speak(self, interaction: discord.Interaction, text: str, voz: str | None = None):
+        request_started_at = time.perf_counter()
         runtime_context = self._runtime_log_context()
         logger.info(
             "[SPEAK] Received interaction_id=%s from user %s (%s) in guild %s | process=%s | session_id=%s",
@@ -169,12 +171,14 @@ class DiscordCommands:
         if not await self._defer_speak_interaction(interaction):
             return
 
+        defer_ms = (time.perf_counter() - request_started_at) * 1000
         logger.info(
-            "[SPEAK] Deferred interaction_id=%s from user %s (%s) in guild %s | process=%s | session_id=%s",
+            "[SPEAK] Deferred interaction_id=%s from user %s (%s) in guild %s | defer_ms=%.2f | process=%s | session_id=%s",
             interaction.id,
             interaction.user.id,
             interaction.user.name,
             interaction.guild.id if interaction.guild else "None",
+            defer_ms,
             runtime_context["process"],
             runtime_context["session_id"],
         )
@@ -196,6 +200,16 @@ class DiscordCommands:
                 return
 
             result = await self._speak_use_case.execute(prepared_request.request)
+            submit_ms = (time.perf_counter() - request_started_at) * 1000
+            logger.info(
+                "[SPEAK] Submission completed interaction_id=%s item_id=%s code=%s queued=%s starts_immediately=%s total_submit_ms=%.2f",
+                interaction.id,
+                result.item_id,
+                result.code,
+                result.queued,
+                result.starts_immediately,
+                submit_ms,
+            )
 
             try:
                 if result.code == SPEAK_RESULT_QUEUED:

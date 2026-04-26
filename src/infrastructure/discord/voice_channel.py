@@ -1,6 +1,7 @@
 """Discord voice channel implementation."""
 import asyncio
 import logging
+import time
 from typing import Optional, Dict
 import discord
 from src.application.dto import DiscordVoiceChannelCacheStatsDTO
@@ -124,6 +125,8 @@ class DiscordVoiceChannel(IVoiceChannel):
         Args:
             audio: AudioFile to play
         """
+        play_audio_started_at = time.perf_counter()
+
         # Check and fix connection if needed
         voice_client = self._sync_voice_client()
         if not voice_client or not voice_client.is_connected():
@@ -186,13 +189,21 @@ class DiscordVoiceChannel(IVoiceChannel):
                 raise RuntimeError("Voice client unavailable after connection")
 
             voice_client.play(source, after=audio_finished_callback)
-            logger.info("[VOICE_CHANNEL] Audio queued for playback, waiting for discord.py callback...")
+            startup_ms = (time.perf_counter() - play_audio_started_at) * 1000
+            logger.info(
+                "[VOICE_CHANNEL] Audio queued for playback, waiting for discord.py callback... | startup_ms=%.2f",
+                startup_ms,
+            )
             
             # WAIT FOR PLAYBACK TO COMPLETE (event-driven, not polling)
             # This is much more reliable than checking is_playing() repeatedly
             try:
                 await asyncio.wait_for(playback_done.wait(), timeout=self._playback_timeout_seconds)
-                logger.info("[VOICE_CHANNEL] Playback completed successfully")
+                playback_wait_ms = (time.perf_counter() - play_audio_started_at) * 1000
+                logger.info(
+                    "[VOICE_CHANNEL] Playback completed successfully | total_play_audio_ms=%.2f",
+                    playback_wait_ms,
+                )
                 
                 # If there was an error in the callback, raise it
                 if playback_error:
