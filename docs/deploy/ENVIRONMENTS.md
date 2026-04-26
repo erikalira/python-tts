@@ -23,6 +23,8 @@ Use the examples in the repository root as the starting point:
 | `PORT` | No | Usually yes | Recommended in cloud deploys | Many platforms provide this automatically. |
 | `DISCORD_BOT_HOST` | Optional | Yes | Yes in cloud practice | Use `0.0.0.0` in deploys so the HTTP server is reachable. |
 | `DISCORD_MEMBER_ID` | Optional | No | No | Desktop App targeting preference. |
+| `BOT_RATE_LIMIT_MAX_REQUESTS` | Optional | Optional | No | Maximum `/speak` requests per caller within the configured window. Defaults to `8`; use `0` to disable. |
+| `BOT_RATE_LIMIT_WINDOW_SECONDS` | Optional | Optional | No | Sliding rate-limit window for bot `/speak` entrypoints. Defaults to `10`. |
 | `TTS_ENGINE` | Optional | Optional | No | Defaults to `gtts`. Validated by the bot runtime. Accepted values today: `gtts`, `pyttsx3`, `edge-tts`. |
 | `TTS_LANGUAGE` | Optional | Optional | No | Defaults to `pt`. |
 | `TTS_VOICE_ID` | Optional | Optional | No | Defaults to `roa/pt-br`. |

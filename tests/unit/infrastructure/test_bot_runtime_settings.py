@@ -160,6 +160,45 @@ def test_config_reads_opentelemetry_settings(tmp_path):
     assert config.otel_exporter_otlp_endpoint == "http://collector:4318"
 
 
+def test_config_reads_rate_limit_settings(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_RATE_LIMIT_MAX_REQUESTS=3",
+                "BOT_RATE_LIMIT_WINDOW_SECONDS=7.5",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.rate_limit_max_requests == 3
+    assert config.rate_limit_window_seconds == 7.5
+
+
+def test_config_rejects_negative_rate_limit_values(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_RATE_LIMIT_MAX_REQUESTS=-1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (
+        False,
+        "BOT_RATE_LIMIT_MAX_REQUESTS must be greater than or equal to 0",
+    )
+
+
 def test_config_uses_info_log_level_by_default(tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text("DISCORD_TOKEN=test-token\n", encoding="utf-8")

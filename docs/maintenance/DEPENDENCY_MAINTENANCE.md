@@ -36,6 +36,13 @@ Install them only in the working environment used for maintenance:
 .\.venv\Scripts\python.exe -m pip install pip-tools pip-audit pur
 ```
 
+The repository also runs automated supply-chain gates in GitHub Actions:
+
+- Dependabot opens weekly PRs for Python requirements and GitHub Actions.
+- `Security` runs `pip-audit` for `requirements.txt` and `requirements-test.txt`.
+- PRs run GitHub dependency review when dependency manifests change.
+- CodeQL scans Python on PRs, pushes to `main`, scheduled runs, and manual dispatch.
+
 ## Repository Helper Script
 
 Use the repository helper script for recurring checks:
@@ -68,7 +75,7 @@ Check declared constraints, installed versions, and possible upgrades.
 ```powershell
 .\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py report --outdated
 .\.venv\Scripts\python.exe -m pip list --outdated
-.\.venv\Scripts\python.exe -m pip-audit -r requirements.txt
+.\.venv\Scripts\pip-audit.exe -r requirements.txt
 ```
 
 When the issue is security-driven, read the advisory before upgrading. Confirm whether the fix requires:
@@ -88,6 +95,11 @@ Use one of these approaches:
 - Broad maintenance pass: reserve for dedicated dependency-update work, not feature implementation.
 
 For day-to-day implementation work, prefer the smallest package set that resolves the problem.
+
+Keep `requirements.txt` and `requirements-test.txt` as the compatible input
+files for now. If lock-style constraints are introduced with `pip-tools`, add
+the compiled files as an additional reproducibility layer instead of removing
+these inputs in the same change.
 
 ### 3. Upgrade in the environment first
 
@@ -167,7 +179,7 @@ Also verify the affected runtime path directly when automation is not enough:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py report --outdated
-.\.venv\Scripts\python.exe -m pip-audit -r requirements.txt
+.\.venv\Scripts\pip-audit.exe -r requirements.txt
 .\.venv\Scripts\python.exe -m pip install -U Pillow
 .\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py pin Pillow --operator >= --files requirements.txt
 .\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py validate
@@ -178,7 +190,7 @@ Also verify the affected runtime path directly when automation is not enough:
 ```powershell
 .\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py report --outdated
 .\.venv\Scripts\python.exe -m pip list --outdated
-.\.venv\Scripts\python.exe -m pip-audit -r requirements.txt
+.\.venv\Scripts\pip-audit.exe -r requirements.txt
 ```
 
 Then decide whether to use:
@@ -196,3 +208,5 @@ Then decide whether to use:
 - Were `tests/integration` run when the dependency touches real providers or platform bindings?
 - Did import smoke checks for `app.py` and `src.bot` still pass?
 - Was manual validation recorded if desktop runtime behavior changed?
+- Did the `Security` workflow pass, including `pip-audit`, dependency review,
+  and CodeQL when applicable?

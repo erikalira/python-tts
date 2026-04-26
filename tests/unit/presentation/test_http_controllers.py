@@ -6,6 +6,7 @@ from aiohttp import web
 
 from src.core.entities import TTSConfig
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
+from src.infrastructure.rate_limiting import InMemoryRateLimiter
 from src.presentation.http_controllers import SpeakController, VoiceContextController
 from src.application.dto import SpeakTextResult
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
@@ -205,6 +206,29 @@ class TestSpeakController:
         response = await controller.handle(request)
         
         assert response.status == 200
+
+    async def test_handle_rate_limits_by_guild_and_member(self):
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
+        )
+        controller = SpeakController(
+            use_case,
+            rate_limiter=InMemoryRateLimiter(clock=lambda: 100.0),
+            rate_limit_max_requests=1,
+            rate_limit_window_seconds=10,
+        )
+        request = Mock(spec=web.Request)
+        request.headers = {}
+        request.json = AsyncMock(return_value={"text": "Hello", "guild_id": 789012, "member_id": 345678})
+
+        first_response = await controller.handle(request)
+        second_response = await controller.handle(request)
+
+        assert first_response.status == 200
+        assert second_response.status == 429
+        assert "rate limit exceeded" in second_response.text
+        assert use_case.execute.await_count == 1
 
     async def test_handle_injects_trace_context_when_otel_is_available(self):
         use_case = Mock(spec=SpeakTextUseCase)

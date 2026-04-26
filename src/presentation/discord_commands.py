@@ -11,6 +11,7 @@ from discord import app_commands
 
 from src.application.discord_speak_request_builder import DiscordSpeakRequestBuilder
 from src.application.dto import SPEAK_RESULT_OK, SPEAK_RESULT_QUEUED
+from src.application.rate_limiting import RateLimiter, RateLimitRequest, RateLimitResult
 from src.application.tts_voice_catalog import TTSCatalog
 from src.application.use_cases import (
     ConfigureTTSUseCase,
@@ -31,6 +32,7 @@ from src.presentation.discord_presenters import (
 )
 
 logger = logging.getLogger(__name__)
+_ALLOW_RATE_LIMIT_RESULT = RateLimitResult(allowed=True, scope="disabled")
 
 
 def _get_voice_runtime_unavailable_message() -> str:
@@ -50,6 +52,9 @@ class DiscordCommands:
         voice_runtime_availability: VoiceRuntimeAvailability,
         tts_catalog: TTSCatalog,
         runtime_context_provider: Callable[[], dict[str, str]] | None = None,
+        rate_limiter: RateLimiter | None = None,
+        rate_limit_max_requests: int = 0,
+        rate_limit_window_seconds: float = 0,
     ):
         self._tree = tree
         self._speak_use_case = speak_use_case
@@ -59,6 +64,9 @@ class DiscordCommands:
         self._voice_runtime_availability = voice_runtime_availability
         self._tts_catalog = tts_catalog
         self._runtime_context_provider = runtime_context_provider
+        self._rate_limiter = rate_limiter
+        self._rate_limit_max_requests = rate_limit_max_requests
+        self._rate_limit_window_seconds = rate_limit_window_seconds
         self._join_presenter = DiscordJoinPresenter()
         self._leave_presenter = DiscordLeavePresenter()
         self._speak_presenter = DiscordSpeakPresenter()
@@ -186,6 +194,17 @@ class DiscordCommands:
         if not self._get_voice_runtime_status().is_available:
             self._log_voice_runtime_unavailable("speak")
             await interaction.edit_original_response(content=_get_voice_runtime_unavailable_message())
+            return
+
+        rate_limit_result = self._check_speak_rate_limit(interaction)
+        if not rate_limit_result.allowed:
+            logger.warning(
+                "[RATE_LIMIT] Discord /speak blocked interaction_id=%s scope=%s retry_after_seconds=%.2f",
+                interaction.id,
+                rate_limit_result.scope,
+                rate_limit_result.retry_after_seconds or 0,
+            )
+            await interaction.edit_original_response(content=self._speak_presenter.build_rate_limit_message(rate_limit_result))
             return
 
         try:
@@ -337,6 +356,26 @@ class DiscordCommands:
 
     def _build_speak_message(self, result) -> str:
         return self._speak_presenter.build_message(result)
+
+    def _check_speak_rate_limit(self, interaction: discord.Interaction) -> RateLimitResult:
+        if self._rate_limiter is None:
+            return _ALLOW_RATE_LIMIT_RESULT
+
+        guild_id = interaction.guild.id if interaction.guild else None
+        user_id = interaction.user.id if interaction.user else None
+        scope = self._speak_rate_limit_scope(guild_id, user_id)
+        return self._rate_limiter.check(
+            RateLimitRequest(
+                scope=scope,
+                limit=self._rate_limit_max_requests,
+                window_seconds=self._rate_limit_window_seconds,
+            )
+        )
+
+    def _speak_rate_limit_scope(self, guild_id: int | None, user_id: int | None) -> str:
+        guild = str(guild_id) if guild_id is not None else "unknown"
+        user = str(user_id) if user_id is not None else "unknown"
+        return f"discord:speak:guild:{guild}:user:{user}"
 
     async def _handle_config(self, interaction: discord.Interaction, voz: str | None):
         await self._config_handler.handle(interaction, voz)

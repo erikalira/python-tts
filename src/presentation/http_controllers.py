@@ -5,6 +5,7 @@ import logging
 from aiohttp import web
 
 from src.application.dto import BotSpeakRequestDTO, SpeakTextInputDTO, VoiceContextQueryDTO
+from src.application.rate_limiting import RateLimiter, RateLimitRequest, RateLimitResult
 from src.application.runtime_telemetry import NullRuntimeSpanContext, RuntimeTelemetry
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 from src.core.entities import TTSConfig
@@ -12,6 +13,8 @@ from src.core.interfaces import IConfigRepository
 from src.presentation.http_presenters import HTTPSpeakPresenter, HTTPVoiceContextPresenter
 
 logger = logging.getLogger(__name__)
+
+_ALLOW_RATE_LIMIT_RESULT = RateLimitResult(allowed=True, scope="disabled")
 
 
 class SpeakController:
@@ -21,10 +24,16 @@ class SpeakController:
         self,
         speak_use_case: SpeakTextUseCase,
         config_repository: IConfigRepository | None = None,
+        rate_limiter: RateLimiter | None = None,
+        rate_limit_max_requests: int = 0,
+        rate_limit_window_seconds: float = 0,
         otel_runtime: RuntimeTelemetry | None = None,
     ):
         self._speak_use_case = speak_use_case
         self._config_repository = config_repository
+        self._rate_limiter = rate_limiter
+        self._rate_limit_max_requests = rate_limit_max_requests
+        self._rate_limit_window_seconds = rate_limit_window_seconds
         self._presenter = HTTPSpeakPresenter()
         self._otel_runtime = otel_runtime
 
@@ -59,6 +68,21 @@ class SpeakController:
                 "engine",
                 config_override.engine if config_override is not None else "configured_default",
             )
+            rate_limit_result = self._check_rate_limit(guild_id, self._parse_int(member_id_value))
+            if not rate_limit_result.allowed:
+                logger.warning(
+                    "[RATE_LIMIT] HTTP /speak blocked scope=%s retry_after_seconds=%.2f",
+                    rate_limit_result.scope,
+                    rate_limit_result.retry_after_seconds or 0,
+                )
+                span.set_attribute("result_code", "rate_limited")
+                span.set_attribute("rate_limited", True)
+                span.set_attribute("rate_limit_scope", rate_limit_result.scope)
+                return web.Response(
+                    text=self._presenter.build_rate_limit_message(rate_limit_result),
+                    status=self._presenter.get_rate_limit_status_code(rate_limit_result),
+                )
+
             tts_request = SpeakTextInputDTO(
                 text=request_dto.text,
                 channel_id=request_dto.channel_id,
@@ -74,6 +98,24 @@ class SpeakController:
                 text=self._presenter.build_message(result),
                 status=self._presenter.get_status_code(result),
             )
+
+    def _check_rate_limit(self, guild_id: int | None, member_id: int | None) -> RateLimitResult:
+        if self._rate_limiter is None:
+            return _ALLOW_RATE_LIMIT_RESULT
+
+        scope = self._rate_limit_scope(guild_id, member_id)
+        return self._rate_limiter.check(
+            RateLimitRequest(
+                scope=scope,
+                limit=self._rate_limit_max_requests,
+                window_seconds=self._rate_limit_window_seconds,
+            )
+        )
+
+    def _rate_limit_scope(self, guild_id: int | None, member_id: int | None) -> str:
+        guild = str(guild_id) if guild_id is not None else "unknown"
+        member = str(member_id) if member_id is not None else "unknown"
+        return f"http:speak:guild:{guild}:member:{member}"
 
     def _parse_int(self, value) -> int | None:
         if value is None:

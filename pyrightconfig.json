@@ -1,6 +1,8 @@
 {
   "include": [
     "src/application/dto",
+    "src/application/rate_limiting.py",
+    "src/application/runtime_telemetry.py",
     "src/bot_runtime/readiness.py",
     "src/core",
     "scripts/test/quality_gates.py",

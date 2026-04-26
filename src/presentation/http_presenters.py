@@ -25,10 +25,17 @@ from src.application.dto import (
     SpeakTextResult,
     VoiceContextResult,
 )
+from src.application.rate_limiting import RateLimitResult
 
 
 class HTTPSpeakPresenter:
     """Map speak results to HTTP text and status."""
+
+    def build_rate_limit_message(self, result: RateLimitResult) -> str:
+        retry_after = result.retry_after_seconds
+        if retry_after is None:
+            return "rate limit exceeded"
+        return f"rate limit exceeded; retry after {max(int(retry_after), 1)} seconds"
 
     def build_message(self, result: SpeakTextResult) -> str:
         if result.code == SPEAK_RESULT_OK:
@@ -67,6 +74,10 @@ class HTTPSpeakPresenter:
         if result.code in (SPEAK_RESULT_OK, SPEAK_RESULT_QUEUED):
             return 200
         return 400
+
+    def get_rate_limit_status_code(self, result: RateLimitResult) -> int:
+        del result
+        return 429
 
 
 class HTTPVoiceContextPresenter:
