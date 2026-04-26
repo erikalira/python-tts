@@ -54,12 +54,6 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Para voz no Discord localmente, tambem pode ser necessario:
-
-```bash
-pip install pynacl
-```
-
 Para o passo a passo completo, consulte [docs/getting-started/SETUP.md](docs/getting-started/SETUP.md).
 
 ## Execucao rapida
