@@ -32,6 +32,8 @@ from src.core.timeouts import (
 
 logger = logging.getLogger(__name__)
 
+_FAST_GENERATION_SKIP_REVALIDATION_THRESHOLD_MS = 400.0
+
 
 class TTSQueueOrchestrator:
     """Coordinate queue draining and playback per guild."""
@@ -208,31 +210,52 @@ class TTSQueueOrchestrator:
                     )
 
                 connect_ms = 0.0
+                connected_during_processing = False
                 if not voice_channel.is_connected():
                     connect_started_at = time.perf_counter()
                     await voice_channel.connect()
                     connect_ms = (time.perf_counter() - connect_started_at) * 1000
+                    connected_during_processing = True
 
-                member_validation_started_at = time.perf_counter()
-                if request.member_id and not await self._voice_channel_resolution.is_member_in_channel(
-                    request.member_id, voice_channel
-                ):
-                    error = "Voce saiu do canal de voz"
-                    item.mark_failed(error)
-                    await self._audio_queue.update_item(item)
-                    self._record_failed_queue_item(
-                        item=item,
-                        code=SPEAK_RESULT_USER_LEFT_CHANNEL,
-                        processing_span=processing_span,
+                should_revalidate_member = (
+                    request.member_id is not None
+                    and (
+                        resolution.revalidation_recommended
+                        or connected_during_processing
+                        or generation_ms > _FAST_GENERATION_SKIP_REVALIDATION_THRESHOLD_MS
                     )
-                    return SpeakTextResult(
-                        success=False,
-                        code=SPEAK_RESULT_USER_LEFT_CHANNEL,
-                        queued=True,
-                        item_id=item.item_id,
-                        error_detail=error,
+                )
+                member_validation_status = "skipped"
+                member_validation_ms = 0.0
+                if should_revalidate_member:
+                    member_validation_started_at = time.perf_counter()
+                    if not await self._voice_channel_resolution.is_member_in_channel(
+                        request.member_id, voice_channel
+                    ):
+                        error = "Voce saiu do canal de voz"
+                        item.mark_failed(error)
+                        await self._audio_queue.update_item(item)
+                        self._record_failed_queue_item(
+                            item=item,
+                            code=SPEAK_RESULT_USER_LEFT_CHANNEL,
+                            processing_span=processing_span,
+                        )
+                        return SpeakTextResult(
+                            success=False,
+                            code=SPEAK_RESULT_USER_LEFT_CHANNEL,
+                            queued=True,
+                            item_id=item.item_id,
+                            error_detail=error,
+                        )
+                    member_validation_ms = (time.perf_counter() - member_validation_started_at) * 1000
+                    member_validation_status = "executed"
+                elif request.member_id is not None:
+                    logger.info(
+                        "[QUEUE_ORCHESTRATOR] Skipped final member validation for item %s | guild_id=%s | generation_ms=%.2f",
+                        item.item_id,
+                        request.guild_id,
+                        generation_ms,
                     )
-                member_validation_ms = (time.perf_counter() - member_validation_started_at) * 1000
 
                 try:
                     playback_started_at = time.perf_counter()
@@ -247,7 +270,7 @@ class TTSQueueOrchestrator:
                     playback_ms = (time.perf_counter() - playback_started_at) * 1000
                     total_processing_ms = (time.perf_counter() - processing_started_at) * 1000
                     logger.info(
-                        "[QUEUE_ORCHESTRATOR] Item %s processed | guild_id=%s | engine=%s | resolution_ms=%.2f | config_load_ms=%.2f | generation_ms=%.2f | connect_ms=%.2f | member_validation_ms=%.2f | playback_ms=%.2f | total_processing_ms=%.2f",
+                        "[QUEUE_ORCHESTRATOR] Item %s processed | guild_id=%s | engine=%s | resolution_ms=%.2f | config_load_ms=%.2f | generation_ms=%.2f | connect_ms=%.2f | member_validation=%s | member_validation_ms=%.2f | playback_ms=%.2f | total_processing_ms=%.2f",
                         item.item_id,
                         request.guild_id,
                         config.engine,
@@ -255,6 +278,7 @@ class TTSQueueOrchestrator:
                         config_load_ms,
                         generation_ms,
                         connect_ms,
+                        member_validation_status,
                         member_validation_ms,
                         playback_ms,
                         total_processing_ms,

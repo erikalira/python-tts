@@ -58,6 +58,7 @@ class TestVoiceChannelResolutionService:
         assert result is not None
         assert result.channel is channel
         assert result.channel_changed is False
+        assert result.revalidation_recommended is False
 
     async def test_moves_to_member_channel_when_bot_is_connected_elsewhere(self):
         member_channel = MockVoiceChannel(channel_id=123456, guild_id=789012)
@@ -76,6 +77,7 @@ class TestVoiceChannelResolutionService:
         assert result is not None
         assert result.channel is member_channel
         assert result.channel_changed is True
+        assert result.revalidation_recommended is True
 
     async def test_rejects_explicit_channel_without_member_context(self):
         service = VoiceChannelResolutionService(ResolutionRepository())
@@ -118,3 +120,4 @@ class TestVoiceChannelResolutionService:
         assert result is not None
         assert result.channel is member_channel
         assert result.channel_changed is False
+        assert result.revalidation_recommended is True

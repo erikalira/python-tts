@@ -103,7 +103,7 @@ class TestGTTSEngine:
         cleanup = FileAudioCleanup()
         
         assert audio is not None
-        assert audio.path.endswith('.wav')
+        assert audio.path.endswith('.mp3')
         
         # Cleanup
         await cleanup.cleanup(audio)
@@ -135,7 +135,6 @@ class TestGTTSEngine:
 
         assert generated_paths
         assert not Path(generated_paths[0]).exists()
-
 
 @pytest.mark.asyncio
 class TestEdgeTTSEngine:

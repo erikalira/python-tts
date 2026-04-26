@@ -26,6 +26,7 @@ class TestDiscordSpeakPresenter:
         )
 
         assert "fila" in message
+        assert "entrou" in message
         assert "2" in message
         assert "3" in message
 

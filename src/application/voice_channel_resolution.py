@@ -14,10 +14,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass(slots=True)
 class VoiceChannelResolution:
-    """Resolved playback channel and whether the bot must move."""
+    """Resolved playback channel and whether a final member revalidation is needed."""
 
     channel: IVoiceChannel
     channel_changed: bool
+    revalidation_recommended: bool
 
 
 class VoiceChannelResolutionService:
@@ -67,18 +68,30 @@ class VoiceChannelResolutionService:
                 request.member_id, connected_channel
             ):
                 logger.info("[VOICE_RESOLUTION] Reusing current bot channel connection")
-                return VoiceChannelResolution(channel=connected_channel, channel_changed=False)
+                return VoiceChannelResolution(
+                    channel=connected_channel,
+                    channel_changed=False,
+                    revalidation_recommended=False,
+                )
 
             if user_current_channel:
                 logger.info("[VOICE_RESOLUTION] Moving bot to member current voice channel")
-                return VoiceChannelResolution(channel=user_current_channel, channel_changed=True)
+                return VoiceChannelResolution(
+                    channel=user_current_channel,
+                    channel_changed=True,
+                    revalidation_recommended=True,
+                )
 
             logger.warning("[VOICE_RESOLUTION] No member channel available while bot is connected")
             return None
 
         if user_current_channel:
             logger.info("[VOICE_RESOLUTION] Using member current channel for initial connection")
-            return VoiceChannelResolution(channel=user_current_channel, channel_changed=False)
+            return VoiceChannelResolution(
+                channel=user_current_channel,
+                channel_changed=False,
+                revalidation_recommended=True,
+            )
 
         logger.warning("[VOICE_RESOLUTION] No safe voice channel could be resolved")
         return None
