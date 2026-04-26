@@ -53,3 +53,23 @@ def test_in_memory_rate_limiter_reopens_scope_after_window():
 
     assert result.allowed is True
 
+
+def test_in_memory_rate_limiter_evicts_expired_scopes():
+    current_time = 100.0
+
+    def clock() -> float:
+        return current_time
+
+    limiter = InMemoryRateLimiter(clock=clock)
+
+    limiter.check(RateLimitRequest(scope="http:speak:guild:1:member:2", limit=1, window_seconds=10))
+    limiter.check(RateLimitRequest(scope="http:speak:guild:1:member:3", limit=1, window_seconds=10))
+    assert set(limiter._hits_by_scope) == {  # noqa: SLF001
+        "http:speak:guild:1:member:2",
+        "http:speak:guild:1:member:3",
+    }
+
+    current_time = 111.0
+    limiter.check(RateLimitRequest(scope="http:speak:guild:1:member:4", limit=1, window_seconds=10))
+
+    assert set(limiter._hits_by_scope) == {"http:speak:guild:1:member:4"}  # noqa: SLF001

@@ -132,6 +132,9 @@ class Config:
         if self.rate_limit_window_seconds < 0:
             return False, "BOT_RATE_LIMIT_WINDOW_SECONDS must be greater than or equal to 0"
 
+        if self.rate_limit_max_requests > 0 and self.rate_limit_window_seconds == 0:
+            return False, "BOT_RATE_LIMIT_WINDOW_SECONDS must be greater than 0 when rate limiting is enabled"
+
         if self.otel_enabled and not self.otel_exporter_otlp_endpoint:
             return False, "OTEL_EXPORTER_OTLP_ENDPOINT not set for OTEL_ENABLED=true"
 

@@ -31,10 +31,8 @@ class InMemoryRateLimiter(RateLimiter):
 
         now = self._clock()
         window_started_at = now - request.window_seconds
+        self._prune_expired_scopes(window_started_at)
         hits = self._hits_by_scope.setdefault(request.scope, deque())
-
-        while hits and hits[0] <= window_started_at:
-            hits.popleft()
 
         if len(hits) >= request.limit:
             retry_after = max(hits[0] + request.window_seconds - now, 0.0)
@@ -48,3 +46,10 @@ class InMemoryRateLimiter(RateLimiter):
         hits.append(now)
         return RateLimitResult(allowed=True, scope=request.scope)
 
+    def _prune_expired_scopes(self, window_started_at: float) -> None:
+        for scope, hits in list(self._hits_by_scope.items()):
+            while hits and hits[0] <= window_started_at:
+                hits.popleft()
+
+            if not hits:
+                del self._hits_by_scope[scope]
