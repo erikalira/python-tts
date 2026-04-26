@@ -127,6 +127,7 @@ implementation and testing of each story.
 
 - [ ] TXXX [P] Final documentation updates in `docs/`, `docs/README.md`, and `README.md`
 - [ ] TXXX Sync derivative guidance such as `AGENTS.md` or `.github/copilot-instructions.md` when canonical rules changed
+- [ ] TXXX Update derivative constitution version comments and last-synced dates when AI guidance changed
 - [ ] TXXX Remove or narrow temporary compatibility code noted in the plan when feasible
 - [ ] TXXX Run the promised automated tests
 - [ ] TXXX Validate the affected runtime(s): bot startup, desktop startup, or both

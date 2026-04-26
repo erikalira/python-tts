@@ -1,3 +1,6 @@
+<!-- Based on .specify/memory/constitution.md [VERSION] -->
+<!-- Last synced: [DATE] -->
+
 # [PROJECT NAME] Development Guidelines
 
 Auto-generated from Spec Kit planning artifacts. Last updated: [DATE]
@@ -11,6 +14,7 @@ Treat `.specify/` as the source of truth for project guidance:
 - `.specify/templates/spec-template.md`
 - `.specify/templates/plan-template.md`
 - `.specify/templates/tasks-template.md`
+- `.specify/memory/ai-pitfalls.md`
 
 This file is a derivative summary. Keep it short, repo-specific, and aligned to
 the canonical docs above instead of restating long policy sections.
@@ -59,6 +63,8 @@ the canonical docs above instead of restating long policy sections.
 - Implementation plans and tasks must follow the constitution in `.specify/memory/constitution.md`.
 - Documentation updates belong in `docs/`, with navigation reflected in `docs/README.md`.
 - Derivative AI instruction files should summarize `.specify/`, not compete with it.
+- Derivative files should identify the constitution version they summarize and
+  their last sync date.
 
 ## Recent Changes
 

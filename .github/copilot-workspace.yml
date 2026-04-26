@@ -1,4 +1,6 @@
 # Copilot Workspace Configuration
+# Based on .specify/memory/constitution.md v1.2.1
+# Last synced: 2026-04-26
 
 project_type: "python_multi_runtime_platform"
 framework: "discord.py_aiohttp_tkinter"
@@ -8,9 +10,10 @@ context_files:
   - ".specify/README.md"
   - ".specify/memory/constitution.md"
   - ".specify/review-checklist.md"
+  - ".specify/memory/ai-pitfalls.md"
   - "README.md"
   - "docs/README.md"
-  - "docs/ARCHITECTURE.md"
+  - "docs/architecture/ARCHITECTURE.md"
   - "src/bot.py"
   - "app.py"
   - "AGENTS.md"
@@ -44,6 +47,7 @@ documentation_requirements:
   - "Update docs/README.md when navigation changes"
   - "Treat .specify/ as canonical AI governance"
   - "Keep AGENTS.md and Copilot instruction files derivative of .specify/"
+  - "Keep .agents/ and .codex/ project-specific guidance synchronized with .specify/"
 
 naming_conventions:
   files: "snake_case"

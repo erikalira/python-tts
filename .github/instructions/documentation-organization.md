@@ -1,3 +1,6 @@
+<!-- Based on .specify/memory/constitution.md v1.2.1 -->
+<!-- Last synced: 2026-04-26 -->
+
 # Documentation Organization
 
 Use `.specify/README.md` and `.specify/memory/constitution.md` as the canonical
@@ -13,9 +16,13 @@ policy for documentation placement.
 - Update root links if a documentation move affects `README.md`
 - Keep stable AI governance in `.specify/`, not in `docs/ai/`, `docs/features/`,
   or other ad-hoc locations
+- Keep `.agents/`, `.codex/`, and GitHub instruction files derivative of
+  `.specify/` when they describe repository policy
 
 ## Quick examples
 
 - Architecture decision or operational guide -> `docs/`
 - Feature specification, plan, or tasks -> `specs/`
 - Workflow rule or instruction governance -> `.specify/`
+- Tool-specific agent skill or local playbook -> `.agents/` or `.codex/`, with
+  `.specify/` as the policy source

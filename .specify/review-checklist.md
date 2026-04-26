@@ -6,19 +6,19 @@ Use this checklist during code review, self-review, or AI review guidance.
 
 1. Does the change preserve architecture boundaries?
 2. Did any file in `src/application/` or `src/presentation/` start importing `src.infrastructure/`?
-2. Are module contracts explicit and predictable?
-3. Did the change reduce duplication or accidentally introduce more?
-4. Is responsibility clearer after the change?
-5. Is the changed flow easier for the next contributor to understand?
-6. Was a new abstraction introduced for a real repository need, or only because
+3. Are module contracts explicit and predictable?
+4. Did the change reduce duplication or accidentally introduce more?
+5. Is responsibility clearer after the change?
+6. Is the changed flow easier for the next contributor to understand?
+7. Was a new abstraction introduced for a real repository need, or only because
    a pattern looked appealing?
-7. Does the change improve operability, diagnosability, or runtime resilience
+8. Does the change improve operability, diagnosability, or runtime resilience
    where relevant?
-8. Did the author optimize for repository-level maintainability instead of a
+9. Did the author optimize for repository-level maintainability instead of a
    local shortcut?
-9. Is the intended steady state clear if compatibility code or a migration path
+10. Is the intended steady state clear if compatibility code or a migration path
    was introduced?
-10. Was any obsolete path, dead code, or transitional branch left behind
+11. Was any obsolete path, dead code, or transitional branch left behind
     without a reason?
 
 ## Runtime safety
@@ -100,3 +100,15 @@ Update docs when the change affects:
 - contributor decision-making
 - temporary compatibility structure
 - AI guidance hierarchy or repository governance
+
+## AI Guidance Sync
+
+Check when canonical guidance changes:
+
+- derivative files identify the constitution version they summarize
+- `AGENTS.md`, `.github/copilot-instructions.md`, `.github/copilot-workspace.yml`,
+  and `.github/instructions/*.md` still point back to `.specify/`
+- `.agents/` and `.codex/` guidance remains tool-specific and does not redefine
+  repository policy
+- `.specify/sync-report-template.md` is used when the sync spans enough files
+  to need explicit status tracking

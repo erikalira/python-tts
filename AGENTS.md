@@ -1,3 +1,6 @@
+<!-- Based on .specify/memory/constitution.md v1.2.1 -->
+<!-- Last synced: 2026-04-26 -->
+
 # Project Overview
 
 This repository contains two independent applications:
@@ -17,6 +20,7 @@ Use `.specify/` as the source of truth for repository workflow and AI guidance:
 - `.specify/templates/plan-template.md`
 - `.specify/templates/tasks-template.md`
 - `.specify/review-checklist.md`
+- `.specify/memory/ai-pitfalls.md`
 
 This file is a derivative summary. If guidance conflicts, `.specify/` wins.
 
@@ -68,3 +72,9 @@ Hard boundary:
 - Keep stable AI governance in `.specify/`, not scattered across tool-specific files
 - Do not keep implementation-history writeups in `docs/`
 - Update `docs/README.md` when documentation structure or navigation changes
+
+# Local Agent Assets
+
+- `.agents/` contains Spec Kit agent skills and workflow helpers
+- `.codex/` contains Codex skills and project-specific review playbooks
+- Both are derivative of `.specify/` for repository policy and must stay synchronized when canonical guidance changes
