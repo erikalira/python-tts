@@ -42,7 +42,7 @@ jobs:
           Write-Host "Executable size: $([math]::Round((Get-Item 'dist/HotkeyTTS.exe').Length / 1MB, 2)) MB"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-app-windows-exe
           path: |
