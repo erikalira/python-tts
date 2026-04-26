@@ -109,7 +109,7 @@ class JSONConfigStorage(IConfigStorage):
                 data = json.load(f)
 
             config = self._parse_config_data(data)
-            logger.info(f"[CONFIG_STORAGE] Loaded config synchronously for guild {guild_id}: {config.engine}")
+            logger.debug(f"[CONFIG_STORAGE] Loaded config synchronously for guild {guild_id}: {config.engine}")
             return config
 
         except (json.JSONDecodeError, KeyError) as e:
@@ -283,7 +283,7 @@ class GuildConfigRepository(IConfigRepository):
                 user_config = await self._storage.load(guild_id, user_id=user_id)
                 if user_config:
                     self._user_cache[(guild_id, user_id)] = self._clone_config(user_config)
-                    logger.info(
+                    logger.debug(
                         "[CONFIG_REPO] Loaded config from storage for guild %s user %s",
                         guild_id,
                         user_id,
@@ -294,7 +294,7 @@ class GuildConfigRepository(IConfigRepository):
             
             if config:
                 self._cache[guild_id] = self._clone_config(config)
-                logger.info(f"[CONFIG_REPO] Loaded config from storage for guild {guild_id}")
+                logger.debug(f"[CONFIG_REPO] Loaded config from storage for guild {guild_id}")
                 return self._clone_config(self._cache[guild_id])
             else:
                 logger.debug(f"[CONFIG_REPO] No config in storage for guild {guild_id}, using default")

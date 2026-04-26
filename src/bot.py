@@ -10,18 +10,33 @@ from src.bot_runtime.container import Container
 from src.bot_runtime.settings import Config
 from src.infrastructure.http.server import HTTPServer
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
+
+
+def _configure_logging(log_level_name: str) -> None:
+    level = logging.getLevelNamesMapping().get(log_level_name.upper(), logging.INFO)
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        force=True,
+    )
+
+    if level == logging.INFO:
+        library_level = logging.WARNING
+    elif level > logging.INFO:
+        library_level = level
+    else:
+        return
+
+    logging.getLogger("discord").setLevel(library_level)
+    logging.getLogger("aiohttp.access").setLevel(library_level)
 
 
 async def main():
     """Main entry point."""
     # Load configuration
     config = Config()
+    _configure_logging(config.log_level)
     
     # Validate configuration
     is_valid, error_msg = config.validate()

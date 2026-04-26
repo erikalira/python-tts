@@ -54,7 +54,7 @@ class TestTTSEngineFactory:
 class TestRoutedTTSEngine:
     async def test_routes_to_engine_requested_by_current_config(self):
         gtts_engine = AsyncMock()
-        gtts_engine.generate_audio = AsyncMock(return_value=AudioFile(path="/tmp/gtts.wav"))
+        gtts_engine.generate_audio = AsyncMock(return_value=AudioFile(path="/tmp/gtts.mp3"))
         pyttsx3_engine = AsyncMock()
         pyttsx3_engine.generate_audio = AsyncMock(return_value=AudioFile(path="/tmp/pyttsx3.wav"))
         edge_engine = AsyncMock()
@@ -78,7 +78,7 @@ class TestRoutedTTSEngine:
             second = await router.generate_audio("robot", TTSConfig(engine="pyttsx3", language="en"))
             third = await router.generate_audio("neural", TTSConfig(engine="edge-tts", language="pt-BR", voice_id="pt-BR-FranciscaNeural"))
 
-        assert first.path == "/tmp/gtts.wav"
+        assert first.path == "/tmp/gtts.mp3"
         assert second.path == "/tmp/pyttsx3.wav"
         assert third.path == "/tmp/edge.mp3"
         assert create_calls == ["gtts", "pyttsx3", "edge-tts"]

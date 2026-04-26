@@ -39,7 +39,7 @@ class VoiceChannelResolutionService:
     async def resolve_for_request(self, request: TTSRequest) -> Optional[VoiceChannelResolution]:
         user_current_channel = None
         if request.member_id:
-            logger.info("[VOICE_RESOLUTION] Looking up current voice channel for member %s", request.member_id)
+            logger.debug("[VOICE_RESOLUTION] Looking up current voice channel for member %s", request.member_id)
             user_current_channel = await self._channel_repository.find_by_member_id(request.member_id)
             if not user_current_channel:
                 logger.warning("[VOICE_RESOLUTION] Member %s is not in any voice channel", request.member_id)
@@ -67,7 +67,7 @@ class VoiceChannelResolutionService:
             if user_current_channel and request.member_id and await self.is_member_in_channel(
                 request.member_id, connected_channel
             ):
-                logger.info("[VOICE_RESOLUTION] Reusing current bot channel connection")
+                logger.debug("[VOICE_RESOLUTION] Reusing current bot channel connection")
                 return VoiceChannelResolution(
                     channel=connected_channel,
                     channel_changed=False,
@@ -75,7 +75,7 @@ class VoiceChannelResolutionService:
                 )
 
             if user_current_channel:
-                logger.info("[VOICE_RESOLUTION] Moving bot to member current voice channel")
+                logger.debug("[VOICE_RESOLUTION] Moving bot to member current voice channel")
                 return VoiceChannelResolution(
                     channel=user_current_channel,
                     channel_changed=True,
@@ -86,7 +86,7 @@ class VoiceChannelResolutionService:
             return None
 
         if user_current_channel:
-            logger.info("[VOICE_RESOLUTION] Using member current channel for initial connection")
+            logger.debug("[VOICE_RESOLUTION] Using member current channel for initial connection")
             return VoiceChannelResolution(
                 channel=user_current_channel,
                 channel_changed=False,
@@ -100,13 +100,13 @@ class VoiceChannelResolutionService:
         try:
             current_user_channel = await self._channel_repository.find_by_member_id(member_id)
             if current_user_channel is None:
-                logger.info("[VOICE_RESOLUTION] Member %s is not in any voice channel", member_id)
+                logger.debug("[VOICE_RESOLUTION] Member %s is not in any voice channel", member_id)
                 return False
 
             channel_id = channel.get_channel_id()
             user_channel_id = current_user_channel.get_channel_id()
             is_same = channel_id == user_channel_id
-            logger.info(
+            logger.debug(
                 "[VOICE_RESOLUTION] Member %s channel=%s target=%s same=%s",
                 member_id,
                 user_channel_id,

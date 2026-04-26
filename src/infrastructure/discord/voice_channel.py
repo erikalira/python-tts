@@ -138,7 +138,7 @@ class DiscordVoiceChannel(IVoiceChannel):
                 raise RuntimeError("Failed to reconnect to voice channel")
             voice_client = self._sync_voice_client()
         
-        logger.info(f"[VOICE_CHANNEL] Voice client is connected, preparing to play audio: {audio.path}")
+        logger.debug(f"[VOICE_CHANNEL] Voice client is connected, preparing to play audio: {audio.path}")
         
         # Cancel any pending disconnect
         self._cancel_disconnect_timer()
@@ -151,7 +151,7 @@ class DiscordVoiceChannel(IVoiceChannel):
         
         # Play audio with event-based completion detection (reliable synchronization)
         try:
-            logger.info("[VOICE_CHANNEL] Starting audio playback")
+            logger.debug("[VOICE_CHANNEL] Starting audio playback")
             
             # Create event to signal when playback completes
             playback_done = asyncio.Event()
@@ -174,7 +174,7 @@ class DiscordVoiceChannel(IVoiceChannel):
                 if error:
                     logger.error(f"[VOICE_CHANNEL] Audio player error: {error}")
                 else:
-                    logger.info("[VOICE_CHANNEL] Audio playback finished (callback triggered)")
+                    logger.debug("[VOICE_CHANNEL] Audio playback finished (callback triggered)")
                 
                 # Signal that playback is complete (success or error)
                 playback_done.set()
@@ -190,7 +190,7 @@ class DiscordVoiceChannel(IVoiceChannel):
 
             voice_client.play(source, after=audio_finished_callback)
             startup_ms = (time.perf_counter() - play_audio_started_at) * 1000
-            logger.info(
+            logger.debug(
                 "[VOICE_CHANNEL] Audio queued for playback, waiting for discord.py callback... | startup_ms=%.2f",
                 startup_ms,
             )
@@ -200,7 +200,7 @@ class DiscordVoiceChannel(IVoiceChannel):
             try:
                 await asyncio.wait_for(playback_done.wait(), timeout=self._playback_timeout_seconds)
                 playback_wait_ms = (time.perf_counter() - play_audio_started_at) * 1000
-                logger.info(
+                logger.debug(
                     "[VOICE_CHANNEL] Playback completed successfully | total_play_audio_ms=%.2f",
                     playback_wait_ms,
                 )
@@ -268,7 +268,7 @@ class DiscordVoiceChannel(IVoiceChannel):
         
         # Schedule new disconnect
         if self._idle_disconnect_timeout_seconds:
-            logger.info(
+            logger.debug(
                 "[VOICE_CHANNEL] Scheduling auto-disconnect in %ss",
                 self._idle_disconnect_timeout_seconds,
             )
@@ -277,7 +277,7 @@ class DiscordVoiceChannel(IVoiceChannel):
     def _cancel_disconnect_timer(self) -> None:
         """Cancel scheduled disconnect."""
         if self._disconnect_task and not self._disconnect_task.done():
-            logger.info("[VOICE_CHANNEL] Cancelling scheduled disconnect (new activity)")
+            logger.debug("[VOICE_CHANNEL] Cancelling scheduled disconnect (new activity)")
             self._disconnect_task.cancel()
             self._disconnect_task = None
     
@@ -360,7 +360,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
                 if guild.voice_client and guild.voice_client.is_connected():
                     channel = guild.voice_client.channel
                     if channel:
-                        logger.info(f"[VOICE_REPO] Found connected channel: {channel.name} in guild {guild.name} (id={guild.id})")
+                        logger.debug(f"[VOICE_REPO] Found connected channel: {channel.name} in guild {guild.name} (id={guild.id})")
                         # Reuse existing instance if available
                         if channel.id not in self._channel_instances:
                             self._channel_instances[channel.id] = self._create_channel_instance(channel)

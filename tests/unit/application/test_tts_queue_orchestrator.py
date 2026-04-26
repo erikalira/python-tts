@@ -195,7 +195,7 @@ class TestTTSQueueOrchestrator:
         assert result.code == SPEAK_RESULT_OK
         assert tts_engine.calls[0]["config"].engine == "pyttsx3"
 
-    async def test_process_item_skips_final_member_revalidation_for_fast_reused_channel(self):
+    async def test_process_item_keeps_final_member_revalidation_for_reused_channel(self):
         queue = InMemoryAudioQueue()
         channel = MockVoiceChannel()
         channel.connected = True
@@ -216,7 +216,7 @@ class TestTTSQueueOrchestrator:
         result = await orchestrator._process_item(item)
 
         assert result.code == SPEAK_RESULT_OK
-        assert resolution_service.member_validation_calls == 1
+        assert resolution_service.member_validation_calls == 2
 
     async def test_process_item_keeps_final_member_revalidation_after_initial_connection(self):
         queue = InMemoryAudioQueue()

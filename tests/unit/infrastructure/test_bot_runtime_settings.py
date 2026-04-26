@@ -160,6 +160,32 @@ def test_config_reads_opentelemetry_settings(tmp_path):
     assert config.otel_exporter_otlp_endpoint == "http://collector:4318"
 
 
+def test_config_uses_info_log_level_by_default(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DISCORD_TOKEN=test-token\n", encoding="utf-8")
+
+    config = Config(env_file=env_file)
+
+    assert config.log_level == "INFO"
+
+
+def test_config_reads_debug_log_level_override(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "LOG_LEVEL=debug",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.log_level == "DEBUG"
+
+
 def test_config_requires_otlp_endpoint_when_otel_is_enabled(tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text(

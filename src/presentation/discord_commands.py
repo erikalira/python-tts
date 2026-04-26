@@ -158,7 +158,7 @@ class DiscordCommands:
     async def _handle_speak(self, interaction: discord.Interaction, text: str, voz: str | None = None):
         request_started_at = time.perf_counter()
         runtime_context = self._runtime_log_context()
-        logger.info(
+        logger.debug(
             "[SPEAK] Received interaction_id=%s from user %s (%s) in guild %s | process=%s | session_id=%s",
             interaction.id,
             interaction.user.id,
@@ -172,7 +172,7 @@ class DiscordCommands:
             return
 
         defer_ms = (time.perf_counter() - request_started_at) * 1000
-        logger.info(
+        logger.debug(
             "[SPEAK] Deferred interaction_id=%s from user %s (%s) in guild %s | defer_ms=%.2f | process=%s | session_id=%s",
             interaction.id,
             interaction.user.id,
@@ -201,7 +201,7 @@ class DiscordCommands:
 
             result = await self._speak_use_case.execute(prepared_request.request)
             submit_ms = (time.perf_counter() - request_started_at) * 1000
-            logger.info(
+            logger.debug(
                 "[SPEAK] Submission completed interaction_id=%s item_id=%s code=%s queued=%s starts_immediately=%s total_submit_ms=%.2f",
                 interaction.id,
                 result.item_id,
@@ -255,7 +255,7 @@ class DiscordCommands:
             await interaction.response.defer(ephemeral=True, thinking=True)
             api_defer_ms = (time.perf_counter() - api_defer_started_at) * 1000
             total_defer_attempt_ms = (time.perf_counter() - defer_attempt_started_at) * 1000
-            logger.info(
+            logger.debug(
                 "[SPEAK] Defer timing interaction_id=%s | pre_defer_check_ms=%.2f | api_defer_ms=%.2f | total_defer_attempt_ms=%.2f",
                 interaction.id,
                 pre_defer_check_ms,

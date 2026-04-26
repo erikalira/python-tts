@@ -1,4 +1,5 @@
 """Tests for bot entry point."""
+import logging
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 
@@ -101,3 +102,39 @@ class TestBotModule:
         from src.bot import main
         import asyncio
         assert asyncio.iscoroutinefunction(main)
+
+    def test_configure_logging_uses_warning_for_library_loggers_at_info(self):
+        """Test noisy library loggers are reduced at INFO without hiding errors."""
+        from src.bot import _configure_logging
+
+        discord_logger = logging.getLogger("discord")
+        aiohttp_access_logger = logging.getLogger("aiohttp.access")
+        original_discord_level = discord_logger.level
+        original_aiohttp_level = aiohttp_access_logger.level
+
+        try:
+            _configure_logging("INFO")
+
+            assert discord_logger.level == logging.WARNING
+            assert aiohttp_access_logger.level == logging.WARNING
+        finally:
+            discord_logger.setLevel(original_discord_level)
+            aiohttp_access_logger.setLevel(original_aiohttp_level)
+
+    def test_configure_logging_respects_error_for_library_loggers(self):
+        """Test library loggers honor ERROR when configured above INFO."""
+        from src.bot import _configure_logging
+
+        discord_logger = logging.getLogger("discord")
+        aiohttp_access_logger = logging.getLogger("aiohttp.access")
+        original_discord_level = discord_logger.level
+        original_aiohttp_level = aiohttp_access_logger.level
+
+        try:
+            _configure_logging("ERROR")
+
+            assert discord_logger.level == logging.ERROR
+            assert aiohttp_access_logger.level == logging.ERROR
+        finally:
+            discord_logger.setLevel(original_discord_level)
+            aiohttp_access_logger.setLevel(original_aiohttp_level)
