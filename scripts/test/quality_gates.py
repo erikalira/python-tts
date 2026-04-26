@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import argparse
+from http.client import HTTPConnection, HTTPSConnection
 import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
-from urllib.request import urlopen
+from urllib.parse import ParseResult, urlparse
 
 from defusedxml.ElementTree import fromstring as parse_xml  # type: ignore[reportMissingModuleSource]
 
@@ -153,12 +153,13 @@ def evaluate_coverage_gates(
     return global_percent, domain_results
 
 
-def _validate_http_url(url: str) -> None:
+def _validate_http_url(url: str) -> ParseResult:
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"}:
         raise ValueError("Observability URL must use http or https")
-    if not parsed.netloc:
+    if not parsed.netloc or parsed.hostname is None:
         raise ValueError("Observability URL must include a host")
+    return parsed
 
 
 def evaluate_observability_payload(
@@ -201,12 +202,24 @@ def evaluate_observability_payload(
 
 
 def fetch_observability_payload(url: str, *, timeout_seconds: float = 10.0) -> dict[str, Any]:
-    _validate_http_url(url)
-    with urlopen(url, timeout=timeout_seconds) as response:
-        status = getattr(response, "status", None)
-        if status is not None and int(status) >= 400:
-            raise ValueError(f"Observability endpoint returned HTTP {status}")
+    parsed = _validate_http_url(url)
+    host = parsed.hostname
+    if host is None:
+        raise ValueError("Observability URL must include a host")
+    connection_class = HTTPSConnection if parsed.scheme == "https" else HTTPConnection
+    path = parsed.path or "/"
+    if parsed.query:
+        path = f"{path}?{parsed.query}"
+
+    connection = connection_class(host, parsed.port, timeout=timeout_seconds)
+    try:
+        connection.request("GET", path)
+        response = connection.getresponse()
+        if int(response.status) >= 400:
+            raise ValueError(f"Observability endpoint returned HTTP {response.status}")
         return json.loads(response.read().decode("utf-8"))
+    finally:
+        connection.close()
 
 
 def _build_parser() -> argparse.ArgumentParser:

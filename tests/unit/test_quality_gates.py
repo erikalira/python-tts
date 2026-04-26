@@ -220,27 +220,25 @@ def test_fetch_observability_payload_reads_live_endpoint(monkeypatch):
     class FakeResponse:
         status = 200
 
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
         def read(self):
             return b'{"error_rate": 0.0, "enqueue_to_playback_sample_count": 1, "enqueue_to_playback_p95_ms": 1, "enqueue_to_playback_p99_ms": 1}'
 
-    urlopen = Mock(return_value=FakeResponse())
-    monkeypatch.setattr(quality_gates, "urlopen", urlopen)
+    connection = Mock()
+    connection.getresponse.return_value = FakeResponse()
+    http_connection = Mock(return_value=connection)
+    monkeypatch.setattr(quality_gates, "HTTPConnection", http_connection)
 
     payload = quality_gates.fetch_observability_payload("http://127.0.0.1:10000/observability", timeout_seconds=2.5)
 
     assert payload["error_rate"] == 0.0
-    urlopen.assert_called_once_with("http://127.0.0.1:10000/observability", timeout=2.5)
+    http_connection.assert_called_once_with("127.0.0.1", 10000, timeout=2.5)
+    connection.request.assert_called_once_with("GET", "/observability")
+    connection.close.assert_called_once_with()
 
 
 def test_fetch_observability_payload_rejects_non_http_urls(monkeypatch):
-    urlopen = Mock()
-    monkeypatch.setattr(quality_gates, "urlopen", urlopen)
+    http_connection = Mock()
+    monkeypatch.setattr(quality_gates, "HTTPConnection", http_connection)
 
     try:
         quality_gates.fetch_observability_payload("file:///tmp/observability.json")
@@ -249,4 +247,4 @@ def test_fetch_observability_payload_rejects_non_http_urls(monkeypatch):
     else:
         raise AssertionError("Expected non-HTTP observability URL to be rejected")
 
-    urlopen.assert_not_called()
+    http_connection.assert_not_called()

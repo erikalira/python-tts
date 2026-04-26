@@ -19,7 +19,7 @@ from src.application.dto import (
     SPEAK_RESULT_VOICE_PERMISSION_DENIED,
     SpeakTextResult,
 )
-from src.application.runtime_telemetry import NullRuntimeSpanContext, RuntimeTelemetry
+from src.application.runtime_telemetry import NullRuntimeSpanContext, RuntimeSpan, RuntimeTelemetry
 from src.application.telemetry import BotRuntimeTelemetry, NoOpBotRuntimeTelemetry
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.core.entities import AudioQueueItem, TTSConfig
@@ -103,7 +103,11 @@ class TTSQueueOrchestrator:
                     error = "Guild ID nao foi fornecido - isolamento de servidor falhou"
                     item.mark_failed(error)
                     await self._audio_queue.update_item(item)
-                    processing_span.set_attribute("result_code", SPEAK_RESULT_MISSING_GUILD_ID)
+                    self._record_failed_queue_item(
+                        item=item,
+                        code=SPEAK_RESULT_MISSING_GUILD_ID,
+                        processing_span=processing_span,
+                    )
                     return SpeakTextResult(
                         success=False,
                         code=SPEAK_RESULT_MISSING_GUILD_ID,
@@ -117,7 +121,11 @@ class TTSQueueOrchestrator:
                     error = "Bot nao conseguiu encontrar sua sala de voz"
                     item.mark_failed(error)
                     await self._audio_queue.update_item(item)
-                    processing_span.set_attribute("result_code", SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND)
+                    self._record_failed_queue_item(
+                        item=item,
+                        code=SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
+                        processing_span=processing_span,
+                    )
                     return SpeakTextResult(
                         success=False,
                         code=SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
@@ -132,7 +140,11 @@ class TTSQueueOrchestrator:
                     error = "Canal de voz pertence a servidor diferente"
                     item.mark_failed(error)
                     await self._audio_queue.update_item(item)
-                    processing_span.set_attribute("result_code", SPEAK_RESULT_CROSS_GUILD_CHANNEL)
+                    self._record_failed_queue_item(
+                        item=item,
+                        code=SPEAK_RESULT_CROSS_GUILD_CHANNEL,
+                        processing_span=processing_span,
+                    )
                     return SpeakTextResult(
                         success=False,
                         code=SPEAK_RESULT_CROSS_GUILD_CHANNEL,
@@ -196,7 +208,11 @@ class TTSQueueOrchestrator:
                     error = "Voce saiu do canal de voz"
                     item.mark_failed(error)
                     await self._audio_queue.update_item(item)
-                    processing_span.set_attribute("result_code", SPEAK_RESULT_USER_LEFT_CHANNEL)
+                    self._record_failed_queue_item(
+                        item=item,
+                        code=SPEAK_RESULT_USER_LEFT_CHANNEL,
+                        processing_span=processing_span,
+                    )
                     return SpeakTextResult(
                         success=False,
                         code=SPEAK_RESULT_USER_LEFT_CHANNEL,
@@ -332,6 +348,34 @@ class TTSQueueOrchestrator:
             rate=override.rate,
             output_device=base_config.output_device,
         )
+
+    def _record_failed_queue_item(
+        self,
+        *,
+        item: AudioQueueItem,
+        code: str,
+        processing_span: RuntimeSpan,
+    ) -> None:
+        engine = self._resolve_engine_name(item)
+        processing_span.set_attribute("result_code", code)
+        processing_span.set_attribute(
+            "timeout_flag",
+            code in {SPEAK_RESULT_GENERATION_TIMEOUT, SPEAK_RESULT_PLAYBACK_TIMEOUT},
+        )
+        self._telemetry.record_processing_result(
+            item=item,
+            success=False,
+            code=code,
+            engine=engine,
+        )
+        if self._otel_runtime is not None:
+            self._otel_runtime.record_queue_item_processed(
+                guild_id=item.request.guild_id,
+                engine=engine,
+                result_code=code,
+                success=False,
+                timeout_flag=code in {SPEAK_RESULT_GENERATION_TIMEOUT, SPEAK_RESULT_PLAYBACK_TIMEOUT},
+            )
 
     def _resolve_engine_name(self, item: AudioQueueItem) -> str:
         override = item.request.config_override
