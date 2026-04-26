@@ -1,6 +1,7 @@
 """Focused tests for queue draining and playback orchestration."""
 
 import asyncio
+from contextlib import contextmanager
 
 import pytest
 
@@ -44,6 +45,40 @@ class RecordingTelemetry:
 
     def snapshot(self):
         return None
+
+
+class RecordingOtelRuntime:
+    def __init__(self):
+        self.processed_items = []
+
+    @contextmanager
+    def start_internal_span(self, name: str, *, attributes=None):
+        del name, attributes
+        yield RecordingSpan()
+
+    def record_queue_item_processed(
+        self,
+        *,
+        guild_id: int | None,
+        engine: str,
+        result_code: str,
+        success: bool,
+        timeout_flag: bool,
+    ) -> None:
+        self.processed_items.append(
+            {
+                "guild_id": guild_id,
+                "engine": engine,
+                "result_code": result_code,
+                "success": success,
+                "timeout_flag": timeout_flag,
+            }
+        )
+
+
+class RecordingSpan:
+    def set_attribute(self, key: str, value) -> None:
+        del key, value
 
 
 @pytest.mark.asyncio
@@ -163,12 +198,16 @@ class TestTTSQueueOrchestrator:
 
     async def test_process_item_returns_not_found_when_voice_resolution_fails(self):
         queue = InMemoryAudioQueue()
+        telemetry = RecordingTelemetry()
+        otel_runtime = RecordingOtelRuntime()
         orchestrator = TTSQueueOrchestrator(
             tts_engine=MockTTSEngine(),
             config_repository=MockConfigRepository(),
             audio_queue=queue,
             voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository(return_none=True)),
             audio_cleanup=MockAudioCleanup(),
+            telemetry=telemetry,
+            otel_runtime=otel_runtime,
         )
         item = AudioQueueItem(
             request=TTSRequest(text="sem canal", guild_id=789012, member_id=345678, channel_id=123456)
@@ -179,6 +218,23 @@ class TestTTSQueueOrchestrator:
         assert result.code == SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND
         assert result.success is False
         assert item.status == "failed"
+        assert telemetry.processing_results == [
+            {
+                "item_id": item.item_id,
+                "success": False,
+                "code": SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
+                "engine": "configured_default",
+            }
+        ]
+        assert otel_runtime.processed_items == [
+            {
+                "guild_id": 789012,
+                "engine": "configured_default",
+                "result_code": SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND,
+                "success": False,
+                "timeout_flag": False,
+            }
+        ]
 
     async def test_process_item_rejects_cross_guild_voice_channel(self):
         queue = InMemoryAudioQueue()
