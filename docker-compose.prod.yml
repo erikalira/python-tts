@@ -38,9 +38,6 @@ services:
     container_name: tts-bot-otel-collector
     restart: unless-stopped
     command: ["--config=/etc/otelcol/config.yaml"]
-    ports:
-      - "4317:4317"
-      - "4318:4318"
     volumes:
       - ./deploy/otel/collector-config.yaml:/etc/otelcol/config.yaml:ro
 
@@ -51,7 +48,6 @@ services:
     command: ["-config.file=/etc/tempo/tempo.yaml"]
     ports:
       - "3200:3200"
-      - "4319:4317"
     volumes:
       - ./deploy/observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo_data:/var/tempo
@@ -67,6 +63,7 @@ services:
       - "9090:9090"
     volumes:
       - ./deploy/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/observability/prometheus-rules.yml:/etc/prometheus/rules/prometheus-rules.yml:ro
       - prometheus_data:/prometheus
 
   grafana:
@@ -85,6 +82,8 @@ services:
       - "3000:3000"
     volumes:
       - ./deploy/observability/grafana/provisioning/datasources/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./deploy/observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./deploy/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
 
   bot:

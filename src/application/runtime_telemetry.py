@@ -54,6 +54,23 @@ class RuntimeTelemetry(Protocol):
 
     def record_lock_loss(self, *, guild_id: int | None, lock_kind: str) -> None: ...
 
+    def record_tts_submission(
+        self,
+        *,
+        guild_id: int | None,
+        engine: str,
+        result_code: str,
+        accepted: bool,
+    ) -> None: ...
+
+    def record_enqueue_to_playback_latency(
+        self,
+        *,
+        guild_id: int | None,
+        engine: str,
+        latency_seconds: float,
+    ) -> None: ...
+
 
 class NullRuntimeSpan:
     def set_attribute(self, key: str, value: Any) -> None:

@@ -280,6 +280,12 @@ class TTSQueueOrchestrator:
                             success=True,
                             timeout_flag=False,
                         )
+                        if item.completed_at is not None:
+                            self._otel_runtime.record_enqueue_to_playback_latency(
+                                guild_id=request.guild_id,
+                                engine=config.engine,
+                                latency_seconds=item.completed_at - item.created_at,
+                            )
                     return SpeakTextResult(
                         success=True,
                         code=SPEAK_RESULT_OK,

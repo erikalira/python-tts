@@ -14,6 +14,7 @@ from src.application.dto import (
     SpeakTextInputDTO,
     SpeakTextResult,
 )
+from src.application.runtime_telemetry import RuntimeTelemetry
 from src.application.telemetry import BotRuntimeTelemetry, NoOpBotRuntimeTelemetry
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.tts_text import prepare_tts_text
@@ -36,6 +37,7 @@ class SpeakTextUseCase:
         max_text_length: Optional[int] = None,
         queue_runtime_is_active: Callable[[], bool] | None = None,
         telemetry: BotRuntimeTelemetry | None = None,
+        otel_runtime: RuntimeTelemetry | None = None,
     ):
         self._channel_repository = channel_repository
         self._audio_queue = audio_queue
@@ -44,6 +46,7 @@ class SpeakTextUseCase:
         self._queue_orchestrator = queue_orchestrator
         self._queue_runtime_is_active = queue_runtime_is_active or (lambda: False)
         self._telemetry = telemetry or NoOpBotRuntimeTelemetry()
+        self._otel_runtime = otel_runtime
 
     async def execute(self, request: SpeakTextInputDTO) -> SpeakTextResult:
         prepared_text = prepare_tts_text(request.text, self._max_text_length)
@@ -71,21 +74,19 @@ class SpeakTextUseCase:
         )
 
         if not domain_request.text:
-            self._telemetry.record_submission_result(
+            self._record_submission_result(
                 request=domain_request,
                 accepted=False,
                 code=SPEAK_RESULT_MISSING_TEXT,
-                engine=self._resolve_requested_engine(domain_request),
             )
             return SpeakTextResult(success=False, code=SPEAK_RESULT_MISSING_TEXT, queued=False)
 
         user_channel = await self._channel_repository.find_by_member_id(domain_request.member_id)
         if not user_channel:
-            self._telemetry.record_submission_result(
+            self._record_submission_result(
                 request=domain_request,
                 accepted=False,
                 code=SPEAK_RESULT_USER_NOT_IN_CHANNEL,
-                engine=self._resolve_requested_engine(domain_request),
             )
             return SpeakTextResult(
                 success=False,
@@ -96,11 +97,10 @@ class SpeakTextUseCase:
         item = AudioQueueItem(request=domain_request, trace_context=getattr(request, "trace_context", None))
         item_id = await self._audio_queue.enqueue(item)
         if item_id is None:
-            self._telemetry.record_submission_result(
+            self._record_submission_result(
                 request=domain_request,
                 accepted=False,
                 code=SPEAK_RESULT_QUEUE_FULL,
-                engine=self._resolve_requested_engine(domain_request),
             )
             return SpeakTextResult(
                 success=False,
@@ -117,11 +117,10 @@ class SpeakTextUseCase:
             and self._queue_runtime_is_active()
             and not await self._audio_queue.is_guild_processing(guild_id)
         )
-        self._telemetry.record_submission_result(
+        self._record_submission_result(
             request=domain_request,
             accepted=True,
             code=SPEAK_RESULT_QUEUED,
-            engine=self._resolve_requested_engine(domain_request),
         )
         return SpeakTextResult(
             success=True,
@@ -138,3 +137,19 @@ class SpeakTextUseCase:
         if override is not None and override.engine:
             return override.engine
         return "configured_default"
+
+    def _record_submission_result(self, *, request: TTSRequest, accepted: bool, code: str) -> None:
+        engine = self._resolve_requested_engine(request)
+        self._telemetry.record_submission_result(
+            request=request,
+            accepted=accepted,
+            code=code,
+            engine=engine,
+        )
+        if self._otel_runtime is not None:
+            self._otel_runtime.record_tts_submission(
+                guild_id=request.guild_id,
+                engine=engine,
+                result_code=code,
+                accepted=accepted,
+            )

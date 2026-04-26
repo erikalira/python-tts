@@ -112,6 +112,7 @@ class Container:
             queue_orchestrator=self.tts_queue_orchestrator,
             queue_runtime_is_active=self.queue_worker.is_running,
             telemetry=self.runtime_telemetry,
+            otel_runtime=self.otel_runtime,
         )
         self.config_use_case = ConfigureTTSUseCase(config_repository=self.config_repository)
         self.join_use_case = JoinVoiceChannelUseCase(channel_repository=self.voice_channel_repository)
