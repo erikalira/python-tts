@@ -28,6 +28,14 @@ meant to make the current system measurable before deeper optimization work.
 - Error-rate SLI: `failed_requests / total_requests`, plus the same breakdown by
   guild and engine from `GET /observability`.
 - Error-rate initial SLO: overall error rate `<= 5%` for normal releases.
+- Prometheus runtime metrics mirror the operational baseline when
+  `OTEL_ENABLED=true`:
+  - `bot_tts_submissions_total`
+  - `bot_tts_enqueue_to_playback_seconds_bucket`
+  - `bot_queue_items_processed_total`
+  - `bot_queue_depth_*`
+  - `bot_queue_age_seconds_bucket`
+  - `bot_queue_lock_loss_total`
 
 ## Release Gates
 
@@ -72,3 +80,8 @@ local runs, and smoke checks enforce the same baseline.
   back to `configured_default` when the request relies on the guild/default
   bot configuration.
 - `GET /health` remains the canonical readiness check for deploy automation.
+- Grafana dashboards are provisioned from
+  `deploy/observability/grafana/dashboards/`.
+- Prometheus alert rules are provisioned from
+  `deploy/observability/prometheus-rules.yml` and are visible on the
+  Prometheus `/alerts` page.

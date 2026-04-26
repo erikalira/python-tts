@@ -13,7 +13,11 @@ using the repository files.
 - `deploy/otel/collector-config.yaml`
 - `deploy/observability/tempo.yaml`
 - `deploy/observability/prometheus.yml`
+- `deploy/observability/prometheus-rules.yml`
 - `deploy/observability/grafana/provisioning/datasources/datasources.yaml`
+- `deploy/observability/grafana/provisioning/dashboards/dashboards.yaml`
+- `deploy/observability/grafana/dashboards/bot-runtime.json`
+- `deploy/observability/grafana/dashboards/queue-and-stack.json`
 
 ## 1. Prepare environment
 
@@ -118,16 +122,26 @@ docker compose -f docker-compose.prod.yml logs -f grafana
 ```
 
 The bot HTTP server will listen on port `10000` by default.
-The bundled OpenTelemetry Collector will listen on ports `4317` and `4318`.
+The bundled OpenTelemetry Collector receives OTLP on ports `4317` and `4318`
+inside the Docker Compose network. Those ingestion ports are not published on
+the host by default.
 Grafana will listen on port `3000`.
 Prometheus will listen on port `9090`.
-Tempo will listen on port `3200`.
+Tempo will listen on port `3200` for HTTP queries and Grafana integration. Its
+OTLP ingestion ports stay internal to the Docker Compose network.
+Prometheus scrapes and evaluates rules every 1 minute by default, and the
+bundled Grafana dashboards refresh every 1 minute. This keeps observability
+lightweight for the current single-node, solo-operator setup.
 
 ## 3. Explore telemetry
 
 1. Open Grafana at `http://localhost:3000`
 2. Log in with `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD`
-3. Use the provisioned `Prometheus` and `Tempo` data sources
+3. Open the provisioned `TTS Bot` folder
+4. Use the `TTS Bot Runtime` and `TTS Queue and Observability Stack`
+   dashboards
+5. Use the provisioned `Prometheus` and `Tempo` data sources for ad-hoc
+   exploration
 
 The stack is wired like this:
 
@@ -135,7 +149,15 @@ The stack is wired like this:
 - collector exports traces to `tempo`
 - collector exposes metrics in Prometheus format on `:9464`
 - `prometheus` scrapes the collector
+- `prometheus` evaluates bundled alerting rules from
+  `deploy/observability/prometheus-rules.yml`
 - `grafana` queries both Prometheus and Tempo
+
+Prometheus alerts are visible at `http://localhost:9090/alerts`. The bundled
+rules cover missing telemetry, target health, queue buildup, queue age,
+queue-to-playback latency, high submission error rate, and Redis queue lock
+loss. Add Alertmanager or Grafana contact points in the host environment when
+you are ready to route these alerts to chat, email, or paging.
 
 ## 4. Stop the stack
 

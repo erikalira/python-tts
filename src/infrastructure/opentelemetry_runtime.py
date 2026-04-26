@@ -44,6 +44,8 @@ class OpenTelemetryRuntime:
         self._queue_age_histogram = None
         self._queue_item_counter = None
         self._queue_lock_loss_counter = None
+        self._tts_submission_counter = None
+        self._enqueue_to_playback_histogram = None
         if not enabled or not otlp_endpoint:
             return
 
@@ -85,23 +87,27 @@ class OpenTelemetryRuntime:
         self._tracer = tracer_provider.get_tracer("tts-hotkey-windows.bot-runtime")
         self._queue_depth_histogram = meter.create_histogram(
             "bot.queue.depth",
-            unit="items",
             description="Current queue depth sampled by guild",
         )
         self._queue_age_histogram = meter.create_histogram(
             "bot.queue.age.seconds",
-            unit="s",
             description="Current queue age sampled by guild",
         )
         self._queue_item_counter = meter.create_counter(
             "bot.queue.items.processed",
-            unit="items",
             description="Queued items processed with outcome attributes",
         )
         self._queue_lock_loss_counter = meter.create_counter(
             "bot.queue.lock_loss",
-            unit="events",
             description="Guild lock or processing lease loss events in the worker",
+        )
+        self._tts_submission_counter = meter.create_counter(
+            "bot.tts.submissions",
+            description="TTS requests submitted to the bot with acceptance and result attributes",
+        )
+        self._enqueue_to_playback_histogram = meter.create_histogram(
+            "bot.tts.enqueue_to_playback.seconds",
+            description="Elapsed time from queue enqueue to successful playback completion",
         )
 
     @property
@@ -212,6 +218,39 @@ class OpenTelemetryRuntime:
         attributes = self._base_attrs(guild_id=guild_id)
         attributes["lock_kind"] = lock_kind
         self._queue_lock_loss_counter.add(1, attributes=attributes)
+
+    def record_tts_submission(
+        self,
+        *,
+        guild_id: int | None,
+        engine: str,
+        result_code: str,
+        accepted: bool,
+    ) -> None:
+        if self._tts_submission_counter is None:
+            return
+        attributes = self._base_attrs(guild_id=guild_id)
+        attributes.update(
+            {
+                "engine": engine,
+                "result_code": result_code,
+                "accepted": accepted,
+            }
+        )
+        self._tts_submission_counter.add(1, attributes=attributes)
+
+    def record_enqueue_to_playback_latency(
+        self,
+        *,
+        guild_id: int | None,
+        engine: str,
+        latency_seconds: float,
+    ) -> None:
+        if self._enqueue_to_playback_histogram is None:
+            return
+        attributes = self._base_attrs(guild_id=guild_id)
+        attributes["engine"] = engine
+        self._enqueue_to_playback_histogram.record(max(latency_seconds, 0.0), attributes=attributes)
 
     def shutdown(self) -> None:
         if not self._enabled:

@@ -1,0 +1,103 @@
+groups:
+  - name: tts-bot-runtime
+    rules:
+      - alert: TtsBotMetricsMissing
+        expr: absent(up{job="otel-collector"} == 1)
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenTelemetry Collector metrics scrape is unavailable"
+          description: "Prometheus has not seen a healthy otel-collector scrape target for 5 minutes."
+
+      - alert: TtsBotNoRuntimeTraffic
+        expr: absent(bot_tts_submissions_total)
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TTS submission metrics are missing"
+          description: "The bot may not be emitting runtime request metrics or OTEL may be disabled."
+
+      - alert: TtsBotHighSubmissionErrorRate
+        expr: |
+          (
+            sum(rate(bot_tts_submissions_total{accepted="false"}[10m]))
+            /
+            clamp_min(sum(rate(bot_tts_submissions_total[10m])), 0.001)
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TTS submission error rate is above 5%"
+          description: "More than 5% of TTS submissions have been rejected or failed over the last 10 minutes."
+
+      - alert: TtsQueuePlaybackLatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(bot_tts_enqueue_to_playback_seconds_bucket[10m])) by (le)
+          ) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Queue-to-playback p95 is above 5 seconds"
+          description: "Successful playback latency has exceeded the initial release SLO."
+
+      - alert: TtsQueueAgeHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(bot_queue_age_seconds_bucket[10m])) by (le)
+          ) > 30
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Queue age p95 is above 30 seconds"
+          description: "Queued items are waiting longer than expected before processing."
+
+      - alert: TtsQueueDepthHigh
+        expr: |
+          (
+            sum(rate(bot_queue_depth_sum[10m]))
+            /
+            clamp_min(sum(rate(bot_queue_depth_count[10m])), 0.001)
+          ) > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Average sampled queue depth is above 10 items"
+          description: "The bot queue is building up across sampled guild queues."
+
+      - alert: TtsQueueLockLoss
+        expr: increase(bot_queue_lock_loss_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Queue lock or lease loss detected"
+          description: "The Redis-backed queue worker reported at least one guild lock or processing lease loss."
+
+  - name: tts-observability-stack
+    rules:
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus target is down"
+          description: "Prometheus target {{ $labels.job }} / {{ $labels.instance }} has been down for 5 minutes."
+
+      - alert: TempoMetricsDown
+        expr: up{job="tempo"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tempo metrics endpoint is down"
+          description: "Prometheus cannot scrape Tempo metrics, so trace backend health is degraded."
