@@ -67,15 +67,7 @@ Depois da instalacao, abra um novo terminal e confirme:
 ffmpeg -version
 ```
 
-## 5. Dependencia opcional para voz no Discord
-
-Em alguns ambientes, o fluxo de voz do Discord pode precisar de `PyNaCl`:
-
-```bash
-pip install pynacl
-```
-
-## 6. Validar o ambiente
+## 5. Validar o ambiente
 
 Confira se o terminal esta usando o Python do ambiente virtual:
 
@@ -88,7 +80,7 @@ O caminho mostrado por `pip --version` deve apontar para `.venv`.
 
 Para o bot do Discord com voz, confirme tambem que `ffmpeg -version` funciona no mesmo terminal em que o bot sera executado.
 
-## 6.1. Storage local do bot
+## 5.1. Storage local do bot
 
 Por padrão, o bot local usa storage JSON:
 
@@ -118,7 +110,7 @@ POSTGRES_PORT=5432
 Se quiser voltar para storage local em arquivos, pare o Postgres se não for mais
 usar e retorne `CONFIG_STORAGE_BACKEND=json`.
 
-## 6.2. Redis opcional para a fila do bot
+## 5.2. Redis opcional para a fila do bot
 
 Se quiser usar a fila Redis do bot localmente, suba apenas o Redis com Docker:
 
@@ -139,7 +131,7 @@ REDIS_COMPLETED_ITEM_TTL_SECONDS=900
 
 Se nao quiser Redis, mantenha `TTS_QUEUE_BACKEND=inmemory`.
 
-## 6.3. Stack completa de produção local
+## 5.3. Stack completa de produção local
 
 Para validar o stack completo com bot, Postgres, Redis e observabilidade, use:
 
@@ -156,7 +148,7 @@ Para desenvolvimento diário, prefira escolher somente as dependências que voc�
 precisa: `docker-compose.postgres.yml` para Postgres e
 `docker-compose.redis.yml` para Redis.
 
-## 7. Desativar quando terminar
+## 6. Desativar quando terminar
 
 ```bash
 deactivate
