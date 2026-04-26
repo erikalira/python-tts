@@ -199,6 +199,66 @@ def test_config_rejects_negative_rate_limit_values(tmp_path):
     )
 
 
+def test_config_rejects_zero_rate_limit_window_when_limit_is_enabled(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_RATE_LIMIT_MAX_REQUESTS=3",
+                "BOT_RATE_LIMIT_WINDOW_SECONDS=0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (
+        False,
+        "BOT_RATE_LIMIT_WINDOW_SECONDS must be greater than 0 when rate limiting is enabled",
+    )
+
+
+def test_config_rejects_negative_rate_limit_window(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_RATE_LIMIT_MAX_REQUESTS=0",
+                "BOT_RATE_LIMIT_WINDOW_SECONDS=-1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (
+        False,
+        "BOT_RATE_LIMIT_WINDOW_SECONDS must be greater than or equal to 0",
+    )
+
+
+def test_config_allows_zero_rate_limit_window_when_limit_is_disabled(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_RATE_LIMIT_MAX_REQUESTS=0",
+                "BOT_RATE_LIMIT_WINDOW_SECONDS=0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (True, "")
+
+
 def test_config_uses_info_log_level_by_default(tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text("DISCORD_TOKEN=test-token\n", encoding="utf-8")
