@@ -9,6 +9,7 @@ from src.application.dto import (
     LeaveVoiceChannelResult,
     SpeakTextResult,
 )
+from src.infrastructure.rate_limiting import InMemoryRateLimiter
 from src.application.voice_runtime import VoiceRuntimeStatus
 from src.presentation.discord_commands import DiscordCommands
 from src.application.use_cases import (
@@ -176,6 +177,34 @@ class TestDiscordCommands:
 
         interaction.edit_original_response.assert_called_once()
         assert "indispon" in interaction.edit_original_response.call_args.kwargs["content"].lower()
+
+    @pytest.mark.asyncio
+    async def test_handle_speak_rate_limits_by_guild_and_user(self, commands_instance):
+        commands_instance._rate_limiter = InMemoryRateLimiter(clock=lambda: 100.0)
+        commands_instance._rate_limit_max_requests = 1
+        commands_instance._rate_limit_window_seconds = 10
+        commands_instance._speak_use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="ok", queued=False)
+        )
+
+        interaction = Mock()
+        interaction.id = 123
+        interaction.user = Mock()
+        interaction.user.id = 11111
+        interaction.user.name = "User"
+        interaction.guild = Mock()
+        interaction.guild.id = 67890
+        interaction.response = AsyncMock()
+        interaction.delete_original_response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        await commands_instance._handle_speak(interaction, "Test message")
+        await commands_instance._handle_speak(interaction, "Test message")
+
+        assert commands_instance._speak_use_case.execute.await_count == 1
+        assert interaction.edit_original_response.await_count == 1
+        content = interaction.edit_original_response.await_args.kwargs["content"].lower()
+        assert "solicitacoes" in content
 
     @pytest.mark.asyncio
     async def test_handle_speak_ignores_expired_interaction_before_defer(self, commands_instance):

@@ -10,6 +10,7 @@ from src.application.dto import (
     LeaveVoiceChannelResult,
     SpeakTextResult,
 )
+from src.application.rate_limiting import RateLimitResult
 from src.presentation.discord_presenters import (
     DiscordJoinPresenter,
     DiscordLeavePresenter,
@@ -47,6 +48,21 @@ class TestDiscordSpeakPresenter:
         )
 
         assert "geracao" in message.lower()
+
+    def test_builds_rate_limit_message(self):
+        presenter = DiscordSpeakPresenter()
+
+        message = presenter.build_rate_limit_message(
+            RateLimitResult(
+                allowed=False,
+                scope="discord:speak:guild:1:user:2",
+                reason="too_many_requests",
+                retry_after_seconds=4.2,
+            )
+        )
+
+        assert "solicitacoes" in message.lower()
+        assert "4" in message
 
 
 class TestDiscordJoinPresenter:

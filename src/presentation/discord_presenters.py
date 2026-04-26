@@ -29,10 +29,17 @@ from src.application.dto import (
     LeaveVoiceChannelResult,
     SpeakTextResult,
 )
+from src.application.rate_limiting import RateLimitResult
 
 
 class DiscordSpeakPresenter:
     """Map speak results to Discord-facing messages."""
+
+    def build_rate_limit_message(self, result: RateLimitResult) -> str:
+        retry_after = result.retry_after_seconds
+        if retry_after is None:
+            return "Muitas solicitacoes em pouco tempo. Tente novamente daqui a pouco."
+        return f"Muitas solicitacoes em pouco tempo. Tente novamente em {max(int(retry_after), 1)} segundos."
 
     def build_message(self, result: SpeakTextResult) -> str:
         code = result.code

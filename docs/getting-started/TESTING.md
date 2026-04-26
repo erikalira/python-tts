@@ -138,9 +138,9 @@ Static quality gates:
 
 `ruff` currently enforces high-signal correctness rules such as syntax and
 undefined-name failures. `pyright` is intentionally scoped in
-`pyrightconfig.json` to typed contracts, core interfaces, and quality-gate
-helpers. Expand the checked surface area as modules become type-clean instead
-of disabling the gate when legacy typing gaps appear.
+`pyrightconfig.json` to typed application contracts, core interfaces, and
+quality-gate helpers. Expand the checked surface area as modules become
+type-clean instead of disabling the gate when legacy typing gaps appear.
 
 To validate the repository quality gates against an existing `coverage.xml`:
 

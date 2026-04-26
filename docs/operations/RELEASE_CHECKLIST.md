@@ -51,6 +51,10 @@ Before deploy, confirm:
 - no new `src/application/` or `src/presentation/` import points directly to
   `src/infrastructure/`
 - bot and desktop entrypoints remain independently runnable
+- the `Security` workflow is green for dependency audit, dependency review, and
+  CodeQL when applicable
+- bot `/speak` rate-limit settings are present in production config or
+  intentionally inherited from defaults
 - durable docs changed when deploy, runtime, or operational behavior changed
 - `.env.prod.example` changed if new production env vars were introduced
 
@@ -99,6 +103,8 @@ Pass criteria:
   queue-latency fields
 - bot logs do not show repeated startup, Redis, Postgres, Discord, or engine
   errors
+- bot logs do not show unexpected `RATE_LIMIT` bursts outside intentional load
+  or abuse tests
 - Docker restart count is stable and the `bot` service health is `healthy`
 
 ## Runtime Validation

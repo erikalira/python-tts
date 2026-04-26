@@ -25,6 +25,7 @@ from src.infrastructure.discord.voice_channel import DiscordVoiceChannelReposito
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
 from src.infrastructure.persistence.postgres_storage import PostgreSQLConfigStorage
+from src.infrastructure.rate_limiting import InMemoryRateLimiter
 from src.infrastructure.runtime_observability import InMemoryBotRuntimeTelemetry
 from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
 from src.infrastructure.tts.engines import RoutedTTSEngine
@@ -73,6 +74,7 @@ class Container:
         self.tts_engine = RoutedTTSEngine()
         self.tts_catalog = RuntimeTTSCatalog()
         self.runtime_telemetry = InMemoryBotRuntimeTelemetry()
+        self.rate_limiter = InMemoryRateLimiter()
         self.voice_channel_resolution = VoiceChannelResolutionService(self.voice_channel_repository)
         self.tts_queue_orchestrator = TTSQueueOrchestrator(
             tts_engine=self.tts_engine,
@@ -119,6 +121,9 @@ class Container:
         self.speak_controller = SpeakController(
             self.speak_use_case,
             self.config_repository,
+            rate_limiter=self.rate_limiter,
+            rate_limit_max_requests=config.rate_limit_max_requests,
+            rate_limit_window_seconds=config.rate_limit_window_seconds,
             otel_runtime=self.otel_runtime,
         )
         self.voice_context_controller = VoiceContextController(self.voice_context_use_case)
@@ -132,6 +137,9 @@ class Container:
             voice_runtime_availability=self.voice_runtime_availability,
             tts_catalog=self.tts_catalog,
             runtime_context_provider=self._runtime_context,
+            rate_limiter=self.rate_limiter,
+            rate_limit_max_requests=config.rate_limit_max_requests,
+            rate_limit_window_seconds=config.rate_limit_window_seconds,
         )
 
         self._log_voice_runtime_status()
