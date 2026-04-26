@@ -52,3 +52,5 @@ deploy/winsw/tts-discord-bot.exe
 # icon.ico
 # icon.png
 # create_icon.py is kept for rebuilding
+
+configs/
