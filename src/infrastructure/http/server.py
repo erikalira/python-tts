@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import asdict
 from collections.abc import Awaitable, Callable
+from dataclasses import asdict
 
 from aiohttp import web
 
+from src.__version__ import __author__, __description__, __version__
 from src.application.dto import BotHealthResponseDTO
-from src.__version__ import __version__, __author__, __description__
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ class HTTPServer:
         observability_snapshot_provider: ObservabilitySnapshotProvider | None = None,
         readiness_provider: ReadinessProvider | None = None,
         otel_runtime: OpenTelemetryRuntime | None = None,
+        cors_allowed_origins: tuple[str, ...] = (),
     ):
         """Initialize HTTP server.
         
@@ -49,12 +50,13 @@ class HTTPServer:
         self._observability_snapshot_provider = observability_snapshot_provider
         self._readiness_provider = readiness_provider
         self._otel_runtime = otel_runtime
+        self._cors_allowed_origins = frozenset(cors_allowed_origins)
         self._runner = None
         self._site = None
 
     def _build_app(self) -> web.Application:
         """Build aiohttp application with operational and integration endpoints."""
-        app = web.Application()
+        app = web.Application(middlewares=[self._cors_middleware])
         app.router.add_get('/', self._home)
         app.router.add_get('/health', self._health, name='health')
         app.router.add_get('/ready', self._ready, name='ready')
@@ -62,8 +64,32 @@ class HTTPServer:
         app.router.add_get('/version', self._version)
         app.router.add_get('/about', self._about)
         app.router.add_get('/voice-context', self._voice_context_handler)
+        app.router.add_options('/speak', self._speak_preflight)
         app.router.add_post('/speak', self._speak_handler)
         return app
+
+    @web.middleware
+    async def _cors_middleware(self, request: web.Request, handler: RequestHandler) -> web.StreamResponse:
+        response = await handler(request)
+        self._apply_cors_headers(request, response)
+        return response
+
+    async def _speak_preflight(self, request: web.Request) -> web.Response:
+        origin = request.headers.get("Origin")
+        if origin and origin not in self._cors_allowed_origins:
+            return web.Response(text="cors origin not allowed", status=403)
+        return web.Response(status=204)
+
+    def _apply_cors_headers(self, request: web.Request, response: web.StreamResponse) -> None:
+        origin = request.headers.get("Origin")
+        if not origin or origin not in self._cors_allowed_origins:
+            return
+
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Bot-Token"
+        response.headers["Access-Control-Max-Age"] = "600"
+        response.headers["Vary"] = _append_vary_origin(response.headers.get("Vary"))
 
     async def _home(self, request: web.Request) -> web.Response:
         return web.Response(text="Bot online! v2.0")
@@ -132,3 +158,12 @@ class _null_span_context:
     def __exit__(self, exc_type, exc, tb) -> bool:
         del exc_type, exc, tb
         return False
+
+
+def _append_vary_origin(current: str | None) -> str:
+    if not current:
+        return "Origin"
+    values = [value.strip() for value in current.split(",")]
+    if any(value.lower() == "origin" for value in values):
+        return current
+    return f"{current}, Origin"

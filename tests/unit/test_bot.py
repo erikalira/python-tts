@@ -19,6 +19,7 @@ class TestBot:
             mock_config.validate.return_value = (True, None)
             mock_config.http_port = 10000
             mock_config.http_host = "127.0.0.1"
+            mock_config.http_cors_allowed_origins = ()
             MockConfig.return_value = mock_config
             
             # Mock HTTP server
@@ -63,6 +64,7 @@ class TestBot:
                 observability_snapshot_provider=mock_container.runtime_telemetry.snapshot_payload,
                 readiness_provider=mock_container.readiness_payload,
                 otel_runtime=mock_container.otel_runtime,
+                cors_allowed_origins=(),
             )
             # Verify HTTP server was started
             mock_http_server.start.assert_called_once()

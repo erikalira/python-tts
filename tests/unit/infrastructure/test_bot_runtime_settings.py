@@ -221,6 +221,43 @@ def test_config_reads_rate_limit_settings(tmp_path):
     assert config.rate_limit_window_seconds == 7.5
 
 
+def test_config_reads_explicit_cors_allowed_origins(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_HTTP_CORS_ALLOWED_ORIGINS=http://localhost:5173, https://desktop.example",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.http_cors_allowed_origins == ("http://localhost:5173", "https://desktop.example")
+
+
+def test_config_rejects_wildcard_cors_origin(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_HTTP_CORS_ALLOWED_ORIGINS=*",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (
+        False,
+        "BOT_HTTP_CORS_ALLOWED_ORIGINS must list explicit origins, not *",
+    )
+
+
 def test_config_rejects_negative_rate_limit_values(tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text(
