@@ -40,13 +40,13 @@ class ConfigDialogsPresenter:
             member_id,
             required=False,
             required_message="",
-            numeric_message="Discord User ID deve conter apenas numeros!",
+            numeric_message="Discord User ID must contain only numbers!",
         )
         if member_error:
-            return DialogFeedback(title="Erro", message=member_error)
+            return DialogFeedback(title="Error", message=member_error)
 
         if not bot_url.strip():
-            return DialogFeedback(title="Erro", message="Bot URL e obrigatoria!")
+            return DialogFeedback(title="Error", message="Bot URL is required!")
         return None
 
     def build_initial_setup_result(
@@ -62,8 +62,8 @@ class ConfigDialogsPresenter:
         )
         if normalize_optional_text(member_id):
             return result, DialogFeedback(
-                title="Sucesso",
-                message="Configuracao salva! O TTS funcionara no Discord.",
+                title="Success",
+                message="Configuration saved! TTS will work on Discord.",
             )
         return result, DialogFeedback(
             title="Aviso",
@@ -83,4 +83,4 @@ class ConfigDialogsPresenter:
         )
 
     def format_validation_errors(self, errors: list[str]) -> str:
-        return "Erros encontrados:\n\n" + "\n".join(errors)
+        return "Errors found:\n\n" + "\n".join(errors)

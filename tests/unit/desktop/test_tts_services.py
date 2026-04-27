@@ -113,7 +113,7 @@ def test_http_discord_bot_client_handles_http_error(monkeypatch):
     client = HttpDiscordBotClient(config)
 
     assert client.send_speak_request(client.build_request("hello")) is False
-    assert client.get_last_error_message() == "Bot respondeu HTTP 500: playback failed"
+    assert client.get_last_error_message() == "Bot returned HTTP 500: playback failed"
 
 
 def test_http_discord_bot_client_simplifies_service_suspended_error(monkeypatch):
@@ -131,7 +131,7 @@ def test_http_discord_bot_client_simplifies_service_suspended_error(monkeypatch)
     client = HttpDiscordBotClient(config)
 
     assert client.send_speak_request(client.build_request("hello")) is False
-    assert client.get_last_error_message() == "Bot respondeu HTTP 503: servico suspenso ou indisponivel"
+    assert client.get_last_error_message() == "Bot returned HTTP 503: service is suspended or unavailable"
 
 
 def test_http_discord_bot_client_check_connection_success(monkeypatch):
@@ -144,7 +144,7 @@ def test_http_discord_bot_client_check_connection_success(monkeypatch):
     result = HttpDiscordBotClient(config).check_connection()
 
     assert result.success is True
-    assert "sucesso" in result.message.lower()
+    assert "successfully" in result.message.lower()
 
 
 def test_http_discord_bot_client_check_connection_http_failure(monkeypatch):
@@ -156,7 +156,7 @@ def test_http_discord_bot_client_check_connection_http_failure(monkeypatch):
 
     result = HttpDiscordBotClient(config).check_connection()
 
-    assert result == DesktopBotConnectionStatus(success=False, message="Bot respondeu HTTP 503")
+    assert result == DesktopBotConnectionStatus(success=False, message="Bot returned HTTP 503")
 
 
 def test_http_discord_bot_client_fetches_voice_context(monkeypatch):
@@ -172,7 +172,7 @@ def test_http_discord_bot_client_fetches_voice_context(monkeypatch):
                 "success": True,
                 "guild_name": "Guild A",
                 "guild_id": 30,
-                "channel_name": "Sala 1",
+                "channel_name": "Room 1",
                 "channel_id": 10,
             },
         )
@@ -183,10 +183,10 @@ def test_http_discord_bot_client_fetches_voice_context(monkeypatch):
 
     assert result == DesktopBotVoiceContextStatus(
         success=True,
-        message="Canal detectado: Guild A / Sala 1",
+        message="Detected channel: Guild A / Room 1",
         guild_name="Guild A",
         guild_id=30,
-        channel_name="Sala 1",
+            channel_name="Room 1",
         channel_id=10,
     )
 
@@ -209,7 +209,7 @@ def test_http_discord_bot_client_reports_when_user_not_in_voice(monkeypatch):
 
     assert result == DesktopBotVoiceContextStatus(
         success=False,
-        message="Usuario nao esta conectado a nenhum canal de voz",
+        message="User is not connected to any voice channel",
     )
 
 
@@ -231,7 +231,7 @@ def test_http_discord_bot_client_reports_when_voice_context_endpoint_is_missing(
 
     assert result == DesktopBotVoiceContextStatus(
         success=False,
-        message="Endpoint de deteccao de canal nao esta disponivel no bot. Atualize o bot.",
+        message="Channel detection endpoint is not available on the bot. Update the bot.",
     )
 
 
@@ -463,7 +463,7 @@ def test_speak_text_execution_use_case_returns_missing_text_without_calling_serv
 def test_speak_text_execution_use_case_returns_failure_when_tts_service_fails():
     tts_service = Mock()
     tts_service.speak_text.return_value = False
-    tts_service.get_last_error_message.return_value = "Bot respondeu HTTP 503: servico suspenso ou indisponivel"
+    tts_service.get_last_error_message.return_value = "Bot returned HTTP 503: service is suspended or unavailable"
     execution = SpeakTextExecutionUseCase(tts_service)
 
     result = execution.execute("hello")
@@ -471,7 +471,7 @@ def test_speak_text_execution_use_case_returns_failure_when_tts_service_fails():
     assert result == TTSExecutionResult(
         success=False,
         code=TTS_EXECUTION_RESULT_FAILED,
-        message="Bot respondeu HTTP 503: servico suspenso ou indisponivel",
+        message="Bot returned HTTP 503: service is suspended or unavailable",
     )
 
 

@@ -1,5 +1,5 @@
-<!-- Based on .specify/memory/constitution.md v1.2.1 -->
-<!-- Last synced: 2026-04-26 -->
+<!-- Based on .specify/memory/constitution.md v1.3.0 -->
+<!-- Last synced: 2026-04-27 -->
 
 # Project Overview
 
@@ -72,6 +72,13 @@ Hard boundary:
 - Keep stable AI governance in `.specify/`, not scattered across tool-specific files
 - Do not keep implementation-history writeups in `docs/`
 - Update `docs/README.md` when documentation structure or navigation changes
+
+# Language Rule
+
+- Write repository code, comments, documentation, specs, tests, commit messages,
+  pull request descriptions, and AI-generated project artifacts in English
+- Use another language in user-facing runtime text only when localization,
+  language-specific behavior, or a locale fixture explicitly requires it
 
 # Local Agent Assets
 

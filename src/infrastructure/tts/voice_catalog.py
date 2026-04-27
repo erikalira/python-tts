@@ -11,7 +11,7 @@ from .pyttsx3_support import list_pyttsx3_voices
 logger = logging.getLogger(__name__)
 
 _GTTS_OPTIONS = [
-    TTSVoiceOption(key="gtts:pt:roa-pt-br", engine="gtts", label="Google TTS - Portugues (Brasil)", language="pt", voice_id="roa/pt-br"),
+    TTSVoiceOption(key="gtts:pt:roa-pt-br", engine="gtts", label="Google TTS - Portuguese (Brazil)", language="pt", voice_id="roa/pt-br"),
     TTSVoiceOption(key="gtts:en:en-us", engine="gtts", label="Google TTS - Ingles (EUA)", language="en", voice_id="en-us"),
     TTSVoiceOption(key="gtts:en:en-gb", engine="gtts", label="Google TTS - Ingles (Reino Unido)", language="en", voice_id="en-gb"),
     TTSVoiceOption(key="gtts:es:roa-es", engine="gtts", label="Google TTS - Espanhol", language="es", voice_id="roa/es"),

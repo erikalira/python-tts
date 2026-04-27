@@ -3,9 +3,9 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Mapping, Optional
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 
 from src.core.entities import TTSConfig
 from src.core.timeouts import (
@@ -15,6 +15,37 @@ from src.core.timeouts import (
     DEFAULT_DISCORD_VOICE_CONNECTION_TIMEOUT_SECONDS,
 )
 
+_LOADED_DOTENV_VALUES: dict[str, str] = {}
+
+
+def _load_environment_snapshot(env_file: Path) -> dict[str, str]:
+    """Load dotenv values and return the effective environment snapshot."""
+
+    env_values = _read_dotenv_values(env_file)
+    _clear_stale_dotenv_values(env_values)
+
+    # Export .env values for process-level runtime helpers that read directly
+    # from os.environ, such as Discord voice FFmpeg checks.
+    load_dotenv(env_file, override=True)
+
+    _LOADED_DOTENV_VALUES.clear()
+    _LOADED_DOTENV_VALUES.update(env_values)
+    return dict(os.environ)
+
+
+def _read_dotenv_values(env_file: Path) -> dict[str, str]:
+    return {
+        key: value
+        for key, value in dotenv_values(env_file).items()
+        if value is not None
+    }
+
+
+def _clear_stale_dotenv_values(next_values: Mapping[str, str]) -> None:
+    stale_loaded_keys = set(_LOADED_DOTENV_VALUES) - set(next_values)
+    for key in stale_loaded_keys:
+        if os.environ.get(key) == _LOADED_DOTENV_VALUES.get(key):
+            os.environ.pop(key, None)
 
 class Config:
     """Application configuration.
@@ -31,10 +62,7 @@ class Config:
         if env_file is None:
             env_file = Path(__file__).resolve().parents[2] / ".env"
 
-        # Export .env values for process-level runtime helpers that read
-        # directly from os.environ, such as Discord voice FFmpeg checks.
-        load_dotenv(env_file, override=True)
-        self._env = dict(os.environ)
+        self._env = _load_environment_snapshot(env_file)
 
         # Discord settings
         self.discord_token = self._getenv("DISCORD_TOKEN")

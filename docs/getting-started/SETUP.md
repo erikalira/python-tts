@@ -1,15 +1,15 @@
-# Setup do Ambiente
+# Environment Setup
 
-Este projeto usa um ambiente virtual Python (`.venv`) como parte do fluxo de instalacao e desenvolvimento.
+This project uses a Python virtual environment (`.venv`) as part of the installation and development flow.
 
-## Requisitos
+## Requirements
 
-- Python 3.11 ou superior
-- `ffmpeg` para o fluxo de voz do Discord
+- Python 3.11 or newer
+- `ffmpeg` for the Discord voice flow
 
-## 1. Criar o `.venv`
+## 1. Create `.venv`
 
-No diretorio raiz do repositorio:
+From the repository root:
 
 ### Windows PowerShell
 
@@ -23,7 +23,7 @@ python -m venv .venv
 python3 -m venv .venv
 ```
 
-## 2. Ativar o `.venv`
+## 2. Activate `.venv`
 
 ### Windows PowerShell
 
@@ -31,7 +31,7 @@ python3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-Se o PowerShell bloquear scripts locais, rode esta permissao uma vez no usuario atual:
+If PowerShell blocks local scripts, run this permission change once for the current user:
 
 ```powershell
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
@@ -43,60 +43,59 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 source .venv/bin/activate
 ```
 
-## 3. Instalar dependencias
+## 3. Install Dependencies
 
-Com o `.venv` ativo:
+With `.venv` active:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 4. Instalar o FFmpeg no Windows para voz do Discord
+## 4. Install FFmpeg On Windows For Discord Voice
 
-No Windows, o fluxo de voz do Discord tambem precisa do `FFmpeg` disponivel no `PATH`.
+On Windows, the Discord voice flow also needs `FFmpeg` available on `PATH`.
 
-Uma forma simples de instalar localmente:
+A simple local installation option:
 
 ```powershell
 winget install ffmpeg
 ```
 
-Depois da instalacao, abra um novo terminal e confirme:
+After installation, open a new terminal and confirm:
 
 ```powershell
 ffmpeg -version
 ```
 
-## 5. Validar o ambiente
+## 5. Validate The Environment
 
-Confira se o terminal esta usando o Python do ambiente virtual:
+Check that the terminal is using the virtual environment's Python:
 
 ```bash
 python --version
 pip --version
 ```
 
-O caminho mostrado por `pip --version` deve apontar para `.venv`.
+The path shown by `pip --version` should point to `.venv`.
 
-Para o bot do Discord com voz, confirme tambem que `ffmpeg -version` funciona no mesmo terminal em que o bot sera executado.
+For the Discord bot voice flow, also confirm that `ffmpeg -version` works in the same terminal where the bot will run.
 
-## 5.1. Storage local do bot
+## 5.1. Local Bot Storage
 
-Por padrão, o bot local usa storage JSON:
+By default, the local bot uses JSON storage:
 
 ```env
 CONFIG_STORAGE_BACKEND=json
 CONFIG_STORAGE_DIR=configs
 ```
 
-Se quiser testar o mesmo backend de persistência usado em produção, suba apenas
-o Postgres com Docker:
+To test the same persistence backend used in production, start only Postgres with Docker:
 
 ```bash
 docker compose -f docker-compose.postgres.yml up -d
 ```
 
-Depois configure o `.env` com:
+Then configure `.env` with:
 
 ```env
 CONFIG_STORAGE_BACKEND=postgres
@@ -107,18 +106,17 @@ POSTGRES_PASSWORD=change_me
 POSTGRES_PORT=5432
 ```
 
-Se quiser voltar para storage local em arquivos, pare o Postgres se não for mais
-usar e retorne `CONFIG_STORAGE_BACKEND=json`.
+To return to local file storage, stop Postgres if you no longer need it and set `CONFIG_STORAGE_BACKEND=json`.
 
-## 5.2. Redis opcional para a fila do bot
+## 5.2. Optional Redis Queue For The Bot
 
-Se quiser usar a fila Redis do bot localmente, suba apenas o Redis com Docker:
+To use the bot's Redis-backed queue locally, start only Redis with Docker:
 
 ```bash
 docker compose -f docker-compose.redis.yml up -d
 ```
 
-Depois configure o `.env` com:
+Then configure `.env` with:
 
 ```env
 TTS_QUEUE_BACKEND=redis
@@ -129,33 +127,32 @@ REDIS_KEY_PREFIX=tts
 REDIS_COMPLETED_ITEM_TTL_SECONDS=900
 ```
 
-Se nao quiser Redis, mantenha `TTS_QUEUE_BACKEND=inmemory`.
+If you do not want Redis, keep `TTS_QUEUE_BACKEND=inmemory`.
 
-## 5.3. Stack completa de produção local
+## 5.3. Full Local Production Stack
 
-Para validar o stack completo com bot, Postgres, Redis e observabilidade, use:
+To validate the full stack with bot, Postgres, Redis, and observability, run:
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
 
-O `docker-compose.prod.yml` tambem aceita versionamento da imagem do bot via
-`BOT_IMAGE` e `APP_VERSION`. Em producao, publique uma imagem com tag imutavel e
-suba com essa versao registrada no `.env.prod`; para rollback, volte o
-`APP_VERSION` para a ultima versao boa.
+`docker-compose.prod.yml` also supports bot image versioning through `BOT_IMAGE`
+and `APP_VERSION`. In production, publish an image with an immutable tag and
+start it with that version recorded in `.env.prod`; to roll back, restore
+`APP_VERSION` to the last known good version.
 
-Para desenvolvimento diário, prefira escolher somente as dependências que você
-precisa: `docker-compose.postgres.yml` para Postgres e
-`docker-compose.redis.yml` para Redis.
+For day-to-day development, prefer starting only the dependencies you need:
+`docker-compose.postgres.yml` for Postgres and `docker-compose.redis.yml` for Redis.
 
-## 6. Desativar quando terminar
+## 6. Deactivate When Finished
 
 ```bash
 deactivate
 ```
 
-## Observacoes
+## Notes
 
-- Sempre ative o `.venv` antes de rodar `pip install`, `pytest`, `python -m src.bot` ou `python app.py`.
-- No Windows, instalar apenas o pacote Python nao basta para voz no Discord: o `FFmpeg` precisa estar instalado no sistema e acessivel no `PATH`.
-- O bot do Discord e o Desktop App continuam com entrypoints separados, mas usam o mesmo ambiente virtual durante o desenvolvimento.
+- Always activate `.venv` before running `pip install`, `pytest`, `python -m src.bot`, or `python app.py`.
+- On Windows, installing only the Python package is not enough for Discord voice: `FFmpeg` must be installed on the system and available on `PATH`.
+- The Discord bot and Desktop App keep separate entrypoints, but they use the same virtual environment during development.

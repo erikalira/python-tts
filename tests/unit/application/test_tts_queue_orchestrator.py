@@ -299,7 +299,7 @@ class TestTTSQueueOrchestrator:
             otel_runtime=otel_runtime,
         )
         item = AudioQueueItem(
-            request=TTSRequest(text="sem canal", guild_id=789012, member_id=345678, channel_id=123456)
+            request=TTSRequest(text="no channel", guild_id=789012, member_id=345678, channel_id=123456)
         )
 
         result = await orchestrator._process_item(item)

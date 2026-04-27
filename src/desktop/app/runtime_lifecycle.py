@@ -62,17 +62,17 @@ class DesktopAppLifecycleCoordinator:
         notification_service: NotificationServiceLike,
     ) -> bool:
         """Start runtime services and return whether startup succeeded."""
-        logger.info("[DESKTOP_APP] Iniciando servicos...")
+        logger.info("[DESKTOP_APP] Starting services...")
 
         if not hotkey_manager.start():
-            logger.error("[DESKTOP_APP] Falha ao iniciar monitoramento de hotkey")
+            logger.error("[DESKTOP_APP] Failed to start hotkey monitoring")
             return False
 
         tray_started = notification_service.start()
         if not tray_started:
-            logger.warning("[DESKTOP_APP] System tray nao disponivel, executando em modo console")
+            logger.warning("[DESKTOP_APP] System tray is not available, running in console mode")
 
-        logger.info("[DESKTOP_APP] Todos os servicos iniciados")
+        logger.info("[DESKTOP_APP] All services started")
         return True
 
     def run_main_loop(
@@ -97,7 +97,7 @@ class DesktopAppLifecycleCoordinator:
                 process_pending_ui_action(0.2)
             return
 
-        logger.info("[DESKTOP_APP] Modo console ativo. Pressione Ctrl+C para sair...")
+        logger.info("[DESKTOP_APP] Console mode active. Press Ctrl+C to exit...")
         wait_backend = console_wait_factory()
         if hasattr(wait_backend, "is_available") and wait_backend.is_available():
             try:
@@ -167,7 +167,7 @@ class DesktopAppLifecycleCoordinator:
                 main_window_root.quit()
             except Exception:
                 logger.debug(
-                    "[DESKTOP_APP] Falha ao encerrar loop da janela principal",
+                    "[DESKTOP_APP] Failed to close main window loop",
                     exc_info=True,
                 )
 

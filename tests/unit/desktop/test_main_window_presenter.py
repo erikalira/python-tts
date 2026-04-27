@@ -10,9 +10,9 @@ from src.desktop.gui.main_window_presenter import (
 def test_main_window_presenter_builds_success_status():
     presenter = DesktopAppMainWindowPresenter()
 
-    message = presenter.build_status("Configuracao salva", success=True)
+    message = presenter.build_status("Configuration saved", success=True)
 
-    assert message.text == "OK: Configuracao salva"
+    assert message.text == "OK: Configuration saved"
     assert message.color == SUCCESS_COLOR
 
 
@@ -23,7 +23,7 @@ def test_main_window_presenter_builds_incomplete_config_message_with_local_fallb
 
     message = presenter.build_local_config_status(config)
 
-    assert "Configuracao incompleta" in message.text
+    assert "Incomplete configuration" in message.text
     assert "fallback" in message.text
     assert message.color == WARNING_COLOR
 
@@ -36,14 +36,14 @@ def test_main_window_presenter_builds_ready_config_message():
 
     message = presenter.build_local_config_status(config)
 
-    assert message.text == "Bot configurado: URL e User ID preenchidos."
+    assert message.text == "Bot configured: URL and User ID filled."
     assert message.color == SUCCESS_COLOR
 
 
 def test_main_window_presenter_builds_invalid_value_message():
     presenter = DesktopAppMainWindowPresenter()
 
-    message = presenter.build_invalid_value_message("Teste", ValueError("porta"))
+    message = presenter.build_invalid_value_message("Test", ValueError("port"))
 
-    assert message.text == "Teste falhou: valor invalido (porta)"
+    assert message.text == "Test failed: invalid value (port)"
     assert message.color == ERROR_COLOR

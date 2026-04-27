@@ -1,22 +1,22 @@
-# Arquitetura do Projeto - Desktop App Windows e Bot Discord
+# Project Architecture - Windows Desktop App And Discord Bot
 
-## Visao geral
+## Overview
 
-Este projeto contem dois aplicativos independentes:
+This project contains two independent applications:
 
-1. Bot do Discord com endpoint HTTP para TTS
-2. Desktop App Windows com hotkeys, GUI e system tray
+1. A Discord bot with an HTTP endpoint for TTS
+2. A Windows Desktop App with hotkeys, GUI, and system tray integration
 
-Ambos seguem Clean Architecture e os principios SOLID para manter:
+Both follow Clean Architecture and SOLID principles to preserve:
 
-- baixo acoplamento entre camadas
-- alta coesao dentro dos modulos
-- reuso de regras compartilhadas em `src/application/` e `src/core/`
-- independencia entre o bot e o Desktop App
+- low coupling between layers
+- high cohesion inside modules
+- reuse of shared rules in `src/application/` and `src/core/`
+- independence between the bot and the Desktop App
 
-## Diagramas
+## Diagrams
 
-Para leitura visual da arquitetura, use os diagramas curados em vez do output bruto do `pyreverse`:
+For a visual architecture reading path, use the curated diagrams instead of the raw `pyreverse` output:
 
 - [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md)
 - [diagrams/layer-overview.md](diagrams/layer-overview.md)
@@ -24,44 +24,44 @@ Para leitura visual da arquitetura, use os diagramas curados em vez do output br
 - [diagrams/bot-runtime.md](diagrams/bot-runtime.md)
 - [diagrams/desktop-runtime.md](diagrams/desktop-runtime.md)
 
-Esses diagramas foram organizados por camada e contexto de runtime para ficarem legiveis como documentacao duravel.
+These diagrams are organized by layer and runtime context so they remain readable as durable documentation.
 
-## Entry points
+## Entry Points
 
 ### Desktop App
 
-- entry point oficial: `app.py`
-- runtime interno: `src/desktop/`
+- official entrypoint: `app.py`
+- internal runtime: `src/desktop/`
 - composition root: `src/desktop/app/bootstrap.py`
-- runtime principal: `src/desktop/app/desktop_app.py`
+- main runtime coordinator: `src/desktop/app/desktop_app.py`
 
-### Bot Discord
+### Discord Bot
 
-- entry point oficial: `src/bot.py`
-- servidor HTTP: `src/infrastructure/http/server.py`
-- bind HTTP local por padrao em `127.0.0.1`; para expor externamente em deploy, configure `DISCORD_BOT_HOST=0.0.0.0`
+- official entrypoint: `src/bot.py`
+- HTTP server: `src/infrastructure/http/server.py`
+- local HTTP bind defaults to `127.0.0.1`; to expose it externally during deployment, set `DISCORD_BOT_HOST=0.0.0.0`
 
-## Estrutura principal
+## Main Structure
 
 ```text
 src/
-  core/                  # entidades, value objects, interfaces puras
-  application/           # casos de uso e orquestracao compartilhada
-  infrastructure/        # integracoes externas e IO
-  presentation/          # controllers e fluxos de entrada
-  desktop/               # runtime interno do Desktop App
-    adapters/            # teclado, tray, TTS local
-    app/                 # bootstrap e runtime principal do Desktop App
+  core/                  # entities, value objects, and pure interfaces
+  application/           # shared use cases and orchestration
+  infrastructure/        # external integrations and IO
+  presentation/          # controllers and input flows
+  desktop/               # internal Desktop App runtime
+    adapters/            # keyboard, tray, and local TTS adapters
+    app/                 # bootstrap and main Desktop App runtime
     config/              # DesktopAppConfig, repository, validation, environment
-    gui/                 # interfaces e janelas do Desktop App
-    services/            # hotkeys, notifications e engines do Desktop App
+    gui/                 # Desktop App interfaces and windows
+    services/            # Desktop App hotkeys, notifications, and engines
 ```
 
 ## Desktop App
 
 ### Config
 
-O Desktop App usa `DesktopAppConfig` como container principal de configuracao.
+The Desktop App uses `DesktopAppConfig` as its main configuration container.
 
 ```python
 @dataclass
@@ -73,45 +73,45 @@ class DesktopAppConfig:
     network: NetworkConfig
 ```
 
-Arquivos principais:
+Main files:
 
 - `src/desktop/config/desktop_config.py`
 - `src/desktop/config/models.py`
 - `src/desktop/config/repository.py`
 - `src/desktop/config/validation.py`
 
-O ambiente local e carregado a partir de `.env`, usado como base para defaults do Desktop App e para reproduzir comportamento em desenvolvimento e em parte dos testes.
+The local environment is loaded from `.env`, which provides Desktop App defaults and helps reproduce local and test scenarios.
 
 ### Runtime
 
-O runtime principal do Desktop App fica em `src/desktop/app/desktop_app.py`.
+The main Desktop App runtime lives in `src/desktop/app/desktop_app.py`.
 
-Responsabilidades principais:
+Main responsibilities:
 
-- carregar configuracao
-- montar TTS, hotkeys e tray
-- abrir o painel principal quando Tkinter estiver disponivel
-- coordenar reconfiguracao sem misturar regra de negocio com GUI
+- load configuration
+- assemble TTS, hotkeys, and tray integration
+- open the main panel when Tkinter is available
+- coordinate reconfiguration without mixing business rules into GUI code
 
-### TTS e hotkeys
+### TTS And Hotkeys
 
-O Desktop App foi separado em responsabilidades menores:
+The Desktop App is split into smaller responsibilities:
 
-- `src/desktop/app/tts_runtime.py`: threading, cleanup e feedback de execucao
-- `src/desktop/services/tts_services.py`: engines e selecao de entrega de TTS
-- `src/desktop/services/hotkey_services.py`: monitor e gerenciamento de hotkeys
-- `src/desktop/services/hotkey_capture.py`: estado puro de captura de texto
+- `src/desktop/app/tts_runtime.py`: threading, cleanup, and execution feedback
+- `src/desktop/services/tts_services.py`: TTS engines and delivery selection
+- `src/desktop/services/hotkey_services.py`: hotkey monitoring and management
+- `src/desktop/services/hotkey_capture.py`: pure text-capture state
 
-## Regras de dependencia
+## Dependency Rules
 
-- `src/core/` nao depende de camadas externas
-- `src/application/` depende apenas de `src/core/`
-- `src/infrastructure/` pode depender de `application` e `core`
-- `src/presentation/` delega para `application`
-- `src/desktop/` deve conter apenas runtime, adapters e coordenacao especifica do Desktop App
-- logica compartilhavel entre bot e Desktop App deve ser extraida para `src/application/` ou `src/core/`
+- `src/core/` does not depend on external layers
+- `src/application/` depends only on `src/core/`
+- `src/infrastructure/` may depend on `application` and `core`
+- `src/presentation/` delegates to `application`
+- `src/desktop/` should contain only Desktop App-specific runtime, adapters, and coordination
+- logic shared by the bot and Desktop App should be extracted to `src/application/` or `src/core/`
 
-## Execucao
+## Execution
 
 ```bash
 # Bot
@@ -121,16 +121,16 @@ python -m src.bot
 python app.py
 ```
 
-## Testes
+## Tests
 
-Os testes do Desktop App ficam em `tests/unit/desktop/`.
+Desktop App tests live in `tests/unit/desktop/`.
 
-Observacoes:
+Notes:
 
-- a pasta de testes do Desktop App foi padronizada para `tests/unit/desktop/`
-- os simbolos publicos do codigo foram padronizados para `Desktop App`
-- o ambiente local de testes usa `.env` como base para parte dos defaults e cenarios
+- Desktop App tests are standardized under `tests/unit/desktop/`
+- public symbols use the `Desktop App` naming convention
+- the local test environment uses `.env` as the basis for some defaults and scenarios
 
-## Referencias
+## References
 
 - [../desktop/DESKTOP_APP_GUIDE.md](../desktop/DESKTOP_APP_GUIDE.md)

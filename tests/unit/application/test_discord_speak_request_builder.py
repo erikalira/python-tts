@@ -23,7 +23,7 @@ def test_builder_creates_request_with_voice_override(mock_tts_catalog):
     builder = DiscordSpeakRequestBuilder(config_use_case, mock_tts_catalog)
 
     result = builder.build(
-        text="Teste",
+        text="Test",
         guild_id=67890,
         member_id=11111,
         voice_key="edge-tts:pt-br-francisca",
@@ -40,7 +40,8 @@ def test_builder_requires_guild_id(mock_tts_catalog):
     config_use_case = type("ConfigUseCaseStub", (), {"get_config": lambda self, guild_id, user_id=None: None})()
     builder = DiscordSpeakRequestBuilder(config_use_case, mock_tts_catalog)
 
-    result = builder.build(text="Teste", guild_id=None, member_id=11111)
+    result = builder.build(text="Test", guild_id=None, member_id=11111)
 
     assert result.request is None
-    assert "servidor" in result.error_message.lower()
+    assert result.error_code == "missing_guild_id"
+    assert result.error_message == "missing guild id"

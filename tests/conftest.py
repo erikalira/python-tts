@@ -178,7 +178,7 @@ class MockTTSCatalog:
             "gtts:pt:roa-pt-br": TTSVoiceOption(
                 key="gtts:pt:roa-pt-br",
                 engine="gtts",
-                label="Google TTS - Portugues (Brasil)",
+                label="Google TTS - Portuguese (Brazil)",
                 language="pt",
                 voice_id="roa/pt-br",
             ),

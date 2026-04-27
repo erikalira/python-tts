@@ -1,29 +1,27 @@
 <!--
 Sync Impact Report
-- Version change: 1.2.0 -> 1.2.1
+- Version change: 1.2.1 -> 1.3.0
 - Modified principles:
   - V. Documentation As Operational Memory -> V. Documentation As Operational Memory
 - Added sections:
-  - Project-Specific Guidance Locations
-  - Instruction File Maintenance
-  - Constitution Sync Checklist
+  - Repository Language Policy
 - Removed sections:
   - None
 - Templates requiring updates:
   - updated: .specify/README.md
+  - updated: .specify/memory/ai-pitfalls.md
   - updated: .specify/review-checklist.md
-  - updated: .specify/templates/plan-template.md
-  - updated: .specify/templates/spec-template.md
-  - updated: .specify/templates/tasks-template.md
   - updated: .specify/templates/agent-file-template.md
   - updated: AGENTS.md
   - updated: .github/copilot-instructions.md
   - updated: .github/copilot-workspace.yml
   - updated: .github/instructions/documentation-organization.md
   - updated: .specify/sync-report-template.md
-  - updated: .specify/memory/ai-pitfalls.md
-  - updated: docs/README.md
-  - updated: README.md
+  - not required: .specify/templates/plan-template.md
+  - not required: .specify/templates/spec-template.md
+  - not required: .specify/templates/tasks-template.md
+  - not required: docs/README.md
+  - not required: README.md
 - Follow-up TODOs:
   - None
 -->
@@ -106,6 +104,17 @@ it.
   facades, or orchestration points.
 - Cosmetic refactors without a payoff in boundaries, contracts, validation, or
   onboarding clarity SHOULD be rejected.
+
+## Repository Language Policy
+
+All repository code, comments, documentation, specifications, tests, commit
+messages, pull request descriptions, and AI-generated project artifacts MUST be
+written in English by default.
+
+User-facing runtime text MAY use another language only when a feature explicitly
+requires localization, language-specific behavior, or a locale fixture. Such
+exceptions MUST stay scoped to the user-facing surface or test fixture that
+needs them.
 
 ## Workflow And Review Gates
 
@@ -225,7 +234,7 @@ durable report when the update spans multiple files.
 - [ ] `docs/README.md` if navigation changes
 - [ ] `README.md` if governance or contributor entrypoints change
 
-Current sync target: constitution v1.2.1. Update status: DONE.
+Current sync target: constitution v1.3.0. Update status: DONE.
 
 ## Architecture And Design Heuristics
 
@@ -279,4 +288,4 @@ tests and local validation.
 - New durable guidance SHOULD be encoded as project-specific rules or checklists
   instead of book quotations or theory-heavy summaries.
 
-**Version**: 1.2.1 | **Ratified**: 2026-04-08 | **Last Amended**: 2026-04-26
+**Version**: 1.3.0 | **Ratified**: 2026-04-08 | **Last Amended**: 2026-04-27

@@ -68,7 +68,7 @@ class ConfigurationRepository:
                 ),
             )
         except Exception as exc:
-            logger.error("[CONFIG] Erro ao carregar configuracao: %s", exc)
+            logger.error("[CONFIG] Failed to load configuration: %s", exc)
             return DesktopAppConfig.create_default()
 
     @staticmethod
@@ -108,8 +108,8 @@ class ConfigurationRepository:
             with open(self._config_file, "w", encoding="utf-8") as file:
                 json.dump(data, file, indent=2, ensure_ascii=False)
 
-            logger.info("[CONFIG] Configuracao salva em: %s", self._config_file)
+            logger.info("[CONFIG] Configuration saved at: %s", self._config_file)
             return True
         except Exception as exc:
-            logger.error("[CONFIG] Erro ao salvar configuracao: %s", exc)
+            logger.error("[CONFIG] Failed to save configuration: %s", exc)
             return False

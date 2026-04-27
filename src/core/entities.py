@@ -34,10 +34,10 @@ class AudioFile:
 
 class AudioQueueItemStatus(str, Enum):
     """Status of an audio queue item."""
-    PENDING = "pending"           # Aguardando processamento
-    PROCESSING = "processing"     # Sendo processado
-    COMPLETED = "completed"       # Concluído com sucesso
-    FAILED = "failed"            # Falhou
+    PENDING = "pending"           # Waiting for processing
+    PROCESSING = "processing"     # Being processed
+    COMPLETED = "completed"       # Completed successfully
+    FAILED = "failed"            # Failed
 
 
 @dataclass
@@ -55,7 +55,7 @@ class AudioQueueItem:
     completed_at: Optional[float] = None
     error_message: Optional[str] = None
     trace_context: Optional[dict[str, str]] = None
-    position_in_queue: int = 0  # Posição na fila (0 = próximo a processar)
+    position_in_queue: int = 0  # Queue position (0 = next to process)
     
     def mark_processing(self):
         """Mark item as currently being processed."""

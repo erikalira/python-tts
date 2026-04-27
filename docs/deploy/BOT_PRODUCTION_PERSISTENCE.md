@@ -45,11 +45,14 @@ Environment variables:
 The initial schema lives in:
 
 - `deploy/postgres/001_bot_config_schema.sql`
+- `deploy/postgres/002_interface_language_preferences.sql`
 
 It includes:
 
 - `guild_tts_settings`: durable per-server config
 - `user_tts_settings`: durable per-user overrides inside a guild
+- `guild_interface_language_preferences`: durable per-server interface language default
+- `user_interface_language_preferences`: durable per-user interface language preference inside a guild
 
 Current runtime behavior resolves voice settings in this order:
 
@@ -57,11 +60,21 @@ Current runtime behavior resolves voice settings in this order:
 2. guild default
 3. global runtime default
 
+Interface language is stored separately from voice settings so changing UI
+language does not accidentally pin a user's inherited TTS voice. Runtime
+language selection resolves in this order:
+
+1. explicit user interface language in the current guild
+2. Discord user locale from the interaction
+3. explicit guild interface language
+4. Discord guild locale from the interaction
+5. `en-US`
+
 ## Suggested rollout
 
 1. Keep `json` for local development if it remains convenient.
 2. Provision a managed Postgres instance for production.
-3. Apply `deploy/postgres/001_bot_config_schema.sql`.
+3. Apply the SQL files in `deploy/postgres/` in filename order.
 4. Set `CONFIG_STORAGE_BACKEND=postgres` and `DATABASE_URL`.
 5. Deploy the bot container with health checks and restart policy.
 

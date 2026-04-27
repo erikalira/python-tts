@@ -3,32 +3,32 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/7ed90fe1cc6f4090a7386df4681df463)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/7ed90fe1cc6f4090a7386df4681df463)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
-Projeto com dois aplicativos independentes:
+This repository contains two independent applications:
 
-- Bot do Discord para entrar em canal de voz e reproduzir TTS
-- Desktop App Windows com hotkeys para capturar texto e enviar ao bot
+- A Discord bot that joins voice channels and plays TTS audio
+- A Windows Desktop App that captures text with hotkeys and sends it to the bot
 
-O repositorio segue Clean Architecture e busca reutilizar logica entre os dois
-fluxos, sem duplicacao entre o runtime interno do Desktop App em `src/desktop`
-e o restante de `src`.
+The repository follows Clean Architecture and aims to reuse logic between both
+runtime flows without duplicating behavior between the Desktop App runtime in
+`src/desktop` and the rest of `src`.
 
-## Estrutura rapida
+## Quick Structure
 
-- `src/bot.py`: sobe o bot do Discord e o servidor HTTP
-- `app.py`: inicia o Desktop App Windows
-- `src/`: camadas principais da aplicacao
-- `docs/`: documentacao complementar
-- `docs/desktop/WINDOWS_BUILD_GUIDE.md`: guia de build do executavel Windows
+- `src/bot.py`: starts the Discord bot and HTTP server
+- `app.py`: starts the Windows Desktop App
+- `src/`: main application layers
+- `docs/`: supporting documentation
+- `docs/desktop/WINDOWS_BUILD_GUIDE.md`: Windows executable build guide
 
-## Requisitos
+## Requirements
 
 - Python 3.11+
-- `ffmpeg` para o fluxo de voz do Discord
-- O ambiente virtual `.venv` faz parte da instalacao
+- `ffmpeg` for the Discord voice flow
+- The `.venv` virtual environment is part of the expected setup
 
-Instalacao basica:
+Basic installation:
 
-### Windows (PowerShell)
+### Windows PowerShell
 
 ```powershell
 python -m venv .venv
@@ -37,7 +37,7 @@ pip install -r requirements.txt
 winget install ffmpeg
 ```
 
-### Windows (CMD)
+### Windows CMD
 
 ```cmd
 python -m venv .venv
@@ -54,25 +54,25 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Para o passo a passo completo, consulte [docs/getting-started/SETUP.md](docs/getting-started/SETUP.md).
+For the complete setup flow, see [docs/getting-started/SETUP.md](docs/getting-started/SETUP.md).
 
-## Execucao rapida
+## Quick Start
 
-Configure um arquivo `.env` com pelo menos:
+Create a `.env` file with at least:
 
 ```env
-DISCORD_TOKEN=seu_token_aqui
+DISCORD_TOKEN=your_token_here
 DISCORD_BOT_URL=http://127.0.0.1:10000
 DISCORD_BOT_PORT=10000
 ```
 
-Para usar fila Redis no bot localmente:
+To use Redis-backed queues for the local bot:
 
 ```bash
 docker compose -f docker-compose.redis.yml up -d
 ```
 
-E adicione ao `.env`:
+Then add this to `.env`:
 
 ```env
 TTS_QUEUE_BACKEND=redis
@@ -83,63 +83,63 @@ REDIS_KEY_PREFIX=tts
 REDIS_COMPLETED_ITEM_TTL_SECONDS=900
 ```
 
-Suba o bot:
+Start the bot:
 
 ```bash
 python -m src.bot
 ```
 
-Em outro terminal, rode o Desktop App:
+In another terminal, run the Desktop App:
 
 ```bash
 python app.py
 ```
 
-## Testes
+## Tests
 
 ```bash
 pytest
 ```
 
-Detalhes de estrutura e execucao estao em [docs/getting-started/TESTING.md](docs/getting-started/TESTING.md).
+Test structure and local execution details live in [docs/getting-started/TESTING.md](docs/getting-started/TESTING.md).
 
-## Build do executavel Windows
+## Windows Executable Build
 
-No Windows, use o script oficial:
+On Windows, use the official script:
 
 ```powershell
 ./scripts/build/build_clean_architecture.ps1
 ```
 
-No Linux, gere o `.exe` pelo workflow de CI que roda em ambiente Windows.
+On Linux, build the `.exe` through the CI workflow that runs in a Windows environment.
 
-## Documentacao
+## Documentation
 
-Use o README principal como ponto de entrada e deixe os detalhes nos guias
-especificos. A pasta `docs/` fica reservada para guias duraveis; artefatos de
-planejamento e execucao de features devem ir em `specs/`.
+Use the root README as the entrypoint and keep detailed guidance in the
+specific docs. The `docs/` directory is reserved for durable guides; feature
+planning and execution artifacts belong in `specs/`.
 
-- [Indice da documentacao](docs/README.md)
-- [Guia de setup do ambiente](docs/getting-started/SETUP.md)
-- [Guia de testes](docs/getting-started/TESTING.md)
-- [Guia de deploy no servidor](docs/deploy/DEPLOYMENT_GUIDE.md)
-- [Arquitetura do projeto](docs/architecture/ARCHITECTURE.md)
-- [Guia do Desktop App](docs/desktop/DESKTOP_APP_GUIDE.md)
-- [Constituicao e workflow canonicos](.specify/README.md)
+- [Documentation index](docs/README.md)
+- [Environment setup guide](docs/getting-started/SETUP.md)
+- [Testing guide](docs/getting-started/TESTING.md)
+- [Server deployment guide](docs/deploy/DEPLOYMENT_GUIDE.md)
+- [Project architecture](docs/architecture/ARCHITECTURE.md)
+- [Desktop App guide](docs/desktop/DESKTOP_APP_GUIDE.md)
+- [Canonical constitution and workflow](.specify/README.md)
 
-## Governanca para contribuidores e IA
+## Contributor And AI Governance
 
-As regras canonicas de arquitetura, workflow e instrucao para agentes ficam em
+The canonical architecture, workflow, and agent-instruction rules live in
 `.specify/`.
 
-- [Indice canonico de governanca](.specify/README.md)
-- [Constituicao do repositorio](.specify/memory/constitution.md)
-- [Pitfalls comuns para IA](.specify/memory/ai-pitfalls.md)
-- [Checklist de review](.specify/review-checklist.md)
-- [Resumo derivado para agentes](AGENTS.md)
+- [Canonical governance index](.specify/README.md)
+- [Repository constitution](.specify/memory/constitution.md)
+- [Common AI pitfalls](.specify/memory/ai-pitfalls.md)
+- [Review checklist](.specify/review-checklist.md)
+- [Derivative agent summary](AGENTS.md)
 
-## Observacoes
+## Notes
 
-- Nao versione o `DISCORD_TOKEN`
-- O bot e o Desktop App devem continuar funcionando de forma independente
-- Prefira consultar `docs/` para detalhes de arquitetura, setup e troubleshooting
+- Do not commit `DISCORD_TOKEN`
+- The bot and Desktop App must keep working independently
+- Prefer `docs/` for architecture, setup, and troubleshooting details

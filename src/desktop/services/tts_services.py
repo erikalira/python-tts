@@ -61,7 +61,7 @@ class LocalPyTTSX3Engine(TTSEngine):
     def _initialize_engine(self) -> bool:
         """Initialize the pyttsx3 engine."""
         if not self._adapter.is_available():
-            self._last_error_message = "pyttsx3 nao esta disponivel"
+            self._last_error_message = "pyttsx3 is not available"
             return False
 
         try:
@@ -71,8 +71,8 @@ class LocalPyTTSX3Engine(TTSEngine):
             self._last_error_message = None
             return True
         except Exception as exc:
-            logger.error("[TTS] Erro ao inicializar pyttsx3: %s", exc)
-            self._last_error_message = f"Erro ao inicializar pyttsx3: {exc}"
+            logger.error("[TTS] Failed to initialize pyttsx3: %s", exc)
+            self._last_error_message = f"Failed to initialize pyttsx3: {exc}"
             return False
 
     def speak(self, text: str) -> bool:
@@ -87,8 +87,8 @@ class LocalPyTTSX3Engine(TTSEngine):
                 self._last_error_message = None
                 return True
             except Exception as exc:
-                logger.error("[TTS] Erro ao reproduzir com pyttsx3: %s", exc)
-                self._last_error_message = f"Erro ao reproduzir com pyttsx3: {exc}"
+                logger.error("[TTS] Failed to play with pyttsx3: %s", exc)
+                self._last_error_message = f"Failed to play with pyttsx3: {exc}"
                 return False
 
     def is_available(self) -> bool:
@@ -112,7 +112,7 @@ class DiscordTTSService(TTSEngine):
         if not self._bot_client.is_available():
             return False
 
-        logger.info("[TTS] Enviando texto para o bot do Discord")
+        logger.info("[TTS] Sending text to the Discord bot")
         request = self._bot_client.build_request(text)
         return self._bot_client.send_speak_request(request)
 
@@ -220,7 +220,7 @@ class KeyboardCleanupService:
         except ImportError:
             logger.warning("[TTS] Keyboard library not available for cleanup")
         except Exception as exc:
-            logger.error("[TTS] Erro durante cleanup: %s", exc)
+            logger.error("[TTS] Error during cleanup: %s", exc)
         finally:
             self._suppress_events.clear()
 

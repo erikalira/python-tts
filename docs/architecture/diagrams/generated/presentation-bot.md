@@ -36,21 +36,21 @@ classDiagram
     voice_runtime_availability : DependencyVoiceRuntimeAvailability
   }
   class DiscordAboutCommandHandler {
-    handle(interaction: discord.Interaction, runtime_status: VoiceRuntimeStatus) None
+    handle(interaction: discord.Interaction, runtime_status: VoiceRuntimeStatus, locale: str) None
   }
   class DiscordCommands {
   }
   class DiscordConfigCommandHandler {
-    handle(interaction: discord.Interaction, voz: str | None) None
+    handle(interaction: discord.Interaction, voice: str | None, locale: str) None
   }
   class DiscordJoinPresenter {
-    build_message(result: JoinVoiceChannelResult) str
+    build_message(result: JoinVoiceChannelResult, locale: str) str
   }
   class DiscordLeavePresenter {
-    build_message(result: LeaveVoiceChannelResult) str
+    build_message(result: LeaveVoiceChannelResult, locale: str) str
   }
   class DiscordSpeakPresenter {
-    build_message(result: SpeakTextResult) str
+    build_message(result: SpeakTextResult, locale: str) str
   }
   class HTTPSpeakPresenter {
     build_message(result: SpeakTextResult) str

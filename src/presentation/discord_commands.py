@@ -9,11 +9,17 @@ from typing import Callable
 import discord
 from discord import app_commands
 
-from src.application.discord_speak_request_builder import DiscordSpeakRequestBuilder
+from src.application.discord_speak_request_builder import (
+    DISCORD_SPEAK_PREP_MISSING_GUILD_ID,
+    DISCORD_SPEAK_PREP_VOICE_CONFIG_UNAVAILABLE,
+    DiscordSpeakRequestBuilder,
+    DiscordSpeakPreparationErrorCode,
+)
 from src.application.dto import SPEAK_RESULT_OK, SPEAK_RESULT_QUEUED
 from src.application.rate_limiting import RateLimiter, RateLimitRequest, RateLimitResult
 from src.application.tts_voice_catalog import TTSCatalog
 from src.application.use_cases import (
+    ConfigureInterfaceLanguageUseCase,
     ConfigureTTSUseCase,
     JoinVoiceChannelUseCase,
     LeaveVoiceChannelUseCase,
@@ -25,6 +31,13 @@ from src.presentation.discord_command_handlers import (
     DiscordConfigCommandHandler,
     DiscordServerConfigCommandHandler,
 )
+from src.presentation.discord_i18n import (
+    DiscordCommandTranslator,
+    DiscordLocaleResolver,
+    DiscordMessageCatalog,
+    command_text,
+    normalize_discord_locale,
+)
 from src.presentation.discord_presenters import (
     DiscordJoinPresenter,
     DiscordLeavePresenter,
@@ -33,10 +46,6 @@ from src.presentation.discord_presenters import (
 
 logger = logging.getLogger(__name__)
 _ALLOW_RATE_LIMIT_RESULT = RateLimitResult(allowed=True, scope="disabled")
-
-
-def _get_voice_runtime_unavailable_message() -> str:
-    return "❌ O recurso de voz do bot está indisponível no momento. Tente novamente mais tarde."
 
 
 class DiscordCommands:
@@ -55,10 +64,12 @@ class DiscordCommands:
         rate_limiter: RateLimiter | None = None,
         rate_limit_max_requests: int = 0,
         rate_limit_window_seconds: float = 0,
+        interface_language_use_case: ConfigureInterfaceLanguageUseCase | None = None,
     ):
         self._tree = tree
         self._speak_use_case = speak_use_case
         self._config_use_case = config_use_case
+        self._interface_language_use_case = interface_language_use_case
         self._join_use_case = join_use_case
         self._leave_use_case = leave_use_case
         self._voice_runtime_availability = voice_runtime_availability
@@ -67,6 +78,8 @@ class DiscordCommands:
         self._rate_limiter = rate_limiter
         self._rate_limit_max_requests = rate_limit_max_requests
         self._rate_limit_window_seconds = rate_limit_window_seconds
+        self._locale_resolver = DiscordLocaleResolver()
+        self._messages = DiscordMessageCatalog()
         self._join_presenter = DiscordJoinPresenter()
         self._leave_presenter = DiscordLeavePresenter()
         self._speak_presenter = DiscordSpeakPresenter()
@@ -77,43 +90,70 @@ class DiscordCommands:
         self._register_commands()
 
     def _register_commands(self):
-        @self._tree.command(name="join", description="Make the bot join your voice channel")
+        @self._tree.command(name="join", description=command_text("cmd.join.description"))
         async def join(interaction: discord.Interaction):
             await self._handle_join(interaction)
 
-        @self._tree.command(name="leave", description="Make the bot leave the voice channel")
+        @self._tree.command(name="leave", description=command_text("cmd.leave.description"))
         async def leave(interaction: discord.Interaction):
             await self._handle_leave(interaction)
 
-        @self._tree.command(name="speak", description="Make the bot speak the given text in voice channel")
-        @app_commands.describe(text="Text to speak", voz="Escolha uma voz apenas para esta fala")
-        @app_commands.autocomplete(voz=self._autocomplete_voz)
-        async def speak(interaction: discord.Interaction, text: str, voz: str = None):
-            await self._handle_speak(interaction, text, voz)
+        @self._tree.command(name="speak", description=command_text("cmd.speak.description"))
+        @app_commands.describe(text=command_text("cmd.speak.text"), voice=command_text("cmd.speak.voice"))
+        @app_commands.autocomplete(voice=self._autocomplete_voice)
+        async def speak(interaction: discord.Interaction, text: str, voice: str = None):
+            await self._handle_speak(interaction, text, voice)
 
-        @self._tree.command(name="config", description="Configure your personal TTS settings")
-        @app_commands.describe(voz="Escolha a voz completa que o bot deve usar")
-        @app_commands.autocomplete(voz=self._autocomplete_voz)
-        async def config(interaction: discord.Interaction, voz: str = None):
-            await self._handle_config(interaction, voz)
+        @self._tree.command(name="config", description=command_text("cmd.config.description"))
+        @app_commands.describe(voice=command_text("cmd.config.voice"))
+        @app_commands.autocomplete(voice=self._autocomplete_voice)
+        async def config(interaction: discord.Interaction, voice: str = None):
+            await self._handle_config(interaction, voice)
 
-        @self._tree.command(name="config-reset", description="Reset your personal voice override")
+        @self._tree.command(name="config-reset", description=command_text("cmd.config_reset.description"))
         async def config_reset(interaction: discord.Interaction):
             await self._handle_config_reset(interaction)
 
-        @self._tree.command(name="server-config", description="Configure the default server voice")
-        @app_commands.describe(voz="Escolha a voz padrão para usuários sem configuração pessoal")
-        @app_commands.autocomplete(voz=self._autocomplete_voz)
-        async def server_config(interaction: discord.Interaction, voz: str = None):
-            await self._handle_server_config(interaction, voz)
+        @self._tree.command(name="server-config", description=command_text("cmd.server_config.description"))
+        @app_commands.describe(voice=command_text("cmd.server_config.voice"))
+        @app_commands.autocomplete(voice=self._autocomplete_voice)
+        async def server_config(interaction: discord.Interaction, voice: str = None):
+            await self._handle_server_config(interaction, voice)
 
-        @self._tree.command(name="server-config-reset", description="Reset the default server voice")
+        @self._tree.command(name="server-config-reset", description=command_text("cmd.server_config_reset.description"))
         async def server_config_reset(interaction: discord.Interaction):
             await self._handle_server_config_reset(interaction)
 
-        @self._tree.command(name="about", description="Show bot information and version")
+        @self._tree.command(name="language", description=command_text("cmd.language.description"))
+        @app_commands.describe(language=command_text("cmd.language.language"))
+        @app_commands.choices(
+            language=[
+                app_commands.Choice(name="Automatic", value="auto"),
+                app_commands.Choice(name="English", value="en-US"),
+                app_commands.Choice(name="Portuguese (Brazil)", value="pt-BR"),
+            ]
+        )
+        async def language(interaction: discord.Interaction, language: app_commands.Choice[str]):
+            await self._handle_language(interaction, language.value)
+
+        @self._tree.command(name="server-language", description=command_text("cmd.server_language.description"))
+        @app_commands.describe(language=command_text("cmd.server_language.language"))
+        @app_commands.choices(
+            language=[
+                app_commands.Choice(name="Automatic", value="auto"),
+                app_commands.Choice(name="English", value="en-US"),
+                app_commands.Choice(name="Portuguese (Brazil)", value="pt-BR"),
+            ]
+        )
+        async def server_language(interaction: discord.Interaction, language: app_commands.Choice[str]):
+            await self._handle_server_language(interaction, language.value)
+
+        @self._tree.command(name="about", description=command_text("cmd.about.description"))
         async def about(interaction: discord.Interaction):
             await self._handle_about(interaction)
+
+    def command_translator(self) -> DiscordCommandTranslator:
+        return DiscordCommandTranslator()
 
     def _get_voice_runtime_status(self) -> VoiceRuntimeStatus:
         return self._voice_runtime_availability.get_status()
@@ -127,12 +167,10 @@ class DiscordCommands:
         )
 
     async def _send_bot_inactive_message(self, interaction: discord.Interaction) -> bool:
+        locale = self._resolve_locale(interaction)
         try:
             await interaction.edit_original_response(
-                content="❌ **Bot está desligando ou inativo!**\n\n"
-                "🔄 Para reativar o bot, acesse:\n"
-                "**https://python-tts-s3z8.onrender.com/**\n\n"
-                "_(O servidor gratuito do Render desliga após inatividade)_"
+                content=self._messages.text("bot.inactive", locale)
             )
             return True
         except Exception as exc:
@@ -140,9 +178,10 @@ class DiscordCommands:
             return False
 
     async def _handle_join(self, interaction: discord.Interaction):
+        locale = self._resolve_locale(interaction)
         if not self._get_voice_runtime_status().is_available:
             self._log_voice_runtime_unavailable("join")
-            await interaction.response.send_message(_get_voice_runtime_unavailable_message(), ephemeral=True)
+            await interaction.response.send_message(self._messages.text("voice.runtime_unavailable", locale), ephemeral=True)
             return
 
         guild_id = interaction.guild.id if interaction.guild else None
@@ -156,14 +195,16 @@ class DiscordCommands:
                 await self._send_bot_inactive_message(interaction)
                 return
 
-        await interaction.edit_original_response(content=self._join_presenter.build_message(result))
+        await interaction.edit_original_response(content=self._join_presenter.build_message(result, locale))
 
     async def _handle_leave(self, interaction: discord.Interaction):
+        locale = self._resolve_locale(interaction)
         guild_id = interaction.guild.id if interaction.guild else None
         result = await self._leave_use_case.execute(guild_id=guild_id)
-        await interaction.response.send_message(self._leave_presenter.build_message(result), ephemeral=True)
+        await interaction.response.send_message(self._leave_presenter.build_message(result, locale), ephemeral=True)
 
-    async def _handle_speak(self, interaction: discord.Interaction, text: str, voz: str | None = None):
+    async def _handle_speak(self, interaction: discord.Interaction, text: str, voice: str | None = None):
+        locale = self._resolve_locale(interaction)
         request_started_at = time.perf_counter()
         runtime_context = self._runtime_log_context()
         logger.debug(
@@ -193,7 +234,7 @@ class DiscordCommands:
 
         if not self._get_voice_runtime_status().is_available:
             self._log_voice_runtime_unavailable("speak")
-            await interaction.edit_original_response(content=_get_voice_runtime_unavailable_message())
+            await interaction.edit_original_response(content=self._messages.text("voice.runtime_unavailable", locale))
             return
 
         rate_limit_result = self._check_speak_rate_limit(interaction)
@@ -204,7 +245,7 @@ class DiscordCommands:
                 rate_limit_result.scope,
                 rate_limit_result.retry_after_seconds or 0,
             )
-            await interaction.edit_original_response(content=self._speak_presenter.build_rate_limit_message(rate_limit_result))
+            await interaction.edit_original_response(content=self._speak_presenter.build_rate_limit_message(rate_limit_result, locale))
             return
 
         try:
@@ -212,10 +253,12 @@ class DiscordCommands:
                 text=text,
                 guild_id=interaction.guild.id if interaction.guild else None,
                 member_id=interaction.user.id if interaction.user else None,
-                voice_key=voz,
+                voice_key=voice,
             )
             if prepared_request.error_message:
-                await interaction.edit_original_response(content=prepared_request.error_message)
+                await interaction.edit_original_response(
+                    content=self._build_preparation_error_message(prepared_request.error_code, locale)
+                )
                 return
 
             result = await self._speak_use_case.execute(prepared_request.request)
@@ -235,11 +278,11 @@ class DiscordCommands:
                     if result.starts_immediately:
                         await interaction.delete_original_response()
                     else:
-                        await interaction.edit_original_response(content=self._build_speak_message(result))
+                        await interaction.edit_original_response(content=self._build_speak_message(result, locale))
                 elif result.code == SPEAK_RESULT_OK:
                     await interaction.delete_original_response()
                 else:
-                    await interaction.edit_original_response(content=self._build_speak_message(result))
+                    await interaction.edit_original_response(content=self._build_speak_message(result, locale))
             except discord.HTTPException as msg_error:
                 logger.debug("[SPEAK] Could not update interaction message: %s", msg_error)
         except Exception as exc:
@@ -247,9 +290,9 @@ class DiscordCommands:
             try:
                 error_msg = str(exc).lower()
                 if "interpreter shutdown" in error_msg or "cannot schedule new futures" in error_msg:
-                    await interaction.edit_original_response(content="❌ Bot está inativo ou desligando.")
+                    await interaction.edit_original_response(content=self._messages.text("bot.inactive.short", locale))
                 else:
-                    await interaction.edit_original_response(content="❌ Erro inesperado")
+                    await interaction.edit_original_response(content=self._messages.text("error.unexpected", locale))
             except Exception as send_error:
                 logger.debug("[SPEAK] Could not send error message: %s", send_error)
 
@@ -354,8 +397,19 @@ class DiscordCommands:
             "session_id": str(context.get("session_id", "unknown")),
         }
 
-    def _build_speak_message(self, result) -> str:
-        return self._speak_presenter.build_message(result)
+    def _build_speak_message(self, result, locale: str) -> str:
+        return self._speak_presenter.build_message(result, locale)
+
+    def _build_preparation_error_message(
+        self,
+        error_code: DiscordSpeakPreparationErrorCode | None,
+        locale: str,
+    ) -> str:
+        if error_code == DISCORD_SPEAK_PREP_MISSING_GUILD_ID:
+            return self._messages.text("speak.missing_guild_id", locale)
+        if error_code == DISCORD_SPEAK_PREP_VOICE_CONFIG_UNAVAILABLE:
+            return self._messages.text("error.load_voice_config", locale)
+        return self._messages.text("error.invalid_voice", locale)
 
     def _check_speak_rate_limit(self, interaction: discord.Interaction) -> RateLimitResult:
         if self._rate_limiter is None:
@@ -377,22 +431,130 @@ class DiscordCommands:
         user = str(user_id) if user_id is not None else "unknown"
         return f"discord:speak:guild:{guild}:user:{user}"
 
-    async def _handle_config(self, interaction: discord.Interaction, voz: str | None):
-        await self._config_handler.handle(interaction, voz)
+    async def _handle_config(self, interaction: discord.Interaction, voice: str | None):
+        await self._config_handler.handle(interaction, voice, self._resolve_locale(interaction))
 
     async def _handle_config_reset(self, interaction: discord.Interaction):
-        await self._config_handler.handle_reset(interaction)
+        await self._config_handler.handle_reset(interaction, self._resolve_locale(interaction))
 
-    async def _handle_server_config(self, interaction: discord.Interaction, voz: str | None):
-        await self._server_config_handler.handle(interaction, voz)
+    async def _handle_server_config(self, interaction: discord.Interaction, voice: str | None):
+        await self._server_config_handler.handle(interaction, voice, self._resolve_locale(interaction))
 
     async def _handle_server_config_reset(self, interaction: discord.Interaction):
-        await self._server_config_handler.handle_reset(interaction)
+        await self._server_config_handler.handle_reset(interaction, self._resolve_locale(interaction))
+
+    async def _handle_language(self, interaction: discord.Interaction, language: str):
+        locale = self._resolve_locale(interaction)
+        if not interaction.guild or not interaction.guild.id:
+            await interaction.response.send_message(self._messages.text("error.guild_only", locale), ephemeral=True)
+            return
+        if self._interface_language_use_case is None:
+            await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+            return
+
+        user_id = interaction.user.id if interaction.user else None
+        resolved_language = self._resolve_requested_interface_language(language)
+        if language != "auto" and resolved_language is None:
+            await interaction.response.send_message(self._messages.text("language.invalid", locale), ephemeral=True)
+            return
+
+        try:
+            if language == "auto":
+                result = await self._interface_language_use_case.reset_user_language(interaction.guild.id, user_id)
+                response_locale = self._resolve_locale(interaction)
+                message = self._messages.text("language.user.automatic", response_locale)
+            else:
+                result = await self._interface_language_use_case.set_user_language(
+                    interaction.guild.id,
+                    user_id,
+                    resolved_language or language,
+                )
+                response_locale = resolved_language or locale
+                message = self._messages.text(
+                    "language.user.updated",
+                    response_locale,
+                    language_name=self._language_name(response_locale, response_locale),
+                )
+
+            if not result.success:
+                await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+                return
+            await interaction.response.send_message(message, ephemeral=True)
+        except Exception as exc:
+            logger.error("[LANGUAGE] Error updating user interface language: %s", exc, exc_info=True)
+            await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+
+    async def _handle_server_language(self, interaction: discord.Interaction, language: str):
+        locale = self._resolve_locale(interaction)
+        if not interaction.guild or not interaction.guild.id:
+            await interaction.response.send_message(self._messages.text("error.guild_only", locale), ephemeral=True)
+            return
+        if not self._can_manage_guild(interaction):
+            await interaction.response.send_message(self._messages.text("server_language.permission", locale), ephemeral=True)
+            return
+        if self._interface_language_use_case is None:
+            await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+            return
+
+        resolved_language = self._resolve_requested_interface_language(language)
+        if language != "auto" and resolved_language is None:
+            await interaction.response.send_message(self._messages.text("language.invalid", locale), ephemeral=True)
+            return
+
+        try:
+            if language == "auto":
+                result = await self._interface_language_use_case.reset_guild_language(interaction.guild.id)
+                response_locale = self._resolve_locale(interaction)
+                message = self._messages.text("language.guild.automatic", response_locale)
+            else:
+                result = await self._interface_language_use_case.set_guild_language(
+                    interaction.guild.id,
+                    resolved_language or language,
+                )
+                response_locale = self._resolve_locale(interaction)
+                message = self._messages.text(
+                    "language.guild.updated",
+                    response_locale,
+                    language_name=self._language_name(resolved_language or language, response_locale),
+                )
+
+            if not result.success:
+                await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+                return
+            await interaction.response.send_message(message, ephemeral=True)
+        except Exception as exc:
+            logger.error("[LANGUAGE] Error updating guild interface language: %s", exc, exc_info=True)
+            await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
 
     async def _handle_about(self, interaction: discord.Interaction):
-        await self._about_handler.handle(interaction, self._get_voice_runtime_status())
+        await self._about_handler.handle(interaction, self._get_voice_runtime_status(), self._resolve_locale(interaction))
 
-    async def _autocomplete_voz(
+    def _resolve_locale(self, interaction: discord.Interaction) -> str:
+        if self._interface_language_use_case is None:
+            return self._locale_resolver.resolve(interaction)
+
+        guild_id = interaction.guild.id if interaction.guild else None
+        user_id = interaction.user.id if interaction.user else None
+        return self._locale_resolver.resolve_candidates(
+            self._interface_language_use_case.get_user_language(guild_id, user_id),
+            getattr(interaction, "locale", None),
+            self._interface_language_use_case.get_guild_language(guild_id),
+            getattr(interaction, "guild_locale", None),
+        )
+
+    def _can_manage_guild(self, interaction: discord.Interaction) -> bool:
+        permissions = getattr(getattr(interaction, "user", None), "guild_permissions", None)
+        return bool(getattr(permissions, "manage_guild", False))
+
+    def _resolve_requested_interface_language(self, language: str) -> str | None:
+        if language == "auto":
+            return None
+        return normalize_discord_locale(language)
+
+    def _language_name(self, language: str, locale: str) -> str:
+        return self._messages.text(f"language.name.{language}", locale)
+
+    async def _autocomplete_voice(
         self,
         interaction: discord.Interaction,
         current: str,

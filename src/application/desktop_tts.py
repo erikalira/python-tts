@@ -79,7 +79,7 @@ class DesktopTTSFlowService:
         if normalized and prepared_text != normalized and self._max_text_length:
             self._logger.warning("[TTS] Texto truncado para %s caracteres", self._max_text_length)
 
-        self._logger.info("[TTS] Processando texto para sintese")
+        self._logger.info("[TTS] Processing text for synthesis")
         return self._engine.speak(prepared_text)
 
     def is_available(self) -> bool:

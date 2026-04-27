@@ -47,12 +47,12 @@ class GUIConfig(ConfigInterface):
         from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
-            print("Tkinter nao disponivel, usando console...")
+            print("Tkinter is not available, using console...")
             return ConsoleConfig().show_config(config)
         self.config = config
         self.result = None
         self.root = compat.tk.Tk()
-        self.root.title("Desktop App - Configuracao")
+        self.root.title("Desktop App - Configuration")
         self.root.resizable(True, True)
         self.root.protocol("WM_DELETE_WINDOW", self._cancel)
         self._create_interface()
@@ -73,8 +73,8 @@ class GUIConfig(ConfigInterface):
         self._build_config_notebook(self._main_frame)
         self._button_frame = compat.ttk.Frame(self._main_frame)
         self._button_frame.pack(fill="x", pady=(10, 0))
-        compat.ttk.Button(self._button_frame, text="Salvar", command=self._save_config).pack(side="right", padx=(10, 0))
-        compat.ttk.Button(self._button_frame, text="Cancelar", command=self._cancel).pack(side="right")
+        compat.ttk.Button(self._button_frame, text="Save", command=self._save_config).pack(side="right", padx=(10, 0))
+        compat.ttk.Button(self._button_frame, text="Cancel", command=self._cancel).pack(side="right")
 
     def _build_config_notebook(self, parent):
         from . import tk_support as compat
@@ -171,9 +171,9 @@ class GUIConfig(ConfigInterface):
         compat.ttk.Label(
             parent,
             text=(
-                "Dica: Clique com botao direito no seu nome no Discord, "
-                "depois 'Copiar ID' para obter seu User ID. "
-                "O bot vai descobrir o servidor pelo seu canal de voz atual."
+                "Tip: Right-click your name in Discord, "
+                "then use 'Copy ID' to get your User ID. "
+                "The bot will discover the server from your current voice channel."
             ),
             wraplength=400,
             justify="left",
@@ -185,7 +185,7 @@ class GUIConfig(ConfigInterface):
 
         if not self.config:
             return
-        compat.ttk.Label(parent, text="Engine de voz do bot:").pack(anchor="w", pady=(0, 5))
+        compat.ttk.Label(parent, text="Bot voice engine:").pack(anchor="w", pady=(0, 5))
         self.engine_var = compat.tk.StringVar(value=self.config.tts.engine)
         compat.ttk.Combobox(
             parent,
@@ -196,14 +196,14 @@ class GUIConfig(ConfigInterface):
         compat.ttk.Label(
             parent,
             text=(
-                "O caminho principal do app e enviar o texto para o bot do Discord. "
-                "A voz local do Windows e opcional e fica nas preferencias da interface."
+                "The app's main path sends text to the Discord bot. "
+                "Local Windows voice is optional and lives in interface preferences."
             ),
             wraplength=420,
             justify="left",
             font=("Arial", 8),
         ).pack(anchor="w", pady=(0, 10))
-        compat.ttk.Label(parent, text="Voz do catalogo:").pack(anchor="w", pady=(0, 5))
+        compat.ttk.Label(parent, text="Catalog voice:").pack(anchor="w", pady=(0, 5))
         self.voice_selection_var = compat.tk.StringVar(value=self._resolve_selected_voice_label())
         voice_combobox = compat.ttk.Combobox(
             parent,
@@ -217,20 +217,20 @@ class GUIConfig(ConfigInterface):
         compat.ttk.Label(
             parent,
             text=(
-                "Ao escolher uma voz do catalogo, o app atualiza engine, idioma e Voice ID automaticamente. "
-                "Os campos abaixo continuam editaveis para configuracoes personalizadas."
+                "Choosing a catalog voice updates engine, language, and Voice ID automatically. "
+                "The fields below remain editable for custom settings."
             ),
             wraplength=420,
             justify="left",
             font=("Arial", 8),
         ).pack(anchor="w", pady=(0, 10))
-        compat.ttk.Label(parent, text="Idioma:").pack(anchor="w", pady=(0, 5))
+        compat.ttk.Label(parent, text="Language:").pack(anchor="w", pady=(0, 5))
         self.language_var = compat.tk.StringVar(value=self.config.tts.language)
         compat.ttk.Entry(parent, textvariable=self.language_var, width=50).pack(fill="x", pady=(0, 10))
         compat.ttk.Label(parent, text="Voice ID:").pack(anchor="w", pady=(0, 5))
         self.voice_id_var = compat.tk.StringVar(value=self.config.tts.voice_id)
         compat.ttk.Entry(parent, textvariable=self.voice_id_var, width=50).pack(fill="x", pady=(0, 10))
-        compat.ttk.Label(parent, text="Velocidade (50-400):").pack(anchor="w", pady=(0, 5))
+        compat.ttk.Label(parent, text="Speed (50-400):").pack(anchor="w", pady=(0, 5))
         self.rate_var = compat.tk.StringVar(value=str(self.config.tts.rate))
         compat.ttk.Entry(parent, textvariable=self.rate_var, width=50).pack(fill="x", pady=(0, 10))
 
@@ -239,17 +239,17 @@ class GUIConfig(ConfigInterface):
 
         if not self.config:
             return
-        compat.ttk.Label(parent, text="Trigger para iniciar:").pack(anchor="w", pady=(0, 5))
+        compat.ttk.Label(parent, text="Start trigger:").pack(anchor="w", pady=(0, 5))
         self.trigger_open_var = compat.tk.StringVar(value=self.config.hotkey.trigger_open)
         compat.ttk.Entry(parent, textvariable=self.trigger_open_var, width=50).pack(fill="x", pady=(0, 10))
-        compat.ttk.Label(parent, text="Trigger para finalizar:").pack(anchor="w", pady=(0, 5))
+        compat.ttk.Label(parent, text="End trigger:").pack(anchor="w", pady=(0, 5))
         self.trigger_close_var = compat.tk.StringVar(value=self.config.hotkey.trigger_close)
         compat.ttk.Entry(parent, textvariable=self.trigger_close_var, width=50).pack(fill="x", pady=(0, 10))
         compat.ttk.Label(
             parent,
             text=(
-                f"Exemplo: Digite '{self.config.hotkey.trigger_open}ola mundo"
-                f"{self.config.hotkey.trigger_close}' para falar 'ola mundo'"
+                f"Example: type '{self.config.hotkey.trigger_open}hello world"
+                f"{self.config.hotkey.trigger_close}' to say 'hello world'"
             ),
             wraplength=400,
             font=("Arial", 8),
@@ -263,18 +263,18 @@ class GUIConfig(ConfigInterface):
         self.show_notifications_var = compat.tk.BooleanVar(value=self.config.interface.show_notifications)
         self.console_logs_var = compat.tk.BooleanVar(value=self.config.interface.console_logs)
         self.local_tts_enabled_var = compat.tk.BooleanVar(value=self.config.interface.local_tts_enabled)
-        compat.ttk.Checkbutton(parent, text="Exibir notificacoes do app", variable=self.show_notifications_var).pack(anchor="w", pady=(0, 10))
-        compat.ttk.Checkbutton(parent, text="Manter logs detalhados na interface", variable=self.console_logs_var).pack(anchor="w", pady=(0, 10))
+        compat.ttk.Checkbutton(parent, text="Show app notifications", variable=self.show_notifications_var).pack(anchor="w", pady=(0, 10))
+        compat.ttk.Checkbutton(parent, text="Keep detailed logs in the interface", variable=self.console_logs_var).pack(anchor="w", pady=(0, 10))
         compat.ttk.Checkbutton(
             parent,
-            text="Ativar voz local opcional no app Windows (pyttsx3)",
+            text="Enable optional local voice in the Windows app (pyttsx3)",
             variable=self.local_tts_enabled_var,
         ).pack(anchor="w", pady=(0, 10))
         compat.ttk.Label(
             parent,
             text=(
-                "Comportamento padrao: ao abrir o executavel, a janela principal permanece visivel. "
-                "A bandeja funciona como acesso rapido e nao faz verificacoes automaticas de conexao."
+                "Default behavior: when opening the executable, the main window remains visible. "
+                "The tray works as quick access and does not perform automatic connection checks."
             ),
             wraplength=420,
             justify="left",
@@ -295,13 +295,13 @@ class GUIConfig(ConfigInterface):
                     self.root.destroy()
             else:
                 compat.messagebox.showerror(
-                    "Erro de Validacao",
+                    "Validation Error",
                     self._presenter.format_validation_errors(errors),
                 )
         except ValueError as exc:
-            compat.messagebox.showerror("Erro", f"Valor invalido: {exc}")
+            compat.messagebox.showerror("Error", f"Invalid value: {exc}")
         except Exception as exc:
-            compat.messagebox.showerror("Erro", f"Erro inesperado: {exc}")
+            compat.messagebox.showerror("Error", f"Unexpected error: {exc}")
 
     def _build_config_from_form(self) -> Optional[DesktopAppConfig]:
         if not self.config or not all(

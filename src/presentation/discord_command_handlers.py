@@ -10,6 +10,7 @@ import discord
 from src.application.dto import ConfigureTTSResult
 from src.application.tts_voice_catalog import TTSCatalog
 from src.application.voice_runtime import VoiceRuntimeStatus
+from src.presentation.discord_i18n import DEFAULT_LOCALE, DiscordMessageCatalog
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 class _BaseConfigEmbedBuilder:
     def __init__(self, tts_catalog: TTSCatalog):
         self._tts_catalog = tts_catalog
+        self._messages = DiscordMessageCatalog()
 
     def _resolve_voice_name(self, config) -> str:
         resolved_voice = self._tts_catalog.find_voice_option(
@@ -33,35 +35,35 @@ class _BaseConfigEmbedBuilder:
             return f"Edge TTS - {voice_id}"
         return f"R.E.P.O. - {voice_id}"
 
-    def _add_voice_resolution_field(self, embed: discord.Embed, engine: str, voice_id: str) -> None:
+    def _add_voice_resolution_field(self, embed: discord.Embed, engine: str, voice_id: str, locale: str) -> None:
         if engine == "gtts":
             embed.add_field(
-                name="Resolução da Voz",
-                value="Google TTS usa o idioma selecionado; não há catálogo local de vozes do sistema.",
+                name=self._messages.text("voice_resolution.name", locale),
+                value=self._messages.text("voice_resolution.gtts", locale),
                 inline=False,
             )
             return
 
         if engine == "edge-tts":
             embed.add_field(
-                name="Resolução da Voz",
-                value=f"Edge TTS usará a voz neural '{voice_id}'.",
+                name=self._messages.text("voice_resolution.name", locale),
+                value=self._messages.text("voice_resolution.edge", locale, voice_id=voice_id),
                 inline=False,
             )
             return
 
         if self._tts_catalog.is_voice_available(engine=engine, voice_id=voice_id):
-            message = f"Voz do Windows encontrada para '{voice_id}'."
+            message = self._messages.text("voice_resolution.pyttsx3.found", locale, voice_id=voice_id)
         else:
-            message = f"Voice ID '{voice_id}' não encontrado; o pyttsx3 usará a voz padrão do Windows."
-        embed.add_field(name="Resolução da Voz", value=message, inline=False)
+            message = self._messages.text("voice_resolution.pyttsx3.missing", locale, voice_id=voice_id)
+        embed.add_field(name=self._messages.text("voice_resolution.name", locale), value=message, inline=False)
 
-    def _scope_label(self, scope: str | None) -> str:
+    def _scope_label(self, scope: str | None, locale: str) -> str:
         if scope == "user":
-            return "Configuração pessoal"
+            return self._messages.text("config.scope.user", locale)
         if scope == "guild":
-            return "Padrão do servidor"
-        return "Padrão global"
+            return self._messages.text("config.scope.guild", locale)
+        return self._messages.text("config.scope.global", locale)
 
 
 class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
@@ -74,38 +76,39 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
     async def handle(
         self,
         interaction: discord.Interaction,
-        voz: str | None,
+        voice: str | None,
+        locale: str,
     ) -> None:
         if not interaction.guild or not interaction.guild.id:
-            await interaction.response.send_message("❌ Este comando só pode ser usado em um servidor.", ephemeral=True)
+            await interaction.response.send_message(self._messages.text("error.guild_only", locale), ephemeral=True)
             return
 
         guild_id = interaction.guild.id
         user_id = interaction.user.id if interaction.user else None
         logger.info(
-            "[CONFIG] User %s in guild %s updating personal config: voz=%s",
+            "[CONFIG] User %s in guild %s updating personal config: voice=%s",
             interaction.user.id,
             guild_id,
-            voz,
+            voice,
         )
 
-        if voz is None:
+        if voice is None:
             result = self._config_use_case.get_config(guild_id, user_id=user_id)
             if not result.success:
                 await interaction.response.send_message(f"❌ {result.message}", ephemeral=True)
                 return
 
             await interaction.response.send_message(
-                embed=self._build_current_config_embed(interaction.guild.name, guild_id, result),
+                embed=self._build_current_config_embed(interaction.guild.name, guild_id, result, locale),
                 ephemeral=True,
             )
             return
 
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
-            selected_voice = self._tts_catalog.get_voice_option(voz)
+            selected_voice = self._tts_catalog.get_voice_option(voice)
             if selected_voice is None:
-                await interaction.edit_original_response(content="❌ Voz inválida ou indisponível.")
+                await interaction.edit_original_response(content=self._messages.text("error.invalid_voice", locale))
                 return
 
             result = await self._config_use_case.update_config_async(
@@ -120,15 +123,15 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
                 return
 
             await interaction.edit_original_response(
-                embed=self._build_updated_config_embed(interaction.guild.name, guild_id, result)
+                embed=self._build_updated_config_embed(interaction.guild.name, guild_id, result, locale)
             )
         except Exception as exc:
             logger.error("[CONFIG] Error updating config for guild %s: %s", guild_id, exc, exc_info=True)
-            await interaction.edit_original_response(content="❌ Erro ao atualizar sua configuração")
+            await interaction.edit_original_response(content=self._messages.text("config.update_error", locale))
 
-    async def handle_reset(self, interaction: discord.Interaction) -> None:
+    async def handle_reset(self, interaction: discord.Interaction, locale: str) -> None:
         if not interaction.guild or not interaction.guild.id:
-            await interaction.response.send_message("❌ Este comando só pode ser usado em um servidor.", ephemeral=True)
+            await interaction.response.send_message(self._messages.text("error.guild_only", locale), ephemeral=True)
             return
 
         guild_id = interaction.guild.id
@@ -140,31 +143,40 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
                 await interaction.edit_original_response(content=f"❌ {result.message}")
                 return
             await interaction.edit_original_response(
-                embed=self._build_reset_config_embed(interaction.guild.name, guild_id, result)
+                embed=self._build_reset_config_embed(interaction.guild.name, guild_id, result, locale)
             )
         except Exception as exc:
             logger.error("[CONFIG] Error resetting personal config for guild %s: %s", guild_id, exc, exc_info=True)
-            await interaction.edit_original_response(content="❌ Erro ao resetar sua configuração")
+            await interaction.edit_original_response(content=self._messages.text("config.reset_error", locale))
 
     def _build_current_config_embed(
         self,
         guild_name: str,
         guild_id: int,
         result: ConfigureTTSResult,
+        locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
         config = result.config
-        voz_nome = self._resolve_voice_name(config)
+        voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
-            title="Sua Configuração de Voz",
-            description=f"Configurações pessoais em {guild_name}",
+            title=self._messages.text("config.title.current", locale),
+            description=self._messages.text("config.description.current", locale, guild_name=guild_name),
             color=discord.Color.blue(),
         )
-        embed.add_field(name="Voz", value=voz_nome, inline=True)
-        embed.add_field(name="Taxa de Fala", value=str(config.rate), inline=True)
-        embed.add_field(name="Escopo", value="Configuração pessoal neste servidor", inline=False)
-        embed.add_field(name="Origem Efetiva", value=self._scope_label(result.scope), inline=False)
-        self._add_voice_resolution_field(embed, config.engine, config.voice_id)
-        embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
+        embed.add_field(name=self._messages.text("config.field.voice", locale), value=voice_name, inline=True)
+        embed.add_field(name=self._messages.text("config.field.rate", locale), value=str(config.rate), inline=True)
+        embed.add_field(
+            name=self._messages.text("config.field.scope", locale),
+            value=self._messages.text("config.scope.personal", locale),
+            inline=False,
+        )
+        embed.add_field(
+            name=self._messages.text("config.field.effective_source", locale),
+            value=self._scope_label(result.scope, locale),
+            inline=False,
+        )
+        self._add_voice_resolution_field(embed, config.engine, config.voice_id, locale)
+        embed.set_footer(text=self._messages.text("config.footer.guild", locale, guild_id=guild_id))
         return embed
 
     def _build_updated_config_embed(
@@ -172,19 +184,28 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
         guild_name: str,
         guild_id: int,
         result: ConfigureTTSResult,
+        locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
         config = result.config
-        voz_nome = self._resolve_voice_name(config)
+        voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
-            title="✅ Configuração Atualizada",
-            description=f"Sua configuração de voz em {guild_name} foi atualizada",
+            title=self._messages.text("config.title.updated", locale),
+            description=self._messages.text("config.description.updated", locale, guild_name=guild_name),
             color=discord.Color.green(),
         )
-        embed.add_field(name="Voz", value=voz_nome, inline=True)
-        embed.add_field(name="Escopo", value="Override pessoal salvo com sucesso", inline=False)
-        embed.add_field(name="Origem Efetiva", value=self._scope_label(result.scope), inline=False)
-        self._add_voice_resolution_field(embed, config.engine, config.voice_id)
-        embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
+        embed.add_field(name=self._messages.text("config.field.voice", locale), value=voice_name, inline=True)
+        embed.add_field(
+            name=self._messages.text("config.field.scope", locale),
+            value=self._messages.text("config.scope.saved", locale),
+            inline=False,
+        )
+        embed.add_field(
+            name=self._messages.text("config.field.effective_source", locale),
+            value=self._scope_label(result.scope, locale),
+            inline=False,
+        )
+        self._add_voice_resolution_field(embed, config.engine, config.voice_id, locale)
+        embed.set_footer(text=self._messages.text("config.footer.guild", locale, guild_id=guild_id))
         return embed
 
     def _build_reset_config_embed(
@@ -192,18 +213,23 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
         guild_name: str,
         guild_id: int,
         result: ConfigureTTSResult,
+        locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
         config = result.config
-        voz_nome = self._resolve_voice_name(config)
+        voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
-            title="Configuração Pessoal Resetada",
-            description=f"Seu override pessoal foi removido em {guild_name}",
+            title=self._messages.text("config.title.reset", locale),
+            description=self._messages.text("config.description.reset", locale, guild_name=guild_name),
             color=discord.Color.orange(),
         )
-        embed.add_field(name="Voz Ativa Agora", value=voz_nome, inline=True)
-        embed.add_field(name="Origem Efetiva", value=self._scope_label(result.scope), inline=False)
-        self._add_voice_resolution_field(embed, config.engine, config.voice_id)
-        embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
+        embed.add_field(name=self._messages.text("config.field.active_voice", locale), value=voice_name, inline=True)
+        embed.add_field(
+            name=self._messages.text("config.field.effective_source", locale),
+            value=self._scope_label(result.scope, locale),
+            inline=False,
+        )
+        self._add_voice_resolution_field(embed, config.engine, config.voice_id, locale)
+        embed.set_footer(text=self._messages.text("config.footer.guild", locale, guild_id=guild_id))
         return embed
 
 
@@ -217,38 +243,39 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
     async def handle(
         self,
         interaction: discord.Interaction,
-        voz: str | None,
+        voice: str | None,
+        locale: str,
     ) -> None:
         if not interaction.guild or not interaction.guild.id:
-            await interaction.response.send_message("❌ Este comando só pode ser usado em um servidor.", ephemeral=True)
+            await interaction.response.send_message(self._messages.text("error.guild_only", locale), ephemeral=True)
             return
 
         if not self._can_manage_guild(interaction):
             await interaction.response.send_message(
-                "❌ Você precisa da permissão de gerenciar o servidor para alterar a voz padrão.",
+                self._messages.text("server_config.permission.update", locale),
                 ephemeral=True,
             )
             return
 
         guild_id = interaction.guild.id
 
-        if voz is None:
+        if voice is None:
             result = self._config_use_case.get_config(guild_id)
             if not result.success:
                 await interaction.response.send_message(f"❌ {result.message}", ephemeral=True)
                 return
 
             await interaction.response.send_message(
-                embed=self._build_server_config_embed(interaction.guild.name, guild_id, result),
+                embed=self._build_server_config_embed(interaction.guild.name, guild_id, result, locale),
                 ephemeral=True,
             )
             return
 
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
-            selected_voice = self._tts_catalog.get_voice_option(voz)
+            selected_voice = self._tts_catalog.get_voice_option(voice)
             if selected_voice is None:
-                await interaction.edit_original_response(content="❌ Voz inválida ou indisponível.")
+                await interaction.edit_original_response(content=self._messages.text("error.invalid_voice", locale))
                 return
 
             result = await self._config_use_case.update_config_async(
@@ -262,20 +289,20 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
                 return
 
             await interaction.edit_original_response(
-                embed=self._build_server_config_updated_embed(interaction.guild.name, guild_id, result)
+                embed=self._build_server_config_updated_embed(interaction.guild.name, guild_id, result, locale)
             )
         except Exception as exc:
             logger.error("[SERVER_CONFIG] Error updating config for guild %s: %s", guild_id, exc, exc_info=True)
-            await interaction.edit_original_response(content="❌ Erro ao atualizar a configuração padrão do servidor")
+            await interaction.edit_original_response(content=self._messages.text("server_config.update_error", locale))
 
-    async def handle_reset(self, interaction: discord.Interaction) -> None:
+    async def handle_reset(self, interaction: discord.Interaction, locale: str) -> None:
         if not interaction.guild or not interaction.guild.id:
-            await interaction.response.send_message("❌ Este comando só pode ser usado em um servidor.", ephemeral=True)
+            await interaction.response.send_message(self._messages.text("error.guild_only", locale), ephemeral=True)
             return
 
         if not self._can_manage_guild(interaction):
             await interaction.response.send_message(
-                "❌ Você precisa da permissão de gerenciar o servidor para resetar a voz padrão.",
+                self._messages.text("server_config.permission.reset", locale),
                 ephemeral=True,
             )
             return
@@ -288,11 +315,11 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
                 await interaction.edit_original_response(content=f"❌ {result.message}")
                 return
             await interaction.edit_original_response(
-                embed=self._build_server_reset_embed(interaction.guild.name, guild_id, result)
+                embed=self._build_server_reset_embed(interaction.guild.name, guild_id, result, locale)
             )
         except Exception as exc:
             logger.error("[SERVER_CONFIG] Error resetting config for guild %s: %s", guild_id, exc, exc_info=True)
-            await interaction.edit_original_response(content="❌ Erro ao resetar a configuração padrão do servidor")
+            await interaction.edit_original_response(content=self._messages.text("server_config.reset_error", locale))
 
     def _can_manage_guild(self, interaction: discord.Interaction) -> bool:
         permissions = getattr(getattr(interaction, "user", None), "guild_permissions", None)
@@ -303,20 +330,21 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
         guild_name: str,
         guild_id: int,
         result: ConfigureTTSResult,
+        locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
         config = result.config
-        voz_nome = self._resolve_voice_name(config)
+        voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
-            title="Configuração Padrão do Servidor",
-            description=f"Voz usada em {guild_name} quando o usuário não tem configuração pessoal",
+            title=self._messages.text("server_config.title.current", locale),
+            description=self._messages.text("server_config.description.current", locale, guild_name=guild_name),
             color=discord.Color.blurple(),
         )
-        embed.add_field(name="Voz", value=voz_nome, inline=True)
-        embed.add_field(name="Taxa de Fala", value=str(config.rate), inline=True)
-        embed.add_field(name="Escopo", value="Padrão do servidor", inline=False)
-        embed.add_field(name="Origem Efetiva", value=self._scope_label(result.scope), inline=False)
-        self._add_voice_resolution_field(embed, config.engine, config.voice_id)
-        embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
+        embed.add_field(name=self._messages.text("config.field.voice", locale), value=voice_name, inline=True)
+        embed.add_field(name=self._messages.text("config.field.rate", locale), value=str(config.rate), inline=True)
+        embed.add_field(name=self._messages.text("config.field.scope", locale), value=self._messages.text("config.scope.guild", locale), inline=False)
+        embed.add_field(name=self._messages.text("config.field.effective_source", locale), value=self._scope_label(result.scope, locale), inline=False)
+        self._add_voice_resolution_field(embed, config.engine, config.voice_id, locale)
+        embed.set_footer(text=self._messages.text("config.footer.guild", locale, guild_id=guild_id))
         return embed
 
     def _build_server_config_updated_embed(
@@ -324,19 +352,24 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
         guild_name: str,
         guild_id: int,
         result: ConfigureTTSResult,
+        locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
         config = result.config
-        voz_nome = self._resolve_voice_name(config)
+        voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
-            title="✅ Padrão do Servidor Atualizado",
-            description=f"Usuários sem voz pessoal agora usarão esta voz em {guild_name}",
+            title=self._messages.text("server_config.title.updated", locale),
+            description=self._messages.text("server_config.description.updated", locale, guild_name=guild_name),
             color=discord.Color.green(),
         )
-        embed.add_field(name="Voz", value=voz_nome, inline=True)
-        embed.add_field(name="Escopo", value="Padrão do servidor salvo com sucesso", inline=False)
-        embed.add_field(name="Origem Efetiva", value=self._scope_label(result.scope), inline=False)
-        self._add_voice_resolution_field(embed, config.engine, config.voice_id)
-        embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
+        embed.add_field(name=self._messages.text("config.field.voice", locale), value=voice_name, inline=True)
+        embed.add_field(
+            name=self._messages.text("config.field.scope", locale),
+            value=self._messages.text("server_config.scope.saved", locale),
+            inline=False,
+        )
+        embed.add_field(name=self._messages.text("config.field.effective_source", locale), value=self._scope_label(result.scope, locale), inline=False)
+        self._add_voice_resolution_field(embed, config.engine, config.voice_id, locale)
+        embed.set_footer(text=self._messages.text("config.footer.guild", locale, guild_id=guild_id))
         return embed
 
     def _build_server_reset_embed(
@@ -344,52 +377,62 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
         guild_name: str,
         guild_id: int,
         result: ConfigureTTSResult,
+        locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
         config = result.config
-        voz_nome = self._resolve_voice_name(config)
+        voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
-            title="Padrão do Servidor Resetado",
-            description=f"O padrão do servidor foi removido em {guild_name}",
+            title=self._messages.text("server_config.title.reset", locale),
+            description=self._messages.text("server_config.description.reset", locale, guild_name=guild_name),
             color=discord.Color.orange(),
         )
-        embed.add_field(name="Voz Ativa Agora", value=voz_nome, inline=True)
-        embed.add_field(name="Origem Efetiva", value=self._scope_label(result.scope), inline=False)
-        self._add_voice_resolution_field(embed, config.engine, config.voice_id)
-        embed.set_footer(text=f"Servidor (Guild ID: {guild_id})")
+        embed.add_field(name=self._messages.text("config.field.active_voice", locale), value=voice_name, inline=True)
+        embed.add_field(name=self._messages.text("config.field.effective_source", locale), value=self._scope_label(result.scope, locale), inline=False)
+        self._add_voice_resolution_field(embed, config.engine, config.voice_id, locale)
+        embed.set_footer(text=self._messages.text("config.footer.guild", locale, guild_id=guild_id))
         return embed
 
 
 class DiscordAboutCommandHandler:
     """Build and send the `/about` response."""
 
+    def __init__(self):
+        self._messages = DiscordMessageCatalog()
+
     async def handle(
         self,
         interaction: discord.Interaction,
         runtime_status: VoiceRuntimeStatus,
+        locale: str,
     ) -> None:
         from src.__version__ import __author__, __description__, __version__
 
         embed = discord.Embed(
-            title="TTS Bot Information",
+            title=self._messages.text("about.title", locale),
             description=__description__,
             color=discord.Color.blue(),
         )
-        embed.add_field(name="Version", value=f"`{__version__}`", inline=True)
-        embed.add_field(name="Author", value=__author__, inline=True)
-        embed.add_field(name="FFmpeg", value="Available" if runtime_status.ffmpeg_available else "Not found", inline=True)
-        embed.add_field(name="PyNaCl", value="Installed" if runtime_status.pynacl_installed else "Not installed", inline=True)
-        embed.add_field(name="davey", value="Installed" if runtime_status.davey_installed else "Not installed", inline=True)
+        embed.add_field(name=self._messages.text("about.version", locale), value=f"`{__version__}`", inline=True)
+        embed.add_field(name=self._messages.text("about.author", locale), value=__author__, inline=True)
         embed.add_field(
-            name="Commands",
-            value="• `/join` - Join your voice channel\n"
-            "• `/leave` - Leave voice channel\n"
-            "• `/speak` - Speak text\n"
-            "• `/config` - Configure your personal TTS settings\n"
-            "• `/config-reset` - Reset your personal voice override\n"
-            "• `/server-config` - Configure the server default voice\n"
-            "• `/server-config-reset` - Reset the server default voice\n"
-            "• `/about` - Show this info",
+            name="FFmpeg",
+            value=self._messages.text("about.available" if runtime_status.ffmpeg_available else "about.not_found", locale),
+            inline=True,
+        )
+        embed.add_field(
+            name="PyNaCl",
+            value=self._messages.text("about.installed" if runtime_status.pynacl_installed else "about.not_installed", locale),
+            inline=True,
+        )
+        embed.add_field(
+            name="davey",
+            value=self._messages.text("about.installed" if runtime_status.davey_installed else "about.not_installed", locale),
+            inline=True,
+        )
+        embed.add_field(
+            name=self._messages.text("about.commands", locale),
+            value=self._messages.text("about.commands.value", locale),
             inline=False,
         )
-        embed.set_footer(text=f"Running on {platform.system()} {platform.release()}")
+        embed.set_footer(text=self._messages.text("about.footer", locale, system=platform.system(), release=platform.release()))
         await interaction.response.send_message(embed=embed, ephemeral=True)

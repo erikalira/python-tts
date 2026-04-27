@@ -1,7 +1,7 @@
 # Common Pitfalls For AI Contributors
 
-**Constitution compatibility**: v1.2.1
-**Last updated**: 2026-04-26
+**Constitution compatibility**: v1.3.0
+**Last updated**: 2026-04-27
 **Canonical source**: `.specify/memory/constitution.md`
 **Derived consumers**: `AGENTS.md`, `.github/copilot-instructions.md`,
 `.github/copilot-workspace.yml`, `.codex/skills/*`, `.agents/skills/*`
@@ -48,6 +48,9 @@ AI-assisted changes in this repository. The constitution remains authoritative.
 - Forgetting `docs/README.md` after adding, moving, or retiring durable docs.
 - Letting derivative instruction files omit the constitution version they
   summarize.
+- Writing repository code, docs, specs, tests, commit messages, PR descriptions,
+  or AI-generated project artifacts in a language other than English without a
+  scoped localization reason.
 
 ## Validation Pitfalls
 

@@ -111,14 +111,15 @@ When installing dependencies or running tests, prefer commands such as
 ## Text and encoding baseline
 
 Use UTF-8 source files by default when editing repository text and code.
-Prefer natural Portuguese in user-facing strings instead of escaped Unicode
-sequences.
+Write repository code, comments, documentation, specifications, tests, commit
+messages, pull request descriptions, and AI-generated project artifacts in
+English by default.
 
-- Write Portuguese accents directly when the file format supports UTF-8.
-- Do not replace Portuguese characters with Unicode escapes unless the target
+- User-facing runtime text may use another language only when localization,
+  language-specific behavior, or a locale fixture explicitly requires it.
+- Write localized text directly in UTF-8 when the file format supports it.
+- Do not replace localized characters with Unicode escapes unless the target
   format explicitly requires escapes.
-- Prefer readable Portuguese text in bot messages, desktop labels, docs, and
-  tests that assert user-facing content.
 - Keep ASCII-only text only when required by external tools, legacy formats, or
   existing file constraints that would break with UTF-8 characters.
 

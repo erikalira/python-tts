@@ -3,12 +3,12 @@
 This directory contains the repository's supporting documentation. The root
 `README.md` stays short on purpose, while the details live here.
 
-## Comecar
+## Getting Started
 
-- [getting-started/SETUP.md](getting-started/SETUP.md): ambiente virtual, instalacao e ativacao no Windows e Linux
+- [getting-started/SETUP.md](getting-started/SETUP.md): virtual environment setup, installation, and activation on Windows and Linux
 - [getting-started/TESTING.md](getting-started/TESTING.md): automated test structure and local execution
 
-## Entender o sistema
+## Understand The System
 
 - [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md): architecture overview and layer map
 - [desktop/DESKTOP_APP_GUIDE.md](desktop/DESKTOP_APP_GUIDE.md): desktop app guide
@@ -22,7 +22,7 @@ This directory contains the repository's supporting documentation. The root
 - [reference/ENGINEERING_REFERENCES.md](reference/ENGINEERING_REFERENCES.md): books and engineering concepts that inform repository design decisions
 - [adr/README.md](adr/README.md): architecture decision records for durable technical choices and tradeoffs
 
-## Operar e fazer deploy
+## Operate And Deploy
 
 - [deploy/DEPLOYMENT_GUIDE.md](deploy/DEPLOYMENT_GUIDE.md): entrypoint for choosing the right server deployment guide
 - [operations/BASELINE_AND_RELEASE_GATES.md](operations/BASELINE_AND_RELEASE_GATES.md): Phase 0 baseline, initial SLI/SLO definitions, and release gates for bot and desktop
@@ -39,7 +39,7 @@ This directory contains the repository's supporting documentation. The root
 - [deploy/STAGING_AND_ROLLBACK.md](deploy/STAGING_AND_ROLLBACK.md): staging promotion and rollback flow for the Docker production stack
 - [desktop/WINDOWS_BUILD_GUIDE.md](desktop/WINDOWS_BUILD_GUIDE.md): Windows executable build flow
 
-## Manutencao
+## Maintenance
 
 - [maintenance/DEPENDENCY_MAINTENANCE.md](maintenance/DEPENDENCY_MAINTENANCE.md): dependency upgrade workflow, tooling, and validation checklist
 

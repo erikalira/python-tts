@@ -11,6 +11,7 @@ from discord import app_commands
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.use_cases import (
+    ConfigureInterfaceLanguageUseCase,
     ConfigureTTSUseCase,
     GetCurrentVoiceContextUseCase,
     JoinVoiceChannelUseCase,
@@ -24,6 +25,10 @@ from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvail
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
+from src.infrastructure.persistence.interface_language_preferences import (
+    JSONInterfaceLanguagePreferenceRepository,
+    PostgreSQLInterfaceLanguagePreferenceRepository,
+)
 from src.infrastructure.persistence.postgres_storage import PostgreSQLConfigStorage
 from src.infrastructure.rate_limiting import InMemoryRateLimiter
 from src.infrastructure.runtime_observability import InMemoryBotRuntimeTelemetry
@@ -63,6 +68,7 @@ class Container:
 
         config_storage = self._build_config_storage(config)
         self.config_repository = GuildConfigRepository(default_config=config.tts_config, storage=config_storage)
+        self.interface_language_repository = self._build_interface_language_repository(config)
         self.voice_channel_repository = DiscordVoiceChannelRepository(
             self.discord_client,
             connection_timeout_seconds=config.voice_connection_timeout_seconds,
@@ -115,6 +121,9 @@ class Container:
             otel_runtime=self.otel_runtime,
         )
         self.config_use_case = ConfigureTTSUseCase(config_repository=self.config_repository)
+        self.interface_language_use_case = ConfigureInterfaceLanguageUseCase(
+            preference_repository=self.interface_language_repository
+        )
         self.join_use_case = JoinVoiceChannelUseCase(channel_repository=self.voice_channel_repository)
         self.leave_use_case = LeaveVoiceChannelUseCase(channel_repository=self.voice_channel_repository)
         self.voice_context_use_case = GetCurrentVoiceContextUseCase(channel_repository=self.voice_channel_repository)
@@ -133,6 +142,7 @@ class Container:
             tree=self.command_tree,
             speak_use_case=self.speak_use_case,
             config_use_case=self.config_use_case,
+            interface_language_use_case=self.interface_language_use_case,
             join_use_case=self.join_use_case,
             leave_use_case=self.leave_use_case,
             voice_runtime_availability=self.voice_runtime_availability,
@@ -153,6 +163,14 @@ class Container:
 
         logger.info("[CONTAINER] Using JSON config storage at %s", config.config_storage_dir)
         return JSONConfigStorage(storage_dir=config.config_storage_dir)
+
+    def _build_interface_language_repository(self, config: Config):
+        if config.config_storage_backend == "postgres":
+            logger.info("[CONTAINER] Using Postgres interface language preference storage")
+            return PostgreSQLInterfaceLanguagePreferenceRepository(database_url=config.database_url or "")
+
+        logger.info("[CONTAINER] Using JSON interface language preference storage at %s", config.config_storage_dir)
+        return JSONInterfaceLanguagePreferenceRepository(storage_dir=config.config_storage_dir)
 
     def _build_audio_queue(self, config: Config):
         otel_runtime = getattr(self, "otel_runtime", None)
@@ -254,6 +272,10 @@ class Container:
             return
 
         try:
+            set_translator = getattr(self.command_tree, "set_translator", None)
+            command_translator = getattr(getattr(self, "discord_commands", None), "command_translator", None)
+            if callable(set_translator) and callable(command_translator):
+                await set_translator(command_translator())
             await self.command_tree.sync()
             self._commands_synced = True
             logger.info("Slash commands synced")

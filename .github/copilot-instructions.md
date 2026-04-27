@@ -1,5 +1,5 @@
-<!-- Based on .specify/memory/constitution.md v1.2.1 -->
-<!-- Last synced: 2026-04-26 -->
+<!-- Based on .specify/memory/constitution.md v1.3.0 -->
+<!-- Last synced: 2026-04-27 -->
 
 # GitHub Copilot Instructions
 
@@ -42,6 +42,10 @@ This file is a derivative summary. If it disagrees with `.specify/`, follow
 - Let dependencies point inward according to clean architecture
 - Prefer small, safe refactors over large rewrites
 - Favor explicit contracts and typed results over implicit reusable payloads
+- Write code, comments, docs, specs, tests, commit messages, PR descriptions,
+  and AI-generated project artifacts in English by default
+- Use another language in user-facing runtime text only when localization,
+  language-specific behavior, or a locale fixture explicitly requires it
 
 ## Repository map
 

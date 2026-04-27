@@ -33,7 +33,7 @@ RUN useradd -m -u 1000 appuser && \
 
 USER appuser
 
-# Expose port (Render provides this via $PORT)
+# Expose the bot HTTP port
 EXPOSE 10000
 
 # Run the modular bot entry point

@@ -17,19 +17,19 @@ class ConfigurationValidator:
         errors = []
 
         if config.discord.member_id and not config.discord.member_id.isdigit():
-            errors.append("Discord Member ID deve conter apenas numeros")
+            errors.append("Discord Member ID must contain only numbers")
 
         if config.tts.rate < 50 or config.tts.rate > 500:
-            errors.append("TTS Rate deve estar entre 50 e 500 WPM")
+            errors.append("TTS Rate must be between 50 and 500 WPM")
 
         if (
             config.network.request_timeout < MIN_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
             or config.network.request_timeout > MAX_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
         ):
-            errors.append("Request timeout deve estar entre 1 e 60 segundos")
+            errors.append("Request timeout must be between 1 and 60 seconds")
 
         if config.network.max_text_length < 1 or config.network.max_text_length > 2000:
-            errors.append("Comprimento maximo do texto deve estar entre 1 e 2000 caracteres")
+            errors.append("Maximum text length must be between 1 and 2000 characters")
 
         return len(errors) == 0, errors
 

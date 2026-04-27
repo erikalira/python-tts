@@ -11,7 +11,7 @@ from src.application.dto import (
     DesktopBotVoiceContextStatusDTO,
 )
 
-DESKTOP_BOT_TEST_MESSAGE = "Teste rapido do Desktop App."
+DESKTOP_BOT_TEST_MESSAGE = "Quick Desktop App test."
 
 
 DesktopBotConnectionStatus = DesktopBotConnectionStatusDTO
@@ -51,7 +51,7 @@ class CheckDesktopBotConnectionUseCase:
     def execute(self) -> DesktopBotActionResultDTO:
         """Execute the bot health check flow."""
         if not self._gateway.has_bot_url():
-            return DesktopBotActionResultDTO(success=False, message="Bot URL nao configurada")
+            return DesktopBotActionResultDTO(success=False, message="Bot URL is not configured")
 
         payload = self._gateway.check_connection()
         return DesktopBotActionResultDTO(
@@ -72,24 +72,24 @@ class SendDesktopBotTestMessageUseCase:
         if not self._gateway.has_bot_url():
             return DesktopBotActionResultDTO(
                 success=False,
-                message="Bot URL nao configurada para envio de teste",
+                message="Bot URL is not configured for test message delivery",
             )
         if not self._gateway.has_member_id():
             return DesktopBotActionResultDTO(
                 success=False,
-                message="User ID e necessario para enviar o teste",
+                message="User ID is required to send the test",
             )
 
         success = self._gateway.send_text(self._test_message)
         if success:
             return DesktopBotActionResultDTO(
                 success=True,
-                message="Mensagem de teste enviada ao bot com sucesso",
+                message="Test message sent to the bot successfully",
             )
 
         error_message = (
             self._gateway.get_last_error_message()
-            or "Nao foi possivel enviar a mensagem de teste ao bot"
+            or "Could not send the test message to the bot"
         )
         return DesktopBotActionResultDTO(success=False, message=error_message)
 
@@ -105,12 +105,12 @@ class FetchDesktopBotVoiceContextUseCase:
         if not self._gateway.has_bot_url():
             return DesktopBotVoiceContextResultDTO(
                 success=False,
-                message="Bot URL nao configurada para detectar o canal",
+                message="Bot URL is not configured for channel detection",
             )
         if not self._gateway.has_member_id():
             return DesktopBotVoiceContextResultDTO(
                 success=False,
-                message="User ID e necessario para detectar o canal",
+                message="User ID is required for channel detection",
             )
 
         payload = self._gateway.fetch_voice_context()
