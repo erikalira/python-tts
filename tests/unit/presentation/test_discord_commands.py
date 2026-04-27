@@ -31,6 +31,7 @@ class FakeInterfaceLanguagePreferenceRepository:
     def __init__(self):
         self.user_languages = {}
         self.guild_languages = {}
+        self.calls = []
 
     def get_user_language(self, guild_id: int, user_id: int) -> str | None:
         return self.user_languages.get((guild_id, user_id))
@@ -39,18 +40,22 @@ class FakeInterfaceLanguagePreferenceRepository:
         return self.guild_languages.get(guild_id)
 
     async def set_user_language(self, guild_id: int, user_id: int, locale: str) -> bool:
+        self.calls.append("set_user_language")
         self.user_languages[(guild_id, user_id)] = locale
         return True
 
     async def set_guild_language(self, guild_id: int, locale: str) -> bool:
+        self.calls.append("set_guild_language")
         self.guild_languages[guild_id] = locale
         return True
 
     async def delete_user_language(self, guild_id: int, user_id: int) -> bool:
+        self.calls.append("delete_user_language")
         self.user_languages.pop((guild_id, user_id), None)
         return True
 
     async def delete_guild_language(self, guild_id: int) -> bool:
+        self.calls.append("delete_guild_language")
         self.guild_languages.pop(guild_id, None)
         return True
 
@@ -124,12 +129,21 @@ class TestDiscordCommands:
         interaction.guild = Mock()
         interaction.guild.id = 12345
         interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        async def record_defer(*args, **kwargs):
+            repository.calls.append("defer")
+
+        interaction.response.defer.side_effect = record_defer
 
         await commands_instance._handle_language(interaction, "pt-BR")
 
         assert repository.user_languages[(12345, 67890)] == "pt-BR"
-        interaction.response.send_message.assert_called_once()
-        assert "português" in interaction.response.send_message.call_args.args[0].lower()
+        assert repository.calls == ["defer", "set_user_language"]
+        interaction.response.defer.assert_called_once_with(ephemeral=True, thinking=True)
+        interaction.response.send_message.assert_not_called()
+        interaction.edit_original_response.assert_called_once()
+        assert "portugu" in interaction.edit_original_response.call_args.kwargs["content"].lower()
 
     @pytest.mark.asyncio
     async def test_handle_language_auto_resets_user_interface_language(self, commands_instance):
@@ -145,11 +159,20 @@ class TestDiscordCommands:
         interaction.guild = Mock()
         interaction.guild.id = 12345
         interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        async def record_defer(*args, **kwargs):
+            repository.calls.append("defer")
+
+        interaction.response.defer.side_effect = record_defer
 
         await commands_instance._handle_language(interaction, "auto")
 
         assert (12345, 67890) not in repository.user_languages
-        assert "discord language" in interaction.response.send_message.call_args.args[0].lower()
+        assert repository.calls == ["defer", "delete_user_language"]
+        interaction.response.defer.assert_called_once_with(ephemeral=True, thinking=True)
+        interaction.response.send_message.assert_not_called()
+        assert "discord language" in interaction.edit_original_response.call_args.kwargs["content"].lower()
 
     @pytest.mark.asyncio
     async def test_handle_server_language_requires_manage_guild(self, commands_instance):
@@ -159,10 +182,13 @@ class TestDiscordCommands:
         interaction.guild = Mock()
         interaction.guild.id = 12345
         interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
 
         await commands_instance._handle_server_language(interaction, "pt-BR")
 
         interaction.response.send_message.assert_called_once()
+        interaction.response.defer.assert_not_called()
+        interaction.edit_original_response.assert_not_called()
         assert "permission" in interaction.response.send_message.call_args.args[0].lower()
 
     @pytest.mark.asyncio
@@ -179,11 +205,20 @@ class TestDiscordCommands:
         interaction.guild = Mock()
         interaction.guild.id = 12345
         interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+
+        async def record_defer(*args, **kwargs):
+            repository.calls.append("defer")
+
+        interaction.response.defer.side_effect = record_defer
 
         await commands_instance._handle_server_language(interaction, "pt-BR")
 
         assert repository.guild_languages[12345] == "pt-BR"
-        assert "server default interface language" in interaction.response.send_message.call_args.args[0].lower()
+        assert repository.calls == ["defer", "set_guild_language"]
+        interaction.response.defer.assert_called_once_with(ephemeral=True, thinking=True)
+        interaction.response.send_message.assert_not_called()
+        assert "server default interface language" in interaction.edit_original_response.call_args.kwargs["content"].lower()
 
     def test_resolve_locale_prefers_user_preference_then_discord_locale_then_guild_preference(
         self,
