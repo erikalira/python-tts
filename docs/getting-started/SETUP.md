@@ -5,6 +5,7 @@ This project uses a Python virtual environment (`.venv`) as part of the installa
 ## Requirements
 
 - Python 3.11 or newer
+- `uv` 0.11.3 for lockfile-based dependency sync
 - `ffmpeg` for the Discord voice flow
 
 ## 1. Create `.venv`
@@ -48,7 +49,8 @@ source .venv/bin/activate
 With `.venv` active:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install uv==0.11.3
+uv sync --locked
 ```
 
 ## 4. Install FFmpeg On Windows For Discord Voice
@@ -74,9 +76,11 @@ Check that the terminal is using the virtual environment's Python:
 ```bash
 python --version
 pip --version
+uv --version
 ```
 
-The path shown by `pip --version` should point to `.venv`.
+The path shown by `pip --version` should point to `.venv`, and `uv --version`
+should report the installed `uv` version.
 
 For the Discord bot voice flow, also confirm that `ffmpeg -version` works in the same terminal where the bot will run.
 
@@ -153,6 +157,6 @@ deactivate
 
 ## Notes
 
-- Always activate `.venv` before running `pip install`, `pytest`, `python -m src.bot`, or `python app.py`.
+- Always activate `.venv` before running `uv sync`, `uv run pytest`, `python -m src.bot`, or `python app.py`.
 - On Windows, installing only the Python package is not enough for Discord voice: `FFmpeg` must be installed on the system and available on `PATH`.
 - The Discord bot and Desktop App keep separate entrypoints, but they use the same virtual environment during development.

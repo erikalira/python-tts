@@ -15,6 +15,8 @@ $AppName = "HotkeyTTS"
 $MainScript = "app.py"
 $DistPath = "dist"
 $BuildPath = "build"
+$VenvPython = Join-Path (Get-Location) ".venv\Scripts\python.exe"
+$PythonExecutable = "python"
 
 # Check if running in correct directory
 if (-not (Test-Path $MainScript)) {
@@ -25,34 +27,24 @@ if (-not (Test-Path $MainScript)) {
 
 # Check for Python
 try {
-    $PythonVersion = python --version 2>&1
+    if (Test-Path $VenvPython) {
+        $PythonExecutable = $VenvPython
+    }
+    $PythonVersion = & $PythonExecutable --version 2>&1
     Write-Host "Python found: $PythonVersion" -ForegroundColor Green
 } catch {
     Write-Host "Python not found in PATH!" -ForegroundColor Red
     exit 1
 }
 
-# Install/upgrade dependencies
-Write-Host "`nInstalling dependencies..." -ForegroundColor Yellow
-
-$Dependencies = @(
-    "pyinstaller>=5.0",
-    "keyboard>=0.13.5", 
-    "requests>=2.25.0",
-    "pyttsx3>=2.90",
-    "gtts>=2.2.0",
-    "pystray>=0.19.0",
-    "pillow>=8.0.0"
-)
-
-foreach ($dep in $Dependencies) {
-    Write-Host "Installing $dep..." -ForegroundColor Gray
-    try {
-        python -m pip install --upgrade $dep 2>&1 | Out-Null
-        Write-Host "  $dep installed" -ForegroundColor Green
-    } catch {
-        Write-Host "  Failed to install $dep" -ForegroundColor Yellow
-    }
+# Check for PyInstaller after the lockfile-based environment sync
+try {
+    & $PythonExecutable -m PyInstaller --version 2>&1 | Out-Null
+    Write-Host "`nPyInstaller is available in the synchronized environment" -ForegroundColor Green
+} catch {
+    Write-Host "`nPyInstaller is not available." -ForegroundColor Red
+    Write-Host "Run: uv sync --locked --group build" -ForegroundColor Yellow
+    exit 1
 }
 
 # Skip tests for now due to encoding issues
@@ -120,10 +112,10 @@ if ($Debug) {
 }
 
 Write-Host "PyInstaller command:" -ForegroundColor Gray
-Write-Host "python -m PyInstaller $($PyInstallerArgs -join ' ')" -ForegroundColor Gray
+Write-Host "$PythonExecutable -m PyInstaller $($PyInstallerArgs -join ' ')" -ForegroundColor Gray
 
 try {
-    & python -m PyInstaller @PyInstallerArgs
+    & $PythonExecutable -m PyInstaller @PyInstallerArgs
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "`nBuild successful!" -ForegroundColor Green

@@ -18,14 +18,19 @@ RUN apt-get update && \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
-COPY requirements.txt .
+# Install uv for lockfile-based dependency sync
+RUN pip install --no-cache-dir uv==0.11.3
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy dependency manifests before application code for better layer caching
+COPY pyproject.toml uv.lock ./
+
+# Install Python dependencies from the lockfile
+RUN uv sync --locked --no-install-project --no-cache
 
 # Copy application code
 COPY . .
+
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Create a non-root user and switch to it
 RUN useradd -m -u 1000 appuser && \

@@ -5,9 +5,10 @@ runtime-entrypoint changes.
 
 ## Automated Gates
 
-- Dependabot opens weekly PRs for Python requirements and GitHub Actions.
+- Dependabot opens weekly PRs for `uv.lock` and GitHub Actions.
 - The `Security` GitHub Actions workflow runs `pip-audit` against
-  `requirements.txt` and `requirements-test.txt`.
+  `requirements.txt` and `requirements-test.txt` using tooling installed from
+  the locked `security` dependency group.
 - Pull requests run GitHub dependency review when dependency manifests change.
 - CodeQL scans Python on pull requests, pushes to `main`, scheduled runs, and
   manual dispatch.

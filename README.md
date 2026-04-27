@@ -23,6 +23,7 @@ runtime flows without duplicating behavior between the Desktop App runtime in
 ## Requirements
 
 - Python 3.11+
+- `uv` for reproducible dependency sync from `uv.lock`
 - `ffmpeg` for the Discord voice flow
 - The `.venv` virtual environment is part of the expected setup
 
@@ -33,7 +34,8 @@ Basic installation:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install uv==0.11.3
+uv sync --locked
 winget install ffmpeg
 ```
 
@@ -42,7 +44,8 @@ winget install ffmpeg
 ```cmd
 python -m venv .venv
 .\.venv\Scripts\activate.bat
-pip install -r requirements.txt
+pip install uv==0.11.3
+uv sync --locked
 winget install ffmpeg
 ```
 
@@ -51,7 +54,8 @@ winget install ffmpeg
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install uv==0.11.3
+uv sync --locked
 ```
 
 For the complete setup flow, see [docs/getting-started/SETUP.md](docs/getting-started/SETUP.md).
@@ -98,7 +102,7 @@ python app.py
 ## Tests
 
 ```bash
-pytest
+uv run pytest
 ```
 
 Test structure and local execution details live in [docs/getting-started/TESTING.md](docs/getting-started/TESTING.md).

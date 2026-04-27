@@ -11,8 +11,10 @@ $repoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $serviceExe = Join-Path $scriptDir "tts-discord-bot.exe"
 $serviceXml = Join-Path $scriptDir "tts-discord-bot.xml"
 $venvPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
+$venvUv = Join-Path $repoRoot ".venv\Scripts\uv.exe"
 $envFile = Join-Path $repoRoot ".env"
-$requirementsFile = Join-Path $repoRoot "requirements.txt"
+$pyprojectFile = Join-Path $repoRoot "pyproject.toml"
+$lockFile = Join-Path $repoRoot "uv.lock"
 
 function Test-ServiceInstalled {
     $service = Get-Service -Name "tts-discord-bot" -ErrorAction SilentlyContinue
@@ -37,9 +39,28 @@ if (-not (Test-Path $envFile)) {
     throw "Environment file not found at '$envFile'. Create .env before running this script."
 }
 
+if (-not (Test-Path $pyprojectFile)) {
+    throw "pyproject.toml not found at '$pyprojectFile'."
+}
+
+if (-not (Test-Path $lockFile)) {
+    throw "uv.lock not found at '$lockFile'."
+}
+
 if (-not $SkipDependencyInstall) {
-    Write-Host "Installing Python dependencies into .venv..."
-    & $venvPython -m pip install -r $requirementsFile
+    if (-not (Test-Path $venvUv)) {
+        Write-Host "Installing uv into .venv..."
+        & $venvPython -m pip install "uv==0.11.3"
+    }
+
+    Write-Host "Syncing Python dependencies into .venv from uv.lock..."
+    Push-Location $repoRoot
+    try {
+        & $venvUv sync --locked --no-install-project
+    }
+    finally {
+        Pop-Location
+    }
 }
 
 if (Test-ServiceInstalled) {

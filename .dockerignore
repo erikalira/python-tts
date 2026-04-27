@@ -23,6 +23,9 @@ wheels/
 venv/
 ENV/
 env/
+.ruff_cache/
+.test-artifacts/
+htmlcov/
 
 # IDEs
 .vscode/
@@ -54,6 +57,8 @@ scripts.sh
 
 # Test files
 test_*.py
+.coverage
+coverage.xml
 
 # Audio files (generated)
 *.mp3

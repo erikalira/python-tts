@@ -36,23 +36,24 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-          cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-test.txt
 
-      - name: Install audit tooling
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install pip-audit
+          uv sync --locked --group security
 
       - name: Audit runtime dependencies
         run: |
-          pip-audit -r requirements.txt
+          uv run pip-audit -r requirements.txt
 
       - name: Audit test dependencies
         run: |
-          pip-audit -r requirements-test.txt
+          uv run pip-audit -r requirements-test.txt
 
   sbom:
     name: SBOM Generation
@@ -65,21 +66,22 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-          cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-test.txt
 
-      - name: Install CycloneDX tooling
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install cyclonedx-bom
+          uv sync --locked --group security
 
       - name: Generate Python dependency SBOMs
         run: |
           mkdir -p sbom
-          cyclonedx-py requirements requirements.txt --output-reproducible --of JSON -o sbom/python-runtime.cdx.json
-          cyclonedx-py requirements requirements-test.txt --output-reproducible --of JSON -o sbom/python-test.cdx.json
+          uv run cyclonedx-py requirements requirements.txt --output-reproducible --of JSON -o sbom/python-runtime.cdx.json
+          uv run cyclonedx-py requirements requirements-test.txt --output-reproducible --of JSON -o sbom/python-test.cdx.json
 
       - name: Build Docker image for SBOM
         run: |
