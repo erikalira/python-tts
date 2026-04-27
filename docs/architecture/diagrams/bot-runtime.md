@@ -38,23 +38,23 @@ class DiscordCommands {
   +_handle_join(interaction)
   +_handle_leave(interaction)
   +_handle_speak(interaction, text: str)
-  +_handle_config(interaction, voz, idioma, sotaque)
+  +_handle_config(interaction, voice)
   +_handle_about(interaction)
 }
 class DiscordConfigCommandHandler {
-  +handle(interaction, voz, idioma, sotaque)
+  +handle(interaction, voice, locale)
 }
 class DiscordAboutCommandHandler {
   +handle(interaction, runtime_status)
 }
 class DiscordSpeakPresenter {
-  +build_message(result: SpeakTextResult) str
+  +build_message(result: SpeakTextResult, locale: str) str
 }
 class DiscordJoinPresenter {
-  +build_message(result: JoinVoiceChannelResult) str
+  +build_message(result: JoinVoiceChannelResult, locale: str) str
 }
 class DiscordLeavePresenter {
-  +build_message(result: LeaveVoiceChannelResult) str
+  +build_message(result: LeaveVoiceChannelResult, locale: str) str
 }
 class SpeakController {
   +handle(request) Response

@@ -20,23 +20,23 @@ class ConsoleConfig(ConfigInterface):
 
     def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
         print("\n" + "=" * 50)
-        print("Desktop App - Configuracao")
+        print("Desktop App - Configuration")
         print("=" * 50)
 
         current_id = config.discord.member_id or ""
         member_id = prompt_numeric_input(
             f"Discord User ID [{current_id}]: ",
             current_id,
-            "Discord User ID deve conter apenas numeros!",
+            "Discord User ID must contain only numbers!",
         )
         bot_url = resolve_text_value(input(f"Bot URL [{config.discord.bot_url}]: "), config.discord.bot_url)
 
-        print("\nEngines TTS disponiveis:")
+        print("\nAvailable TTS engines:")
         print("1. gtts (Google TTS)")
         print("2. pyttsx3 (local)")
-        print("3. edge-tts (vozes neurais)")
+        print("3. edge-tts (neural voices)")
         while True:
-            choice = input(f"Escolha [1-3, atual: {config.tts.engine}]: ").strip()
+            choice = input(f"Choose [1-3, current: {config.tts.engine}]: ").strip()
             if not choice:
                 engine = config.tts.engine
                 break
@@ -49,16 +49,16 @@ class ConsoleConfig(ConfigInterface):
             if choice == "3":
                 engine = "edge-tts"
                 break
-            print("Opcao invalida!")
+            print("Invalid option!")
 
         selected_option = self._prompt_voice_option(engine, config)
         default_language = selected_option.language if selected_option is not None else config.tts.language
         default_voice_id = selected_option.voice_id if selected_option is not None else config.tts.voice_id
-        language = resolve_text_value(input(f"Idioma [{default_language}]: "), default_language)
+        language = resolve_text_value(input(f"Language [{default_language}]: "), default_language)
         voice_id = resolve_text_value(input(f"Voice ID [{default_voice_id}]: "), default_voice_id)
 
         while True:
-            rate_input = input(f"Velocidade [{config.tts.rate}]: ").strip()
+            rate_input = input(f"Speed [{config.tts.rate}]: ").strip()
             if not rate_input:
                 rate = config.tts.rate
                 break
@@ -66,9 +66,9 @@ class ConsoleConfig(ConfigInterface):
                 rate = int(rate_input)
                 if 50 <= rate <= 400:
                     break
-                print("Velocidade deve estar entre 50 e 400!")
+                print("Speed must be between 50 and 400!")
             except ValueError:
-                print("Velocidade deve ser um numero!")
+                print("Speed must be a number!")
 
         print("\nLocal voice in the Windows app:")
         print("1. Disabled (recommended: use only the Discord bot)")
@@ -89,13 +89,13 @@ class ConsoleConfig(ConfigInterface):
                 break
             print("Invalid option!")
 
-        print("\nConfiguracao de Triggers")
+        print("\nTrigger Configuration")
         trigger_open = resolve_text_value(
-            input(f"Trigger abrir [{config.hotkey.trigger_open}]: "),
+            input(f"Open trigger [{config.hotkey.trigger_open}]: "),
             config.hotkey.trigger_open,
         )
         trigger_close = resolve_text_value(
-            input(f"Trigger fechar [{config.hotkey.trigger_close}]: "),
+            input(f"Close trigger [{config.hotkey.trigger_close}]: "),
             config.hotkey.trigger_close,
         )
 
@@ -114,10 +114,10 @@ class ConsoleConfig(ConfigInterface):
 
         is_valid, errors = ConfigurationValidator.validate(new_config)
         if is_valid:
-            print("Configuracao salva com sucesso!")
+            print("Configuration saved successfully!")
             return new_config
 
-        print("Erros na configuracao:")
+        print("Configuration errors:")
         for error in errors:
             print(f"   - {error}")
         return None
@@ -127,22 +127,22 @@ class ConsoleConfig(ConfigInterface):
         if not options:
             return None
 
-        print(f"\nVozes disponiveis para {engine}:")
+        print(f"\nAvailable voices for {engine}:")
         current_option = self._tts_catalog.find_voice_option(
             engine=config.tts.engine,
             language=config.tts.language,
             voice_id=config.tts.voice_id,
         )
         for index, option in enumerate(options, start=1):
-            current_marker = " (atual)" if current_option and option.key == current_option.key else ""
+            current_marker = " (current)" if current_option and option.key == current_option.key else ""
             print(f"{index}. {option.label}{current_marker}")
 
         while True:
-            choice = input("Escolha uma voz do catalogo ou pressione Enter para manter/editar manualmente: ").strip()
+            choice = input("Choose a catalog voice or press Enter to keep/edit manually: ").strip()
             if not choice:
                 return None
             if choice.isdigit():
                 selected_index = int(choice) - 1
                 if 0 <= selected_index < len(options):
                     return options[selected_index]
-            print("Opcao invalida!")
+            print("Invalid option!")

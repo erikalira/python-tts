@@ -54,7 +54,7 @@ class DesktopConfigurationApplicationService:
         save_success = self._config_repository.save(config)
         if not save_success:
             logger.warning(
-                "[DESKTOP_APP] Falha ao salvar configuracao, continuando com configuracao em memoria"
+                "[DESKTOP_APP] Failed to save configuration, continuing with in-memory configuration"
             )
 
         self._environment_updater.update_from_config(config)

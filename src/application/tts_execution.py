@@ -65,7 +65,7 @@ class SpeakTextExecutionUseCase:
         return TTSExecutionResult(
             success=False,
             code=TTS_EXECUTION_RESULT_FAILED,
-            message=error_message or "Falha ao reproduzir o texto",
+            message=error_message or "Failed to play the text",
         )
 
     def is_available(self) -> bool:

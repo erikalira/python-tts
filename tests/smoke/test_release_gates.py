@@ -74,7 +74,7 @@ def test_bot_observability_sli_baseline_smoke():
     telemetry = InMemoryBotRuntimeTelemetry()
 
     for index, latency_ms in enumerate((900.0, 1100.0, 1300.0, 1800.0, 2200.0), start=1):
-        request = TTSRequest(text=f"texto-{index}", guild_id=1, member_id=index)
+        request = TTSRequest(text=f"text-{index}", guild_id=1, member_id=index)
         telemetry.record_submission_result(
             request=request,
             accepted=True,

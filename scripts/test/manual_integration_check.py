@@ -1,220 +1,215 @@
 #!/usr/bin/env python3
-"""
-Teste de Integracao - Desktop App
-Verifica se todas as funcionalidades estao operacionais antes da compilacao.
-"""
+"""Manual Desktop App integration check before building a release."""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
 
 
-def test_discord_integration():
-    """Testa integracao com Discord bot."""
+def test_discord_integration() -> bool:
+    """Test the configured Discord bot endpoint when DISCORD_BOT_URL is set."""
+
+    discord_bot_url = os.getenv("DISCORD_BOT_URL", "").strip()
+    if not discord_bot_url:
+        print("\n[SKIP] Discord bot integration: DISCORD_BOT_URL is not configured.")
+        return True
+
     import requests
 
-    print("🔍 Testando Discord Bot Integration...")
+    base_url = discord_bot_url.rstrip("/")
+    print("\n[CHECK] Discord bot integration...")
 
-    # Test health endpoint
     try:
-        response = requests.get('https://python-tts-s3z8.onrender.com/health', timeout=10)
+        response = requests.get(f"{base_url}/health", timeout=10)
         if response.status_code == 200:
-            print("✅ Discord bot está online")
+            print("[PASS] Discord bot health endpoint is online.")
         else:
-            print(f"⚠️ Discord bot status: {response.status_code}")
-    except Exception as e:
-        print(f"❌ Erro conectando ao Discord bot: {e}")
+            print(f"[FAIL] Discord bot health returned HTTP {response.status_code}.")
+            return False
+    except Exception as exc:
+        print(f"[FAIL] Could not connect to Discord bot health endpoint: {exc}")
         return False
 
-    # Test TTS endpoint
     try:
-        payload = {
-            'text': 'teste de integração',
-            'channel_id': None,
-            'member_id': None
-        }
-
+        payload = {"text": "integration test", "channel_id": None, "member_id": None}
         response = requests.post(
-            'https://python-tts-s3z8.onrender.com/speak',
+            f"{base_url}/speak",
             json=payload,
             timeout=10,
-            headers={'User-Agent': 'TTS-Integration-Test/1.0'}
+            headers={"User-Agent": "TTS-Integration-Test/1.0"},
         )
 
         if response.status_code == 200:
-            print("✅ Endpoint /speak funcionando - TTS enviado com sucesso")
+            print("[PASS] /speak accepted the integration test request.")
             return True
-        elif response.status_code == 400:
+        if response.status_code == 400:
             error_data = response.json()
-            error_msg = error_data.get('error', 'Erro desconhecido')
-            if "não está conectado" in error_msg:
-                print("⚠️ Bot não está em canal de voz (normal se não estiver testando)")
-                print("💡 Para testar completamente: entre num canal e use /join")
-                return True
-            else:
-                print(f"❌ Erro TTS: {error_msg}")
-                return False
-        else:
-            print(f"❌ Erro inesperado: {response.status_code}")
-            return False
+            error_msg = error_data.get("error", "Unknown error")
+            print(f"[WARN] /speak returned a validation response: {error_msg}")
+            return True
 
-    except Exception as e:
-        print(f"❌ Erro testando TTS: {e}")
+        print(f"[FAIL] /speak returned unexpected HTTP {response.status_code}.")
+        return False
+    except Exception as exc:
+        print(f"[FAIL] Could not test /speak endpoint: {exc}")
         return False
 
 
-def test_dependencies():
-    """Testa se dependencias estao instaladas."""
-    print("\n📦 Testando Dependências...")
+def test_dependencies() -> bool:
+    """Check whether required and optional runtime packages are installed."""
+
+    print("\n[CHECK] Dependencies...")
 
     required_packages = [
-        ('requests', 'Comunicação HTTP'),
-        ('keyboard', 'Captura de hotkeys'),
+        ("requests", "HTTP communication"),
+        ("keyboard", "Hotkey capture"),
     ]
 
     optional_packages = [
-        ('pygame', 'Reprodução de áudio'),
-        ('pyttsx3', 'TTS local'),
-        ('gtts', 'Google TTS'),
-        ('pystray', 'System tray'),
-        ('PIL', 'Ícones'),
+        ("pygame", "Audio playback"),
+        ("pyttsx3", "Local TTS"),
+        ("gtts", "Google TTS"),
+        ("pystray", "System tray"),
+        ("PIL", "Icons"),
     ]
 
-    missing_required = []
-    missing_optional = []
+    missing_required: list[str] = []
+    missing_optional: list[str] = []
 
-    # Test required packages
     for package, description in required_packages:
         try:
             __import__(package)
-            print(f"✅ {package} - {description}")
+            print(f"[PASS] {package} - {description}")
         except ImportError:
-            print(f"❌ {package} - {description} (OBRIGATÓRIO)")
+            print(f"[FAIL] {package} - {description} (required)")
             missing_required.append(package)
 
-    # Test optional packages
     for package, description in optional_packages:
         try:
             __import__(package)
-            print(f"✅ {package} - {description}")
+            print(f"[PASS] {package} - {description}")
         except ImportError:
-            print(f"⚠️ {package} - {description} (opcional)")
+            print(f"[WARN] {package} - {description} (optional)")
             missing_optional.append(package)
-        except Exception as e:
-            if 'Gtk' in str(e) or 'display' in str(e).lower():
-                print(f"⚠️ {package} - {description} (GUI não disponível - OK)")
+        except Exception as exc:
+            if "Gtk" in str(exc) or "display" in str(exc).lower():
+                print(f"[WARN] {package} - {description} (GUI unavailable)")
             else:
-                print(f"⚠️ {package} - {description} (erro: {e})")
+                print(f"[WARN] {package} - {description} (error: {exc})")
                 missing_optional.append(package)
 
     if missing_required:
-        print(f"\n❌ DEPENDÊNCIAS OBRIGATÓRIAS EM FALTA: {', '.join(missing_required)}")
-        print("Execute: pip install " + " ".join(missing_required))
+        print(f"\n[FAIL] Missing required dependencies: {', '.join(missing_required)}")
+        print("Install with: pip install " + " ".join(missing_required))
         return False
 
     if missing_optional:
-        print(f"\n💡 Dependências opcionais em falta: {', '.join(missing_optional)}")
-        print("Para funcionalidade completa: pip install " + " ".join(missing_optional))
+        print(f"\n[INFO] Missing optional dependencies: {', '.join(missing_optional)}")
+        print("Install for full functionality: pip install " + " ".join(missing_optional))
 
     return True
 
 
-def test_file_structure():
-    """Testa se arquivos necessarios existem."""
-    print("\n📁 Testando Estrutura de Arquivos...")
+def test_file_structure() -> bool:
+    """Check whether required release files exist."""
 
-    import os
+    print("\n[CHECK] File structure...")
 
     required_files = [
-        ('app.py', 'Entry point do Desktop App com Clean Architecture'),
-        ('scripts/build/build_clean_architecture.ps1', 'Script de build Clean Architecture'),
+        ("app.py", "Desktop App entry point"),
+        ("scripts/build/build_clean_architecture.ps1", "Windows build script"),
     ]
 
-    missing_files = []
+    missing_files: list[str] = []
 
     for file_path, description in required_files:
-        if os.path.exists(file_path):
-            print(f"✅ {file_path} - {description}")
+        if Path(file_path).exists():
+            print(f"[PASS] {file_path} - {description}")
         else:
-            print(f"❌ {file_path} - {description} (FALTANDO)")
+            print(f"[FAIL] {file_path} - {description} (missing)")
             missing_files.append(file_path)
 
     if missing_files:
-        print(f"\n❌ ARQUIVOS EM FALTA: {', '.join(missing_files)}")
+        print(f"\n[FAIL] Missing files: {', '.join(missing_files)}")
         return False
 
     return True
 
 
-def test_basic_functionality():
-    """Testa funcionalidade basica do codigo."""
-    print("\n⚙️ Testando Funcionalidades Básicas...")
+def test_basic_functionality() -> bool:
+    """Compile the desktop entry point without executing GUI code."""
+
+    print("\n[CHECK] Basic functionality...")
 
     try:
-        # Test syntax only - don't execute (avoids GUI dependencies)
-        print("🔍 Testando sintaxe app.py...")
-        with open('app.py', 'r') as f:
-            code = f.read()
-        compile(code, 'app.py', 'exec')
-        print("✅ app.py - sintaxe OK")
-
-    except SyntaxError as e:
-        print(f"❌ Erro de sintaxe em app.py: {e}")
+        print("[INFO] Compiling app.py syntax...")
+        code = Path("app.py").read_text(encoding="utf-8")
+        compile(code, "app.py", "exec")
+        print("[PASS] app.py syntax is valid.")
+    except SyntaxError as exc:
+        print(f"[FAIL] Syntax error in app.py: {exc}")
         return False
-    except Exception as e:
-        print(f"⚠️ Aviso em app.py: {e}")
-        print("💡 Sintaxe OK, erro pode ser dependência GUI (normal em Linux)")
+    except Exception as exc:
+        print(f"[WARN] app.py syntax read warning: {exc}")
+        print("[INFO] This can happen when GUI dependencies are unavailable.")
 
     return True
 
 
-def main():
-    """Run all tests."""
+def main() -> bool:
+    """Run all manual integration checks."""
+
     print("=" * 70)
-    print("TTS HOTKEY - INTEGRATION TEST")
+    print("TTS HOTKEY - MANUAL INTEGRATION CHECK")
     print("=" * 70)
 
-    tests = [
-        ("Estrutura de Arquivos", test_file_structure),
-        ("Dependências", test_dependencies),
-        ("Funcionalidade Básica", test_basic_functionality),
-        ("Integração Discord", test_discord_integration),
+    checks = [
+        ("File structure", test_file_structure),
+        ("Dependencies", test_dependencies),
+        ("Basic functionality", test_basic_functionality),
+        ("Discord integration", test_discord_integration),
     ]
 
     passed = 0
     failed = 0
 
-    for test_name, test_func in tests:
-        print(f"\n{'='*20} {test_name} {'='*20}")
+    for check_name, check_func in checks:
+        print(f"\n{'=' * 20} {check_name} {'=' * 20}")
         try:
-            if test_func():
-                print(f"✅ {test_name}: PASSOU")
+            if check_func():
+                print(f"[PASS] {check_name}")
                 passed += 1
             else:
-                print(f"❌ {test_name}: FALHOU")
+                print(f"[FAIL] {check_name}")
                 failed += 1
-        except Exception as e:
-            print(f"❌ {test_name}: ERRO - {e}")
+        except Exception as exc:
+            print(f"[ERROR] {check_name}: {exc}")
             failed += 1
 
     print("\n" + "=" * 70)
-    print("📊 RESULTADO DOS TESTES")
+    print("CHECK RESULTS")
     print("=" * 70)
-    print(f"✅ Passou: {passed}")
-    print(f"❌ Falhou: {failed}")
-    print(f"📈 Total: {passed + failed}")
+    print(f"Passed: {passed}")
+    print(f"Failed: {failed}")
+    print(f"Total: {passed + failed}")
 
     if failed == 0:
-        print("\n🎉 TODOS OS TESTES PASSARAM!")
-        print("✅ Sistema pronto para compilação")
-        print("\n💡 Próximos passos:")
-        print("   • No Windows: pwsh -File scripts/build/build_clean_architecture.ps1")
-        print("   • No Linux: gere o .exe via Docker, como no fluxo de CI")
-        print("   • Teste o executável em máquina Windows")
+        print("\nAll checks passed.")
+        print("System is ready for build validation.")
+        print("\nNext steps:")
+        print("   - Windows: pwsh -File scripts/build/build_clean_architecture.ps1")
+        print("   - Linux: build the executable through the CI-style Docker flow")
+        print("   - Test the executable on a Windows machine")
         return True
-    else:
-        print(f"\n⚠️ {failed} TESTE(S) FALHARAM")
-        print("🔧 Corrija os problemas antes de compilar")
-        return False
+
+    print(f"\n{failed} check(s) failed.")
+    print("Fix the issues before building.")
+    return False
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     success = main()
     sys.exit(0 if success else 1)

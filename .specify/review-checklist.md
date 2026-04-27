@@ -20,6 +20,9 @@ Use this checklist during code review, self-review, or AI review guidance.
    was introduced?
 11. Was any obsolete path, dead code, or transitional branch left behind
     without a reason?
+12. Are code, comments, documentation, specs, tests, commit messages, pull
+    request descriptions, and AI-generated project artifacts written in English
+    unless a scoped localization exception applies?
 
 ## Runtime safety
 

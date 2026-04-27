@@ -116,7 +116,7 @@ class SystemTrayService:
     def start(self) -> bool:
         """Start system tray service only after startup is confirmed."""
         if not self._tray_icon.is_available():
-            logger.info("[TRAY] System tray nao disponivel, executando em modo console")
+            logger.info("[TRAY] System tray is not available, running in console mode")
             return False
 
         if self.is_running():
@@ -137,7 +137,7 @@ class SystemTrayService:
                 break
             time.sleep(self._TRAY_START_POLL_INTERVAL_SECONDS)
 
-        logger.warning("[TRAY] System tray nao confirmou inicializacao, continuando sem tray")
+        logger.warning("[TRAY] System tray did not confirm startup, continuing without tray")
         self._tray_thread = None
         return False
 
@@ -146,7 +146,7 @@ class SystemTrayService:
         if self._tray_icon.is_available():
             self._tray_icon.show()
         else:
-            logger.info("[TRAY] System tray nao disponivel, continuando em modo console...")
+            logger.info("[TRAY] System tray is not available, continuing in console mode...")
             try:
                 while True:
                     time.sleep(0.1)

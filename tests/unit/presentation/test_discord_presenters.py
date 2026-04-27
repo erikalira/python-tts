@@ -26,8 +26,8 @@ class TestDiscordSpeakPresenter:
             SpeakTextResult(success=True, code=SPEAK_RESULT_QUEUED, queued=True, position=1, queue_size=3)
         )
 
-        assert "fila" in message
-        assert "entrou" in message
+        assert "queue" in message
+        assert "entered" in message
         assert "2" in message
         assert "3" in message
 
@@ -38,7 +38,7 @@ class TestDiscordSpeakPresenter:
             SpeakTextResult(success=False, code=SPEAK_RESULT_VOICE_PERMISSION_DENIED, queued=False)
         )
 
-        assert "permiss" in message.lower()
+        assert "permission" in message.lower()
 
     def test_builds_generation_timeout_message(self):
         presenter = DiscordSpeakPresenter()
@@ -47,7 +47,7 @@ class TestDiscordSpeakPresenter:
             SpeakTextResult(success=False, code=SPEAK_RESULT_GENERATION_TIMEOUT, queued=False)
         )
 
-        assert "geracao" in message.lower()
+        assert "generating" in message.lower()
 
     def test_builds_rate_limit_message(self):
         presenter = DiscordSpeakPresenter()
@@ -61,7 +61,7 @@ class TestDiscordSpeakPresenter:
             )
         )
 
-        assert "solicitacoes" in message.lower()
+        assert "requests" in message.lower()
         assert "4" in message
 
 
@@ -74,6 +74,16 @@ class TestDiscordJoinPresenter:
         )
 
         assert "not connected" in message.lower()
+
+    def test_builds_portuguese_user_not_in_channel_message(self):
+        presenter = DiscordJoinPresenter()
+
+        message = presenter.build_message(
+            JoinVoiceChannelResult(success=False, code=JOIN_RESULT_USER_NOT_IN_CHANNEL),
+            locale="pt-BR",
+        )
+
+        assert "não está conectado" in message.lower()
 
 
 class TestDiscordLeavePresenter:

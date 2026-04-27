@@ -111,15 +111,15 @@ class DesktopAppUIRuntimeCoordinator:
         """Show current app status via the main window or tray notifications."""
         if self._main_window:
             self._main_window.focus()
-            self._main_window.push_log("Janela principal trazida para frente via tray")
+            self._main_window.push_log("Main window brought to front from tray")
             return
 
         status = get_status()
         mode = "Discord" if status.discord_configured else "Local"
-        hotkeys = "ativas" if status.hotkey_active else "inativas"
-        tts = "disponivel" if status.tts_available else "indisponivel"
-        summary = f"Modo {mode} | Hotkeys {hotkeys} | TTS {tts}"
-        logger.info("[DESKTOP_APP] Status solicitado: %s", summary)
+        hotkeys = "active" if status.hotkey_active else "inactive"
+        tts = "available" if status.tts_available else "unavailable"
+        summary = f"{mode} mode | Hotkeys {hotkeys} | TTS {tts}"
+        logger.info("[DESKTOP_APP] Status requested: %s", summary)
         if notification_service:
             notification_service.notify_info("Desktop App", summary)
 
@@ -135,10 +135,10 @@ class DesktopAppUIRuntimeCoordinator:
         """Handle configure requests from tray or fallback UI flow."""
         if self._main_window:
             self._main_window.focus()
-            self._main_window.push_log("Acao de configuracao solicitada via tray")
+            self._main_window.push_log("Configuration action requested from tray")
             return None, False
 
-        logger.info("[DESKTOP_APP] Abrindo configuracoes...")
+        logger.info("[DESKTOP_APP] Opening settings...")
         ensure_action_coordinators()
         configuration_coordinator = get_configuration_coordinator()
 
@@ -147,7 +147,7 @@ class DesktopAppUIRuntimeCoordinator:
             hotkey_manager.stop()
 
         if configuration_coordinator is None:
-            logger.error("[DESKTOP_APP] Coordenador de configuracao indisponivel")
+            logger.error("[DESKTOP_APP] Configuration coordinator is unavailable")
             return None, False
 
         return configuration_coordinator.reconfigure(

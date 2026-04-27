@@ -37,6 +37,8 @@ the canonical docs above instead of restating long policy sections.
 - Avoid duplication between `src/desktop/` and shared modules in `src/`.
 - Prefer small, explicit, reversible changes over broad rewrites.
 - Favor explicit contracts and typed results over implicit mapping-style payloads.
+- Write code, comments, docs, specs, tests, commit messages, PR descriptions,
+  and AI-generated project artifacts in English by default.
 
 ## Active Technologies
 

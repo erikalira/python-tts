@@ -57,9 +57,9 @@ class DesktopAppMainWindow:
         from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
-            raise RuntimeError("Tkinter nao disponivel para a janela principal")
+            raise RuntimeError("Tkinter is not available for the main window")
         self.root = compat.tk.Tk()
-        self.root.title("Desktop App - Painel Principal")
+        self.root.title("Desktop App - Main Panel")
         self.root.geometry("980x760")
         self.root.minsize(860, 640)
         self.root.protocol("WM_DELETE_WINDOW", self._close)
@@ -82,9 +82,9 @@ class DesktopAppMainWindow:
             return
         try:
             self.root.withdraw()
-            self.push_log("Janela principal minimizada para a bandeja")
+            self.push_log("Main window minimized to tray")
         except Exception:
-            logger.debug("[GUI] Falha ao minimizar janela principal para a bandeja", exc_info=True)
+            logger.debug("[GUI] Failed to minimize main window to tray", exc_info=True)
 
     def _focus_now(self) -> None:
         if not self.root:
@@ -94,7 +94,7 @@ class DesktopAppMainWindow:
             self.root.lift()
             self.root.focus_force()
         except Exception:
-            logger.debug("[GUI] Falha ao focar janela principal", exc_info=True)
+            logger.debug("[GUI] Failed to focus main window", exc_info=True)
 
     def _create_main_layout(self) -> None:
         from . import tk_support as compat
@@ -111,12 +111,12 @@ class DesktopAppMainWindow:
             compat.ttk,
             main_frame,
             help_text=(
-                "Use esta janela como painel principal do app. Aqui voce configura o Desktop App, "
-                "valida a conexao com o bot e acompanha a atividade sem depender do terminal."
+                "Use this window as the app's main panel. Configure the Desktop App, "
+                "validate the bot connection, and follow activity without depending on the terminal."
             ),
         )
 
-        status_frame = compat.ttk.LabelFrame(main_frame, text="Status do app", padding="10")
+        status_frame = compat.ttk.LabelFrame(main_frame, text="App Status", padding="10")
         status_frame.pack(fill="x", pady=(0, 12))
         self._status_label = compat.tk.Label(
             status_frame,
@@ -145,7 +145,7 @@ class DesktopAppMainWindow:
         )
         self._voice_context_label.pack(anchor="w", pady=(8, 0))
 
-        form_frame = compat.ttk.LabelFrame(main_frame, text="Configuracao", padding="10")
+        form_frame = compat.ttk.LabelFrame(main_frame, text="Configuration", padding="10")
         form_frame.pack(fill="x", pady=(0, 12))
         self._build_config_notebook(form_frame)
 
@@ -164,22 +164,22 @@ class DesktopAppMainWindow:
             compat.ttk,
             main_frame,
             text=(
-                "1. Preencha os dados do bot e clique em 'Testar conexao'. "
-                "2. Use 'Recarregar canal detectado' para verificar o servidor e canal de voz encontrados para seu usuario. "
-                "3. Salve a configuracao. "
-                f"4. Use {self.config.hotkey.trigger_open}texto{self.config.hotkey.trigger_close} para enviar fala no uso normal. "
-                "5. Se quiser, use 'Enviar teste de voz' para validar o fluxo manualmente."
+                "1. Fill in the bot details and click 'Test connection'. "
+                "2. Use 'Refresh detected channel' to check the server and voice channel found for your user. "
+                "3. Save the configuration. "
+                f"4. Use {self.config.hotkey.trigger_open}text{self.config.hotkey.trigger_close} to send speech in normal use. "
+                "5. Optionally use 'Send voice test' to validate the flow manually."
             ),
         )
 
-        logs_frame = compat.ttk.LabelFrame(main_frame, text="Atividade", padding="10")
+        logs_frame = compat.ttk.LabelFrame(main_frame, text="Activity", padding="10")
         logs_frame.pack(fill="both", expand=True)
         self._logs_widget = compat.tk.Text(logs_frame, height=14, wrap="word", state="disabled")
         self._logs_widget.pack(side="left", fill="both", expand=True)
         scrollbar = compat.ttk.Scrollbar(logs_frame, orient="vertical", command=self._logs_widget.yview)
         scrollbar.pack(side="right", fill="y")
         self._logs_widget.configure(yscrollcommand=scrollbar.set)
-        self.push_log("Painel principal iniciado")
+        self.push_log("Main panel started")
         self._refresh_local_status()
 
     def _handle_save(self) -> None:
@@ -190,16 +190,16 @@ class DesktopAppMainWindow:
             if new_config is None:
                 return
         except ValueError as exc:
-            compat.messagebox.showerror("Erro", f"Valor invalido: {exc}")
+            compat.messagebox.showerror("Error", f"Invalid value: {exc}")
             return
         except Exception as exc:
-            compat.messagebox.showerror("Erro", f"Erro ao montar configuracao: {exc}")
+            compat.messagebox.showerror("Error", f"Error building configuration: {exc}")
             return
 
         is_valid, errors = ConfigurationValidator.validate(new_config)
         if not is_valid:
-            compat.messagebox.showerror("Erro de Validacao", "Erros encontrados:\n\n" + "\n".join(errors))
-            self._set_status("Configuracao invalida. Corrija os campos destacados nas mensagens.", success=False)
+            compat.messagebox.showerror("Validation Error", "Errors found:\n\n" + "\n".join(errors))
+            self._set_status("Invalid configuration. Fix the fields highlighted in the messages.", success=False)
             return
 
         result = self._on_save(new_config)
@@ -219,7 +219,7 @@ class DesktopAppMainWindow:
             self._apply_message(
                 self._connection_var,
                 self._connection_label,
-                self._presenter.build_invalid_value_message("Teste", exc),
+                self._presenter.build_invalid_value_message("Test", exc),
             )
             return
 
@@ -227,9 +227,9 @@ class DesktopAppMainWindow:
         self._apply_message(
             self._connection_var,
             self._connection_label,
-            self._presenter.build_connection_result(result, "Sem resposta do teste"),
+            self._presenter.build_connection_result(result, "No test response"),
         )
-        self.push_log(f"Teste de conexao: {self._connection_var.get()}")
+        self.push_log(f"Connection test: {self._connection_var.get()}")
 
     def _handle_send_test(self) -> None:
         try:
@@ -240,14 +240,14 @@ class DesktopAppMainWindow:
             self._apply_message(
                 self._connection_var,
                 self._connection_label,
-                self._presenter.build_invalid_value_message("Envio de teste", exc),
+                self._presenter.build_invalid_value_message("Test delivery", exc),
             )
             return
 
         result = self._on_send_test(config)
-        feedback = self._presenter.build_connection_result(result, "Sem resposta do envio de teste")
+        feedback = self._presenter.build_connection_result(result, "No test delivery response")
         self._apply_message(self._connection_var, self._connection_label, feedback)
-        self.push_log(f"Envio de teste: {feedback.text}")
+        self.push_log(f"Test delivery: {feedback.text}")
 
     def _handle_refresh_voice_context(self) -> None:
         try:
@@ -258,14 +258,14 @@ class DesktopAppMainWindow:
             self._apply_message(
                 self._voice_context_var,
                 self._voice_context_label,
-                self._presenter.build_invalid_value_message("Deteccao", exc),
+                self._presenter.build_invalid_value_message("Detection", exc),
             )
             return
 
         result = self._on_refresh_voice_context(config)
-        feedback = self._presenter.build_connection_result(result, "Sem resposta da deteccao de canal")
+        feedback = self._presenter.build_connection_result(result, "No channel detection response")
         self._apply_message(self._voice_context_var, self._voice_context_label, feedback)
-        self.push_log(f"Canal detectado: {feedback.text}")
+        self.push_log(f"Detected channel: {feedback.text}")
 
     def _set_status(self, message: str, success: bool) -> None:
         self._apply_message(
@@ -311,7 +311,7 @@ class DesktopAppMainWindow:
         self._logs_widget.configure(state="normal")
         self._logs_widget.delete("1.0", compat.tk.END)
         self._logs_widget.configure(state="disabled")
-        self.push_log("Logs limpos pelo usuario")
+        self.push_log("Logs cleared by user")
 
     def _append_log(self, message: str) -> None:
         from . import tk_support as compat

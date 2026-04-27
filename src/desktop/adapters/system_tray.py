@@ -93,7 +93,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
             logger.info("[TRAY] System tray iniciado")
             self._icon.run()
         except Exception as exc:
-            logger.error("[TRAY] Erro ao iniciar system tray: %s", exc)
+            logger.error("[TRAY] Failed to start system tray: %s", exc)
             self._running = False
 
     def hide(self) -> None:
@@ -104,7 +104,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
                 self._running = False
                 logger.info("[TRAY] System tray parado")
             except Exception as exc:
-                logger.warning("[TRAY] Erro ao parar system tray: %s", exc)
+                logger.warning("[TRAY] Failed to stop system tray: %s", exc)
 
     def set_tooltip(self, tooltip: str) -> None:
         """Set tooltip text."""
@@ -123,7 +123,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         menu = Menu(
             MenuItem("Abrir Desktop App", self._handle_status_click, default=True),
             MenuItem(
-                f"Digite {self._config.hotkey.trigger_open}texto{self._config.hotkey.trigger_close} para falar",
+                f"Type {self._config.hotkey.trigger_open}text{self._config.hotkey.trigger_close} to speak",
                 lambda: None,
                 enabled=False,
             ),
@@ -154,13 +154,13 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
             logger.info("Conectado ao Discord: %s", self._config.discord.bot_url)
             logger.info("User ID: %s", self._config.discord.member_id)
         else:
-            logger.warning("Discord nao configurado completamente")
+            logger.warning("Discord is not fully configured")
 
     def _handle_configure(self, icon, item) -> None:
         if self._on_configure:
             self._on_configure()
         else:
-            logger.warning("Configuracoes nao disponiveis")
+            logger.warning("Settings are unavailable")
 
     def _handle_quit(self, icon, item) -> None:
         if self._on_quit:

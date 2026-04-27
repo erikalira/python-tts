@@ -69,7 +69,7 @@ class HTTPServer:
         return web.Response(text="Bot online! v2.0")
 
     async def _health(self, request: web.Request) -> web.Response:
-        """Health check endpoint for Docker/Render."""
+        """Health check endpoint for container and runtime probes."""
         with self._otel_runtime.start_http_span(
             "http.health",
             headers=getattr(request, "headers", {}) or {},

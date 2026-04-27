@@ -1,6 +1,6 @@
 # Constitution Sync Report: [VERSION]
 
-**Constitution version**: [e.g., v1.2.1]
+**Constitution version**: [e.g., vX.Y.Z]
 **Last updated**: [DATE]
 **Canonical source**: `memory/constitution.md`
 **Derived files reviewed**: `AGENTS.md`, `.github/copilot-instructions.md`,

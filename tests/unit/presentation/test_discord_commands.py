@@ -9,14 +9,50 @@ from src.application.dto import (
     LeaveVoiceChannelResult,
     SpeakTextResult,
 )
+from src.application.interface_language_preferences import ConfigureInterfaceLanguageUseCase
 from src.infrastructure.rate_limiting import InMemoryRateLimiter
 from src.application.voice_runtime import VoiceRuntimeStatus
 from src.presentation.discord_commands import DiscordCommands
+from src.presentation.discord_i18n import (
+    DiscordCommandTranslator,
+    DiscordLocaleResolver,
+    command_text,
+    supported_locales,
+    supported_message_locales,
+)
 from src.application.use_cases import (
     ConfigureTTSUseCase,
     JoinVoiceChannelUseCase,
     LeaveVoiceChannelUseCase,
 )
+
+
+class FakeInterfaceLanguagePreferenceRepository:
+    def __init__(self):
+        self.user_languages = {}
+        self.guild_languages = {}
+
+    def get_user_language(self, guild_id: int, user_id: int) -> str | None:
+        return self.user_languages.get((guild_id, user_id))
+
+    def get_guild_language(self, guild_id: int) -> str | None:
+        return self.guild_languages.get(guild_id)
+
+    async def set_user_language(self, guild_id: int, user_id: int, locale: str) -> bool:
+        self.user_languages[(guild_id, user_id)] = locale
+        return True
+
+    async def set_guild_language(self, guild_id: int, locale: str) -> bool:
+        self.guild_languages[guild_id] = locale
+        return True
+
+    async def delete_user_language(self, guild_id: int, user_id: int) -> bool:
+        self.user_languages.pop((guild_id, user_id), None)
+        return True
+
+    async def delete_guild_language(self, guild_id: int) -> bool:
+        self.guild_languages.pop(guild_id, None)
+        return True
 
 
 class TestDiscordCommands:
@@ -74,6 +110,107 @@ class TestDiscordCommands:
         assert commands_instance._config_use_case is not None
         assert commands_instance._join_use_case is not None
         assert commands_instance._leave_use_case is not None
+
+    @pytest.mark.asyncio
+    async def test_handle_language_updates_user_interface_language(self, commands_instance):
+        repository = FakeInterfaceLanguagePreferenceRepository()
+        commands_instance._interface_language_use_case = ConfigureInterfaceLanguageUseCase(repository)
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.locale = discord.Locale.american_english
+        interaction.guild_locale = discord.Locale.american_english
+        interaction.guild = Mock()
+        interaction.guild.id = 12345
+        interaction.response = AsyncMock()
+
+        await commands_instance._handle_language(interaction, "pt-BR")
+
+        assert repository.user_languages[(12345, 67890)] == "pt-BR"
+        interaction.response.send_message.assert_called_once()
+        assert "português" in interaction.response.send_message.call_args.args[0].lower()
+
+    @pytest.mark.asyncio
+    async def test_handle_language_auto_resets_user_interface_language(self, commands_instance):
+        repository = FakeInterfaceLanguagePreferenceRepository()
+        repository.user_languages[(12345, 67890)] = "pt-BR"
+        commands_instance._interface_language_use_case = ConfigureInterfaceLanguageUseCase(repository)
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.locale = discord.Locale.american_english
+        interaction.guild_locale = discord.Locale.brazil_portuguese
+        interaction.guild = Mock()
+        interaction.guild.id = 12345
+        interaction.response = AsyncMock()
+
+        await commands_instance._handle_language(interaction, "auto")
+
+        assert (12345, 67890) not in repository.user_languages
+        assert "discord language" in interaction.response.send_message.call_args.args[0].lower()
+
+    @pytest.mark.asyncio
+    async def test_handle_server_language_requires_manage_guild(self, commands_instance):
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.guild_permissions = Mock(manage_guild=False)
+        interaction.guild = Mock()
+        interaction.guild.id = 12345
+        interaction.response = AsyncMock()
+
+        await commands_instance._handle_server_language(interaction, "pt-BR")
+
+        interaction.response.send_message.assert_called_once()
+        assert "permission" in interaction.response.send_message.call_args.args[0].lower()
+
+    @pytest.mark.asyncio
+    async def test_handle_server_language_updates_guild_interface_language(self, commands_instance):
+        repository = FakeInterfaceLanguagePreferenceRepository()
+        commands_instance._interface_language_use_case = ConfigureInterfaceLanguageUseCase(repository)
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.user.guild_permissions = Mock(manage_guild=True)
+        interaction.locale = discord.Locale.american_english
+        interaction.guild_locale = discord.Locale.american_english
+        interaction.guild = Mock()
+        interaction.guild.id = 12345
+        interaction.response = AsyncMock()
+
+        await commands_instance._handle_server_language(interaction, "pt-BR")
+
+        assert repository.guild_languages[12345] == "pt-BR"
+        assert "server default interface language" in interaction.response.send_message.call_args.args[0].lower()
+
+    def test_resolve_locale_prefers_user_preference_then_discord_locale_then_guild_preference(
+        self,
+        commands_instance,
+    ):
+        repository = FakeInterfaceLanguagePreferenceRepository()
+        repository.user_languages[(12345, 67890)] = "pt-BR"
+        repository.guild_languages[12345] = "en-US"
+        commands_instance._interface_language_use_case = ConfigureInterfaceLanguageUseCase(repository)
+
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = 67890
+        interaction.locale = discord.Locale.american_english
+        interaction.guild_locale = discord.Locale.american_english
+        interaction.guild = Mock()
+        interaction.guild.id = 12345
+
+        assert commands_instance._resolve_locale(interaction) == "pt-BR"
+
+        repository.user_languages.clear()
+
+        assert commands_instance._resolve_locale(interaction) == "en-US"
+
+        interaction.locale = discord.Locale.japanese
+
+        assert commands_instance._resolve_locale(interaction) == "en-US"
     
     @pytest.mark.asyncio
     async def test_handle_speak_command_success(
@@ -158,8 +295,8 @@ class TestDiscordCommands:
         interaction.delete_original_response.assert_not_called()
         interaction.edit_original_response.assert_called_once()
         content = interaction.edit_original_response.call_args.kwargs["content"].lower()
-        assert "fila" in content
-        assert "entrou" in content
+        assert "queue" in content
+        assert "entered" in content
     
     @pytest.mark.asyncio
     async def test_handle_speak_missing_dependencies(self, commands_instance):
@@ -176,7 +313,7 @@ class TestDiscordCommands:
         await commands_instance._handle_speak(interaction, "Test")
 
         interaction.edit_original_response.assert_called_once()
-        assert "indispon" in interaction.edit_original_response.call_args.kwargs["content"].lower()
+        assert "unavailable" in interaction.edit_original_response.call_args.kwargs["content"].lower()
 
     @pytest.mark.asyncio
     async def test_handle_speak_rate_limits_by_guild_and_user(self, commands_instance):
@@ -204,7 +341,7 @@ class TestDiscordCommands:
         assert commands_instance._speak_use_case.execute.await_count == 1
         assert interaction.edit_original_response.await_count == 1
         content = interaction.edit_original_response.await_args.kwargs["content"].lower()
-        assert "solicitacoes" in content
+        assert "requests" in content
 
     @pytest.mark.asyncio
     async def test_handle_speak_ignores_expired_interaction_before_defer(self, commands_instance):
@@ -314,8 +451,7 @@ class TestDiscordCommands:
         interaction.response.defer.assert_called_once()
         interaction.edit_original_response.assert_called_once()
         sent_content = interaction.edit_original_response.call_args.kwargs["content"]
-        assert "Bot est" in sent_content
-        assert "inativo" in sent_content
+        assert "Bot is inactive" in sent_content
     
     @pytest.mark.asyncio
     async def test_handle_config_get(self, commands_instance):
@@ -397,7 +533,7 @@ class TestDiscordCommands:
         await commands_instance._handle_server_config(interaction, None)
 
         interaction.response.send_message.assert_called_once()
-        assert "permiss" in interaction.response.send_message.call_args.args[0].lower()
+        assert "permission" in interaction.response.send_message.call_args.args[0].lower()
 
     @pytest.mark.asyncio
     async def test_handle_server_config_update_engine(
@@ -503,7 +639,7 @@ class TestDiscordCommands:
         await commands_instance._handle_join(interaction)
 
         interaction.response.send_message.assert_called_once()
-        assert "indispon" in interaction.response.send_message.call_args.args[0].lower()
+        assert "unavailable" in interaction.response.send_message.call_args.args[0].lower()
 
     @pytest.mark.asyncio
     async def test_handle_join_success(self, commands_instance):
@@ -568,19 +704,19 @@ class TestDiscordCommands:
         assert "embed" in call_kwargs
 
     @pytest.mark.asyncio
-    async def test_autocomplete_voz_uses_catalog(self, commands_instance):
+    async def test_autocomplete_voice_uses_catalog(self, commands_instance):
         interaction = Mock()
 
-        choices = await commands_instance._autocomplete_voz(interaction, "davi")
+        choices = await commands_instance._autocomplete_voice(interaction, "davi")
 
         assert choices
         assert choices[0].value == "pyttsx3:david"
 
     @pytest.mark.asyncio
-    async def test_autocomplete_voz_returns_edge_tts_profiles(self, commands_instance):
+    async def test_autocomplete_voice_returns_edge_tts_profiles(self, commands_instance):
         interaction = Mock()
 
-        choices = await commands_instance._autocomplete_voz(interaction, "francisca")
+        choices = await commands_instance._autocomplete_voice(interaction, "francisca")
 
         assert choices
         assert choices[0].value == "edge-tts:pt-br-francisca"
@@ -594,8 +730,8 @@ class TestDiscordCommands:
 
         embed = commands_instance._config_handler._build_updated_config_embed("Test Guild", 67890, result)
 
-        resolution_field = next(field for field in embed.fields if field.name == "Resolução da Voz")
-        assert "voz padrão do windows" in resolution_field.value.lower()
+        resolution_field = next(field for field in embed.fields if field.name == "Voice Resolution")
+        assert "default windows voice" in resolution_field.value.lower()
 
     def test_config_embed_describes_edge_tts_voice(self, commands_instance):
         result = ConfigureTTSResult(
@@ -606,6 +742,70 @@ class TestDiscordCommands:
 
         embed = commands_instance._config_handler._build_updated_config_embed("Test Guild", 67890, result)
 
-        resolution_field = next(field for field in embed.fields if field.name == "Resolução da Voz")
+        resolution_field = next(field for field in embed.fields if field.name == "Voice Resolution")
         assert "edge tts" in resolution_field.value.lower()
         assert "francisca" in resolution_field.value.lower()
+
+
+class TestDiscordI18n:
+    def test_message_catalog_has_same_keys_for_all_supported_locales(self):
+        catalogs = supported_message_locales()
+        expected_keys = set(catalogs["en-US"])
+
+        for locale, messages in catalogs.items():
+            assert set(messages) == expected_keys, locale
+
+    def test_command_translations_have_same_keys_for_all_supported_locales(self):
+        translations = supported_locales()
+        expected_keys = set(translations["en-US"])
+
+        for locale, commands in translations.items():
+            assert set(commands) == expected_keys, locale
+
+    def test_locale_resolver_prefers_user_locale_over_guild_locale(self):
+        interaction = Mock()
+        interaction.guild_locale = discord.Locale.brazil_portuguese
+        interaction.locale = discord.Locale.american_english
+
+        assert DiscordLocaleResolver().resolve(interaction) == "en-US"
+
+    def test_locale_resolver_falls_back_to_user_locale(self):
+        interaction = Mock()
+        interaction.guild_locale = discord.Locale.japanese
+        interaction.locale = discord.Locale.american_english
+
+        assert DiscordLocaleResolver().resolve(interaction) == "en-US"
+
+    def test_locale_resolver_falls_back_to_guild_locale(self):
+        interaction = Mock()
+        interaction.guild_locale = discord.Locale.brazil_portuguese
+        interaction.locale = discord.Locale.japanese
+
+        assert DiscordLocaleResolver().resolve(interaction) == "pt-BR"
+
+    def test_locale_resolver_uses_ordered_candidates(self):
+        assert DiscordLocaleResolver().resolve_candidates(
+            None,
+            discord.Locale.japanese,
+            "pt-BR",
+            "en-US",
+        ) == "pt-BR"
+
+    def test_locale_resolver_defaults_to_english_when_no_locale_is_supported(self):
+        interaction = Mock()
+        interaction.guild_locale = discord.Locale.japanese
+        interaction.locale = discord.Locale.korean
+
+        assert DiscordLocaleResolver().resolve(interaction) == "en-US"
+
+    @pytest.mark.asyncio
+    async def test_command_translator_translates_command_metadata(self):
+        translator = DiscordCommandTranslator()
+
+        translated = await translator.translate(
+            command_text("cmd.speak.description"),
+            discord.Locale.brazil_portuguese,
+            Mock(),
+        )
+
+        assert translated == "Faz o bot falar o texto informado no canal de voz"

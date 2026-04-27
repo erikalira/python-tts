@@ -25,7 +25,7 @@ class InitialSetupGUI:
             return self._console_initial_setup()
         try:
             self.root = compat.tk.Tk()
-            self.root.title("Desktop App - Configuracao Inicial")
+            self.root.title("Desktop App - Initial Setup")
             self.root.geometry("550x500")
             self.root.resizable(False, False)
             self.root.geometry(
@@ -41,7 +41,7 @@ class InitialSetupGUI:
             self.root.mainloop()
             return self.result
         except Exception as exc:
-            print(f"Erro na interface grafica: {exc}")
+            print(f"Graphical interface error: {exc}")
             return self._console_initial_setup()
 
     def _create_initial_setup_widgets(self):
@@ -51,28 +51,28 @@ class InitialSetupGUI:
         main_frame.pack(fill=compat.tk.BOTH, expand=True)
         compat.ttk.Label(
             main_frame,
-            text="Desktop App - Configuracao Inicial",
+            text="Desktop App - Initial Setup",
             font=("Arial", 16, "bold"),
         ).pack(pady=(0, 20))
         compat.ttk.Label(
             main_frame,
             text=(
-                "Para usar o TTS no Discord, configure seu Discord User ID.\n"
-                "O bot vai inferir o servidor e o canal pela sua presenca em voz."
+                "To use TTS on Discord, configure your Discord User ID.\n"
+                "The bot will infer the server and channel from your current voice presence."
             ),
             justify=compat.tk.CENTER,
         ).pack(pady=(0, 20))
 
         discord_frame = compat.ttk.LabelFrame(main_frame, text="Discord Configuration", padding="10")
         discord_frame.pack(fill=compat.tk.X, pady=(0, 15))
-        compat.ttk.Label(discord_frame, text="Seu Discord User ID:").pack(anchor=compat.tk.W)
+        compat.ttk.Label(discord_frame, text="Your Discord User ID:").pack(anchor=compat.tk.W)
         self.member_id_var = compat.tk.StringVar()
         compat.ttk.Entry(discord_frame, textvariable=self.member_id_var, width=30).pack(fill=compat.tk.X, pady=(5, 10))
         compat.ttk.Label(
             discord_frame,
             text=(
-                "Como encontrar: Discord -> Configuracoes -> Avancado -> Modo Desenvolvedor (ON)\n"
-                "   Botao direito no seu nome -> Copiar ID"
+                "How to find it: Discord -> Settings -> Advanced -> Developer Mode (ON)\n"
+                "   Right-click your name -> Copy ID"
             ),
             foreground="gray",
             font=("Arial", 8),
@@ -86,17 +86,17 @@ class InitialSetupGUI:
         warning_frame.pack(fill=compat.tk.X, pady=(0, 20))
         compat.ttk.Label(
             warning_frame,
-            text="Sem o Discord User ID, o TTS funcionara apenas localmente",
+            text="Without the Discord User ID, TTS will only work locally",
             foreground="orange",
             font=("Arial", 9, "italic"),
         ).pack()
 
         button_frame = compat.ttk.Frame(main_frame)
         button_frame.pack(fill=compat.tk.X)
-        compat.ttk.Button(button_frame, text="Continuar Sem Discord", command=self._skip_discord).pack(
+        compat.ttk.Button(button_frame, text="Continue Without Discord", command=self._skip_discord).pack(
             side=compat.tk.LEFT, padx=(0, 10)
         )
-        compat.ttk.Button(button_frame, text="Salvar e Continuar", command=self._save_and_continue).pack(
+        compat.ttk.Button(button_frame, text="Save and Continue", command=self._save_and_continue).pack(
             side=compat.tk.RIGHT
         )
 
@@ -129,16 +129,16 @@ class InitialSetupGUI:
 
     def _console_initial_setup(self) -> Optional[InitialSetupResult]:
         print("\n" + "=" * 60)
-        print("Desktop App - Configuracao Inicial")
+        print("Desktop App - Initial Setup")
         print("=" * 60)
-        print("Para usar o TTS no Discord, configure seu Discord User ID:")
+        print("To use TTS on Discord, configure your Discord User ID:")
         print("")
-        print("1. Discord User ID (seu ID de usuario):")
-        print("   Como encontrar: Discord -> Configuracoes -> Avancado -> Modo Desenvolvedor")
-        print("   Depois: Botao direito no seu nome -> Copiar ID")
-        member_id = input("   Discord User ID (deixe vazio para pular): ").strip()
+        print("1. Discord User ID:")
+        print("   How to find it: Discord -> Settings -> Advanced -> Developer Mode")
+        print("   Then: right-click your name -> Copy ID")
+        member_id = input("   Discord User ID (leave blank to skip): ").strip()
         if member_id and not member_id.isdigit():
-            print("ID deve conter apenas numeros!")
+            print("ID must contain only numbers!")
             member_id = ""
 
         print("\n2. Bot URL:")
@@ -148,9 +148,9 @@ class InitialSetupGUI:
             bot_url = default_url
 
         if member_id:
-            print("\nConfiguracao salva! TTS funcionara no Discord.")
+            print("\nConfiguration saved! TTS will work on Discord.")
         else:
-            print("\nSem Discord User ID, TTS funcionara apenas localmente.")
+            print("\nWithout a Discord User ID, TTS will only work locally.")
 
         return self._presenter.build_console_initial_setup_result(
             member_id=member_id,

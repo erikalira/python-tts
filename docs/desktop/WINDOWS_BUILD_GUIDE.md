@@ -1,14 +1,14 @@
 # Windows Build Guide
 
-Este guia explica como criar o executavel do Desktop App para Windows com Clean Architecture.
+This guide explains how to create the Windows executable for the Desktop App with Clean Architecture.
 
-## Pre-requisitos
+## Prerequisites
 
-- Python 3.11+ instalado no Windows
+- Python 3.11+ installed on Windows
 - Windows 10/11
-- `.venv` criado e ativado antes de instalar dependencias
+- `.venv` created and activated before installing dependencies
 
-Setup recomendado antes do build:
+Recommended setup before the build:
 
 ```powershell
 python -m venv .venv
@@ -18,23 +18,23 @@ pip install -r requirements.txt
 
 ## Desktop App Clean Architecture
 
-- Arquivo: `app.py`
-- Arquitetura: Clean Architecture
-- Caracteristicas:
-  - Interface grafica Tkinter com system tray
-  - Configuracao persistente com JSON
-  - Dependency injection nas camadas
-  - Fallback automatico se a inicializacao principal falhar
+- File: `app.py`
+- Architecture: Clean Architecture
+- Characteristics:
+  - Tkinter GUI with system tray integration
+  - persistent JSON configuration
+  - dependency injection across layers
+  - automatic fallback if primary initialization fails
 
-## Compilacao para Windows
+## Compile For Windows
 
 ```powershell
 scripts\build\build_clean_architecture.ps1
 ```
 
-## Localizacao do Executavel
+## Executable Location
 
-Apos a compilacao:
+After compilation:
 
 ```text
 dist/
@@ -42,36 +42,36 @@ dist/
 `-- run_HotkeyTTS_debug.bat
 ```
 
-## Como Usar o Executavel
+## Use The Executable
 
-Depois do build:
+After the build:
 
 ```powershell
 cd dist
 .\HotkeyTTS.exe
 ```
 
-Na primeira execucao:
+On first run:
 
-1. Configure o Discord User ID
-2. Escolha a engine TTS
-3. Defina as hotkeys
-4. Salve a configuracao
-5. Inicie o app pela tray
+1. Configure the Discord User ID
+2. Choose the TTS engine
+3. Define the hotkeys
+4. Save the configuration
+5. Start the app from the tray
 
-## Resolucao de Problemas
+## Troubleshooting
 
-| Problema | Solucao |
-|----------|---------|
-| Build falha | Ative o `.venv` e reinstale dependencias com `pip install -r requirements.txt` |
-| Icone nao encontrado | Verifique `assets/icon.ico`. Se necessario, recrie com `python scripts/utils/create_icon.py` e rode o script oficial novamente |
-| PyInstaller nao encontrado | Com o `.venv` ativo, rode `pip install pyinstaller` |
-| Antivirus bloqueia `.exe` | Adicione excecao para a pasta `dist/` |
+| Problem | Solution |
+|---------|----------|
+| Build fails | Activate `.venv` and reinstall dependencies with `pip install -r requirements.txt` |
+| Icon not found | Check `assets/icon.ico`. If needed, recreate it with `python scripts/utils/create_icon.py` and run the official script again |
+| PyInstaller not found | With `.venv` active, run `pip install pyinstaller` |
+| Antivirus blocks `.exe` | Add an exception for the `dist/` directory |
 
-## Distribuicao
+## Distribution
 
-O executavel do Desktop App e portatil:
+The Desktop App executable is portable:
 
-- Copie `dist/HotkeyTTS.exe`
-- Funciona em Windows 10/11
-- Salva configuracao em `AppData/Local/DesktopApp/`
+- Copy `dist/HotkeyTTS.exe`
+- It works on Windows 10/11
+- It saves configuration under `AppData/Local/DesktopApp/`

@@ -34,7 +34,7 @@ class DesktopConfigurationCoordinator:
         if self._configuration_application.is_configured(current_config):
             return True, current_config
 
-        logger.info("[DESKTOP_APP] Primeira execucao detectada, abrindo configuracao inicial")
+        logger.info("[DESKTOP_APP] First run detected, opening initial setup")
         updated_config = self._config_service.get_configuration(current_config)
         if not updated_config:
             return False, current_config
@@ -47,17 +47,17 @@ class DesktopConfigurationCoordinator:
         is_valid, errors = self._configuration_application.validate(updated_config)
         if not is_valid:
             message = "; ".join(errors)
-            logger.error("[DESKTOP_APP] Configuracao invalida recebida da interface: %s", message)
+            logger.error("[DESKTOP_APP] Invalid configuration received from the interface: %s", message)
             return DesktopConfigurationSaveResultDTO(success=False, message=message)
 
         save_success = self._configuration_application.apply(updated_config)
-        logger.info("[DESKTOP_APP] Configuracao salva pelo painel principal")
+        logger.info("[DESKTOP_APP] Configuration saved from the main panel")
         return DesktopConfigurationSaveResultDTO(
             success=True,
             message=(
-                "Configuracao aplicada com sucesso"
+                "Configuration applied successfully"
                 if save_success
-                else "Configuracao aplicada, mas nao foi possivel persistir o arquivo"
+                else "Configuration applied, but the file could not be persisted"
             ),
         )
 
@@ -79,14 +79,14 @@ class DesktopConfigurationCoordinator:
                 resume_hotkeys()
 
         if not updated_config:
-            logger.info("[DESKTOP_APP] Configuracao cancelada")
+            logger.info("[DESKTOP_APP] Configuration canceled")
             return None, False
 
         is_valid, errors = self._configuration_application.validate(updated_config)
         if not is_valid:
-            logger.error("[DESKTOP_APP] Configuracao invalida: %s", "; ".join(errors))
+            logger.error("[DESKTOP_APP] Invalid configuration: %s", "; ".join(errors))
             if notify_error:
-                notify_error("Desktop App", "Configuracao invalida")
+                notify_error("Desktop App", "Invalid configuration")
             if hotkeys_were_active:
                 resume_hotkeys()
             return None, False
@@ -95,7 +95,7 @@ class DesktopConfigurationCoordinator:
         if hotkeys_were_active and are_hotkeys_active and not are_hotkeys_active():
             resume_hotkeys()
 
-        logger.info("[DESKTOP_APP] Configuracao atualizada com sucesso")
+        logger.info("[DESKTOP_APP] Configuration updated successfully")
         if notify_success:
-            notify_success("Desktop App", "Configuracao atualizada")
+            notify_success("Desktop App", "Configuration updated")
         return updated_config, True

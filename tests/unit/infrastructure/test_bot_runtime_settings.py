@@ -74,6 +74,19 @@ def test_config_exports_dotenv_values_for_process_runtime_checks(tmp_path):
 
 
 def test_config_requires_database_url_for_postgres_backend(tmp_path):
+    previous_env_file = tmp_path / "previous.env"
+    previous_env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "CONFIG_STORAGE_BACKEND=json",
+                "DATABASE_URL=postgresql://user:pass@localhost:5432/app",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    Config(env_file=previous_env_file)
+
     env_file = tmp_path / ".env"
     env_file.write_text(
         "\n".join(

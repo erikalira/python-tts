@@ -25,24 +25,24 @@ class DesktopAppMainWindowPresenter:
 
     def initial_status(self) -> MainWindowMessage:
         return MainWindowMessage(
-            text="Preencha os campos, teste a conexao e mantenha a janela aberta durante o uso.",
+            text="Fill in the fields, test the connection, and keep the window open while using the app.",
             color=SUCCESS_COLOR,
         )
 
     def initial_connection(self) -> MainWindowMessage:
         return MainWindowMessage(
-            text="Conexao ainda nao testada",
+            text="Connection not tested yet",
             color=WARNING_COLOR,
         )
 
     def initial_voice_context(self) -> MainWindowMessage:
         return MainWindowMessage(
-            text="Canal detectado ainda nao consultado",
+            text="Detected channel has not been checked yet",
             color=WARNING_COLOR,
         )
 
     def build_status(self, message: str, success: bool) -> MainWindowMessage:
-        prefix = "OK:" if success else "Atencao:"
+        prefix = "OK:" if success else "Attention:"
         return MainWindowMessage(
             text=f"{prefix} {message}",
             color=SUCCESS_COLOR if success else ERROR_COLOR,
@@ -56,7 +56,7 @@ class DesktopAppMainWindowPresenter:
 
     def build_invalid_value_message(self, action_name: str, exc: ValueError) -> MainWindowMessage:
         return MainWindowMessage(
-            text=f"{action_name} falhou: valor invalido ({exc})",
+            text=f"{action_name} failed: invalid value ({exc})",
             color=ERROR_COLOR,
         )
 
@@ -64,14 +64,14 @@ class DesktopAppMainWindowPresenter:
         is_discord_ready = bool(config.discord.bot_url and config.discord.member_id)
         if is_discord_ready:
             return MainWindowMessage(
-                text="Bot configurado: URL e User ID preenchidos.",
+                text="Bot configured: URL and User ID filled.",
                 color=SUCCESS_COLOR,
             )
 
-        message = "Configuracao incompleta: preencha Bot URL e User ID para usar o bot."
+        message = "Incomplete configuration: fill Bot URL and User ID to use the bot."
         if config.interface.local_tts_enabled:
-            message += " Voz local opcional ativada como fallback."
+            message += " Optional local voice enabled as fallback."
         else:
-            message += " Voz local opcional desativada."
+            message += " Optional local voice disabled."
 
         return MainWindowMessage(text=message, color=WARNING_COLOR)

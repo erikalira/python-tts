@@ -94,7 +94,7 @@ class DesktopApp:
             logger.info("[DESKTOP_APP] Aplicacao inicializada com sucesso")
             return True
         except Exception as exc:
-            logger.error("[DESKTOP_APP] Erro durante inicializacao: %s", exc)
+            logger.error("[DESKTOP_APP] Error during initialization: %s", exc)
             return False
 
     def _ensure_action_coordinators(self) -> None:
@@ -145,25 +145,25 @@ class DesktopApp:
         self._shutdown_requested.clear()
 
         if not self._initialized and not self.initialize():
-            logger.error("[DESKTOP_APP] Falha na inicializacao. Encerrando.")
+            logger.error("[DESKTOP_APP] Initialization failed. Shutting down.")
             return
 
         try:
             if not self._handle_initial_configuration():
-                logger.info("[DESKTOP_APP] Configuracao cancelada. Encerrando.")
+                logger.info("[DESKTOP_APP] Configuration canceled. Shutting down.")
                 return
 
             self._show_current_configuration()
 
             if not self._start_services():
-                logger.error("[DESKTOP_APP] Falha ao iniciar servicos. Encerrando.")
+                logger.error("[DESKTOP_APP] Failed to start services. Shutting down.")
                 return
 
             self._run_main_loop()
         except KeyboardInterrupt:
-            logger.info("[DESKTOP_APP] Interrompido pelo usuario")
+            logger.info("[DESKTOP_APP] Interrupted by user")
         except Exception as exc:
-            logger.error("[DESKTOP_APP] Erro durante execucao: %s", exc)
+            logger.error("[DESKTOP_APP] Error during execution: %s", exc)
         finally:
             self._shutdown()
 
@@ -222,7 +222,7 @@ class DesktopApp:
         if self._configuration_coordinator is None:
             return DesktopConfigurationSaveResultDTO(
                 success=False,
-                message="Coordenador de configuracao indisponivel",
+                message="Configuration coordinator is unavailable",
             )
 
         result = self._configuration_coordinator.save_from_ui(updated_config)
@@ -234,10 +234,10 @@ class DesktopApp:
         """Test connectivity against the bot health endpoint."""
         result = CheckDesktopBotConnectionUseCase(self._build_bot_gateway(config)).execute()
         if result.success:
-            logger.info("[DESKTOP_APP] Teste de conexao com o bot concluido com sucesso")
+            logger.info("[DESKTOP_APP] Bot connection test completed successfully")
         else:
             logger.warning(
-                "[DESKTOP_APP] Teste de conexao com o bot falhou: %s",
+                "[DESKTOP_APP] Bot connection test failed: %s",
                 result.message,
             )
         return result
@@ -246,10 +246,10 @@ class DesktopApp:
         """Send a short manual test message through the bot."""
         result = SendDesktopBotTestMessageUseCase(self._build_bot_gateway(config)).execute()
         if result.success:
-            logger.info("[DESKTOP_APP] Mensagem curta de teste enviada ao bot")
+            logger.info("[DESKTOP_APP] Short test message sent to the bot")
         else:
             logger.warning(
-                "[DESKTOP_APP] Falha ao enviar mensagem curta de teste ao bot: %s",
+                "[DESKTOP_APP] Failed to send short test message to the bot: %s",
                 result.message,
             )
         return result
@@ -259,13 +259,13 @@ class DesktopApp:
         result = FetchDesktopBotVoiceContextUseCase(self._build_bot_gateway(config)).execute()
         if result.success:
             logger.info(
-                "[DESKTOP_APP] Canal detectado para o usuario: guild=%s channel=%s",
+                "[DESKTOP_APP] Detected channel for user: guild=%s channel=%s",
                 result.guild_name,
                 result.channel_name,
             )
         else:
             logger.warning(
-                "[DESKTOP_APP] Nao foi possivel detectar o canal atual: %s",
+                "[DESKTOP_APP] Could not detect the current channel: %s",
                 result.message,
             )
         return result

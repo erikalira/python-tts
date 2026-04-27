@@ -76,7 +76,7 @@ def test_configuration_repository_returns_defaults_on_invalid_json(caplog, tmp_p
 
     assert config.tts.engine == "gtts"
     assert config.interface.local_tts_enabled is False
-    assert "Erro ao carregar configura" in caplog.text
+    assert "Failed to load configuration" in caplog.text
 
 
 def test_environment_updater_sets_expected_variables(monkeypatch):

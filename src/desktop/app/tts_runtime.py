@@ -70,18 +70,18 @@ class DesktopAppTTSResultPresenter:
 
         if code == TTS_EXECUTION_RESULT_MISSING_TEXT:
             self._notification_service.notify_error(
-                "Desktop App", "Nenhum texto valido foi capturado"
+                "Desktop App", "No valid text was captured"
             )
             return
 
         if code == TTS_EXECUTION_RESULT_FAILED:
             self._notification_service.notify_error(
-                "Desktop App", result.message or "Falha ao reproduzir o texto"
+                "Desktop App", result.message or "Failed to play the text"
             )
             return
 
         self._notification_service.notify_error(
-            "Desktop App", "Falha inesperada ao processar TTS"
+            "Desktop App", "Unexpected failure while processing TTS"
         )
 
 

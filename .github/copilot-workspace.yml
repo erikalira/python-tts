@@ -1,6 +1,6 @@
 # Copilot Workspace Configuration
-# Based on .specify/memory/constitution.md v1.2.1
-# Last synced: 2026-04-26
+# Based on .specify/memory/constitution.md v1.3.0
+# Last synced: 2026-04-27
 
 project_type: "python_multi_runtime_platform"
 framework: "discord.py_aiohttp_tkinter"
@@ -33,6 +33,8 @@ coding_preferences:
   - "Use type hints in shared and public code"
   - "Favor explicit contracts over implicit reusable payloads"
   - "Keep compatibility code narrow and document the steady state"
+  - "Write code, comments, docs, specs, tests, commit messages, PR descriptions, and AI-generated project artifacts in English by default"
+  - "Use another language in user-facing runtime text only for explicit localization, language-specific behavior, or locale fixtures"
 
 testing_strategy:
   - "Run relevant unit and integration tests"

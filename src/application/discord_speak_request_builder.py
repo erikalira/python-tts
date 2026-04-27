@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from src.application.dto import SpeakTextInputDTO
 from src.application.tts_config_use_case import ConfigureTTSUseCase
 from src.application.tts_voice_catalog import TTSCatalog
 from src.core.entities import TTSConfig
+
+DISCORD_SPEAK_PREP_MISSING_GUILD_ID = "missing_guild_id"
+DISCORD_SPEAK_PREP_INVALID_VOICE = "invalid_voice"
+DISCORD_SPEAK_PREP_VOICE_CONFIG_UNAVAILABLE = "voice_config_unavailable"
+
+DiscordSpeakPreparationErrorCode = Literal[
+    "missing_guild_id",
+    "invalid_voice",
+    "voice_config_unavailable",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +26,7 @@ class DiscordSpeakPreparationResult:
     """Prepared speak input or a user-facing validation error."""
 
     request: SpeakTextInputDTO | None = None
+    error_code: DiscordSpeakPreparationErrorCode | None = None
     error_message: str | None = None
 
 
@@ -35,7 +47,8 @@ class DiscordSpeakRequestBuilder:
     ) -> DiscordSpeakPreparationResult:
         if not guild_id:
             return DiscordSpeakPreparationResult(
-                error_message="❌ Erro: Não foi possível determinar o servidor."
+                error_code=DISCORD_SPEAK_PREP_MISSING_GUILD_ID,
+                error_message="missing guild id",
             )
 
         config_override = None
@@ -43,13 +56,15 @@ class DiscordSpeakRequestBuilder:
             selected_voice = self._tts_catalog.get_voice_option(voice_key)
             if selected_voice is None:
                 return DiscordSpeakPreparationResult(
-                    error_message="❌ Voz inválida ou indisponível."
+                    error_code=DISCORD_SPEAK_PREP_INVALID_VOICE,
+                    error_message="invalid voice",
                 )
 
             current_config = self._config_use_case.get_config(guild_id, user_id=member_id)
             if not current_config.success or current_config.config is None:
                 return DiscordSpeakPreparationResult(
-                    error_message="❌ Não foi possível carregar a configuração atual da voz."
+                    error_code=DISCORD_SPEAK_PREP_VOICE_CONFIG_UNAVAILABLE,
+                    error_message="voice config unavailable",
                 )
 
             config_override = TTSConfig(

@@ -30,7 +30,7 @@ class FakeDesktopBotGateway:
         self._send_text_result = send_text_result
         self._fetch_voice_context_result = fetch_voice_context_result or DesktopBotVoiceContextStatus(
             success=True,
-            message="Canal detectado: Guild A / Sala 1",
+            message="Detected channel: Guild A / Room 1",
         )
         self._last_error_message = last_error_message
         self.sent_texts = []
@@ -60,7 +60,7 @@ def test_check_desktop_bot_connection_requires_bot_url():
 
     result = CheckDesktopBotConnectionUseCase(gateway).execute()
 
-    assert result == DesktopBotActionResult(success=False, message="Bot URL nao configurada")
+    assert result == DesktopBotActionResult(success=False, message="Bot URL is not configured")
 
 
 def test_send_desktop_bot_test_message_requires_member_id():
@@ -70,7 +70,7 @@ def test_send_desktop_bot_test_message_requires_member_id():
 
     assert result == DesktopBotActionResult(
         success=False,
-        message="User ID e necessario para enviar o teste",
+        message="User ID is required to send the test",
     )
 
 
@@ -81,7 +81,7 @@ def test_send_desktop_bot_test_message_delegates_to_gateway():
 
     assert result == DesktopBotActionResult(
         success=True,
-        message="Mensagem de teste enviada ao bot com sucesso",
+        message="Test message sent to the bot successfully",
     )
     assert gateway.sent_texts == [DESKTOP_BOT_TEST_MESSAGE]
 
@@ -89,14 +89,14 @@ def test_send_desktop_bot_test_message_delegates_to_gateway():
 def test_send_desktop_bot_test_message_returns_last_error_message():
     gateway = FakeDesktopBotGateway(
         send_text_result=False,
-        last_error_message="Bot respondeu HTTP 400: playback failed",
+        last_error_message="Bot returned HTTP 400: playback failed",
     )
 
     result = SendDesktopBotTestMessageUseCase(gateway).execute()
 
     assert result == DesktopBotActionResult(
         success=False,
-        message="Bot respondeu HTTP 400: playback failed",
+        message="Bot returned HTTP 400: playback failed",
     )
 
 
@@ -107,5 +107,5 @@ def test_fetch_desktop_bot_voice_context_requires_member_id():
 
     assert result == DesktopBotVoiceContextResult(
         success=False,
-        message="User ID e necessario para detectar o canal",
+        message="User ID is required for channel detection",
     )

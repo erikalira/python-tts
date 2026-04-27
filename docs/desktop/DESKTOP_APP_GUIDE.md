@@ -1,93 +1,91 @@
 # Desktop App Guide
 
-Este guia concentra a visao operacional do Desktop App Windows.
+This guide summarizes the operational view of the Windows Desktop App.
 
-## Entry points
+## Entry Points
 
-- Execucao local: `app.py`
-- Runtime interno: `src/desktop/`
-- Composition root: `src/desktop/app/bootstrap.py`
+- local execution: `app.py`
+- internal runtime: `src/desktop/`
+- composition root: `src/desktop/app/bootstrap.py`
 
-## Configuracao
+## Configuration
 
-Use a configuracao persistida do Desktop App em `src/desktop/config/desktop_config.py`
-e a interface grafica do proprio app para ajustar Discord, TTS, hotkeys e preferencias da interface.
+Use the persisted Desktop App configuration in `src/desktop/config/desktop_config.py`
+and the app's own graphical interface to adjust Discord, TTS, hotkeys, and UI preferences.
 
-O fluxo principal do Desktop App e enviar o texto capturado para o bot do Discord.
-A voz local do Windows com `pyttsx3` continua disponivel apenas como recurso opcional
-de acessibilidade/fallback e fica desativada por padrao.
+The Desktop App's main flow is to send captured text to the Discord bot.
+The local Windows voice path with `pyttsx3` remains available only as an optional
+accessibility/fallback feature and is disabled by default.
 
 ### Discord ID
 
-O Desktop App pode usar o ID do usuario para descobrir em qual canal de voz
-voce esta.
+The Desktop App can use the user ID to discover which voice channel you are in.
 
-Para copiar esse ID no Discord:
+To copy that ID in Discord:
 
-1. Abra `Configuracoes do Usuario`
-2. Em `Avancado`, ative `Modo Desenvolvedor`
-3. Clique com o botao direito no seu nome em qualquer chat
-4. Escolha `Copiar ID do Usuario`
-5. Cole o valor na interface de configuracao do app
+1. Open `User Settings`
+2. Under `Advanced`, enable `Developer Mode`
+3. Right-click your name in any chat
+4. Choose `Copy User ID`
+5. Paste the value into the app configuration interface
 
 ### Hotkeys
 
-Prefira combinacoes que:
+Prefer key combinations that:
 
-- nao conflitem com atalhos globais do Windows
-- nao conflitem com atalhos frequentes de editores, browsers, Discord ou OBS
-- sejam faceis de lembrar
-- sejam confortaveis para abrir e fechar a captura
+- do not conflict with Windows global shortcuts
+- do not conflict with common editor, browser, Discord, or OBS shortcuts
+- are easy to remember
+- are comfortable for opening and closing capture
 
-Se a sua configuracao usa tecla de abertura e tecla de fechamento, escolha um
-par que fique facil de reconhecer durante a digitacao.
+If your configuration uses an opening key and a closing key, choose a pair that
+is easy to recognize while typing.
 
-O fluxo padrao de uso e:
+The default usage flow is:
 
-1. entrar em um canal de voz no Discord
-2. abrir o Desktop App
-3. acionar a hotkey de abertura
-4. digitar o texto
-5. acionar a hotkey de fechamento
-6. deixar o texto seguir para o bot
+1. join a Discord voice channel
+2. open the Desktop App
+3. press the opening hotkey
+4. type the text
+5. press the closing hotkey
+6. let the text go to the bot
 
-Quando o app depende do bot para falar, o fluxo usa esta ordem de prioridade
-para descobrir o canal:
+When the app depends on the bot for speech, it uses this priority order to discover the channel:
 
-1. canal ja conectado, se voce usou `/join` antes
-2. ID do usuario para localizar o canal de voz atual
-3. erro se nenhuma estrategia funcionar
+1. already connected channel, if you used `/join` before
+2. user ID lookup to locate the current voice channel
+3. error if no strategy works
 
-## Ambiente
+## Environment
 
-O ambiente local do projeto e baseado em `.env`.
+The local project environment is based on `.env`.
 
-- o Desktop App usa o `.env` como fonte de variaveis e defaults de ambiente
-- valores persistidos em configuracao podem coexistir com variaveis definidas no `.env`
-- para reproduzir comportamento local e cenarios de teste, mantenha o `.env` configurado
+- the Desktop App uses `.env` as a source for environment variables and defaults
+- persisted configuration values can coexist with variables defined in `.env`
+- keep `.env` configured to reproduce local behavior and test scenarios
 
-## Painel principal
+## Main Panel
 
-Ao abrir o executavel, o usuario ve um painel principal que:
+When the executable opens, the user sees a main panel that:
 
-- permanece aberto como janela principal do app
-- permite configurar Discord, TTS, hotkeys e preferencias de interface
-- deixa explicito quando a voz local opcional do Windows esta ativada
-- oferece `Testar conexao` sob demanda, sem polling continuo
-- oferece `Enviar teste de voz` manual com mensagem curta
-- exibe atividade e logs uteis sem depender do terminal
+- stays open as the app's main window
+- allows Discord, TTS, hotkey, and UI preference configuration
+- makes it explicit when the optional local Windows voice path is enabled
+- offers an on-demand `Test connection` action without continuous polling
+- offers a manual `Send voice test` action with a short message
+- shows useful activity and logs without depending on the terminal
 
-## Diretrizes de UX
+## UX Guidelines
 
-O Desktop App deve manter uma experiencia previsivel para o usuario final:
+The Desktop App should preserve a predictable end-user experience:
 
-- a interface deve permanecer responsiva durante interacoes comuns
-- handlers da GUI nao devem bloquear a thread principal com trabalho longo
-- campos editaveis devem aceitar foco, selecao, digitacao e colagem de forma confiavel
-- estados somente leitura ou desabilitados devem ficar claros visualmente
-- a janela principal deve orientar o fluxo inicial sem depender de terminal
-- minimizar, restaurar e sair devem seguir um fluxo consistente
-- a GUI deve coletar dados e delegar acoes, sem absorver regra de negocio
+- the interface should remain responsive during common interactions
+- GUI handlers should not block the main thread with long-running work
+- editable fields should reliably accept focus, selection, typing, and paste
+- read-only or disabled states should be visually clear
+- the main window should guide the initial flow without depending on the terminal
+- minimize, restore, and exit should follow a consistent flow
+- the GUI should collect data and delegate actions without absorbing business rules
 
 ## Build
 
@@ -96,7 +94,7 @@ python app.py
 ./scripts/build/build_clean_architecture.ps1
 ```
 
-## Relacionados
+## Related
 
 - [../architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md)
 - [../architecture/BOT_DESKTOP_HTTP_CONTRACT.md](../architecture/BOT_DESKTOP_HTTP_CONTRACT.md)

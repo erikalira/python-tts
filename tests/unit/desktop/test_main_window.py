@@ -88,13 +88,13 @@ def test_main_window_handle_test_connection_uses_presenter_feedback():
 
 def test_main_window_handle_send_test_reports_invalid_value():
     window = build_main_window()
-    window._build_config_from_form = Mock(side_effect=ValueError("porta"))
+    window._build_config_from_form = Mock(side_effect=ValueError("port"))
     window._connection_var = DummyVar()
     window._connection_label = DummyLabel()
 
     window._handle_send_test()
 
-    assert window._connection_var.get() == "Envio de teste falhou: valor invalido (porta)"
+    assert window._connection_var.get() == "Test delivery failed: invalid value (port)"
     assert window._connection_label.fg == ERROR_COLOR
 
 
@@ -105,7 +105,7 @@ def test_main_window_handle_refresh_voice_context_updates_voice_context_message(
     window._on_refresh_voice_context = Mock(
         return_value=DesktopBotVoiceContextResult(
             success=False,
-            message="Usuario fora do canal",
+            message="User is outside the channel",
         )
     )
     window._voice_context_var = DummyVar()
@@ -113,7 +113,7 @@ def test_main_window_handle_refresh_voice_context_updates_voice_context_message(
 
     window._handle_refresh_voice_context()
 
-    assert window._voice_context_var.get() == "Usuario fora do canal"
+    assert window._voice_context_var.get() == "User is outside the channel"
     assert window._voice_context_label.fg == ERROR_COLOR
 
 
@@ -124,7 +124,7 @@ def test_main_window_refresh_local_status_uses_presenter_summary():
 
     window._refresh_local_status()
 
-    assert "Configuracao incompleta" in window._config_var.get()
+    assert "Incomplete configuration" in window._config_var.get()
     assert window._config_label.fg == WARNING_COLOR
 
 
@@ -150,7 +150,7 @@ def test_main_window_handle_save_uses_typed_save_result():
     window._on_save = Mock(
         return_value=DesktopConfigurationSaveResult(
             success=True,
-            message="Configuracao aplicada com sucesso",
+            message="Configuration applied successfully",
         )
     )
     window._status_var = DummyVar()
@@ -162,7 +162,7 @@ def test_main_window_handle_save_uses_typed_save_result():
     window._handle_save()
 
     assert window.config is new_config
-    assert window._status_var.get() == "OK: Configuracao aplicada com sucesso"
+    assert window._status_var.get() == "OK: Configuration applied successfully"
     assert window._status_label.fg == SUCCESS_COLOR
 
 
@@ -179,7 +179,7 @@ def test_main_window_clear_logs_resets_widget_and_pushes_log(monkeypatch):
 
     assert window._logs_widget.configure_calls == [{"state": "normal"}, {"state": "disabled"}]
     assert window._logs_widget.delete_calls == [("1.0", "end")]
-    window.push_log.assert_called_once_with("Logs limpos pelo usuario")
+    window.push_log.assert_called_once_with("Logs cleared by user")
 
 
 def test_main_window_drain_logs_appends_messages_and_reschedules():
@@ -203,7 +203,7 @@ def test_main_window_hide_to_tray_withdraws_root_and_logs_action():
     window.hide_to_tray()
 
     assert window.root.withdraw_calls == 1
-    assert window._log_queue.get_nowait() == "Janela principal minimizada para a bandeja"
+    assert window._log_queue.get_nowait() == "Main window minimized to tray"
 
 
 def test_main_window_drain_ui_actions_runs_callback_and_reschedules():

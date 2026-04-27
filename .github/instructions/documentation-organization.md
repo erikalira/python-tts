@@ -1,5 +1,5 @@
-<!-- Based on .specify/memory/constitution.md v1.2.1 -->
-<!-- Last synced: 2026-04-26 -->
+<!-- Based on .specify/memory/constitution.md v1.3.0 -->
+<!-- Last synced: 2026-04-27 -->
 
 # Documentation Organization
 
@@ -18,6 +18,8 @@ policy for documentation placement.
   or other ad-hoc locations
 - Keep `.agents/`, `.codex/`, and GitHub instruction files derivative of
   `.specify/` when they describe repository policy
+- Write documentation, specs, instruction files, and AI-generated project
+  artifacts in English by default
 
 ## Quick examples
 

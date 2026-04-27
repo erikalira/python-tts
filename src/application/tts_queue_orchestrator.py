@@ -102,7 +102,7 @@ class TTSQueueOrchestrator:
         ) if self._otel_runtime is not None else NullRuntimeSpanContext() as processing_span:
             try:
                 if not request.guild_id:
-                    error = "Guild ID nao foi fornecido - isolamento de servidor falhou"
+                    error = "Guild ID was not provided - server isolation failed"
                     item.mark_failed(error)
                     await self._audio_queue.update_item(item)
                     self._record_failed_queue_item(
@@ -122,7 +122,7 @@ class TTSQueueOrchestrator:
                 resolution = await self._voice_channel_resolution.resolve_for_request(request)
                 resolution_ms = (time.perf_counter() - resolution_started_at) * 1000
                 if not resolution:
-                    error = "Bot nao conseguiu encontrar sua sala de voz"
+                    error = "Bot could not find your voice channel"
                     item.mark_failed(error)
                     await self._audio_queue.update_item(item)
                     self._record_failed_queue_item(
@@ -141,7 +141,7 @@ class TTSQueueOrchestrator:
                 voice_channel = resolution.channel
                 channel_guild_id = voice_channel.get_guild_id()
                 if channel_guild_id != request.guild_id:
-                    error = "Canal de voz pertence a servidor diferente"
+                    error = "Voice channel belongs to a different server"
                     item.mark_failed(error)
                     await self._audio_queue.update_item(item)
                     self._record_failed_queue_item(
@@ -220,7 +220,7 @@ class TTSQueueOrchestrator:
                     if not await self._voice_channel_resolution.is_member_in_channel(
                         request.member_id, voice_channel
                     ):
-                        error = "Voce saiu do canal de voz"
+                        error = "You left the voice channel"
                         item.mark_failed(error)
                         await self._audio_queue.update_item(item)
                         self._record_failed_queue_item(

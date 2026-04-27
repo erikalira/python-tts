@@ -55,10 +55,10 @@ class TTSFallbackChain:
                     self._last_error_message = None
                     return True
                 self._last_error_message = self._read_engine_error(engine)
-                self._logger.warning(f"[TTS] Engine {engine.__class__.__name__} falhou, tentando próximo...")
+                self._logger.warning(f"[TTS] Engine {engine.__class__.__name__} failed, trying next...")
 
         if self._last_error_message is None:
-            self._last_error_message = "Nenhum engine TTS disponivel"
+            self._last_error_message = "No TTS engine is available"
         self._logger.error("[TTS] Todos os engines falharam")
         return False
 

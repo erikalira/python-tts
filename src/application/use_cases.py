@@ -6,6 +6,7 @@ file layout of ``src.application``.
 """
 
 from src.application.speak_use_case import SpeakTextUseCase
+from src.application.interface_language_preferences import ConfigureInterfaceLanguageUseCase
 from src.application.tts_config_use_case import ConfigureTTSUseCase
 from src.application.voice_channel_use_cases import (
     GetCurrentVoiceContextUseCase,
@@ -19,4 +20,5 @@ __all__ = [
     "GetCurrentVoiceContextUseCase",
     "SpeakTextUseCase",
     "ConfigureTTSUseCase",
+    "ConfigureInterfaceLanguageUseCase",
 ]

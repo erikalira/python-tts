@@ -30,77 +30,81 @@ from src.application.dto import (
     SpeakTextResult,
 )
 from src.application.rate_limiting import RateLimitResult
+from src.presentation.discord_i18n import DEFAULT_LOCALE, DiscordMessageCatalog
+
+
+_MESSAGES = DiscordMessageCatalog()
 
 
 class DiscordSpeakPresenter:
     """Map speak results to Discord-facing messages."""
 
-    def build_rate_limit_message(self, result: RateLimitResult) -> str:
+    def build_rate_limit_message(self, result: RateLimitResult, locale: str = DEFAULT_LOCALE) -> str:
         retry_after = result.retry_after_seconds
         if retry_after is None:
-            return "Muitas solicitacoes em pouco tempo. Tente novamente daqui a pouco."
-        return f"Muitas solicitacoes em pouco tempo. Tente novamente em {max(int(retry_after), 1)} segundos."
+            return _MESSAGES.text("rate_limit.without_retry", locale)
+        return _MESSAGES.text("rate_limit.with_retry", locale, seconds=max(int(retry_after), 1))
 
-    def build_message(self, result: SpeakTextResult) -> str:
+    def build_message(self, result: SpeakTextResult, locale: str = DEFAULT_LOCALE) -> str:
         code = result.code
         if code == SPEAK_RESULT_QUEUED:
             position = (result.position or 0) + 1
             queue_size = result.queue_size or position
-            return f"Sua mensagem entrou na **fila** (**{position}**/{queue_size})."
+            return _MESSAGES.text("speak.queued", locale, position=position, queue_size=queue_size)
         if code == SPEAK_RESULT_MISSING_TEXT:
-            return "Texto nao informado."
+            return _MESSAGES.text("speak.missing_text", locale)
         if code == SPEAK_RESULT_USER_NOT_IN_CHANNEL:
-            return "Voce nao esta em nenhuma sala de voz. Entre em uma sala e tente novamente."
+            return _MESSAGES.text("speak.user_not_in_channel", locale)
         if code == SPEAK_RESULT_QUEUE_FULL:
-            return "Fila de audio cheia. Tente novamente mais tarde."
+            return _MESSAGES.text("speak.queue_full", locale)
         if code == SPEAK_RESULT_MISSING_GUILD_ID:
-            return "Erro: Nao foi possivel determinar o servidor."
+            return _MESSAGES.text("speak.missing_guild_id", locale)
         if code == SPEAK_RESULT_VOICE_CHANNEL_NOT_FOUND:
-            return "Bot nao conseguiu encontrar sua sala de voz."
+            return _MESSAGES.text("speak.voice_channel_not_found", locale)
         if code == SPEAK_RESULT_CROSS_GUILD_CHANNEL:
-            return "Canal de voz pertence a servidor diferente."
+            return _MESSAGES.text("speak.cross_guild_channel", locale)
         if code == SPEAK_RESULT_USER_LEFT_CHANNEL:
-            return "Voce saiu do canal de voz."
+            return _MESSAGES.text("speak.user_left_channel", locale)
         if code == SPEAK_RESULT_GENERATION_TIMEOUT:
-            return "Tempo limite excedido durante geracao do audio."
+            return _MESSAGES.text("speak.generation_timeout", locale)
         if code == SPEAK_RESULT_PLAYBACK_TIMEOUT:
-            return "Tempo limite excedido durante reproducao."
+            return _MESSAGES.text("speak.playback_timeout", locale)
         if code == SPEAK_RESULT_VOICE_CONNECTION_FAILED:
-            return "Bot nao conseguiu se conectar ao canal."
+            return _MESSAGES.text("speak.voice_connection_failed", locale)
         if code == SPEAK_RESULT_VOICE_PERMISSION_DENIED:
-            return "Bot nao tem permissao neste canal."
+            return _MESSAGES.text("speak.voice_permission_denied", locale)
         if code == SPEAK_RESULT_UNKNOWN_ERROR:
-            return "Erro ao reproduzir audio."
-        return "Erro inesperado ao processar audio."
+            return _MESSAGES.text("speak.unknown_error", locale)
+        return _MESSAGES.text("speak.unexpected_error", locale)
 
 
 class DiscordJoinPresenter:
     """Map join results to Discord messages."""
 
-    def build_message(self, result: JoinVoiceChannelResult) -> str:
+    def build_message(self, result: JoinVoiceChannelResult, locale: str = DEFAULT_LOCALE) -> str:
         if result.code == JOIN_RESULT_OK:
-            return "Joined your channel."
+            return _MESSAGES.text("join.ok", locale)
         if result.code == JOIN_RESULT_USER_NOT_IN_CHANNEL:
-            return "You are not connected to a voice channel."
+            return _MESSAGES.text("join.user_not_in_channel", locale)
         if result.code == JOIN_RESULT_MISSING_GUILD_ID:
-            return "Este comando so pode ser usado em um servidor."
+            return _MESSAGES.text("join.missing_guild_id", locale)
         if result.code == JOIN_RESULT_VOICE_CHANNEL_NOT_FOUND:
-            return "Could not find voice channel."
+            return _MESSAGES.text("join.voice_channel_not_found", locale)
         if result.code == JOIN_RESULT_VOICE_CONNECTION_FAILED:
-            return "Nao foi possivel entrar no canal. Tente novamente."
-        return "Nao foi possivel entrar no canal. Tente novamente."
+            return _MESSAGES.text("join.voice_connection_failed", locale)
+        return _MESSAGES.text("join.voice_connection_failed", locale)
 
 
 class DiscordLeavePresenter:
     """Map leave results to Discord messages."""
 
-    def build_message(self, result: LeaveVoiceChannelResult) -> str:
+    def build_message(self, result: LeaveVoiceChannelResult, locale: str = DEFAULT_LOCALE) -> str:
         if result.code == LEAVE_RESULT_OK:
-            return "Disconnected."
+            return _MESSAGES.text("leave.ok", locale)
         if result.code == LEAVE_RESULT_NOT_CONNECTED:
-            return "I am not connected to a voice channel."
+            return _MESSAGES.text("leave.not_connected", locale)
         if result.code == LEAVE_RESULT_MISSING_GUILD_ID:
-            return "Este comando so pode ser usado em um servidor."
+            return _MESSAGES.text("leave.missing_guild_id", locale)
         if result.code == LEAVE_RESULT_VOICE_CONNECTION_FAILED and result.error_detail:
-            return f"Error disconnecting: {result.error_detail}"
-        return "Error disconnecting."
+            return _MESSAGES.text("leave.voice_connection_failed", locale, error_detail=result.error_detail)
+        return _MESSAGES.text("leave.error", locale)
