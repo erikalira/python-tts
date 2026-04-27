@@ -146,6 +146,45 @@ jobs:
         run: |
           uv run pytest tests/integration/infrastructure/test_audio_queue_redis_integration.py tests/integration/bot_runtime/test_queue_worker_redis_integration.py --tb=short -v --no-cov
 
+  queue-load-baseline:
+    name: Queue Load Baseline
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install dependencies
+        run: |
+          uv sync --locked --group test
+
+      - name: Run queue load baseline
+        env:
+          CI: true
+          PYTHONPATH: ${{ github.workspace }}
+          QUEUE_LOAD_REPORT_PATH: .test-artifacts/load/queue-load-baseline.json
+        run: |
+          uv run pytest tests/load --tb=short -v --no-cov
+
+      - name: Upload queue load report
+        uses: actions/upload-artifact@v7
+        with:
+          name: queue-load-baseline
+          path: .test-artifacts/load/queue-load-baseline.json
+          if-no-files-found: error
+
   external-integrations:
     name: External Integrations (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
