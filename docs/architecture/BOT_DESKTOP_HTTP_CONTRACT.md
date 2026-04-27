@@ -130,3 +130,6 @@ Response behavior:
 - `tests/contract/test_bot_desktop_http_contract.py` encodes the durable
   Desktop App to bot HTTP expectations that release CI runs on Linux and
   Windows
+- `tests/e2e/test_desktop_to_bot_speak_flow.py` proves the Desktop App HTTP
+  client can call a real local bot HTTP server without Discord voice
+  connectivity

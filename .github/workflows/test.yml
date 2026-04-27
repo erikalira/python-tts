@@ -52,7 +52,7 @@ jobs:
           CI: true
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          uv run pytest tests/unit tests/contract tests/smoke --tb=short -v
+          uv run pytest tests/unit tests/contract tests/e2e tests/smoke --tb=short -v
 
       - name: Enforce coverage quality gates
         if: runner.os == 'Linux'
@@ -67,7 +67,7 @@ jobs:
           CI: true
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          uv run pytest tests/unit tests/contract tests/smoke --tb=short -v --no-cov
+          uv run pytest tests/unit tests/contract tests/e2e tests/smoke --tb=short -v --no-cov
 
       - name: Upload coverage artifact
         if: runner.os == 'Linux'
