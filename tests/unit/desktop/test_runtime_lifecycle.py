@@ -110,7 +110,7 @@ def test_runtime_lifecycle_run_main_loop_falls_back_to_input_when_console_backen
         console_wait_factory=lambda: wait_backend,
     )
 
-    input_mock.assert_called_once_with("Pressione Enter para sair...")
+    input_mock.assert_called_once_with("Press Enter to exit...")
 
 
 def test_runtime_lifecycle_update_services_config_restarts_dependencies_when_needed():

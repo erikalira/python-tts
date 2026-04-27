@@ -209,5 +209,5 @@ def test_py_system_tray_icon_uses_open_as_default_menu_action(monkeypatch):
     icon = tray._create_icon()
     items = list(icon.menu.items)
 
-    assert items[0].text == "Abrir Desktop App"
+    assert items[0].text == "Open Desktop App"
     assert items[0].default is True

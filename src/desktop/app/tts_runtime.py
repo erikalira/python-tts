@@ -56,7 +56,7 @@ class DesktopAppTTSResultPresenter:
         """Show a processing notification for captured text."""
         self._notification_service.notify_info(
             "Desktop App",
-            f"Processando: '{text[:50]}{'...' if len(text) > 50 else ''}'",
+            f"Processing: '{text[:50]}{'...' if len(text) > 50 else ''}'",
         )
 
     def present(self, result: TTSExecutionResult) -> None:
@@ -64,7 +64,7 @@ class DesktopAppTTSResultPresenter:
         code = result.code
         if code == TTS_EXECUTION_RESULT_OK:
             self._notification_service.notify_success(
-                "Desktop App", "Texto reproduzido com sucesso"
+                "Desktop App", "Text played successfully"
             )
             return
 
@@ -154,7 +154,7 @@ class DesktopAppHotkeyHandler:
         if not event.text:
             return
 
-        logger.info("[DESKTOP_APP] Texto capturado pelo hotkey handler")
+        logger.info("[DESKTOP_APP] Text captured by hotkey handler")
         self._result_presenter.show_processing(event.text)
         self._tts_processor.process_text(
             event.text,
