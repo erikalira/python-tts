@@ -458,6 +458,7 @@ class DiscordCommands:
             await interaction.response.send_message(self._messages.text("language.invalid", locale), ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True, thinking=True)
         try:
             if language == "auto":
                 result = await self._interface_language_use_case.reset_user_language(interaction.guild.id, user_id)
@@ -477,12 +478,12 @@ class DiscordCommands:
                 )
 
             if not result.success:
-                await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+                await interaction.edit_original_response(content=self._messages.text("language.update_error", locale))
                 return
-            await interaction.response.send_message(message, ephemeral=True)
+            await interaction.edit_original_response(content=message)
         except Exception as exc:
             logger.error("[LANGUAGE] Error updating user interface language: %s", exc, exc_info=True)
-            await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+            await interaction.edit_original_response(content=self._messages.text("language.update_error", locale))
 
     async def _handle_server_language(self, interaction: discord.Interaction, language: str):
         locale = self._resolve_locale(interaction)
@@ -501,6 +502,7 @@ class DiscordCommands:
             await interaction.response.send_message(self._messages.text("language.invalid", locale), ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True, thinking=True)
         try:
             if language == "auto":
                 result = await self._interface_language_use_case.reset_guild_language(interaction.guild.id)
@@ -519,12 +521,12 @@ class DiscordCommands:
                 )
 
             if not result.success:
-                await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+                await interaction.edit_original_response(content=self._messages.text("language.update_error", locale))
                 return
-            await interaction.response.send_message(message, ephemeral=True)
+            await interaction.edit_original_response(content=message)
         except Exception as exc:
             logger.error("[LANGUAGE] Error updating guild interface language: %s", exc, exc_info=True)
-            await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+            await interaction.edit_original_response(content=self._messages.text("language.update_error", locale))
 
     async def _handle_about(self, interaction: discord.Interaction):
         await self._about_handler.handle(interaction, self._get_voice_runtime_status(), self._resolve_locale(interaction))

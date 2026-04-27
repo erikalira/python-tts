@@ -150,7 +150,7 @@ class PostgreSQLInterfaceLanguagePreferenceRepository:
                 user_id,
                 exc,
             )
-            row = None
+            return None
 
         self._user_cache[cache_key] = str(row[0]) if row else None
         return self._user_cache[cache_key]
@@ -173,7 +173,7 @@ class PostgreSQLInterfaceLanguagePreferenceRepository:
                     row = cursor.fetchone()
         except Exception as exc:
             logger.error("[INTERFACE_LANGUAGE] Failed to load guild locale for guild %s: %s", guild_id, exc)
-            row = None
+            return None
 
         self._guild_cache[guild_id] = str(row[0]) if row else None
         return self._guild_cache[guild_id]

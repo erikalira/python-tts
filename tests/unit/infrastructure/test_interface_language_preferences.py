@@ -62,6 +62,14 @@ class FakeConnection:
         self.commits += 1
 
 
+class FailingConnection:
+    def __enter__(self):
+        raise RuntimeError("temporary database outage")
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
 def test_json_interface_language_preferences_save_load_and_delete(tmp_path):
     repository = JSONInterfaceLanguagePreferenceRepository(storage_dir=str(tmp_path))
 
@@ -98,3 +106,27 @@ def test_postgres_interface_language_preferences_save_load_and_delete():
     assert repository.get_user_language(123, 999) is None
     assert repository.get_guild_language(123) is None
     assert connection.commits == 4
+
+
+def test_postgres_user_language_read_exception_does_not_cache_missing_locale():
+    state = {"guild_rows": {}, "user_rows": {(123, 999): "pt-BR"}, "queries": []}
+    attempts = iter([FailingConnection(), FakeConnection(state)])
+    repository = PostgreSQLInterfaceLanguagePreferenceRepository(
+        database_url="postgresql://unused",
+        connection_factory=lambda: next(attempts),
+    )
+
+    assert repository.get_user_language(123, 999) is None
+    assert repository.get_user_language(123, 999) == "pt-BR"
+
+
+def test_postgres_guild_language_read_exception_does_not_cache_missing_locale():
+    state = {"guild_rows": {123: "en-US"}, "user_rows": {}, "queries": []}
+    attempts = iter([FailingConnection(), FakeConnection(state)])
+    repository = PostgreSQLInterfaceLanguagePreferenceRepository(
+        database_url="postgresql://unused",
+        connection_factory=lambda: next(attempts),
+    )
+
+    assert repository.get_guild_language(123) is None
+    assert repository.get_guild_language(123) == "en-US"
