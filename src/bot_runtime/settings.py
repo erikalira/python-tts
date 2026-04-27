@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 
 from src.core.entities import TTSConfig
 from src.core.timeouts import (
@@ -31,10 +31,10 @@ class Config:
         if env_file is None:
             env_file = Path(__file__).resolve().parents[2] / ".env"
 
-        # Load environment variables without mutating process state. This keeps
-        # repeated Config instances isolated in tests and runtime helpers.
-        file_env = {key: value for key, value in dotenv_values(env_file).items() if value is not None}
-        self._env = {**os.environ, **file_env}
+        # Export .env values for process-level runtime helpers that read
+        # directly from os.environ, such as Discord voice FFmpeg checks.
+        load_dotenv(env_file, override=True)
+        self._env = dict(os.environ)
 
         # Discord settings
         self.discord_token = self._getenv("DISCORD_TOKEN")

@@ -1,5 +1,9 @@
 """Tests for bot runtime timeout configuration."""
 
+import os
+
+import pytest
+
 from src.bot_runtime.settings import Config
 from src.core.timeouts import (
     DEFAULT_BOT_TTS_GENERATION_TIMEOUT_SECONDS,
@@ -7,6 +11,14 @@ from src.core.timeouts import (
     DEFAULT_DISCORD_IDLE_DISCONNECT_TIMEOUT_SECONDS,
     DEFAULT_DISCORD_VOICE_CONNECTION_TIMEOUT_SECONDS,
 )
+
+
+@pytest.fixture(autouse=True)
+def restore_process_environment():
+    original_env = dict(os.environ)
+    yield
+    os.environ.clear()
+    os.environ.update(original_env)
 
 
 def test_config_uses_default_timeout_values(tmp_path):
@@ -42,6 +54,23 @@ def test_config_reads_timeout_overrides_from_env(tmp_path):
     assert config.tts_playback_timeout_seconds == 18
     assert config.voice_connection_timeout_seconds == 7
     assert config.voice_idle_disconnect_timeout_seconds == 90
+
+
+def test_config_exports_dotenv_values_for_process_runtime_checks(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "FFMPEG_PATH=C:/ffmpeg/bin/ffmpeg.exe",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    Config(env_file=env_file)
+
+    assert os.getenv("FFMPEG_PATH") == "C:/ffmpeg/bin/ffmpeg.exe"
 
 
 def test_config_requires_database_url_for_postgres_backend(tmp_path):
