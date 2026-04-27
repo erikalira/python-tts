@@ -54,6 +54,91 @@ jobs:
         run: |
           pip-audit -r requirements-test.txt
 
+  sbom:
+    name: SBOM Generation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-test.txt
+
+      - name: Install CycloneDX tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cyclonedx-bom
+
+      - name: Generate Python dependency SBOMs
+        run: |
+          mkdir -p sbom
+          cyclonedx-py requirements requirements.txt --output-reproducible --of JSON -o sbom/python-runtime.cdx.json
+          cyclonedx-py requirements requirements-test.txt --output-reproducible --of JSON -o sbom/python-test.cdx.json
+
+      - name: Build Docker image for SBOM
+        run: |
+          docker build \
+            --build-arg APP_VERSION="${GITHUB_SHA}" \
+            --build-arg VCS_REF="${GITHUB_SHA}" \
+            -t tts-hotkey-windows-bot:${GITHUB_SHA} .
+
+      - name: Generate Docker image SBOM
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: tts-hotkey-windows-bot:${{ github.sha }}
+          format: cyclonedx
+          output: sbom/docker-image.cdx.json
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: cyclonedx-sboms
+          path: sbom/*.cdx.json
+          if-no-files-found: error
+
+  docker-image-scan:
+    name: Docker Image Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Build Docker image for scan
+        run: |
+          docker build \
+            --build-arg APP_VERSION="${GITHUB_SHA}" \
+            --build-arg VCS_REF="${GITHUB_SHA}" \
+            -t tts-hotkey-windows-bot:${GITHUB_SHA} .
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: tts-hotkey-windows-bot:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Upload Trivy scan artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-docker-image-scan
+          path: trivy-results.sarif
+          if-no-files-found: error
+
   codeql:
     name: CodeQL
     runs-on: ubuntu-latest
