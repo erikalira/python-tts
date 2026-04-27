@@ -67,6 +67,74 @@ async def test_http_server_routes_speak_to_controller():
 
 
 @pytest.mark.asyncio
+async def test_http_server_applies_cors_headers_for_allowed_origin():
+    server = HTTPServer(
+        speak_handler=AsyncMock(),
+        voice_context_handler=AsyncMock(),
+        port=10000,
+        cors_allowed_origins=("http://localhost:5173",),
+    )
+
+    request = make_mocked_request(
+        "POST",
+        "/speak",
+        headers={"Origin": "http://localhost:5173"},
+    )
+    response = web.Response(text="ok")
+
+    server._apply_cors_headers(request, response)
+
+    assert response.headers["Access-Control-Allow-Origin"] == "http://localhost:5173"
+    assert response.headers["Access-Control-Allow-Methods"] == "POST, OPTIONS"
+    assert "Authorization" in response.headers["Access-Control-Allow-Headers"]
+    assert response.headers["Vary"] == "Origin"
+
+
+@pytest.mark.asyncio
+async def test_http_server_does_not_apply_cors_headers_for_unlisted_origin():
+    server = HTTPServer(
+        speak_handler=AsyncMock(),
+        voice_context_handler=AsyncMock(),
+        port=10000,
+        cors_allowed_origins=("http://localhost:5173",),
+    )
+
+    request = make_mocked_request(
+        "POST",
+        "/speak",
+        headers={"Origin": "https://example.invalid"},
+    )
+    response = web.Response(text="ok")
+
+    server._apply_cors_headers(request, response)
+
+    assert "Access-Control-Allow-Origin" not in response.headers
+
+
+@pytest.mark.asyncio
+async def test_http_server_rejects_speak_preflight_for_unlisted_origin():
+    server = HTTPServer(
+        speak_handler=AsyncMock(),
+        voice_context_handler=AsyncMock(),
+        port=10000,
+        cors_allowed_origins=("http://localhost:5173",),
+    )
+    app = server._build_app()
+    request = make_mocked_request(
+        "OPTIONS",
+        "/speak",
+        app=app,
+        headers={"Origin": "https://example.invalid"},
+    )
+    match_info = await app.router.resolve(request)
+
+    response = await match_info.handler(request)
+
+    assert response.status == 403
+    assert response.text == "cors origin not allowed"
+
+
+@pytest.mark.asyncio
 async def test_http_server_returns_disabled_observability_when_provider_is_missing():
     server = HTTPServer(
         speak_handler=AsyncMock(),

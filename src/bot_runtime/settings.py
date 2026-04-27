@@ -71,6 +71,7 @@ class Config:
         self.http_port = int(self._getenv("PORT", self._getenv("DISCORD_BOT_PORT", "10000")))
         self.discord_bot_port = self.http_port
         self.http_host = self._getenv("DISCORD_BOT_HOST", self._getenv("HOST", "127.0.0.1"))
+        self.http_cors_allowed_origins = self._parse_csv(self._getenv("BOT_HTTP_CORS_ALLOWED_ORIGINS", ""))
         self.max_text_length = int(self._getenv("MAX_TEXT_LENGTH", self._getenv("TTS_MAX_TEXT_LENGTH", "500")))
         self.rate_limit_max_requests = int(self._getenv("BOT_RATE_LIMIT_MAX_REQUESTS", "8"))
         self.rate_limit_window_seconds = float(self._getenv("BOT_RATE_LIMIT_WINDOW_SECONDS", "10"))
@@ -163,6 +164,9 @@ class Config:
         if self.rate_limit_max_requests > 0 and self.rate_limit_window_seconds == 0:
             return False, "BOT_RATE_LIMIT_WINDOW_SECONDS must be greater than 0 when rate limiting is enabled"
 
+        if "*" in self.http_cors_allowed_origins:
+            return False, "BOT_HTTP_CORS_ALLOWED_ORIGINS must list explicit origins, not *"
+
         if self.otel_enabled and not self.otel_exporter_otlp_endpoint:
             return False, "OTEL_EXPORTER_OTLP_ENDPOINT not set for OTEL_ENABLED=true"
 
@@ -176,3 +180,8 @@ class Config:
 
     def _getenv(self, key: str, default: str | None = None) -> str | None:
         return self._env.get(key, default)
+
+    def _parse_csv(self, raw_value: str | None) -> tuple[str, ...]:
+        if not raw_value:
+            return ()
+        return tuple(value.strip() for value in raw_value.split(",") if value.strip())

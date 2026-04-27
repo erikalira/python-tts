@@ -22,6 +22,7 @@ Use the examples in the repository root as the starting point:
 | `DISCORD_BOT_PORT` | Optional | Usually no | No | Local fallback when `PORT` is absent. |
 | `PORT` | No | Usually yes | Recommended in cloud deploys | Many platforms provide this automatically. |
 | `DISCORD_BOT_HOST` | Optional | Yes | Yes in cloud practice | Use `0.0.0.0` in deploys so the HTTP server is reachable. |
+| `BOT_HTTP_CORS_ALLOWED_ORIGINS` | Optional | Optional | No | Comma-separated browser origin allowlist for bot HTTP endpoints. Empty means no browser origins are allowed. Do not use `*`. |
 | `DISCORD_MEMBER_ID` | Optional | No | No | Desktop App targeting preference. |
 | `BOT_RATE_LIMIT_MAX_REQUESTS` | Optional | Optional | No | Maximum `/speak` requests per caller within the configured window. Defaults to `8`; use `0` to disable. |
 | `BOT_RATE_LIMIT_WINDOW_SECONDS` | Optional | Optional | No | Sliding rate-limit window for bot `/speak` entrypoints. Defaults to `10`. |

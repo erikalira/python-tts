@@ -56,6 +56,7 @@ async def main():
         observability_snapshot_provider=container.runtime_telemetry.snapshot_payload,
         readiness_provider=container.readiness_payload,
         otel_runtime=container.otel_runtime,
+        cors_allowed_origins=config.http_cors_allowed_origins,
     )
     await http_server.start()
     

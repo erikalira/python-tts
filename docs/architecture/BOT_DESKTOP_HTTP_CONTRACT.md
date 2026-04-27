@@ -16,6 +16,10 @@ hidden field conventions.
 
 ## Endpoints
 
+Browser CORS is explicit and disabled by default. Configure
+`BOT_HTTP_CORS_ALLOWED_ORIGINS` only when a browser client intentionally calls
+the bot HTTP API. Native Desktop App HTTP calls do not require CORS.
+
 ### `GET /health`
 
 Purpose: liveness and reachability check used by the Desktop App.
