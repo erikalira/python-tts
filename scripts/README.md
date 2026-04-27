@@ -14,6 +14,7 @@ The executable is created at `dist/HotkeyTTS.exe`.
 
 ## Included Capabilities
 
+- Standard developer command wrapper through `scripts/dev.ps1`
 - Clean Architecture build flow
 - Tkinter GUI
 - System tray and notifications
@@ -47,30 +48,29 @@ The executable is created at `dist/HotkeyTTS.exe`.
 ### Build Scripts
 
 - `PowerShell` (`pwsh` or `powershell`)
-- `PyInstaller`: `pip install pyinstaller`
-- Project dependencies: `pip install -r requirements.txt`
+- `uv`
+- Build dependencies: `uv sync --locked --group build`
 
 ### Test Scripts
 
-- `pytest`
-- `Python 3.8+`
+- `uv sync --locked --group test`
+- `Python 3.11+`
 - Required environment variables for the flow being tested
 
 ## Quick Commands
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-test.txt
+```powershell
+# Install test dependencies
+.\scripts\dev.ps1 sync
 
-# Daily development with the project virtual environment
-./.venv/bin/python -m pytest tests
+# Daily validation
+.\scripts\dev.ps1 ci
 
 # Desktop App focus
-./.venv/bin/python -m pytest tests/unit/desktop
+uv run --group test pytest tests/unit/desktop
 
 # Windows executable build
-pwsh -File scripts/build/build_clean_architecture.ps1
+.\scripts\build\build_clean_architecture.ps1
 ```
 
 ## CI/CD Integration
@@ -78,7 +78,7 @@ pwsh -File scripts/build/build_clean_architecture.ps1
 The scripts are intended to work locally and in CI/CD environments:
 
 - GitHub Actions: use `scripts/build/build_clean_architecture.ps1`
-- Local development: use direct Python and PowerShell commands
+- Local development: use `scripts/dev.ps1`
 - Windows: use PowerShell for builds
 - Linux/macOS: use Python for development and the Windows workflow to build the
   `.exe`
@@ -104,13 +104,9 @@ chmod +x scripts/test/*.sh
 
 ### Dependency Errors
 
-```bash
-pip install -r requirements.txt
-pip install -r requirements-test.txt
-
-# Or check the virtual environment
-source .venv/bin/activate
-pip list
+```powershell
+uv sync --locked --all-groups
+uv pip list
 ```
 
 ## Contributing
