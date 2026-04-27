@@ -127,3 +127,6 @@ Response behavior:
 - transports parse JSON into DTOs before application/runtime code consumes it
 - presenters/controllers may serialize DTOs into JSON or text only at the final
   HTTP boundary
+- `tests/contract/test_bot_desktop_http_contract.py` encodes the durable
+  Desktop App to bot HTTP expectations that release CI runs on Linux and
+  Windows
