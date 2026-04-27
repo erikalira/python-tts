@@ -11,6 +11,12 @@ runtime-entrypoint changes.
 - Pull requests run GitHub dependency review when dependency manifests change.
 - CodeQL scans Python on pull requests, pushes to `main`, scheduled runs, and
   manual dispatch.
+- The `Security` workflow generates CycloneDX SBOM artifacts for runtime
+  Python dependencies, test Python dependencies, and the Docker image.
+- The Docker image is scanned with Trivy for high and critical vulnerabilities.
+  The first gate is intentionally non-blocking while the repository establishes
+  a clean baseline; promote it to blocking by changing the Trivy `exit-code`
+  once baseline findings are triaged.
 
 ## Runtime Entry Points
 
@@ -28,6 +34,8 @@ Before a release that changes dependencies, bot entrypoints, HTTP presentation,
 or runtime configuration:
 
 - confirm the `Security` workflow is green
+- download and archive the CycloneDX SBOM artifacts for release traceability
+- review the Trivy Docker image scan artifact and record any accepted risk
 - run the dependency maintenance validation flow when requirements changed
 - check `docs/operations/RELEASE_CHECKLIST.md` for observability and rollback
   gates
