@@ -25,6 +25,7 @@ ENV/
 env/
 .ruff_cache/
 .test-artifacts/
+.mutmut-cache/
 htmlcov/
 
 # IDEs

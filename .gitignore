@@ -35,6 +35,7 @@ htmlcov/
 coverage.*
 .pytest_cache/
 .test-artifacts/
+.mutmut-cache/
 
 # Build files
 dist/
