@@ -76,10 +76,16 @@ Prefer using the repository virtual environment directly instead of relying on a
 .\.venv\Scripts\python.exe -m pytest tests/unit
 ```
 
+With the lockfile-managed environment, prefer:
+
+```powershell
+uv run pytest tests/unit
+```
+
 If the `.venv` has not been prepared yet, install the test dependencies there first:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements-test.txt
+uv sync --locked --group test
 ```
 
 ## Running Integration Tests
@@ -135,6 +141,8 @@ Static quality gates:
 .\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m pyright
 ```
+
+CI runs these through `uv run` after `uv sync --locked --group test`.
 
 `ruff` currently enforces high-signal correctness rules such as syntax and
 undefined-name failures. `pyright` is intentionally scoped in

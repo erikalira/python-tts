@@ -24,22 +24,24 @@ Prefer using the project virtual environment directly.
 .\.venv\Scripts\python.exe -m pip --version
 ```
 
-Recommended maintenance tools:
+Primary maintenance tools:
 
-- `pip-tools`: compile and control upgrades with more discipline
-- `pip-audit`: audit installed or declared dependencies for known vulnerabilities
-- `pur`: rewrite requirement files to current latest versions when you intentionally want broad updates
+- `uv`: resolve dependencies and maintain `uv.lock`
+- `pip-audit`: audit declared dependencies for known vulnerabilities
+- CycloneDX tooling: generate SBOMs for supply-chain traceability
 
-Install them only in the working environment used for maintenance:
+Install and sync them through the repository virtual environment:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install pip-tools pip-audit pur
+.\.venv\Scripts\python.exe -m pip install uv==0.11.3
+uv sync --locked --group test --group security
 ```
 
 The repository also runs automated supply-chain gates in GitHub Actions:
 
-- Dependabot opens weekly PRs for Python requirements and GitHub Actions.
-- `Security` runs `pip-audit` for `requirements.txt` and `requirements-test.txt`.
+- Dependabot opens weekly PRs for `uv.lock` and GitHub Actions.
+- `Security` runs `pip-audit` for `requirements.txt` and `requirements-test.txt`
+  using tooling installed from the locked `security` dependency group.
 - PRs run GitHub dependency review when dependency manifests change.
 - CodeQL scans Python on PRs, pushes to `main`, scheduled runs, and manual dispatch.
 
@@ -55,8 +57,8 @@ Use the repository helper script for recurring checks:
 The script can also rewrite an existing requirement entry to the version already installed locally:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -U Pillow
-.\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py pin Pillow --operator >= --files requirements.txt
+uv add "Pillow>=12.2.0"
+uv lock
 ```
 
 After an upgrade, validate the migration:
@@ -75,7 +77,7 @@ Check declared constraints, installed versions, and possible upgrades.
 ```powershell
 .\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py report --outdated
 .\.venv\Scripts\python.exe -m pip list --outdated
-.\.venv\Scripts\pip-audit.exe -r requirements.txt
+uv run --group security pip-audit -r requirements.txt
 ```
 
 When the issue is security-driven, read the advisory before upgrading. Confirm whether the fix requires:
@@ -96,54 +98,45 @@ Use one of these approaches:
 
 For day-to-day implementation work, prefer the smallest package set that resolves the problem.
 
-Keep `requirements.txt` and `requirements-test.txt` as the compatible input
-files for now. If lock-style constraints are introduced with `pip-tools`, add
-the compiled files as an additional reproducibility layer instead of removing
-these inputs in the same change.
+Keep `requirements.txt` and `requirements-test.txt` as temporary compatibility
+files while deployment paths finish moving to `uv.lock`. Add new dependencies to
+`pyproject.toml` first, then run `uv lock`.
 
 ### 3. Upgrade in the environment first
 
-Upgrade the package in `.venv` before editing the requirement files, so you can confirm what was actually installed.
+Update the project metadata first, then let `uv` resolve the exact environment.
 
 Examples:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -U Pillow
-.\.venv\Scripts\python.exe -m pip install "Pillow>=12.2.0"
+uv add "Pillow>=12.2.0"
+uv lock
+uv sync --locked --group test
 ```
 
-If you want controlled compilation with `pip-tools`, use:
+For dependency groups:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip-compile --upgrade-package pillow
+uv add --group test "pytest>=9.0.3"
+uv add --group build "pyinstaller>=5.0"
+uv add --group security "pip-audit>=2.9.0"
 ```
 
 If the repository is still using hand-maintained requirement files, prefer updating only the targeted package entry instead of reordering or rewriting the whole file.
 
 ### 4. Update the requirement files deliberately
 
-After the environment is on the intended version, write the constraint back to the relevant files.
-
-Examples:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py pin Pillow --operator >= --files requirements.txt
-.\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py pin pytest --operator >= --files requirements-test.txt
-```
-
-Operator guidance:
-
-- use `>=` when the project intentionally allows future compatible upgrades at install time
-- use `==` when you need reproducibility and want CI/local installs to match exactly
-
-For application repositories, reproducibility is usually stronger with pinned or compiled lock-style outputs. If you stay with plain `requirements.txt`, document why a direct range is acceptable.
+After the lockfile is updated, update compatibility requirements only when a
+remaining deployment path still consumes them. The steady state is
+`pyproject.toml` plus `uv.lock`.
 
 ### 5. Validate the migration
 
 Always run the default unit suite after changing dependencies:
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py validate
+uv run pytest tests/unit
+uv run pytest tests/smoke
 ```
 
 Run integration tests when the changed dependency affects:
@@ -154,7 +147,7 @@ Run integration tests when the changed dependency affects:
 - Windows-specific runtime or GUI integration
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py validate --integration
+uv run pytest tests/integration
 ```
 
 Also verify the affected runtime path directly when automation is not enough:
@@ -179,10 +172,11 @@ Also verify the affected runtime path directly when automation is not enough:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py report --outdated
-.\.venv\Scripts\pip-audit.exe -r requirements.txt
-.\.venv\Scripts\python.exe -m pip install -U Pillow
-.\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py pin Pillow --operator >= --files requirements.txt
-.\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py validate
+uv run --group security pip-audit -r requirements.txt
+uv add "Pillow>=12.2.0"
+uv lock
+uv sync --locked --group test --group security
+uv run pytest tests/unit tests/smoke --tb=short -v
 ```
 
 ### Planned maintenance pass
@@ -190,20 +184,21 @@ Also verify the affected runtime path directly when automation is not enough:
 ```powershell
 .\.venv\Scripts\python.exe scripts\utils\dependency_maintenance.py report --outdated
 .\.venv\Scripts\python.exe -m pip list --outdated
-.\.venv\Scripts\pip-audit.exe -r requirements.txt
+uv run --group security pip-audit -r requirements.txt
 ```
 
 Then decide whether to use:
 
-- targeted `pip install -U <package>`
-- `pip-compile --upgrade-package <package>`
-- `pur -r requirements.txt` for an intentional broad rewrite
+- targeted `uv add` for one dependency
+- `uv lock --upgrade-package <package>` for a controlled lockfile upgrade
+- `uv lock --upgrade` for an intentional broad update pass
 
 ## Review Checklist
 
 - Is the package change scoped to the real problem?
 - Is the selected version compatible with the repository Python version?
-- Did `requirements.txt` or `requirements-test.txt` get updated intentionally?
+- Did `pyproject.toml` and `uv.lock` get updated intentionally?
+- If a compatibility requirements file changed, is the temporary need clear?
 - Did `tests/unit` pass?
 - Were `tests/integration` run when the dependency touches real providers or platform bindings?
 - Did import smoke checks for `app.py` and `src.bot` still pass?

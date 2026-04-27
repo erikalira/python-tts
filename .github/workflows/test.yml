@@ -19,10 +19,12 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-          cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-test.txt
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Install Linux system dependencies
         if: runner.os == 'Linux'
@@ -34,17 +36,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install -r requirements-test.txt
+          uv sync --locked --group test
 
       - name: Run lint gate
         run: |
-          python -m ruff check .
+          uv run ruff check .
 
       - name: Run type-check gate
         run: |
-          python -m pyright
+          uv run pyright
 
       - name: Run critical test suite with coverage
         if: runner.os == 'Linux'
@@ -52,14 +52,14 @@ jobs:
           CI: true
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          pytest tests/unit tests/smoke --tb=short -v
+          uv run pytest tests/unit tests/smoke --tb=short -v
 
       - name: Enforce coverage quality gates
         if: runner.os == 'Linux'
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          python scripts/test/quality_gates.py coverage --coverage-xml coverage.xml --config config/quality_gates.json
+          uv run python scripts/test/quality_gates.py coverage --coverage-xml coverage.xml --config config/quality_gates.json
 
       - name: Run critical test suite
         if: runner.os == 'Windows'
@@ -67,7 +67,7 @@ jobs:
           CI: true
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          pytest tests/unit tests/smoke --tb=short -v --no-cov
+          uv run pytest tests/unit tests/smoke --tb=short -v --no-cov
 
       - name: Upload coverage artifact
         if: runner.os == 'Linux'
@@ -112,10 +112,12 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-          cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-test.txt
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Install Linux system dependencies
         run: |
@@ -127,9 +129,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install -r requirements-test.txt
+          uv sync --locked --group test
 
       - name: Wait for Redis service
         run: |
@@ -144,7 +144,7 @@ jobs:
           REDIS_PORT: "6379"
           REDIS_DB: "15"
         run: |
-          pytest tests/integration/infrastructure/test_audio_queue_redis_integration.py tests/integration/bot_runtime/test_queue_worker_redis_integration.py --tb=short -v --no-cov
+          uv run pytest tests/integration/infrastructure/test_audio_queue_redis_integration.py tests/integration/bot_runtime/test_queue_worker_redis_integration.py --tb=short -v --no-cov
 
   external-integrations:
     name: External Integrations (${{ matrix.name }})
@@ -168,10 +168,12 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-          cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-test.txt
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Install Linux system dependencies
         if: runner.os == 'Linux'
@@ -183,9 +185,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install -r requirements-test.txt
+          uv sync --locked --group test
 
       - name: Run external integration slice
         env:
@@ -193,4 +193,4 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
           RUN_NETWORK_INTEGRATION_TESTS: ${{ runner.os == 'Linux' && '1' || '0' }}
         run: |
-          pytest ${{ matrix.pytest_args }} --tb=short -v --no-cov
+          uv run pytest ${{ matrix.pytest_args }} --tb=short -v --no-cov
