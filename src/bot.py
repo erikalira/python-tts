@@ -57,6 +57,7 @@ async def main():
         readiness_provider=container.readiness_payload,
         otel_runtime=container.otel_runtime,
         cors_allowed_origins=config.http_cors_allowed_origins,
+        max_request_body_bytes=config.http_max_body_bytes,
     )
     await http_server.start()
     

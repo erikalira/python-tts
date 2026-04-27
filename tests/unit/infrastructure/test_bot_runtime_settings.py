@@ -238,6 +238,57 @@ def test_config_reads_explicit_cors_allowed_origins(tmp_path):
     assert config.http_cors_allowed_origins == ("http://localhost:5173", "https://desktop.example")
 
 
+def test_config_reads_http_payload_limit(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_HTTP_MAX_BODY_BYTES=8192",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.http_max_body_bytes == 8192
+
+
+def test_config_rejects_non_positive_http_payload_limit(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_HTTP_MAX_BODY_BYTES=0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (False, "BOT_HTTP_MAX_BODY_BYTES must be greater than 0")
+
+
+def test_config_rejects_non_positive_text_limit(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "MAX_TEXT_LENGTH=0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (False, "MAX_TEXT_LENGTH must be greater than 0")
+
+
 def test_config_reads_speak_auth_token(tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text(
