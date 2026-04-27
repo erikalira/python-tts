@@ -30,6 +30,26 @@ Main gaps:
   limiting, and token handling as one security story
 - no dedicated contract, load, mutation, or dependency-failure chaos suites
 
+## Chosen Upgrade Stack
+
+Use these defaults unless a later ADR records a stronger operational reason to
+change them:
+
+- Python dependency manager and lockfile: `uv`
+- IaC tool: OpenTofu
+- SBOM format/tooling: CycloneDX
+- Docker image vulnerability scanner: Trivy
+- Image registry: GitHub Container Registry (GHCR)
+- Release notes: GitHub generated release notes before stricter conventional
+  commit enforcement
+- Local and production baseline: Docker Compose remains the default until IaC
+  or Kubernetes adoption is justified by runtime needs
+- Local Kubernetes validation: Minikube is optional and validation-only
+- Lightweight staging or production Kubernetes: k3s is preferred if Kubernetes
+  becomes necessary
+- Kubernetes customization: Kustomize before Helm unless templating pressure
+  becomes real
+
 ## Commit And Validation Rule
 
 Each implementation step should follow this loop:
@@ -73,7 +93,7 @@ automation.
    - Commit: `chore: align dependency update automation`
 
 2. Add SBOM generation.
-   - Prefer CycloneDX for Python dependencies and Docker image SBOMs.
+   - Use CycloneDX for Python dependencies and Docker image SBOMs.
    - Publish SBOM artifacts from pull requests and release builds.
    - Affected files: `.github/workflows/security.yml`,
      `docs/operations/SECURITY_GATES.md`
@@ -81,7 +101,8 @@ automation.
    - Commit: `ci: generate supply chain sboms`
 
 3. Add Docker image vulnerability scanning.
-   - Prefer Trivy or Grype for CI because both support SARIF and fail thresholds.
+   - Use Trivy because it supports GitHub Actions, SARIF, SBOMs, and image
+     vulnerability scans with low workflow overhead.
    - Start with a non-blocking report, then promote high/critical findings to
      blocking once the baseline is clean.
    - Affected files: `.github/workflows/security.yml`, `Dockerfile`,
@@ -90,9 +111,7 @@ automation.
    - Commit: `ci: scan docker image vulnerabilities`
 
 4. Add lockfile-based installs.
-   - Choose one tool for the steady state: `uv` is the lowest-friction option
-     for fast lock/sync workflows, while Poetry/PDM are acceptable if packaging
-     metadata becomes more library-oriented.
+   - Use `uv` as the steady-state dependency and lockfile tool.
    - Keep `requirements.txt` only as an exported compatibility artifact if
      deployment still needs it.
    - Affected files: `pyproject.toml`, lockfile, requirements files,
@@ -124,8 +143,8 @@ artifacts.
    - Commit: `ci: add semantic release pipeline`
 
 3. Add automated changelog.
-   - Use conventional commits or GitHub release notes generation.
-   - Document commit categories before enforcing them.
+   - Use GitHub generated release notes first.
+   - Document commit categories before enforcing conventional commits.
    - Affected files: release workflow, `docs/operations/RELEASE_CHECKLIST.md`,
      optional changelog config
    - Validation: generated changelog preview artifact
@@ -231,7 +250,7 @@ operationally justified.
    - Validation: docs review against existing deploy scripts
    - Commit: `docs: define infrastructure environments`
 
-2. Add OpenTofu/Terraform skeleton.
+2. Add OpenTofu skeleton.
    - Start with variables, providers, remote-state decision, and modules for
      secrets, compute target, Postgres, Redis, and observability endpoints.
    - Keep secrets out of state where the provider allows it.
@@ -241,6 +260,7 @@ operationally justified.
 
 3. Add optional Kubernetes manifests.
    - Add Kustomize overlays before Helm unless templating pressure is real.
+   - Use Minikube only for local manifest validation.
    - Target k3s or a small managed cluster profile only after image publishing
      and rollback automation exist.
    - Affected files: `deploy/k8s/`, docs
