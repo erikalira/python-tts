@@ -8,12 +8,16 @@ configuration, dependencies, or shared code used by both applications.
 Record before deploying:
 
 - release owner
-- commit SHA or image tag
+- commit SHA and immutable image tag
 - affected runtime: bot, desktop, or both
 - expected config changes
 - migration or restore risk
 - rollback point
 - staging validation result
+
+For tagged releases, use the `Release` GitHub Actions workflow. It validates the
+unit/smoke gates, publishes the bot image to GHCR, and creates release notes
+with the published image tag.
 
 ## Pre-Release Gates
 
@@ -53,6 +57,8 @@ Before deploy, confirm:
 - bot and desktop entrypoints remain independently runnable
 - the `Security` workflow is green for dependency audit, dependency review, and
   CodeQL when applicable
+- the `Release` workflow is green when deploying a semantic version tag
+- the GHCR image tag in production matches the GitHub release notes
 - bot `/speak` rate-limit settings are present in production config or
   intentionally inherited from defaults
 - durable docs changed when deploy, runtime, or operational behavior changed
