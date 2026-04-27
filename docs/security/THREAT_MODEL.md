@@ -117,6 +117,7 @@ Logs must not include:
 
 - Add contract tests for `/speak` success, auth failure, validation failure,
   rate-limit failure, queue failure, and health endpoints.
-- Add automated dependency-failure tests for Redis and Postgres unavailability.
+- Extend the deterministic dependency-failure tests into real staging drills
+  for Redis and Postgres outages.
 - Decide whether future multi-user exposure needs per-user tokens or signed
   requests instead of a single shared integration token.
