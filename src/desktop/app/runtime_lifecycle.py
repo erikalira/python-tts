@@ -92,7 +92,7 @@ class DesktopAppLifecycleCoordinator:
 
         tray_running = notification_service.is_running()
         if tray_running:
-            logger.info("[DESKTOP_APP] Executando com system tray em background...")
+            logger.info("[DESKTOP_APP] Running with system tray in the background...")
             while is_running() and not shutdown_requested.is_set():
                 process_pending_ui_action(0.2)
             return
@@ -107,7 +107,7 @@ class DesktopAppLifecycleCoordinator:
                 return
             except ImportError:
                 pass
-        input("Pressione Enter para sair...")
+        input("Press Enter to exit...")
 
     def update_services_config(
         self,
@@ -151,7 +151,7 @@ class DesktopAppLifecycleCoordinator:
         main_window: object | None,
     ) -> bool:
         """Shutdown runtime services and return the new running flag."""
-        logger.info("[DESKTOP_APP] Encerrando aplicacao...")
+        logger.info("[DESKTOP_APP] Shutting down application...")
         shutdown_requested.set()
 
         if running:
@@ -171,7 +171,7 @@ class DesktopAppLifecycleCoordinator:
                     exc_info=True,
                 )
 
-        logger.info("[DESKTOP_APP] Aplicacao encerrada")
+        logger.info("[DESKTOP_APP] Application stopped")
         return running
 
     def process_pending_ui_action(

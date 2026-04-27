@@ -30,6 +30,6 @@ class EnvironmentUpdater:
             os.environ["TTS_OUTPUT_DEVICE"] = config.tts.output_device
 
         logger.info(
-            "[CONFIG] Variaveis de ambiente atualizadas - DISCORD_MEMBER_ID: %s",
+            "[CONFIG] Environment variables updated - DISCORD_MEMBER_ID: %s",
             config.discord.member_id,
         )

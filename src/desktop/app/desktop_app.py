@@ -91,7 +91,7 @@ class DesktopApp:
             self._setup_integrations()
 
             self._initialized = True
-            logger.info("[DESKTOP_APP] Aplicacao inicializada com sucesso")
+            logger.info("[DESKTOP_APP] Application initialized successfully")
             return True
         except Exception as exc:
             logger.error("[DESKTOP_APP] Error during initialization: %s", exc)
@@ -348,7 +348,7 @@ class DesktopApp:
 
     def _handle_quit(self) -> None:
         """Handle system tray quit action."""
-        logger.info("[DESKTOP_APP] Encerrando via system tray...")
+        logger.info("[DESKTOP_APP] Shutting down from system tray...")
         self._shutdown()
 
     def _get_application_status(self) -> DesktopAppRuntimeStatusDTO:

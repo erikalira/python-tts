@@ -90,7 +90,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         try:
             self._icon = self._create_icon()
             self._running = True
-            logger.info("[TRAY] System tray iniciado")
+            logger.info("[TRAY] System tray started")
             self._icon.run()
         except Exception as exc:
             logger.error("[TRAY] Failed to start system tray: %s", exc)
@@ -102,7 +102,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
             try:
                 self._icon.stop()
                 self._running = False
-                logger.info("[TRAY] System tray parado")
+                logger.info("[TRAY] System tray stopped")
             except Exception as exc:
                 logger.warning("[TRAY] Failed to stop system tray: %s", exc)
 
@@ -121,15 +121,15 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
 
     def _create_icon(self) -> Icon:
         menu = Menu(
-            MenuItem("Abrir Desktop App", self._handle_status_click, default=True),
+            MenuItem("Open Desktop App", self._handle_status_click, default=True),
             MenuItem(
                 f"Type {self._config.hotkey.trigger_open}text{self._config.hotkey.trigger_close} to speak",
                 lambda: None,
                 enabled=False,
             ),
             Menu.SEPARATOR,
-            MenuItem("Configuracoes", self._handle_configure),
-            MenuItem("Sair", self._handle_quit),
+            MenuItem("Settings", self._handle_configure),
+            MenuItem("Quit", self._handle_quit),
         )
         return Icon("Desktop App", self._create_icon_image(), "Desktop App", menu)
 
@@ -151,7 +151,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         if self._on_status_click:
             self._on_status_click()
         elif self._config.discord.bot_url and self._config.discord.member_id:
-            logger.info("Conectado ao Discord: %s", self._config.discord.bot_url)
+            logger.info("Connected to Discord: %s", self._config.discord.bot_url)
             logger.info("User ID: %s", self._config.discord.member_id)
         else:
             logger.warning("Discord is not fully configured")
@@ -166,7 +166,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         if self._on_quit:
             self._on_quit()
         else:
-            logger.warning("[TRAY] Pedido de saida sem quit_handler configurado; ocultando tray.")
+            logger.warning("[TRAY] Quit requested without a configured quit handler; hiding tray.")
             self.hide()
 
 

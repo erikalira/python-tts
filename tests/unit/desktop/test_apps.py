@@ -56,7 +56,7 @@ def test_desktop_app_tts_result_presenter_notifies_success_after_tts():
 
     presenter.present(TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK))
 
-    notifier.notify_success.assert_called_once_with("Desktop App", "Texto reproduzido com sucesso")
+    notifier.notify_success.assert_called_once_with("Desktop App", "Text played successfully")
 
 
 def test_desktop_app_tts_result_presenter_notifies_missing_text_error():

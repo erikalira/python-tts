@@ -5,9 +5,9 @@ from src.infrastructure.runtime_observability import InMemoryBotRuntimeTelemetry
 def test_runtime_observability_tracks_percentiles_and_error_rates():
     telemetry = InMemoryBotRuntimeTelemetry()
 
-    request_one = TTSRequest(text="ola", guild_id=1, member_id=10)
-    request_two = TTSRequest(text="teste", guild_id=1, member_id=11)
-    request_three = TTSRequest(text="falha", guild_id=2, member_id=12)
+    request_one = TTSRequest(text="hello", guild_id=1, member_id=10)
+    request_two = TTSRequest(text="test", guild_id=1, member_id=11)
+    request_three = TTSRequest(text="failure", guild_id=2, member_id=12)
 
     telemetry.record_submission_result(
         request=request_one,
