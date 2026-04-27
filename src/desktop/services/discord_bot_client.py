@@ -70,7 +70,7 @@ class DiscordBotHttpTransport:
             url,
             json=request_dto.to_payload(),
             timeout=self._config.network.request_timeout,
-            headers={"User-Agent": self._config.network.user_agent},
+            headers=self._build_headers(include_speak_token=True),
         )
         return DiscordBotHttpResponse(
             ok=response.ok,
@@ -82,7 +82,7 @@ class DiscordBotHttpTransport:
         response = requests.get(
             url,
             timeout=self._config.network.request_timeout,
-            headers={"User-Agent": self._config.network.user_agent},
+            headers=self._build_headers(),
         )
         http_response = DiscordBotHttpResponse(
             ok=response.ok,
@@ -101,7 +101,7 @@ class DiscordBotHttpTransport:
             url,
             params={"member_id": member_id},
             timeout=self._config.network.request_timeout,
-            headers={"User-Agent": self._config.network.user_agent},
+            headers=self._build_headers(),
         )
         http_response = DiscordBotHttpResponse(
             ok=response.ok,
@@ -115,6 +115,12 @@ class DiscordBotHttpTransport:
         if text is None:
             return ""
         return str(text).strip()
+
+    def _build_headers(self, *, include_speak_token: bool = False) -> dict[str, str]:
+        headers = {"User-Agent": self._config.network.user_agent}
+        if include_speak_token and self._config.discord.speak_token:
+            headers["X-Bot-Token"] = self._config.discord.speak_token
+        return headers
 
     def _extract_payload(self, response) -> dict[str, object] | None:
         try:

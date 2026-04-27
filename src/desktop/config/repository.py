@@ -51,6 +51,7 @@ class ConfigurationRepository:
                 discord=DiscordConfig(
                     bot_url=self._get_env_or_file_value(data, "discord_bot_url", "DISCORD_BOT_URL"),
                     member_id=self._get_env_or_file_value(data, "discord_member_id", "DISCORD_MEMBER_ID"),
+                    speak_token=os.getenv("BOT_SPEAK_TOKEN") or None,
                 ),
                 hotkey=HotkeyConfig(
                     trigger_open=data.get("trigger_open", "{"),

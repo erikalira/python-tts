@@ -238,6 +238,43 @@ def test_config_reads_explicit_cors_allowed_origins(tmp_path):
     assert config.http_cors_allowed_origins == ("http://localhost:5173", "https://desktop.example")
 
 
+def test_config_reads_speak_auth_token(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "BOT_SPEAK_TOKEN=  secret-token  ",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.speak_auth_token == "secret-token"
+
+
+def test_config_requires_speak_auth_token_when_http_host_is_not_loopback(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "DISCORD_BOT_HOST=0.0.0.0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.validate() == (
+        False,
+        "BOT_SPEAK_TOKEN must be set when DISCORD_BOT_HOST is not loopback",
+    )
+
+
 def test_config_rejects_wildcard_cors_origin(tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text(

@@ -1,5 +1,7 @@
 """HTTP controllers for handling web requests."""
 
+import hashlib
+import hmac
 import logging
 
 from aiohttp import web
@@ -27,6 +29,7 @@ class SpeakController:
         rate_limiter: RateLimiter | None = None,
         rate_limit_max_requests: int = 0,
         rate_limit_window_seconds: float = 0,
+        auth_token: str | None = None,
         otel_runtime: RuntimeTelemetry | None = None,
     ):
         self._speak_use_case = speak_use_case
@@ -34,6 +37,7 @@ class SpeakController:
         self._rate_limiter = rate_limiter
         self._rate_limit_max_requests = rate_limit_max_requests
         self._rate_limit_window_seconds = rate_limit_window_seconds
+        self._auth_token = auth_token
         self._presenter = HTTPSpeakPresenter()
         self._otel_runtime = otel_runtime
 
@@ -44,6 +48,12 @@ class SpeakController:
             headers=headers,
             attributes={"http.route": "/speak", "http.method": "POST"},
         ) if self._otel_runtime is not None else NullRuntimeSpanContext() as span:
+            presented_token = self._presented_token(headers)
+            if not self._is_authorized(presented_token):
+                logger.warning("[AUTH] HTTP /speak rejected unauthorized request")
+                span.set_attribute("result_code", "unauthorized")
+                return web.Response(text="unauthorized", status=401)
+
             try:
                 data = await request.json()
             except Exception as exc:
@@ -68,7 +78,7 @@ class SpeakController:
                 "engine",
                 config_override.engine if config_override is not None else "configured_default",
             )
-            rate_limit_result = self._check_rate_limit(guild_id, self._parse_int(member_id_value))
+            rate_limit_result = self._check_rate_limit(guild_id, self._parse_int(member_id_value), presented_token)
             if not rate_limit_result.allowed:
                 logger.warning(
                     "[RATE_LIMIT] HTTP /speak blocked scope=%s retry_after_seconds=%.2f",
@@ -99,11 +109,16 @@ class SpeakController:
                 status=self._presenter.get_status_code(result),
             )
 
-    def _check_rate_limit(self, guild_id: int | None, member_id: int | None) -> RateLimitResult:
+    def _check_rate_limit(
+        self,
+        guild_id: int | None,
+        member_id: int | None,
+        presented_token: str | None = None,
+    ) -> RateLimitResult:
         if self._rate_limiter is None:
             return _ALLOW_RATE_LIMIT_RESULT
 
-        scope = self._rate_limit_scope(guild_id, member_id)
+        scope = self._rate_limit_scope(guild_id, member_id, presented_token)
         return self._rate_limiter.check(
             RateLimitRequest(
                 scope=scope,
@@ -112,10 +127,33 @@ class SpeakController:
             )
         )
 
-    def _rate_limit_scope(self, guild_id: int | None, member_id: int | None) -> str:
+    def _rate_limit_scope(self, guild_id: int | None, member_id: int | None, presented_token: str | None = None) -> str:
         guild = str(guild_id) if guild_id is not None else "unknown"
         member = str(member_id) if member_id is not None else "unknown"
+        if self._auth_token and presented_token:
+            token_hash = hashlib.sha256(presented_token.encode("utf-8")).hexdigest()[:12]
+            return f"http:speak:token:{token_hash}:guild:{guild}:member:{member}"
         return f"http:speak:guild:{guild}:member:{member}"
+
+    def _presented_token(self, headers) -> str | None:
+        header_token = headers.get("X-Bot-Token") if headers else None
+        if header_token:
+            return str(header_token)
+
+        authorization = headers.get("Authorization") if headers else None
+        if not authorization:
+            return None
+        scheme, _, value = str(authorization).partition(" ")
+        if scheme.lower() != "bearer" or not value:
+            return None
+        return value
+
+    def _is_authorized(self, presented_token: str | None) -> bool:
+        if not self._auth_token:
+            return True
+        if not presented_token:
+            return False
+        return hmac.compare_digest(presented_token, self._auth_token)
 
     def _parse_int(self, value) -> int | None:
         if value is None:

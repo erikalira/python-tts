@@ -72,6 +72,7 @@ class Config:
         self.discord_bot_port = self.http_port
         self.http_host = self._getenv("DISCORD_BOT_HOST", self._getenv("HOST", "127.0.0.1"))
         self.http_cors_allowed_origins = self._parse_csv(self._getenv("BOT_HTTP_CORS_ALLOWED_ORIGINS", ""))
+        self.speak_auth_token = self._normalized_optional(self._getenv("BOT_SPEAK_TOKEN"))
         self.max_text_length = int(self._getenv("MAX_TEXT_LENGTH", self._getenv("TTS_MAX_TEXT_LENGTH", "500")))
         self.rate_limit_max_requests = int(self._getenv("BOT_RATE_LIMIT_MAX_REQUESTS", "8"))
         self.rate_limit_window_seconds = float(self._getenv("BOT_RATE_LIMIT_WINDOW_SECONDS", "10"))
@@ -167,6 +168,9 @@ class Config:
         if "*" in self.http_cors_allowed_origins:
             return False, "BOT_HTTP_CORS_ALLOWED_ORIGINS must list explicit origins, not *"
 
+        if self._requires_speak_auth_token() and not self.speak_auth_token:
+            return False, "BOT_SPEAK_TOKEN must be set when DISCORD_BOT_HOST is not loopback"
+
         if self.otel_enabled and not self.otel_exporter_otlp_endpoint:
             return False, "OTEL_EXPORTER_OTLP_ENDPOINT not set for OTEL_ENABLED=true"
 
@@ -185,3 +189,13 @@ class Config:
         if not raw_value:
             return ()
         return tuple(value.strip() for value in raw_value.split(",") if value.strip())
+
+    def _normalized_optional(self, raw_value: str | None) -> str | None:
+        if raw_value is None:
+            return None
+        normalized = raw_value.strip()
+        return normalized or None
+
+    def _requires_speak_auth_token(self) -> bool:
+        host = (self.http_host or "").strip().lower()
+        return host not in {"", "127.0.0.1", "localhost", "::1"}

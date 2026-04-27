@@ -49,6 +49,7 @@ def test_configuration_repository_save_and_load_roundtrip(tmp_path):
     repo = ConfigurationRepository(config_file)
     config = DesktopAppConfig.create_default()
     config.discord.member_id = "123"
+    config.discord.speak_token = "runtime-secret"
     config.hotkey.trigger_open = "["
     config.hotkey.trigger_close = "]"
     config.interface.local_tts_enabled = True
@@ -57,6 +58,8 @@ def test_configuration_repository_save_and_load_roundtrip(tmp_path):
 
     saved_data = json.loads(config_file.read_text(encoding="utf-8"))
     assert saved_data["discord_member_id"] == "123"
+    assert "speak_token" not in saved_data
+    assert "BOT_SPEAK_TOKEN" not in saved_data
     assert saved_data["trigger_open"] == "["
     assert saved_data["local_tts_enabled"] is True
 
@@ -83,10 +86,12 @@ def test_environment_updater_sets_expected_variables(monkeypatch):
     config = DesktopAppConfig.create_default()
     config.discord.bot_url = get_default_discord_bot_url()
     config.discord.member_id = "99"
+    config.discord.speak_token = "secret-token"
     config.tts.output_device = "Speaker"
 
     monkeypatch.delenv("DISCORD_BOT_URL", raising=False)
     monkeypatch.delenv("DISCORD_MEMBER_ID", raising=False)
+    monkeypatch.delenv("BOT_SPEAK_TOKEN", raising=False)
     monkeypatch.delenv("TTS_OUTPUT_DEVICE", raising=False)
 
     EnvironmentUpdater.update_from_config(config)
@@ -94,6 +99,7 @@ def test_environment_updater_sets_expected_variables(monkeypatch):
     assert config.discord.bot_url == get_default_discord_bot_url()
     assert os.environ["DISCORD_BOT_URL"] == get_default_discord_bot_url()
     assert os.environ["DISCORD_MEMBER_ID"] == "99"
+    assert os.environ["BOT_SPEAK_TOKEN"] == "secret-token"
 
 
 def test_environment_updater_removes_optional_identifiers_when_missing(monkeypatch):

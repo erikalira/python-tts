@@ -77,6 +77,14 @@ Known failure payloads:
 
 Purpose: enqueue or execute speech through the bot runtime.
 
+Authentication:
+
+- when `BOT_SPEAK_TOKEN` is configured, callers must send either
+  `X-Bot-Token: <token>` or `Authorization: Bearer <token>`
+- when the token is missing or wrong, the endpoint returns `401` with
+  `unauthorized`
+- production and non-loopback bot binds must configure `BOT_SPEAK_TOKEN`
+
 Request payload:
 
 ```json
