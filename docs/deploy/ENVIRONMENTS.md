@@ -12,6 +12,24 @@ Use the examples in the repository root as the starting point:
 
 ## Environment Summary
 
+## Environment Inventory
+
+| Environment | Purpose | Runtime baseline | Persistence | Release source | Required validation |
+| --- | --- | --- | --- | --- | --- |
+| Development | Local bot, Desktop App, and focused tests | Python through `uv`; optional Docker Compose for Postgres, Redis, and observability | JSON by default; optional local Postgres and Redis | Local working tree | Ruff, Pyright, focused pytest slice, and Docker build when runtime images change |
+| Staging | Production rehearsal and rollback drill target | Docker Compose production stack first; optional Kustomize validation later | Postgres and Redis with staging-only data | Immutable GHCR image tag | Health, readiness, `/speak` contract smoke, queue readiness, database connectivity, rollback dry-run |
+| Production | User-facing Discord bot runtime and published Desktop App artifacts | Versioned GHCR bot image through the documented deploy target | Durable Postgres, Redis queue backend, externalized secrets | Semantic release tag such as `vMAJOR.MINOR.PATCH` | Release checklist, security gates, staging promotion, rollback point, post-deploy metrics |
+
+OpenTofu is the default IaC tool for environment ownership and provider-backed
+resources. Docker Compose remains the local and first production-like runtime
+shape until a concrete deployment target justifies provider modules or
+Kubernetes.
+
+Kubernetes is optional. Local manifest validation should use Minikube when a
+cluster is needed for developer testing. Small production or staging clusters
+should prefer k3s or a managed equivalent after image publishing, rollback, and
+observability are already working.
+
 | Variable | Local `.env` | Cloud bot service | Required | Notes |
 | --- | --- | --- | --- | --- |
 | `DISCORD_TOKEN` | Yes | Yes | Yes for bot | Required by the Discord bot runtime. |
