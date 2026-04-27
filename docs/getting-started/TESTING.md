@@ -70,6 +70,18 @@ The local test environment uses `.env` as a source of variables.
 
 ## Running Tests
 
+Prefer the standardized command wrapper for day-to-day validation:
+
+```powershell
+.\scripts\dev.ps1 test
+```
+
+The equivalent Make target for Unix-like environments is:
+
+```bash
+make test
+```
+
 Prefer using the repository virtual environment directly instead of relying on a globally installed `pytest`.
 
 ```powershell
@@ -138,8 +150,8 @@ For CI or automation:
 Static quality gates:
 
 ```powershell
-.\.venv\Scripts\python.exe -m ruff check .
-.\.venv\Scripts\python.exe -m pyright
+.\scripts\dev.ps1 lint
+.\scripts\dev.ps1 typecheck
 ```
 
 CI runs these through `uv run` after `uv sync --locked --group test`.
