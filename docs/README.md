@@ -24,6 +24,7 @@ This directory contains the repository's supporting documentation. The root
 
 ## Operate And Deploy
 
+- [security/THREAT_MODEL.md](security/THREAT_MODEL.md): runtime threat model for bot HTTP endpoints, secrets, Redis, Postgres, and Desktop App calls
 - [deploy/DEPLOYMENT_GUIDE.md](deploy/DEPLOYMENT_GUIDE.md): entrypoint for choosing the right server deployment guide
 - [operations/BASELINE_AND_RELEASE_GATES.md](operations/BASELINE_AND_RELEASE_GATES.md): Phase 0 baseline, initial SLI/SLO definitions, and release gates for bot and desktop
 - [operations/ELITE_UPGRADE_PLAN.md](operations/ELITE_UPGRADE_PLAN.md): phased plan for supply chain security, release engineering, IaC, advanced tests, runtime security, and packaging upgrades
