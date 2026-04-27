@@ -29,6 +29,9 @@ jobs:
         with:
           tofu_wrapper: false
 
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
       - name: Check formatting
         run: tofu fmt -check -recursive infra
 
@@ -40,5 +43,15 @@ jobs:
             if [ -d "${environment_dir}" ]; then
               tofu -chdir="${environment_dir}" init -backend=false
               tofu -chdir="${environment_dir}" validate
+            fi
+          done
+
+      - name: Validate Kustomize overlays
+        shell: bash
+        run: |
+          set -euo pipefail
+          for overlay_dir in deploy/k8s/overlays/*; do
+            if [ -d "${overlay_dir}" ]; then
+              kubectl kustomize "${overlay_dir}" >/dev/null
             fi
           done
