@@ -5,6 +5,37 @@ through small, reversible changes. Each adjustment should be committed only
 after the relevant validation passes. The Discord bot and the Windows hotkey
 desktop app must continue to run independently after every phase.
 
+## Implementation Status
+
+Status: implemented in incremental commits on the upgrade branch. The plan is
+kept as the durable map for what changed and why.
+
+Completed coverage:
+
+- supply chain: Dependabot alignment, `uv.lock`, `pip-audit`, CycloneDX SBOMs,
+  and Docker image scanning
+- release engineering: semantic tag release workflow, GHCR image publishing,
+  generated release notes, and rollback workflow
+- runtime security: threat model, explicit CORS, `/speak` token auth, rate
+  limiting, payload size limit, content-type validation, and text limit
+- advanced tests: HTTP contract, desktop-to-bot E2E, queue load baseline,
+  mutation baseline, and dependency-failure chaos tests
+- infrastructure: OpenTofu environment contract, dev/staging/prod inventory,
+  and optional Kustomize overlays for Minikube, staging, and production
+- packaging and commands: `pyproject.toml` metadata, `uv.lock`, lockfile-based
+  Docker/CI installs, `Makefile`, and `scripts/dev.ps1`
+
+Remaining operational follow-ups:
+
+- run the OpenTofu workflow in GitHub Actions because `tofu` is not installed
+  on this Windows workstation
+- run the Linux mutation workflow in CI because `mutmut run` does not support
+  native Windows execution
+- replace Kubernetes placeholder secrets through a real secret-management path
+  before applying shared-environment manifests
+- promote non-blocking load, mutation, and image-scanning reports to blocking
+  gates after baseline triage
+
 ## Current Baseline
 
 Already present:
@@ -18,17 +49,17 @@ Already present:
   under `docs/deploy/` and `docs/operations/`
 - a minimal `pyproject.toml` for Ruff configuration
 
-Main gaps:
+Implemented gaps:
 
-- no reproducible Python lockfile or package-manager-owned dependency model
-- no SBOM generation or published SBOM artifact
-- no Docker image vulnerability scan gate
-- no GHCR image publish workflow with semantic-version tags
-- no automated changelog or release note workflow
-- no infrastructure-as-code baseline beyond Docker Compose
-- no explicit `/speak` threat model covering auth, CORS, payload bounds, rate
-  limiting, and token handling as one security story
-- no dedicated contract, load, mutation, or dependency-failure chaos suites
+- reproducible Python dependency model through `pyproject.toml`, `uv.lock`, and
+  lockfile-based installs
+- SBOM generation and Docker image vulnerability scanning in CI
+- GHCR image publishing through semantic release tags
+- generated release notes and documented release categories
+- OpenTofu infrastructure baseline plus optional Kustomize manifests
+- `/speak` threat model, CORS, auth, payload bounds, rate limiting, and token
+  handling
+- dedicated contract, E2E, load, mutation, and dependency-failure chaos suites
 
 ## Chosen Upgrade Stack
 
