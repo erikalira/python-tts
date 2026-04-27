@@ -29,6 +29,7 @@ This directory contains the repository's supporting documentation. The root
 - [operations/BASELINE_AND_RELEASE_GATES.md](operations/BASELINE_AND_RELEASE_GATES.md): Phase 0 baseline, initial SLI/SLO definitions, and release gates for bot and desktop
 - [operations/ELITE_UPGRADE_PLAN.md](operations/ELITE_UPGRADE_PLAN.md): phased plan for supply chain security, release engineering, IaC, advanced tests, runtime security, and packaging upgrades
 - [operations/SECURITY_GATES.md](operations/SECURITY_GATES.md): dependency scanning, CodeQL, dependency review, and bot rate-limit release expectations
+- [operations/LOAD_TESTING.md](operations/LOAD_TESTING.md): queue load baseline and non-blocking CI report
 - [operations/PRODUCTION_RUNBOOKS.md](operations/PRODUCTION_RUNBOOKS.md): incident runbooks for lock starvation, stuck queues, and TTS engine degradation
 - [operations/DR_DRILLS.md](operations/DR_DRILLS.md): production recovery drills for Postgres restore, Redis recovery, and version rollback
 - [operations/RELEASE_CHECKLIST.md](operations/RELEASE_CHECKLIST.md): release checklist covering bot, desktop, deploy, and post-deploy metrics
