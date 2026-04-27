@@ -22,6 +22,11 @@ class EnvironmentUpdater:
         else:
             os.environ.pop("DISCORD_MEMBER_ID", None)
 
+        if config.discord.speak_token:
+            os.environ["BOT_SPEAK_TOKEN"] = config.discord.speak_token
+        else:
+            os.environ.pop("BOT_SPEAK_TOKEN", None)
+
         os.environ["TTS_ENGINE"] = config.tts.engine
         os.environ["TTS_LANGUAGE"] = config.tts.language
         os.environ["TTS_VOICE_ID"] = config.tts.voice_id

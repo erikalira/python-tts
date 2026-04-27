@@ -134,6 +134,7 @@ class Container:
             rate_limiter=self.rate_limiter,
             rate_limit_max_requests=config.rate_limit_max_requests,
             rate_limit_window_seconds=config.rate_limit_window_seconds,
+            auth_token=config.speak_auth_token,
             otel_runtime=self.otel_runtime,
         )
         self.voice_context_controller = VoiceContextController(self.voice_context_use_case)

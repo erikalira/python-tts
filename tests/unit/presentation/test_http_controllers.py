@@ -230,6 +230,52 @@ class TestSpeakController:
         assert "rate limit exceeded" in second_response.text
         assert use_case.execute.await_count == 1
 
+    async def test_handle_rejects_missing_auth_token_when_configured(self):
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
+        )
+        controller = SpeakController(use_case, auth_token="secret")
+        request = Mock(spec=web.Request)
+        request.headers = {}
+        request.json = AsyncMock(return_value={"text": "Hello"})
+
+        response = await controller.handle(request)
+
+        assert response.status == 401
+        assert response.text == "unauthorized"
+        use_case.execute.assert_not_awaited()
+
+    async def test_handle_accepts_configured_auth_token(self):
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
+        )
+        controller = SpeakController(use_case, auth_token="secret")
+        request = Mock(spec=web.Request)
+        request.headers = {"X-Bot-Token": "secret"}
+        request.json = AsyncMock(return_value={"text": "Hello", "guild_id": 789012, "member_id": 345678})
+
+        response = await controller.handle(request)
+
+        assert response.status == 200
+        use_case.execute.assert_awaited_once()
+
+    async def test_handle_accepts_bearer_auth_token(self):
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
+        )
+        controller = SpeakController(use_case, auth_token="secret")
+        request = Mock(spec=web.Request)
+        request.headers = {"Authorization": "Bearer secret"}
+        request.json = AsyncMock(return_value={"text": "Hello", "guild_id": 789012, "member_id": 345678})
+
+        response = await controller.handle(request)
+
+        assert response.status == 200
+        use_case.execute.assert_awaited_once()
+
     async def test_handle_injects_trace_context_when_otel_is_available(self):
         use_case = Mock(spec=SpeakTextUseCase)
         use_case.execute = AsyncMock(

@@ -24,12 +24,21 @@ def get_default_discord_bot_url() -> str:
     return f"http://localhost:{port}"
 
 
+def get_default_bot_speak_token() -> str | None:
+    """Return the optional shared token used by Desktop App calls to /speak."""
+    token = os.getenv("BOT_SPEAK_TOKEN")
+    if token and token.strip():
+        return token.strip()
+    return None
+
+
 @dataclass
 class DiscordConfig:
     """Discord bot configuration."""
 
     bot_url: str = field(default_factory=get_default_discord_bot_url)
     member_id: Optional[str] = None
+    speak_token: Optional[str] = field(default_factory=get_default_bot_speak_token)
 
 
 @dataclass

@@ -23,6 +23,7 @@ Use the examples in the repository root as the starting point:
 | `PORT` | No | Usually yes | Recommended in cloud deploys | Many platforms provide this automatically. |
 | `DISCORD_BOT_HOST` | Optional | Yes | Yes in cloud practice | Use `0.0.0.0` in deploys so the HTTP server is reachable. |
 | `BOT_HTTP_CORS_ALLOWED_ORIGINS` | Optional | Optional | No | Comma-separated browser origin allowlist for bot HTTP endpoints. Empty means no browser origins are allowed. Do not use `*`. |
+| `BOT_SPEAK_TOKEN` | Optional | Yes when non-loopback | Required when `DISCORD_BOT_HOST` is not loopback | Shared token for `POST /speak`. Desktop sends it through `X-Bot-Token` when configured. Store as a secret and never commit real values. |
 | `DISCORD_MEMBER_ID` | Optional | No | No | Desktop App targeting preference. |
 | `BOT_RATE_LIMIT_MAX_REQUESTS` | Optional | Optional | No | Maximum `/speak` requests per caller within the configured window. Defaults to `8`; use `0` to disable. |
 | `BOT_RATE_LIMIT_WINDOW_SECONDS` | Optional | Optional | No | Sliding rate-limit window for bot `/speak` entrypoints. Defaults to `10`. |
@@ -61,6 +62,8 @@ Recommended minimum values:
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
 DISCORD_BOT_URL=http://localhost:10000
 DISCORD_BOT_PORT=10000
+# Optional locally; set it in both bot and Desktop App environments when used.
+BOT_SPEAK_TOKEN=
 ```
 
 Notes:
@@ -83,6 +86,7 @@ Recommended minimum values:
 ```env
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
 DISCORD_BOT_HOST=0.0.0.0
+BOT_SPEAK_TOKEN=change_me_in_production
 POSTGRES_USER=tts_user
 POSTGRES_PASSWORD=change_me_in_production
 CONFIG_STORAGE_BACKEND=postgres

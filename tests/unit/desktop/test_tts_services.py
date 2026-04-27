@@ -116,6 +116,22 @@ def test_http_discord_bot_client_handles_http_error(monkeypatch):
     assert client.get_last_error_message() == "Bot returned HTTP 500: playback failed"
 
 
+def test_http_discord_bot_client_sends_speak_token_header(monkeypatch):
+    config = DesktopAppConfig.create_default()
+    config.discord.bot_url = get_default_discord_bot_url()
+    config.discord.speak_token = "secret-token"
+
+    post = Mock(return_value=SimpleNamespace(ok=True, status_code=200, text="queued"))
+    monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.post", post)
+
+    client = HttpDiscordBotClient(config)
+
+    assert client.send_speak_request(client.build_request("hello")) is True
+    headers = post.call_args.kwargs["headers"]
+    assert headers["X-Bot-Token"] == "secret-token"
+    assert "Authorization" not in headers
+
+
 def test_http_discord_bot_client_simplifies_service_suspended_error(monkeypatch):
     config = DesktopAppConfig.create_default()
     config.discord.bot_url = get_default_discord_bot_url()
