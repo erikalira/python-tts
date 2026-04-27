@@ -17,10 +17,13 @@ For real production, publish the bot image with an immutable application tag,
 for example:
 
 ```env
-BOT_IMAGE=ghcr.io/your-org/tts-hotkey-windows-bot
-APP_VERSION=v2026.04.24-1
+BOT_IMAGE=ghcr.io/your-org-or-user/tts-hotkey-windows-bot
+APP_VERSION=v1.2.3
 VCS_REF=<git-sha>
 ```
+
+The `Release` GitHub Actions workflow publishes semantic version tags such as
+`v1.2.3` to GHCR and records the bot image in the GitHub release notes.
 
 Use the same `APP_VERSION` in staging and production only after the staging
 promotion gate passes. Keep the previous production `APP_VERSION` in the
