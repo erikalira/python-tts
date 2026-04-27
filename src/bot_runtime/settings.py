@@ -72,6 +72,7 @@ class Config:
         self.discord_bot_port = self.http_port
         self.http_host = self._getenv("DISCORD_BOT_HOST", self._getenv("HOST", "127.0.0.1"))
         self.http_cors_allowed_origins = self._parse_csv(self._getenv("BOT_HTTP_CORS_ALLOWED_ORIGINS", ""))
+        self.http_max_body_bytes = int(self._getenv("BOT_HTTP_MAX_BODY_BYTES", "4096"))
         self.speak_auth_token = self._normalized_optional(self._getenv("BOT_SPEAK_TOKEN"))
         self.max_text_length = int(self._getenv("MAX_TEXT_LENGTH", self._getenv("TTS_MAX_TEXT_LENGTH", "500")))
         self.rate_limit_max_requests = int(self._getenv("BOT_RATE_LIMIT_MAX_REQUESTS", "8"))
@@ -167,6 +168,12 @@ class Config:
 
         if "*" in self.http_cors_allowed_origins:
             return False, "BOT_HTTP_CORS_ALLOWED_ORIGINS must list explicit origins, not *"
+
+        if self.http_max_body_bytes <= 0:
+            return False, "BOT_HTTP_MAX_BODY_BYTES must be greater than 0"
+
+        if self.max_text_length <= 0:
+            return False, "MAX_TEXT_LENGTH must be greater than 0"
 
         if self._requires_speak_auth_token() and not self.speak_auth_token:
             return False, "BOT_SPEAK_TOKEN must be set when DISCORD_BOT_HOST is not loopback"

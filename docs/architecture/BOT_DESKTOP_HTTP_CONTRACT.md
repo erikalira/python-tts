@@ -114,6 +114,10 @@ Response behavior:
 
 - the endpoint keeps returning plain text plus HTTP status, preserving the
   current external behavior
+- requests must use `application/json`
+- requests must be JSON objects
+- request bodies are bounded by `BOT_HTTP_MAX_BODY_BYTES`
+- text values longer than `MAX_TEXT_LENGTH` are rejected before queueing
 - typed request parsing and response mapping now happen before final
   serialization at the HTTP boundary
 

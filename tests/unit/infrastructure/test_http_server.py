@@ -66,6 +66,19 @@ async def test_http_server_routes_speak_to_controller():
     speak_handler.assert_awaited_once_with(request)
 
 
+def test_http_server_configures_max_request_body_size():
+    server = HTTPServer(
+        speak_handler=AsyncMock(),
+        voice_context_handler=AsyncMock(),
+        port=10000,
+        max_request_body_bytes=2048,
+    )
+
+    app = server._build_app()
+
+    assert app._client_max_size == 2048
+
+
 @pytest.mark.asyncio
 async def test_http_server_applies_cors_headers_for_allowed_origin():
     server = HTTPServer(

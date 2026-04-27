@@ -34,6 +34,7 @@ class HTTPServer:
         readiness_provider: ReadinessProvider | None = None,
         otel_runtime: OpenTelemetryRuntime | None = None,
         cors_allowed_origins: tuple[str, ...] = (),
+        max_request_body_bytes: int = 4096,
     ):
         """Initialize HTTP server.
         
@@ -51,12 +52,16 @@ class HTTPServer:
         self._readiness_provider = readiness_provider
         self._otel_runtime = otel_runtime
         self._cors_allowed_origins = frozenset(cors_allowed_origins)
+        self._max_request_body_bytes = max_request_body_bytes
         self._runner = None
         self._site = None
 
     def _build_app(self) -> web.Application:
         """Build aiohttp application with operational and integration endpoints."""
-        app = web.Application(middlewares=[self._cors_middleware])
+        app = web.Application(
+            client_max_size=self._max_request_body_bytes,
+            middlewares=[self._cors_middleware],
+        )
         app.router.add_get('/', self._home)
         app.router.add_get('/health', self._health, name='health')
         app.router.add_get('/ready', self._ready, name='ready')

@@ -30,6 +30,7 @@ class SpeakController:
         rate_limit_max_requests: int = 0,
         rate_limit_window_seconds: float = 0,
         auth_token: str | None = None,
+        max_text_length: int = 500,
         otel_runtime: RuntimeTelemetry | None = None,
     ):
         self._speak_use_case = speak_use_case
@@ -38,6 +39,7 @@ class SpeakController:
         self._rate_limit_max_requests = rate_limit_max_requests
         self._rate_limit_window_seconds = rate_limit_window_seconds
         self._auth_token = auth_token
+        self._max_text_length = max_text_length
         self._presenter = HTTPSpeakPresenter()
         self._otel_runtime = otel_runtime
 
@@ -54,6 +56,11 @@ class SpeakController:
                 span.set_attribute("result_code", "unauthorized")
                 return web.Response(text="unauthorized", status=401)
 
+            content_type = getattr(request, "content_type", "application/json") or ""
+            if isinstance(content_type, str) and content_type != "application/json":
+                span.set_attribute("result_code", "unsupported_media_type")
+                return web.Response(text="unsupported media type", status=415)
+
             try:
                 data = await request.json()
             except Exception as exc:
@@ -62,12 +69,19 @@ class SpeakController:
                 if self._otel_runtime is not None:
                     self._otel_runtime.mark_span_error(span, exc)
                 return web.Response(text="invalid json", status=400)
+            if not isinstance(data, dict):
+                span.set_attribute("result_code", "invalid_json_object")
+                return web.Response(text="invalid json object", status=400)
+            parsed_text = self._parse_text(data.get("text"))
+            if len(parsed_text) > self._max_text_length:
+                span.set_attribute("result_code", "text_too_long")
+                return web.Response(text="text too long", status=413)
 
             guild_id = self._parse_int(data.get("guild_id"))
             member_id_value = data.get("member_id") or data.get("user_id")
             config_override = self._parse_config_override(data, guild_id, self._parse_int(member_id_value))
             request_dto = BotSpeakRequestDTO(
-                text=self._parse_text(data.get("text")),
+                text=parsed_text,
                 channel_id=self._parse_int(data.get("channel_id")),
                 guild_id=guild_id,
                 member_id=str(member_id_value) if member_id_value is not None else None,

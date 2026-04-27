@@ -20,6 +20,7 @@ class TestBot:
             mock_config.http_port = 10000
             mock_config.http_host = "127.0.0.1"
             mock_config.http_cors_allowed_origins = ()
+            mock_config.http_max_body_bytes = 4096
             MockConfig.return_value = mock_config
             
             # Mock HTTP server
@@ -65,6 +66,7 @@ class TestBot:
                 readiness_provider=mock_container.readiness_payload,
                 otel_runtime=mock_container.otel_runtime,
                 cors_allowed_origins=(),
+                max_request_body_bytes=4096,
             )
             # Verify HTTP server was started
             mock_http_server.start.assert_called_once()

@@ -147,6 +147,55 @@ class TestSpeakController:
         
         assert response.status == 400
         assert "invalid json" in response.text.lower()
+
+    async def test_handle_rejects_non_json_content_type(self):
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
+        )
+        controller = SpeakController(use_case)
+        request = Mock(spec=web.Request)
+        request.headers = {}
+        request.content_type = "text/plain"
+        request.json = AsyncMock(return_value={"text": "Hello"})
+
+        response = await controller.handle(request)
+
+        assert response.status == 415
+        assert response.text == "unsupported media type"
+        use_case.execute.assert_not_awaited()
+
+    async def test_handle_rejects_json_array_payload(self):
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
+        )
+        controller = SpeakController(use_case)
+        request = Mock(spec=web.Request)
+        request.headers = {}
+        request.json = AsyncMock(return_value=["not", "object"])
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert response.text == "invalid json object"
+        use_case.execute.assert_not_awaited()
+
+    async def test_handle_rejects_text_above_configured_limit(self):
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(
+            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
+        )
+        controller = SpeakController(use_case, max_text_length=5)
+        request = Mock(spec=web.Request)
+        request.headers = {}
+        request.json = AsyncMock(return_value={"text": "too long"})
+
+        response = await controller.handle(request)
+
+        assert response.status == 413
+        assert response.text == "text too long"
+        use_case.execute.assert_not_awaited()
     
     async def test_handle_with_all_fields(
         self,
