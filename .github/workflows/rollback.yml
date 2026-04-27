@@ -1,0 +1,111 @@
+name: Rollback Bot Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'JSON runner labels, for example ["self-hosted","linux","bot-server"]'
+        required: true
+        default: '["ubuntu-latest"]'
+        type: string
+      bot_image:
+        description: "Full bot image repository"
+        required: true
+        default: "ghcr.io/OWNER/tts-hotkey-windows-bot"
+        type: string
+      app_version:
+        description: "Known-good image tag to deploy"
+        required: true
+        type: string
+      vcs_ref:
+        description: "Known-good git SHA for traceability"
+        required: true
+        type: string
+      env_file:
+        description: "Environment file on the runner"
+        required: true
+        default: ".env.prod"
+        type: string
+      compose_file:
+        description: "Compose file on the runner"
+        required: true
+        default: "docker-compose.prod.yml"
+        type: string
+      health_url:
+        description: "Bot health endpoint to validate after rollback"
+        required: true
+        default: "http://127.0.0.1:10000/health"
+        type: string
+      ready_url:
+        description: "Bot readiness endpoint to validate after rollback"
+        required: true
+        default: "http://127.0.0.1:10000/ready"
+        type: string
+      dry_run:
+        description: "Print rollback commands without executing them"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  rollback:
+    name: Roll Back Bot Image
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Validate inputs
+        run: |
+          test -n "${{ inputs.bot_image }}"
+          test -n "${{ inputs.app_version }}"
+          test -n "${{ inputs.vcs_ref }}"
+          test -f "${{ inputs.env_file }}"
+          test -f "${{ inputs.compose_file }}"
+
+      - name: Show rollback plan
+        run: |
+          cat <<'EOF'
+          Rollback plan:
+            BOT_IMAGE=${{ inputs.bot_image }}
+            APP_VERSION=${{ inputs.app_version }}
+            VCS_REF=${{ inputs.vcs_ref }}
+            env file=${{ inputs.env_file }}
+            compose file=${{ inputs.compose_file }}
+            dry run=${{ inputs.dry_run }}
+          EOF
+
+          cat <<'EOF'
+          Commands:
+            BOT_IMAGE="${{ inputs.bot_image }}" APP_VERSION="${{ inputs.app_version }}" VCS_REF="${{ inputs.vcs_ref }}" docker compose --env-file "${{ inputs.env_file }}" -f "${{ inputs.compose_file }}" pull bot
+            BOT_IMAGE="${{ inputs.bot_image }}" APP_VERSION="${{ inputs.app_version }}" VCS_REF="${{ inputs.vcs_ref }}" docker compose --env-file "${{ inputs.env_file }}" -f "${{ inputs.compose_file }}" up -d --no-deps --no-build bot
+          EOF
+
+      - name: Log in to GHCR
+        if: ${{ !inputs.dry_run && startsWith(inputs.bot_image, 'ghcr.io/') }}
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Execute rollback
+        if: ${{ !inputs.dry_run }}
+        env:
+          BOT_IMAGE: ${{ inputs.bot_image }}
+          APP_VERSION: ${{ inputs.app_version }}
+          VCS_REF: ${{ inputs.vcs_ref }}
+        run: |
+          docker compose --env-file "${{ inputs.env_file }}" -f "${{ inputs.compose_file }}" pull bot
+          docker compose --env-file "${{ inputs.env_file }}" -f "${{ inputs.compose_file }}" up -d --no-deps --no-build bot
+          docker compose --env-file "${{ inputs.env_file }}" -f "${{ inputs.compose_file }}" ps bot
+
+      - name: Validate rollback health
+        if: ${{ !inputs.dry_run }}
+        run: |
+          curl --fail --show-error --retry 12 --retry-delay 5 "${{ inputs.health_url }}"
+          curl --fail --show-error --retry 12 --retry-delay 5 "${{ inputs.ready_url }}"

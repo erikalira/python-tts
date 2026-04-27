@@ -189,6 +189,20 @@ Rollback proves that a bad bot image or environment change can be reversed.
 - The operator knows whether the deployment uses source checkout, built image,
   or both.
 
+### Image-Based Rollback
+
+Use this path when production deploys GHCR images built by the `Release`
+workflow.
+
+1. Open the `Rollback Bot Image` workflow.
+2. Keep `dry_run=true` and enter the previous known-good image tag.
+3. Confirm the generated commands target the expected compose and env files.
+4. Re-run with `dry_run=false` from a runner that can reach the Docker host.
+5. Validate health, readiness, observability, logs, and one short TTS flow.
+
+Success means the bot service is recreated from the previous immutable image
+tag without rebuilding from source.
+
 ### Source-Based Rollback
 
 1. Record the current commit.

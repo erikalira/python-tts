@@ -134,6 +134,20 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps -
 Use rollback when the release breaks health, readiness, queue processing,
 storage access, or the desktop-connected bot flow.
 
+For Docker image rollback on a runner with access to the production compose
+stack, use the `Rollback Bot Image` GitHub Actions workflow. It defaults to a
+dry run. For an actual rollback, provide:
+
+- runner labels, for example `["self-hosted","linux","bot-server"]`
+- previous `BOT_IMAGE`
+- previous `APP_VERSION`
+- previous `VCS_REF`
+- production env file path
+- production compose file path
+
+The workflow pulls the selected image tag, recreates only the bot service, and
+validates `/health` and `/ready`.
+
 1. Restore the previous application image tag in `.env.prod`.
 
 ```env
