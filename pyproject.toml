@@ -34,6 +34,9 @@ security = [
   "cyclonedx-bom>=7.3.0",
   "pip-audit>=2.9.0",
 ]
+mutation = [
+  "mutmut>=3.3.1",
+]
 test = [
   "pytest>=9.0.3",
   "pytest-asyncio>=1.3.0",
@@ -46,6 +49,20 @@ test = [
 
 [tool.uv]
 package = false
+
+[tool.mutmut]
+paths_to_mutate = [
+  "src/core/",
+  "src/application/tts_text.py",
+  "src/application/rate_limiting.py",
+  "src/application/desktop_tts.py",
+]
+pytest_add_cli_args_test_selection = [
+  "tests/unit/core",
+  "tests/unit/application/test_desktop_tts.py",
+  "tests/unit/application/test_use_cases.py",
+]
+mutate_only_covered_lines = true
 
 [tool.ruff]
 target-version = "py311"

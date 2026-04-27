@@ -185,6 +185,57 @@ jobs:
           path: .test-artifacts/load/queue-load-baseline.json
           if-no-files-found: error
 
+  mutation-baseline:
+    name: Mutation Baseline
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install dependencies
+        run: |
+          uv sync --locked --group test --group mutation
+
+      - name: Run focused baseline tests
+        env:
+          CI: true
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          uv run pytest tests/unit/core tests/unit/application/test_desktop_tts.py tests/unit/application/test_use_cases.py --tb=short -v --no-cov
+
+      - name: Run mutation baseline
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          uv run mutmut run
+
+      - name: Capture mutation results
+        if: always()
+        run: |
+          mkdir -p .test-artifacts/mutation
+          uv run mutmut results > .test-artifacts/mutation/mutmut-results.txt || true
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-baseline
+          path: .test-artifacts/mutation/mutmut-results.txt
+          if-no-files-found: warn
+
   external-integrations:
     name: External Integrations (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
