@@ -43,6 +43,14 @@ dist/
 tts_hotkey.exe
 build/
 
+# Infrastructure local state
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+*.tfvars.json
+
 # Log Files
 *.log
 deploy/winsw/logs/

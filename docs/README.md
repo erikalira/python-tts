@@ -36,6 +36,7 @@ This directory contains the repository's supporting documentation. The root
 - [operations/DR_DRILLS.md](operations/DR_DRILLS.md): production recovery drills for Postgres restore, Redis recovery, and version rollback
 - [operations/RELEASE_CHECKLIST.md](operations/RELEASE_CHECKLIST.md): release checklist covering bot, desktop, deploy, and post-deploy metrics
 - [deploy/ENVIRONMENTS.md](deploy/ENVIRONMENTS.md): local and production environment variables for bot and Desktop App
+- [../infra/README.md](../infra/README.md): OpenTofu environment contract and IaC validation workflow
 - [deploy/WINDOWS_BOT_DEPLOY.md](deploy/WINDOWS_BOT_DEPLOY.md): WinSW deployment guide for keeping the Discord bot running as a Windows service
 - [deploy/BOT_PRODUCTION_PERSISTENCE.md](deploy/BOT_PRODUCTION_PERSISTENCE.md): recommended persistence architecture for production bot deploys
 - [deploy/DOCKER_POSTGRES_DEPLOY.md](deploy/DOCKER_POSTGRES_DEPLOY.md): run the Discord bot with Docker and Postgres
