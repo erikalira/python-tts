@@ -18,6 +18,12 @@ From the repository root:
 python -m venv .venv
 ```
 
+### Windows CMD
+
+```cmd
+python -m venv .venv
+```
+
 ### Linux/macOS
 
 ```bash
@@ -36,6 +42,12 @@ If PowerShell blocks local scripts, run this permission change once for the curr
 
 ```powershell
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+### Windows CMD
+
+```cmd
+.\.venv\Scripts\activate.bat
 ```
 
 ### Linux/macOS
