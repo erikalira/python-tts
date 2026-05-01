@@ -17,10 +17,22 @@ spec:
         app.kubernetes.io/name: tts-hotkey-windows
         app.kubernetes.io/component: bot
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: bot
           image: ghcr.io/your-org/tts-hotkey-windows-bot:v0.0.0
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - name: http
               containerPort: 10000
