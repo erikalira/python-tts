@@ -5,7 +5,7 @@ This directory contains the repository's supporting documentation. The root
 
 ## Getting Started
 
-- [getting-started/SETUP.md](getting-started/SETUP.md): virtual environment setup, installation, and activation on Windows and Linux
+- [getting-started/SETUP.md](getting-started/SETUP.md): virtual environment setup, installation, and activation on Windows, Linux, and macOS
 - [getting-started/TESTING.md](getting-started/TESTING.md): automated test structure and local execution
 
 ## Understand The System
