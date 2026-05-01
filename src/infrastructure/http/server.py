@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict
 
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 RequestHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 ObservabilitySnapshotProvider = Callable[[], dict[str, object]]
 ReadinessProvider = Callable[[], Awaitable[dict[str, object]]]
+_HTTP_HEADER_TOKEN_PATTERN = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
 
 
 class HTTPServer:
@@ -168,7 +170,11 @@ class _null_span_context:
 def _append_vary_origin(current: str | None) -> str:
     if not current:
         return "Origin"
-    values = [value.strip() for value in current.split(",")]
+    values = [
+        value.strip()
+        for value in current.split(",")
+        if _HTTP_HEADER_TOKEN_PATTERN.fullmatch(value.strip())
+    ]
     if any(value.lower() == "origin" for value in values):
-        return current
-    return f"{current}, Origin"
+        return ", ".join(values)
+    return ", ".join([*values, "Origin"])

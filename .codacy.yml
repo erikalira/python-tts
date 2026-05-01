@@ -31,6 +31,9 @@ exclude_paths:
   - "*.egg-info/**"
   - "docs/**"
   - "deploy/postgres/**"
+  # Postgres init scripts are intentionally not SQL Server scripts; rules such
+  # as SET QUOTED_IDENTIFIER do not apply to this dialect.
+  - "deploy/k8s/base/postgres-initdb/**"
 
 # Transform paths (if needed)
 transform_paths:
