@@ -92,11 +92,12 @@ jobs:
             -t tts-hotkey-windows-bot:${GITHUB_SHA} .
 
       - name: Generate Docker image SBOM
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: tts-hotkey-windows-bot:${{ github.sha }}
           format: cyclonedx
           output: sbom/docker-image.cdx.json
+          version: v0.69.3
 
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v7
@@ -120,13 +121,14 @@ jobs:
             -t tts-hotkey-windows-bot:${GITHUB_SHA} .
 
       - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: tts-hotkey-windows-bot:${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
           exit-code: "0"
+          version: v0.69.3
 
       - name: Verify Trivy SARIF was generated
         run: test -s trivy-results.sarif
