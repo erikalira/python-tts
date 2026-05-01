@@ -57,10 +57,17 @@ paths_to_mutate = [
   "src/application/rate_limiting.py",
   "src/application/desktop_tts.py",
 ]
+pytest_add_cli_args = [
+  "-c",
+  "mutmut_pytest.ini",
+]
 pytest_add_cli_args_test_selection = [
   "tests/unit/core",
   "tests/unit/application/test_desktop_tts.py",
   "tests/unit/application/test_use_cases.py",
+]
+also_copy = [
+  "mutmut_pytest.ini",
 ]
 mutate_only_covered_lines = true
 

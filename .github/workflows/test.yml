@@ -219,7 +219,6 @@ jobs:
       - name: Run mutation baseline
         env:
           PYTHONPATH: ${{ github.workspace }}
-          PYTEST_ADDOPTS: "--no-cov"
         run: |
           uv run mutmut run
 
