@@ -220,6 +220,8 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
+          mv pytest.ini pytest.ini.coverage
+          trap 'mv pytest.ini.coverage pytest.ini' EXIT
           uv run mutmut run
 
       - name: Capture mutation results
