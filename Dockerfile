@@ -11,9 +11,11 @@ LABEL org.opencontainers.image.title="tts-hotkey-windows-bot" \
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (espeak-ng and ffmpeg)
+# Install system dependencies (espeak-ng and ffmpeg), upgrading base packages first
+# so vulnerability scans see the latest patched Debian packages.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+    DEBIAN_FRONTEND=noninteractive apt-get -y --no-install-recommends upgrade && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     espeak-ng \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
@@ -24,8 +26,8 @@ RUN pip install --no-cache-dir uv==0.11.3
 # Copy dependency manifests before application code for better layer caching
 COPY pyproject.toml uv.lock ./
 
-# Install Python dependencies from the lockfile
-RUN uv sync --locked --no-install-project --no-cache
+# Install runtime Python dependencies from the lockfile
+RUN uv sync --locked --no-default-groups --no-install-project --no-cache
 
 # Copy application code
 COPY . .
