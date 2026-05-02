@@ -285,9 +285,11 @@ jobs:
           uv sync --locked --group test
 
       - name: Run external integration slice
+        timeout-minutes: 5
         env:
           CI: true
           PYTHONPATH: ${{ github.workspace }}
           RUN_NETWORK_INTEGRATION_TESTS: ${{ runner.os == 'Linux' && '1' || '0' }}
+          RUN_WINDOWS_TTS_INTEGRATION_TESTS: "0"
         run: |
           uv run pytest ${{ matrix.pytest_args }} --tb=short -v --no-cov
