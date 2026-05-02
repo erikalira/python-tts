@@ -26,7 +26,7 @@ from src.infrastructure.audio_queue import InMemoryAudioQueue
 @pytest.mark.asyncio
 class TestSpeakTextUseCase:
     """Test SpeakTextUseCase."""
-    
+
     async def test_execute_success(
         self,
         mock_tts_engine,
@@ -34,7 +34,7 @@ class TestSpeakTextUseCase:
         mock_config_repository,
         mock_audio_queue,
         build_speak_use_case,
-        sample_tts_request
+        sample_tts_request,
     ):
         """Test successful execution of speak use case."""
         use_case = build_speak_use_case(
@@ -43,16 +43,16 @@ class TestSpeakTextUseCase:
             mock_config_repository=mock_config_repository,
             mock_audio_queue=mock_audio_queue,
         )
-        
+
         result = await use_case.execute(sample_tts_request)
-        
+
         assert result.success is True
         assert result.code == SPEAK_RESULT_QUEUED
         assert result.queued is True
         assert result.starts_immediately is True
         assert len(mock_tts_engine.calls) == 0
         assert len(mock_channel_repository.channel.played_audio) == 0
-    
+
     async def test_execute_missing_text(
         self,
         mock_tts_engine,
@@ -68,36 +68,31 @@ class TestSpeakTextUseCase:
             mock_config_repository=mock_config_repository,
             mock_audio_queue=mock_audio_queue,
         )
-        
+
         request = SpeakTextInputDTO(text="")
         result = await use_case.execute(request)
-        
+
         assert result.success is False
         assert result.code == SPEAK_RESULT_MISSING_TEXT
-    
+
     async def test_execute_no_channel_found(
-        self,
-        mock_tts_engine,
-        mock_config_repository,
-        mock_audio_queue,
-        build_speak_use_case,
-        sample_tts_request
+        self, mock_tts_engine, mock_config_repository, mock_audio_queue, build_speak_use_case, sample_tts_request
     ):
         """Test execution when no voice channel is found."""
         from tests.conftest import MockVoiceChannelRepository
-        
+
         # Repository that returns None
         repo = MockVoiceChannelRepository(return_none=True)
-        
+
         use_case = build_speak_use_case(
             mock_tts_engine=mock_tts_engine,
             mock_channel_repository=repo,
             mock_config_repository=mock_config_repository,
             mock_audio_queue=mock_audio_queue,
         )
-        
+
         result = await use_case.execute(sample_tts_request)
-        
+
         assert result.success is False
         assert result.code == SPEAK_RESULT_USER_NOT_IN_CHANNEL
         assert result.queued is False
@@ -150,7 +145,7 @@ class TestSpeakTextUseCase:
         assert result.code == SPEAK_RESULT_QUEUED
         assert result.starts_immediately is True
         assert mock_audio_queue.items[0].request.guild_id == mock_channel_repository.channel.get_guild_id()
-    
+
     async def test_execute_finds_by_channel_id(
         self,
         mock_tts_engine,
@@ -166,7 +161,7 @@ class TestSpeakTextUseCase:
             mock_config_repository=mock_config_repository,
             mock_audio_queue=mock_audio_queue,
         )
-        
+
         request = SpeakTextInputDTO(text="test", channel_id=123456, guild_id=789012, member_id=345678)
         result = await use_case.execute(request)
 
@@ -222,12 +217,7 @@ class TestSpeakTextUseCase:
         assert result.starts_immediately is False
 
     async def test_execute_returns_failure_when_queue_is_full(
-        self,
-        mock_tts_engine,
-        mock_channel_repository,
-        mock_config_repository,
-        build_speak_use_case,
-        sample_tts_request
+        self, mock_tts_engine, mock_channel_repository, mock_config_repository, build_speak_use_case, sample_tts_request
     ):
         """Queue overflow should reject the request instead of faking a queued success."""
         audio_queue = InMemoryAudioQueue(max_queue_size=0)
@@ -247,14 +237,14 @@ class TestSpeakTextUseCase:
 
 class TestConfigureTTSUseCase:
     """Test ConfigureTTSUseCase."""
-    
+
     @pytest.mark.asyncio
     async def test_get_current_config(self, mock_config_repository):
         """Test getting current configuration."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
-        
+
         result = use_case.get_config(guild_id=123)
-        
+
         assert result == ConfigureTTSResult(
             success=True,
             guild_id=123,
@@ -269,40 +259,40 @@ class TestConfigureTTSUseCase:
         assert result.config is not None
         assert result.config.engine == "gtts"
         assert result.config.language == "pt"
-    
+
     @pytest.mark.asyncio
     async def test_update_engine(self, mock_config_repository):
         """Test updating TTS engine."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
-        
+
         result = await use_case.update_config_async(guild_id=123, engine="pyttsx3")
-        
+
         assert result.success is True
         assert result.config is not None
         assert result.config.engine == "pyttsx3"
-        
+
         # Verify it was saved
         saved_config = mock_config_repository.get_config(123)
         assert saved_config.engine == "pyttsx3"
-    
+
     @pytest.mark.asyncio
     async def test_update_language(self, mock_config_repository):
         """Test updating TTS language."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
-        
+
         result = await use_case.update_config_async(guild_id=123, language="en")
-        
+
         assert result.success is True
         assert result.config is not None
         assert result.config.language == "en"
-    
+
     @pytest.mark.asyncio
     async def test_update_voice_id(self, mock_config_repository):
         """Test updating voice ID."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
-        
+
         result = await use_case.update_config_async(guild_id=123, voice_id="en-us")
-        
+
         assert result.success is True
         assert result.config is not None
         assert result.config.voice_id == "en-us"
@@ -339,14 +329,14 @@ class TestConfigureTTSUseCase:
         assert result.success is True
         assert result.config is not None
         assert result.config.engine == "edge-tts"
-    
+
     @pytest.mark.asyncio
     async def test_invalid_engine(self, mock_config_repository):
         """Test setting invalid engine."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
-        
+
         result = await use_case.update_config_async(guild_id=123, engine="invalid")
-        
+
         assert result == ConfigureTTSResult(
             success=False,
             message="Invalid engine. Use 'gtts', 'pyttsx3' or 'edge-tts'",
@@ -399,19 +389,14 @@ class TestVoiceChannelUseCases:
 
         assert result.success is False
         assert result.code == LEAVE_RESULT_NOT_CONNECTED
-    
+
     @pytest.mark.asyncio
     async def test_update_multiple_settings(self, mock_config_repository):
         """Test updating multiple settings at once."""
         use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
-        
-        result = await use_case.update_config_async(
-            guild_id=123,
-            engine="pyttsx3",
-            language="en",
-            voice_id="en-us"
-        )
-        
+
+        result = await use_case.update_config_async(guild_id=123, engine="pyttsx3", language="en", voice_id="en-us")
+
         assert result.success is True
         assert result.config is not None
         assert result.config.engine == "pyttsx3"

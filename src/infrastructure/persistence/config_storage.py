@@ -1,9 +1,10 @@
 """Configuration storage with per-guild isolation and persistence."""
+
 import json
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from src.core.entities import TTSConfig
 from src.core.interfaces import IConfigRepository
@@ -15,35 +16,35 @@ class IConfigStorage(ABC):
     """Abstract interface for configuration persistence."""
 
     @abstractmethod
-    async def load(self, guild_id: int, user_id: Optional[int] = None) -> Optional[TTSConfig]:
+    async def load(self, guild_id: int, user_id: int | None = None) -> TTSConfig | None:
         """Load configuration for a guild or guild/user scope.
-        
+
         Args:
             guild_id: Guild identifier
-            
+
         Returns:
             TTSConfig if found, None otherwise
         """
 
     @abstractmethod
-    async def save(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> bool:
+    async def save(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> bool:
         """Save configuration for a guild or guild/user scope.
-        
+
         Args:
             guild_id: Guild identifier
             config: Configuration to save
-            
+
         Returns:
             True if saved successfully
         """
 
     @abstractmethod
-    async def delete(self, guild_id: int, user_id: Optional[int] = None) -> bool:
+    async def delete(self, guild_id: int, user_id: int | None = None) -> bool:
         """Delete configuration for a guild or guild/user scope.
-        
+
         Args:
             guild_id: Guild identifier
-            
+
         Returns:
             True if deleted successfully
         """
@@ -51,10 +52,10 @@ class IConfigStorage(ABC):
 
 class JSONConfigStorage(IConfigStorage):
     """File-based storage using JSON for configuration.
-    
+
     Stores guild configurations in isolated files:
     - configs/guild_{guild_id}.json
-    
+
     Advantages:
     - No external dependencies (Redis, DB)
     - Survives bot restarts
@@ -64,7 +65,7 @@ class JSONConfigStorage(IConfigStorage):
 
     def __init__(self, storage_dir: str = "configs"):
         """Initialize JSON storage.
-        
+
         Args:
             storage_dir: Directory to store config files
         """
@@ -72,12 +73,12 @@ class JSONConfigStorage(IConfigStorage):
         self.storage_dir.mkdir(exist_ok=True)
         logger.info(f"[CONFIG_STORAGE] Initialized JSON storage at {self.storage_dir}")
 
-    def _get_config_path(self, guild_id: int, user_id: Optional[int] = None) -> Path:
+    def _get_config_path(self, guild_id: int, user_id: int | None = None) -> Path:
         """Get file path for guild config.
-        
+
         Args:
             guild_id: Guild identifier
-            
+
         Returns:
             Path to config file
         """
@@ -94,7 +95,7 @@ class JSONConfigStorage(IConfigStorage):
             rate=int(data.get("rate", 180)),
         )
 
-    def load_sync(self, guild_id: int, user_id: Optional[int] = None) -> Optional[TTSConfig]:
+    def load_sync(self, guild_id: int, user_id: int | None = None) -> TTSConfig | None:
         """Load configuration synchronously for cache-miss recovery paths."""
         config_path = self._get_config_path(guild_id, user_id=user_id)
 
@@ -116,7 +117,7 @@ class JSONConfigStorage(IConfigStorage):
             logger.error(f"[CONFIG_STORAGE] Failed to load config for guild {guild_id}: {e}")
             return None
 
-    async def load(self, guild_id: int, user_id: Optional[int] = None) -> Optional[TTSConfig]:
+    async def load(self, guild_id: int, user_id: int | None = None) -> TTSConfig | None:
         """Load configuration for a guild from JSON file.
 
         Args:
@@ -127,13 +128,13 @@ class JSONConfigStorage(IConfigStorage):
         """
         return self.load_sync(guild_id, user_id=user_id)
 
-    async def save(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> bool:
+    async def save(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> bool:
         """Save configuration for a guild to JSON file.
-        
+
         Args:
             guild_id: Guild identifier
             config: Configuration to save
-            
+
         Returns:
             True if saved successfully
         """
@@ -159,12 +160,12 @@ class JSONConfigStorage(IConfigStorage):
             logger.error(f"[CONFIG_STORAGE] Failed to save config for guild {guild_id}: {e}")
             return False
 
-    async def delete(self, guild_id: int, user_id: Optional[int] = None) -> bool:
+    async def delete(self, guild_id: int, user_id: int | None = None) -> bool:
         """Delete configuration for a guild.
-        
+
         Args:
             guild_id: Guild identifier
-            
+
         Returns:
             True if deleted successfully
         """
@@ -183,11 +184,11 @@ class JSONConfigStorage(IConfigStorage):
 
 class GuildConfigRepository(IConfigRepository):
     """Configuration repository with per-guild isolation and persistence.
-    
+
     Uses dependency injection to support different storage backends:
     - JSONConfigStorage for file-based persistence
     - RedisConfigStorage (future) for distributed deployments
-    
+
     Guarantees:
     - Each guild has isolated configuration
     - No data leakage between servers
@@ -197,7 +198,7 @@ class GuildConfigRepository(IConfigRepository):
 
     def __init__(self, default_config: TTSConfig, storage: IConfigStorage):
         """Initialize repository with storage backend.
-        
+
         Args:
             default_config: Default configuration for new guilds
             storage: Storage backend for persistence
@@ -218,15 +219,15 @@ class GuildConfigRepository(IConfigRepository):
             rate=config.rate,
         )
 
-    def get_config(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
+    def get_config(self, guild_id: int | None = None, user_id: int | None = None) -> TTSConfig:
         """Get resolved TTS configuration for a guild/user scope.
-        
+
         Returns cached config if available, otherwise loads from storage
         or returns default.
-        
+
         Args:
             guild_id: Guild identifier or None for the default config
-             
+
         Returns:
             TTSConfig for the guild
         """
@@ -260,20 +261,20 @@ class GuildConfigRepository(IConfigRepository):
 
         return self._get_default_config()
 
-    async def load_config_async(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
+    async def load_config_async(self, guild_id: int | None = None, user_id: int | None = None) -> TTSConfig:
         """Load configuration asynchronously through the repository contract."""
         if guild_id is None:
             return self._get_default_config()
         return await self.load_from_storage(guild_id, user_id=user_id)
 
-    async def load_from_storage(self, guild_id: Optional[int], user_id: Optional[int] = None) -> TTSConfig:
+    async def load_from_storage(self, guild_id: int | None, user_id: int | None = None) -> TTSConfig:
         """Load configuration from storage asynchronously.
-        
+
         This method fetches from persistence layer and updates cache.
-        
+
         Args:
             guild_id: Guild identifier
-            
+
         Returns:
             TTSConfig for the guild or default if not found
         """
@@ -293,7 +294,7 @@ class GuildConfigRepository(IConfigRepository):
                     return self._clone_config(self._user_cache[(guild_id, user_id)])
 
             config = await self._storage.load(guild_id)
-            
+
             if config:
                 self._cache[guild_id] = self._clone_config(config)
                 logger.debug(f"[CONFIG_REPO] Loaded config from storage for guild {guild_id}")
@@ -305,11 +306,11 @@ class GuildConfigRepository(IConfigRepository):
             logger.error(f"[CONFIG_REPO] Error loading config for guild {guild_id}: {e}")
             return self._get_default_config()
 
-    def set_config(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> None:
+    def set_config(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> None:
         """Set TTS configuration for a guild or guild/user scope (in-memory only).
-        
+
         WARNING: This only updates cache. Use save_config_async() to persist!
-        
+
         Args:
             guild_id: Guild identifier
             config: New configuration
@@ -328,13 +329,13 @@ class GuildConfigRepository(IConfigRepository):
         self._cache[guild_id] = target
         logger.debug(f"[CONFIG_REPO] Updated cache for guild {guild_id}")
 
-    async def save_config_async(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> bool:
+    async def save_config_async(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> bool:
         """Save configuration to persistent storage asynchronously.
-        
+
         Args:
             guild_id: Guild identifier
             config: Configuration to save
-            
+
         Returns:
             True if saved successfully
         """
@@ -365,12 +366,12 @@ class GuildConfigRepository(IConfigRepository):
             logger.error(f"[CONFIG_REPO] Error saving config for guild {guild_id}: {e}")
             return False
 
-    async def delete_config_async(self, guild_id: int, user_id: Optional[int] = None) -> bool:
+    async def delete_config_async(self, guild_id: int, user_id: int | None = None) -> bool:
         """Delete configuration for a guild.
-        
+
         Args:
             guild_id: Guild identifier
-            
+
         Returns:
             True if deleted successfully
         """
@@ -398,7 +399,7 @@ class GuildConfigRepository(IConfigRepository):
             logger.error(f"[CONFIG_REPO] Error deleting config for guild {guild_id}: {e}")
             return False
 
-    def get_effective_scope(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> str:
+    def get_effective_scope(self, guild_id: int | None = None, user_id: int | None = None) -> str:
         if guild_id is None:
             return "default"
 
@@ -421,7 +422,7 @@ class GuildConfigRepository(IConfigRepository):
 
     def _get_default_config(self) -> TTSConfig:
         """Get default configuration (defensive copy).
-        
+
         Returns:
             Copy of default configuration
         """
@@ -429,7 +430,7 @@ class GuildConfigRepository(IConfigRepository):
             engine=self._default_config.engine,
             language=self._default_config.language,
             voice_id=self._default_config.voice_id,
-            rate=self._default_config.rate
+            rate=self._default_config.rate,
         )
 
     def clear_cache(self) -> None:

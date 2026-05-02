@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from src.application.tts_voice_catalog import TTSCatalog, TTSVoiceOption
 from src.infrastructure.tts.voice_catalog import RuntimeTTSCatalog
@@ -21,8 +21,8 @@ class GUIConfig(ConfigInterface):
 
     def __init__(self, tts_catalog: TTSCatalog | None = None) -> None:
         self.root: Any | None = None
-        self.config: Optional[DesktopAppConfig] = None
-        self.result: Optional[DesktopAppConfig] = None
+        self.config: DesktopAppConfig | None = None
+        self.result: DesktopAppConfig | None = None
         self._main_frame: Any | None = None
         self._button_frame: Any | None = None
         self._notebook: Any | None = None
@@ -43,7 +43,7 @@ class GUIConfig(ConfigInterface):
         self.local_tts_enabled_var: Any | None = None
         self._voice_options_by_label: dict[str, TTSVoiceOption] = {}
 
-    def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
+    def show_config(self, config: DesktopAppConfig) -> DesktopAppConfig | None:
         from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
@@ -69,7 +69,9 @@ class GUIConfig(ConfigInterface):
             return
         self._main_frame = compat.ttk.Frame(self.root, padding="10")
         self._main_frame.pack(fill="both", expand=True)
-        compat.ttk.Label(self._main_frame, text="Desktop App Configuration", font=("Arial", 14, "bold")).pack(pady=(0, 20))
+        compat.ttk.Label(self._main_frame, text="Desktop App Configuration", font=("Arial", 14, "bold")).pack(
+            pady=(0, 20)
+        )
         self._build_config_notebook(self._main_frame)
         self._button_frame = compat.ttk.Frame(self._main_frame)
         self._button_frame.pack(fill="x", pady=(10, 0))
@@ -266,8 +268,12 @@ class GUIConfig(ConfigInterface):
         self.show_notifications_var = compat.tk.BooleanVar(value=self.config.interface.show_notifications)
         self.console_logs_var = compat.tk.BooleanVar(value=self.config.interface.console_logs)
         self.local_tts_enabled_var = compat.tk.BooleanVar(value=self.config.interface.local_tts_enabled)
-        compat.ttk.Checkbutton(parent, text="Show app notifications", variable=self.show_notifications_var).pack(anchor="w", pady=(0, 10))
-        compat.ttk.Checkbutton(parent, text="Keep detailed logs in the interface", variable=self.console_logs_var).pack(anchor="w", pady=(0, 10))
+        compat.ttk.Checkbutton(parent, text="Show app notifications", variable=self.show_notifications_var).pack(
+            anchor="w", pady=(0, 10)
+        )
+        compat.ttk.Checkbutton(parent, text="Keep detailed logs in the interface", variable=self.console_logs_var).pack(
+            anchor="w", pady=(0, 10)
+        )
         compat.ttk.Checkbutton(
             parent,
             text="Enable optional local voice in the Windows app (pyttsx3)",
@@ -306,7 +312,7 @@ class GUIConfig(ConfigInterface):
         except Exception as exc:
             compat.messagebox.showerror("Error", f"Unexpected error: {exc}")
 
-    def _build_config_from_form(self) -> Optional[DesktopAppConfig]:
+    def _build_config_from_form(self) -> DesktopAppConfig | None:
         member_id_var = self.member_id_var
         bot_url_var = self.bot_url_var
         engine_var = self.engine_var
@@ -436,7 +442,12 @@ class GUIConfig(ConfigInterface):
         if selected_widget is None:
             return
 
-        header_height = max(0, self._main_frame.winfo_reqheight() - self._notebook.winfo_reqheight() - self._button_frame.winfo_reqheight())
+        header_height = max(
+            0,
+            self._main_frame.winfo_reqheight()
+            - self._notebook.winfo_reqheight()
+            - self._button_frame.winfo_reqheight(),
+        )
         notebook_height = self._notebook.winfo_reqheight()
         target_width = max(600, self.root.winfo_reqwidth())
         target_height = header_height + notebook_height + self._button_frame.winfo_reqheight()

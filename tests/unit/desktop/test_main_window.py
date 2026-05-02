@@ -74,9 +74,7 @@ def test_main_window_handle_test_connection_uses_presenter_feedback():
     window = build_main_window()
     config = DesktopAppConfig.create_default()
     window._build_config_from_form = Mock(return_value=config)
-    window._on_test_connection = Mock(
-        return_value=DesktopBotActionResult(success=True, message="Bot online")
-    )
+    window._on_test_connection = Mock(return_value=DesktopBotActionResult(success=True, message="Bot online"))
     window._connection_var = DummyVar()
     window._connection_label = DummyLabel()
 

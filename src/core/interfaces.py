@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Interfaces (abstract base classes) following Dependency Inversion Principle."""
 from abc import ABC, abstractmethod
-from typing import Optional, Protocol
+from typing import Protocol
 
 from .entities import AudioFile, AudioQueueItem, TTSConfig
 
@@ -18,15 +18,15 @@ class AudioQueueStatusView(Protocol):
 
 class ITTSEngine(ABC):
     """Interface for text-to-speech engines."""
-    
+
     @abstractmethod
     async def generate_audio(self, text: str, config: TTSConfig) -> AudioFile:
         """Generate audio file from text.
-        
+
         Args:
             text: Text to convert to speech
             config: TTS configuration
-            
+
         Returns:
             AudioFile object with path to generated audio
         """
@@ -34,23 +34,23 @@ class ITTSEngine(ABC):
 
 class IVoiceChannel(ABC):
     """Interface for voice channel operations."""
-    
+
     @abstractmethod
     async def connect(self) -> None:
         """Connect to the voice channel."""
-    
+
     @abstractmethod
     async def disconnect(self) -> None:
         """Disconnect from the voice channel."""
-    
+
     @abstractmethod
     async def play_audio(self, audio: AudioFile) -> None:
         """Play audio in the voice channel.
-        
+
         Args:
             audio: AudioFile to play
         """
-    
+
     @abstractmethod
     def is_connected(self) -> bool:
         """Check if connected to voice channel."""
@@ -74,59 +74,59 @@ class IVoiceChannel(ABC):
 
 class IVoiceChannelRepository(ABC):
     """Interface for finding voice channels."""
-    
+
     @abstractmethod
-    async def find_connected_channel(self) -> Optional[IVoiceChannel]:
+    async def find_connected_channel(self) -> IVoiceChannel | None:
         """Find any voice channel where bot is already connected."""
-    
+
     @abstractmethod
-    async def find_by_member_id(self, member_id: int) -> Optional[IVoiceChannel]:
+    async def find_by_member_id(self, member_id: int) -> IVoiceChannel | None:
         """Find voice channel where member is connected."""
-    
+
     @abstractmethod
-    async def find_by_channel_id(self, channel_id: int) -> Optional[IVoiceChannel]:
+    async def find_by_channel_id(self, channel_id: int) -> IVoiceChannel | None:
         """Find voice channel by ID."""
-    
+
     @abstractmethod
-    async def find_by_guild_id(self, guild_id: Optional[int]) -> Optional[IVoiceChannel]:
+    async def find_by_guild_id(self, guild_id: int | None) -> IVoiceChannel | None:
         """Find first available voice channel in guild."""
 
 
 class IConfigRepository(ABC):
     """Interface for guild-scoped TTS configuration management."""
-    
+
     @abstractmethod
-    def get_config(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
+    def get_config(self, guild_id: int | None = None, user_id: int | None = None) -> TTSConfig:
         """Get resolved TTS configuration for a guild/user scope or the global default."""
 
     @abstractmethod
-    async def load_config_async(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
+    async def load_config_async(self, guild_id: int | None = None, user_id: int | None = None) -> TTSConfig:
         """Load resolved TTS configuration asynchronously for a guild/user scope or the global default."""
-    
+
     @abstractmethod
-    def set_config(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> None:
+    def set_config(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> None:
         """Set TTS configuration for a specific guild or guild/user scope."""
 
     @abstractmethod
-    async def save_config_async(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> bool:
+    async def save_config_async(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> bool:
         """Persist TTS configuration asynchronously for a specific guild or guild/user scope."""
 
     @abstractmethod
-    async def delete_config_async(self, guild_id: int, user_id: Optional[int] = None) -> bool:
+    async def delete_config_async(self, guild_id: int, user_id: int | None = None) -> bool:
         """Delete TTS configuration for a specific guild or guild/user scope."""
 
     @abstractmethod
-    def get_effective_scope(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> str:
+    def get_effective_scope(self, guild_id: int | None = None, user_id: int | None = None) -> str:
         """Return whether the resolved config comes from user, guild, or default scope."""
 
 
 class IInputListener(ABC):
     """Interface for input listening (keyboard, etc)."""
-    
+
     @abstractmethod
     def start(self) -> None:
         """Start listening for input."""
-    
+
     @abstractmethod
     def stop(self) -> None:
         """Stop listening for input."""
@@ -134,62 +134,62 @@ class IInputListener(ABC):
 
 class IAudioQueue(ABC):
     """Interface for managing audio queue per guild.
-    
+
     Supports multiple users per server with FIFO queue processing.
     Separate queues per guild for multi-server support.
     """
-    
+
     @abstractmethod
-    async def enqueue(self, item: AudioQueueItem) -> Optional[str]:
+    async def enqueue(self, item: AudioQueueItem) -> str | None:
         """Add item to queue for its guild.
-        
+
         Args:
             item: AudioQueueItem to enqueue
-            
+
         Returns:
             item_id: Unique identifier for the queued item, or None if rejected
         """
-    
+
     @abstractmethod
-    async def dequeue(self, guild_id: Optional[int]) -> Optional[AudioQueueItem]:
+    async def dequeue(self, guild_id: int | None) -> AudioQueueItem | None:
         """Remove and return next item from guild's queue.
-        
+
         Args:
             guild_id: Guild identifier
-            
+
         Returns:
             Next AudioQueueItem or None if queue empty
         """
-    
+
     @abstractmethod
-    async def peek_next(self, guild_id: Optional[int]) -> Optional[AudioQueueItem]:
+    async def peek_next(self, guild_id: int | None) -> AudioQueueItem | None:
         """Look at next item without removing it.
-        
+
         Args:
             guild_id: Guild identifier
-            
+
         Returns:
             Next AudioQueueItem or None if queue empty
         """
-    
+
     @abstractmethod
-    async def get_queue_status(self, guild_id: Optional[int]) -> AudioQueueStatusView:
+    async def get_queue_status(self, guild_id: int | None) -> AudioQueueStatusView:
         """Get current queue status for a guild.
-        
+
         Args:
             guild_id: Guild identifier
-            
+
         Returns:
             Queue details for the given guild.
         """
-    
+
     @abstractmethod
     async def get_item_position(self, item_id: str) -> int:
         """Get position of specific item in any queue.
-        
+
         Args:
             item_id: Item identifier to search for
-            
+
         Returns:
             Position (0-indexed) or -1 if not found
         """
@@ -203,7 +203,7 @@ class IAudioQueue(ABC):
         """
 
     @abstractmethod
-    async def renew_guild_lock(self, guild_id: Optional[int], owner_token: str, ttl_seconds: int = 30) -> bool:
+    async def renew_guild_lock(self, guild_id: int | None, owner_token: str, ttl_seconds: int = 30) -> bool:
         """Refresh the distributed guild lock while processing is still active.
 
         Args:
@@ -215,33 +215,33 @@ class IAudioQueue(ABC):
     @abstractmethod
     async def acquire_processing_lease(
         self,
-        guild_id: Optional[int],
+        guild_id: int | None,
         owner_token: str,
         ttl_seconds: int = 30,
     ) -> bool:
         """Acquire the active-playback lease for a guild."""
 
     @abstractmethod
-    async def release_processing_lease(self, guild_id: Optional[int], owner_token: str) -> None:
+    async def release_processing_lease(self, guild_id: int | None, owner_token: str) -> None:
         """Release the active-playback lease for a guild."""
 
     @abstractmethod
     async def renew_processing_lease(
         self,
-        guild_id: Optional[int],
+        guild_id: int | None,
         owner_token: str,
         ttl_seconds: int = 30,
     ) -> bool:
         """Refresh the active-playback lease for a guild."""
 
     @abstractmethod
-    async def is_guild_processing(self, guild_id: Optional[int]) -> bool:
+    async def is_guild_processing(self, guild_id: int | None) -> bool:
         """Return whether the guild currently has an active playback lease."""
-    
+
     @abstractmethod
-    async def clear_completed(self, guild_id: Optional[int], older_than_seconds: int = 3600):
+    async def clear_completed(self, guild_id: int | None, older_than_seconds: int = 3600):
         """Remove completed/failed items older than threshold.
-        
+
         Args:
             guild_id: Guild identifier
             older_than_seconds: Remove items older than this duration

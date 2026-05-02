@@ -3,6 +3,7 @@
 This is the refactored version following SOLID principles and Clean Architecture.
 Run with: python -m src.bot
 """
+
 import asyncio
 import logging
 
@@ -37,16 +38,16 @@ async def main():
     # Load configuration
     config = Config()
     _configure_logging(config.log_level)
-    
+
     # Validate configuration
     is_valid, error_msg = config.validate()
     if not is_valid:
         logger.error(f"Configuration error: {error_msg}")
         return
-    
+
     # Create dependency injection container
     container = Container(config)
-    
+
     # Start HTTP server
     http_server = HTTPServer(
         speak_handler=container.speak_controller.handle,
@@ -60,7 +61,7 @@ async def main():
         max_request_body_bytes=config.http_max_body_bytes,
     )
     await http_server.start()
-    
+
     # Start Discord bot
     try:
         if config.discord_token is None:
@@ -94,5 +95,5 @@ def run():
         logger.info("Shutdown complete")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()

@@ -92,10 +92,7 @@ select = [
   "RET",
   "RUF",
   "SIM",
-  "UP006",
-  "UP015",
-  "UP035",
-  "UP041",
+  "UP",
 ]
 ignore = [
   "SIM108",

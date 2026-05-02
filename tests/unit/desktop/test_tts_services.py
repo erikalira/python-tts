@@ -202,7 +202,7 @@ def test_http_discord_bot_client_fetches_voice_context(monkeypatch):
         message="Detected channel: Guild A / Room 1",
         guild_name="Guild A",
         guild_id=30,
-            channel_name="Room 1",
+        channel_name="Room 1",
         channel_id=10,
     )
 
@@ -517,9 +517,7 @@ def test_desktop_app_tts_processor_runs_cleanup_after_success(monkeypatch):
 
     execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_called_once_with(3)
-    on_complete.assert_called_once_with(
-        TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK)
-    )
+    on_complete.assert_called_once_with(TTSExecutionResult(success=True, code=TTS_EXECUTION_RESULT_OK))
 
 
 def test_desktop_app_tts_processor_skips_cleanup_when_execution_fails(monkeypatch):
@@ -548,7 +546,7 @@ def test_desktop_app_tts_processor_skips_cleanup_when_execution_fails(monkeypatc
 
     execution_service.execute.assert_called_once_with("hello")
     cleanup_service.cleanup_typed_text.assert_not_called()
-    on_complete.assert_called_once_with(
-        TTSExecutionResult(success=False, code=TTS_EXECUTION_RESULT_FAILED)
-    )
+    on_complete.assert_called_once_with(TTSExecutionResult(success=False, code=TTS_EXECUTION_RESULT_FAILED))
+
+
 # pyright: reportArgumentType=false, reportAttributeAccessIssue=false

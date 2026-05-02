@@ -16,7 +16,7 @@ from src.presentation.http_controllers import SpeakController, VoiceContextContr
 @pytest.mark.asyncio
 class TestSpeakController:
     """Test SpeakController."""
-    
+
     async def test_handle_valid_request(
         self,
         mock_tts_engine,
@@ -33,20 +33,17 @@ class TestSpeakController:
             mock_audio_queue=mock_audio_queue,
         )
         controller = SpeakController(use_case)
-        
+
         # Create mock request using Mock
         request = Mock(spec=web.Request)
-        request.json = AsyncMock(return_value={
-            'text': 'Hello world',
-            'guild_id': 789012,
-            'channel_id': 123456,
-            'member_id': 345678
-        })
-        
+        request.json = AsyncMock(
+            return_value={"text": "Hello world", "guild_id": 789012, "channel_id": 123456, "member_id": 345678}
+        )
+
         response = await controller.handle(request)
-        
+
         assert response.status == 200
-    
+
     async def test_handle_missing_text(
         self,
         mock_tts_engine,
@@ -63,13 +60,13 @@ class TestSpeakController:
             mock_audio_queue=mock_audio_queue,
         )
         controller = SpeakController(use_case)
-        
+
         # Create mock request with empty text
         request = Mock(spec=web.Request)
-        request.json = AsyncMock(return_value={'text': ''})
-        
+        request.json = AsyncMock(return_value={"text": ""})
+
         response = await controller.handle(request)
-        
+
         assert response.status == 400
         assert response.text == "missing text"
 
@@ -122,7 +119,7 @@ class TestSpeakController:
 
         assert response.status == 400
         assert response.text == "missing text"
-    
+
     async def test_handle_invalid_json(
         self,
         mock_tts_engine,
@@ -139,21 +136,19 @@ class TestSpeakController:
             mock_audio_queue=mock_audio_queue,
         )
         controller = SpeakController(use_case)
-        
+
         # Create mock request that raises exception on json()
         request = Mock(spec=web.Request)
         request.json = AsyncMock(side_effect=ValueError("Invalid JSON"))
-        
+
         response = await controller.handle(request)
-        
+
         assert response.status == 400
         assert "invalid json" in response.text.lower()
 
     async def test_handle_rejects_non_json_content_type(self):
         use_case = Mock(spec=SpeakTextUseCase)
-        use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
-        )
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
         controller = SpeakController(use_case)
         request = Mock(spec=web.Request)
         request.headers = {}
@@ -168,9 +163,7 @@ class TestSpeakController:
 
     async def test_handle_rejects_json_array_payload(self):
         use_case = Mock(spec=SpeakTextUseCase)
-        use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
-        )
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
         controller = SpeakController(use_case)
         request = Mock(spec=web.Request)
         request.headers = {}
@@ -184,9 +177,7 @@ class TestSpeakController:
 
     async def test_handle_rejects_text_above_configured_limit(self):
         use_case = Mock(spec=SpeakTextUseCase)
-        use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
-        )
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
         controller = SpeakController(use_case, max_text_length=5)
         request = Mock(spec=web.Request)
         request.headers = {}
@@ -197,7 +188,7 @@ class TestSpeakController:
         assert response.status == 413
         assert response.text == "text too long"
         use_case.execute.assert_not_awaited()
-    
+
     async def test_handle_with_all_fields(
         self,
         mock_tts_engine,
@@ -214,20 +205,17 @@ class TestSpeakController:
             mock_audio_queue=mock_audio_queue,
         )
         controller = SpeakController(use_case)
-        
+
         # Create mock request with all fields
         request = Mock(spec=web.Request)
-        request.json = AsyncMock(return_value={
-            'text': 'Hello world',
-            'channel_id': 123456,
-            'guild_id': 789012,
-            'member_id': 345678
-        })
-        
+        request.json = AsyncMock(
+            return_value={"text": "Hello world", "channel_id": 123456, "guild_id": 789012, "member_id": 345678}
+        )
+
         response = await controller.handle(request)
-        
+
         assert response.status == 200
-    
+
     async def test_handle_with_user_id(
         self,
         mock_tts_engine,
@@ -244,24 +232,18 @@ class TestSpeakController:
             mock_audio_queue=mock_audio_queue,
         )
         controller = SpeakController(use_case)
-        
+
         # Create mock request with user_id
         request = Mock(spec=web.Request)
-        request.json = AsyncMock(return_value={
-            'text': 'Hello',
-            'guild_id': 789012,
-            'user_id': 345678
-        })
-        
+        request.json = AsyncMock(return_value={"text": "Hello", "guild_id": 789012, "user_id": 345678})
+
         response = await controller.handle(request)
-        
+
         assert response.status == 200
 
     async def test_handle_rate_limits_by_guild_and_member(self):
         use_case = Mock(spec=SpeakTextUseCase)
-        use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
-        )
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
         controller = SpeakController(
             use_case,
             rate_limiter=InMemoryRateLimiter(clock=lambda: 100.0),
@@ -282,9 +264,7 @@ class TestSpeakController:
 
     async def test_handle_rejects_missing_auth_token_when_configured(self):
         use_case = Mock(spec=SpeakTextUseCase)
-        use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
-        )
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
         controller = SpeakController(use_case, auth_token="secret")
         request = Mock(spec=web.Request)
         request.headers = {}
@@ -298,9 +278,7 @@ class TestSpeakController:
 
     async def test_handle_accepts_configured_auth_token(self):
         use_case = Mock(spec=SpeakTextUseCase)
-        use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
-        )
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
         controller = SpeakController(use_case, auth_token="secret")
         request = Mock(spec=web.Request)
         request.headers = {"X-Bot-Token": "secret"}
@@ -313,9 +291,7 @@ class TestSpeakController:
 
     async def test_handle_accepts_bearer_auth_token(self):
         use_case = Mock(spec=SpeakTextUseCase)
-        use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
-        )
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
         controller = SpeakController(use_case, auth_token="secret")
         request = Mock(spec=web.Request)
         request.headers = {"Authorization": "Bearer secret"}
@@ -328,9 +304,7 @@ class TestSpeakController:
 
     async def test_handle_injects_trace_context_when_otel_is_available(self):
         use_case = Mock(spec=SpeakTextUseCase)
-        use_case.execute = AsyncMock(
-            return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0)
-        )
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
         otel_runtime = Mock(spec=OpenTelemetryRuntime)
         otel_runtime.start_http_span.return_value = _FakeSpanContext()
         otel_runtime.inject_current_context.return_value = {"traceparent": "00-abc-123-01"}
@@ -362,19 +336,19 @@ class TestSpeakController:
             mock_audio_queue=mock_audio_queue,
         )
         controller = SpeakController(use_case)
-        
+
         # Test None
         assert controller._parse_int(None) is None
-        
+
         # Test invalid string
         assert controller._parse_int("invalid") is None
-        
+
         # Test valid string
         assert controller._parse_int("123") == 123
-        
+
         # Test integer
         assert controller._parse_int(456) == 456
-        
+
         # Test float
         assert controller._parse_int(789.5) == 789
 
@@ -432,9 +406,7 @@ class TestSpeakController:
 @pytest.mark.asyncio
 class TestVoiceContextController:
     async def test_handle_returns_current_voice_context(self, mock_channel_repository):
-        controller = VoiceContextController(
-            GetCurrentVoiceContextUseCase(mock_channel_repository)
-        )
+        controller = VoiceContextController(GetCurrentVoiceContextUseCase(mock_channel_repository))
         request = Mock(spec=web.Request)
         request.query = {"member_id": "345678"}
 
@@ -445,9 +417,7 @@ class TestVoiceContextController:
         assert "Mock Voice" in response.text
 
     async def test_handle_accepts_user_id_alias(self, mock_channel_repository):
-        controller = VoiceContextController(
-            GetCurrentVoiceContextUseCase(mock_channel_repository)
-        )
+        controller = VoiceContextController(GetCurrentVoiceContextUseCase(mock_channel_repository))
         request = Mock(spec=web.Request)
         request.query = {"user_id": "345678"}
 
@@ -459,9 +429,7 @@ class TestVoiceContextController:
     async def test_handle_returns_not_found_when_member_not_in_voice(self):
         from tests.conftest import MockVoiceChannelRepository
 
-        controller = VoiceContextController(
-            GetCurrentVoiceContextUseCase(MockVoiceChannelRepository(return_none=True))
-        )
+        controller = VoiceContextController(GetCurrentVoiceContextUseCase(MockVoiceChannelRepository(return_none=True)))
         request = Mock(spec=web.Request)
         request.query = {"member_id": "345678"}
 
@@ -470,9 +438,7 @@ class TestVoiceContextController:
         assert response.status == 404
 
     async def test_handle_requires_member_id(self, mock_channel_repository):
-        controller = VoiceContextController(
-            GetCurrentVoiceContextUseCase(mock_channel_repository)
-        )
+        controller = VoiceContextController(GetCurrentVoiceContextUseCase(mock_channel_repository))
         request = Mock(spec=web.Request)
         request.query = {}
 
@@ -493,4 +459,6 @@ class _FakeSpanContext:
     def __exit__(self, exc_type, exc, tb):
         del exc_type, exc, tb
         return False
+
+
 # pyright: reportOperatorIssue=false, reportOptionalMemberAccess=false

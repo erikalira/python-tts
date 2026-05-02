@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import threading
 from collections.abc import Callable
-from typing import Optional, Protocol
+from typing import Protocol
 
 from src.application.dto import DesktopTTSServiceStatusDTO, DesktopTTSStatusDTO
 from src.application.tts_execution import (
@@ -68,26 +68,18 @@ class DesktopAppTTSResultPresenter:
         """Show user-facing feedback after TTS execution completes."""
         code = result.code
         if code == TTS_EXECUTION_RESULT_OK:
-            self._notification_service.notify_success(
-                "Desktop App", "Text played successfully"
-            )
+            self._notification_service.notify_success("Desktop App", "Text played successfully")
             return
 
         if code == TTS_EXECUTION_RESULT_MISSING_TEXT:
-            self._notification_service.notify_error(
-                "Desktop App", "No valid text was captured"
-            )
+            self._notification_service.notify_error("Desktop App", "No valid text was captured")
             return
 
         if code == TTS_EXECUTION_RESULT_FAILED:
-            self._notification_service.notify_error(
-                "Desktop App", result.message or "Failed to play the text"
-            )
+            self._notification_service.notify_error("Desktop App", result.message or "Failed to play the text")
             return
 
-        self._notification_service.notify_error(
-            "Desktop App", "Unexpected failure while processing TTS"
-        )
+        self._notification_service.notify_error("Desktop App", "Unexpected failure while processing TTS")
 
 
 class DesktopAppTTSProcessor:
@@ -95,19 +87,15 @@ class DesktopAppTTSProcessor:
 
     def __init__(
         self,
-        tts_service: Optional[DesktopAppTTSService] = None,
-        cleanup_service: Optional[KeyboardCleanupPort] = None,
-        execution_service: Optional[DesktopTTSExecutionService] = None,
+        tts_service: DesktopAppTTSService | None = None,
+        cleanup_service: KeyboardCleanupPort | None = None,
+        execution_service: DesktopTTSExecutionService | None = None,
     ):
         if cleanup_service is None:
-            raise ValueError(
-                "DesktopAppTTSProcessor requires explicit tts_service and cleanup_service"
-            )
+            raise ValueError("DesktopAppTTSProcessor requires explicit tts_service and cleanup_service")
         if execution_service is None:
             if tts_service is None:
-                raise ValueError(
-                    "DesktopAppTTSProcessor requires explicit tts_service and cleanup_service"
-                )
+                raise ValueError("DesktopAppTTSProcessor requires explicit tts_service and cleanup_service")
             execution_service = SpeakTextExecutionUseCase(tts_service)
         self._execution_service = execution_service
         self._cleanup_service = cleanup_service
@@ -116,7 +104,7 @@ class DesktopAppTTSProcessor:
         self,
         text: str,
         cleanup_count: int = 0,
-        on_complete: Optional[Callable[[TTSExecutionResult], None]] = None,
+        on_complete: Callable[[TTSExecutionResult], None] | None = None,
     ) -> None:
         """Process text for TTS and perform cleanup in a separate thread."""
 

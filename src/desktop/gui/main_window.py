@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import queue
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any
 
 from src.application.dto import (
     DesktopBotActionResultDTO,
@@ -32,9 +32,9 @@ class DesktopAppMainWindow:
         on_test_connection: Callable[[DesktopAppConfig], DesktopBotActionResultDTO],
         on_send_test: Callable[[DesktopAppConfig], DesktopBotActionResultDTO],
         on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResultDTO],
-        on_process_ui_actions: Optional[Callable[[], None]] = None,
+        on_process_ui_actions: Callable[[], None] | None = None,
     ):
-        self.root: Optional[Any] = None
+        self.root: Any | None = None
         self.config = config
         self._on_save = on_save
         self._on_test_connection = on_test_connection
@@ -43,12 +43,12 @@ class DesktopAppMainWindow:
         self._on_process_ui_actions = on_process_ui_actions
         self._presenter = DesktopAppMainWindowPresenter()
         self._config_form = GUIConfig()
-        self._log_queue: "queue.Queue[str]" = queue.Queue()
+        self._log_queue: queue.Queue[str] = queue.Queue()
         self._log_handler = UILogHandler(self._log_queue)
-        self._status_var: Optional[Any] = None
-        self._config_var: Optional[Any] = None
-        self._connection_var: Optional[Any] = None
-        self._voice_context_var: Optional[Any] = None
+        self._status_var: Any | None = None
+        self._config_var: Any | None = None
+        self._connection_var: Any | None = None
+        self._voice_context_var: Any | None = None
         self._logs_widget: Any | None = None
         self._status_label: Any | None = None
         self._config_label: Any | None = None
@@ -293,11 +293,11 @@ class DesktopAppMainWindow:
         self._sync_config_form()
         return self._config_form._build_config_notebook(parent)
 
-    def _build_config_from_form(self) -> Optional[DesktopAppConfig]:
+    def _build_config_from_form(self) -> DesktopAppConfig | None:
         self._sync_config_form()
         return self._config_form._build_config_from_form()
 
-    def _apply_message(self, variable: Optional[Any], label: Any, message: MainWindowMessage) -> None:
+    def _apply_message(self, variable: Any | None, label: Any, message: MainWindowMessage) -> None:
         if variable is not None and hasattr(variable, "set"):
             variable.set(message.text)
         self._set_label_color(label, message.color)

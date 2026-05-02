@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +43,9 @@ class SystemTrayIconAdapter:
 
     def set_handlers(
         self,
-        status_click: Optional[Callable[[], None]] = None,
-        configure: Optional[Callable[[], None]] = None,
-        quit_handler: Optional[Callable[[], None]] = None,
+        status_click: Callable[[], None] | None = None,
+        configure: Callable[[], None] | None = None,
+        quit_handler: Callable[[], None] | None = None,
     ) -> None:
         """Set callback handlers for tray actions."""
         raise NotImplementedError
@@ -71,9 +71,9 @@ class NullSystemTrayIcon(SystemTrayIconAdapter):
 
     def set_handlers(
         self,
-        status_click: Optional[Callable[[], None]] = None,
-        configure: Optional[Callable[[], None]] = None,
-        quit_handler: Optional[Callable[[], None]] = None,
+        status_click: Callable[[], None] | None = None,
+        configure: Callable[[], None] | None = None,
+        quit_handler: Callable[[], None] | None = None,
     ) -> None:
         pass
 
@@ -85,15 +85,15 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         self._config = config
         self._icon: Any | None = None
         self._running = False
-        self._on_status_click: Optional[Callable[[], None]] = None
-        self._on_configure: Optional[Callable[[], None]] = None
-        self._on_quit: Optional[Callable[[], None]] = None
+        self._on_status_click: Callable[[], None] | None = None
+        self._on_configure: Callable[[], None] | None = None
+        self._on_quit: Callable[[], None] | None = None
 
     def set_handlers(
         self,
-        status_click: Optional[Callable[[], None]] = None,
-        configure: Optional[Callable[[], None]] = None,
-        quit_handler: Optional[Callable[[], None]] = None,
+        status_click: Callable[[], None] | None = None,
+        configure: Callable[[], None] | None = None,
+        quit_handler: Callable[[], None] | None = None,
     ) -> None:
         """Set callback handlers for tray actions."""
         self._on_status_click = status_click

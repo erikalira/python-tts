@@ -146,10 +146,7 @@ def evaluate_coverage_gates(
 ) -> tuple[float, list[CoverageGateResult]]:
     coverage_root = parse_xml(Path(coverage_xml_path).read_text(encoding="utf-8"))
     global_percent = round(float(coverage_root.attrib["line-rate"]) * 100, 2)
-    domain_results = [
-        _evaluate_domain_gate(coverage_root, domain)
-        for domain in config.coverage.critical_domains
-    ]
+    domain_results = [_evaluate_domain_gate(coverage_root, domain) for domain in config.coverage.critical_domains]
     return global_percent, domain_results
 
 
@@ -170,10 +167,7 @@ def evaluate_observability_payload(
 
     error_rate = float(payload.get("error_rate", 0.0))
     if error_rate > sli.max_error_rate:
-        failures.append(
-            "error_rate exceeded: "
-            f"{error_rate:.4f} > {sli.max_error_rate:.4f}"
-        )
+        failures.append(f"error_rate exceeded: {error_rate:.4f} > {sli.max_error_rate:.4f}")
 
     sample_count = int(payload.get("enqueue_to_playback_sample_count", 0))
     if sample_count <= 0:
@@ -185,8 +179,7 @@ def evaluate_observability_payload(
         failures.append("enqueue_to_playback_p95_ms is missing")
     elif float(p95) > sli.max_enqueue_to_playback_p95_ms:
         failures.append(
-            "enqueue_to_playback_p95_ms exceeded: "
-            f"{float(p95):.2f} > {sli.max_enqueue_to_playback_p95_ms:.2f}"
+            f"enqueue_to_playback_p95_ms exceeded: {float(p95):.2f} > {sli.max_enqueue_to_playback_p95_ms:.2f}"
         )
 
     p99 = payload.get("enqueue_to_playback_p99_ms")
@@ -194,8 +187,7 @@ def evaluate_observability_payload(
         failures.append("enqueue_to_playback_p99_ms is missing")
     elif float(p99) > sli.max_enqueue_to_playback_p99_ms:
         failures.append(
-            "enqueue_to_playback_p99_ms exceeded: "
-            f"{float(p99):.2f} > {sli.max_enqueue_to_playback_p99_ms:.2f}"
+            f"enqueue_to_playback_p99_ms exceeded: {float(p99):.2f} > {sli.max_enqueue_to_playback_p99_ms:.2f}"
         )
 
     return failures
@@ -267,16 +259,14 @@ def _run_coverage_gate(config: QualityGateConfig, coverage_xml_path: str | Path)
     failures: list[str] = []
     if global_percent < config.coverage.global_minimum_percent:
         failures.append(
-            "global coverage below minimum: "
-            f"{global_percent:.2f}% < {config.coverage.global_minimum_percent:.2f}%"
+            f"global coverage below minimum: {global_percent:.2f}% < {config.coverage.global_minimum_percent:.2f}%"
         )
 
     for result in domain_results:
         if result.passed:
             continue
         failures.append(
-            f"{result.name} coverage below minimum: "
-            f"{result.actual_percent:.2f}% < {result.minimum_percent:.2f}%"
+            f"{result.name} coverage below minimum: {result.actual_percent:.2f}% < {result.minimum_percent:.2f}%"
         )
 
     if failures:
@@ -284,10 +274,7 @@ def _run_coverage_gate(config: QualityGateConfig, coverage_xml_path: str | Path)
             print(f"FAIL: {failure}")
         return 1
 
-    print(
-        "PASS: global coverage "
-        f"{global_percent:.2f}% and {len(domain_results)} critical domain gate(s) satisfied."
-    )
+    print(f"PASS: global coverage {global_percent:.2f}% and {len(domain_results)} critical domain gate(s) satisfied.")
     return 0
 
 

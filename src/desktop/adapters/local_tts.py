@@ -9,6 +9,7 @@ from src.infrastructure.tts.pyttsx3_support import Pyttsx3EngineLike, configure_
 
 try:
     import pyttsx3
+
     _pyttsx3_available = True
 except ImportError:
     pyttsx3 = None

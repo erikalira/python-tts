@@ -9,12 +9,10 @@ import queue
 class UILogHandler(logging.Handler):
     """Logging handler that forwards formatted records to a queue."""
 
-    def __init__(self, target_queue: "queue.Queue[str]"):
+    def __init__(self, target_queue: queue.Queue[str]):
         super().__init__()
         self._target_queue = target_queue
-        self.setFormatter(
-            logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", "%H:%M:%S")
-        )
+        self.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", "%H:%M:%S"))
 
     def emit(self, record: logging.LogRecord) -> None:
         try:

@@ -5,7 +5,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from src.core.timeouts import DEFAULT_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class ConfigurationRepository:
     """Repository for configuration persistence."""
 
-    def __init__(self, config_file_path: Optional[Path] = None):
+    def __init__(self, config_file_path: Path | None = None):
         if config_file_path:
             self._config_file = config_file_path
         else:

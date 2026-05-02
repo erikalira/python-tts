@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import Optional
 
 from ..config.desktop_config import DesktopAppConfig
 from . import tk_support
@@ -26,7 +25,7 @@ class ConfigurationService:
         self._gui_factory = gui_factory
         self._console_factory = console_factory
 
-    def get_configuration(self, current_config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
+    def get_configuration(self, current_config: DesktopAppConfig) -> DesktopAppConfig | None:
         """Get configuration from user."""
         if self.prefer_gui and tk_support.TKINTER_AVAILABLE:
             try:

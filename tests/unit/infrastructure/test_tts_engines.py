@@ -1,4 +1,5 @@
 """Tests for TTS engines."""
+
 import asyncio
 import sys
 import threading
@@ -15,38 +16,41 @@ from src.infrastructure.tts.engines import RoutedTTSEngine, TTSEngineFactory
 
 class TestTTSEngineFactory:
     """Test TTSEngineFactory."""
-    
+
     def test_create_gtts_engine(self):
         """Test creating gTTS engine."""
-        config = TTSConfig(engine='gtts')
+        config = TTSConfig(engine="gtts")
         engine = TTSEngineFactory.create(config)
-        
+
         assert engine is not None
         from src.infrastructure.tts.engines import GTTSEngine
+
         assert isinstance(engine, GTTSEngine)
-    
+
     def test_create_pyttsx3_engine(self):
         """Test creating pyttsx3 engine."""
-        config = TTSConfig(engine='pyttsx3')
+        config = TTSConfig(engine="pyttsx3")
         engine = TTSEngineFactory.create(config)
-        
+
         assert engine is not None
         from src.infrastructure.tts.engines import Pyttsx3Engine
+
         assert isinstance(engine, Pyttsx3Engine)
 
     def test_create_edge_tts_engine(self):
         """Test creating edge-tts engine."""
-        config = TTSConfig(engine='edge-tts')
+        config = TTSConfig(engine="edge-tts")
         engine = TTSEngineFactory.create(config)
 
         assert engine is not None
         from src.infrastructure.tts.engines import EdgeTTSEngine
+
         assert isinstance(engine, EdgeTTSEngine)
-    
+
     def test_create_invalid_engine(self):
         """Test creating invalid engine raises error."""
-        config = TTSConfig(engine='invalid')
-        
+        config = TTSConfig(engine="invalid")
+
         with pytest.raises(ValueError, match="Unknown TTS engine"):
             TTSEngineFactory.create(config)
 
@@ -77,7 +81,9 @@ class TestRoutedTTSEngine:
         with patch("src.infrastructure.tts.engines.TTSEngineFactory.create", side_effect=fake_create):
             first = await router.generate_audio("hello", TTSConfig(engine="gtts", language="pt"))
             second = await router.generate_audio("robot", TTSConfig(engine="pyttsx3", language="en"))
-            third = await router.generate_audio("neural", TTSConfig(engine="edge-tts", language="pt-BR", voice_id="pt-BR-FranciscaNeural"))
+            third = await router.generate_audio(
+                "neural", TTSConfig(engine="edge-tts", language="pt-BR", voice_id="pt-BR-FranciscaNeural")
+            )
 
         assert first.path == "/tmp/gtts.mp3"
         assert second.path == "/tmp/pyttsx3.wav"
@@ -91,21 +97,21 @@ class TestRoutedTTSEngine:
 @pytest.mark.asyncio
 class TestGTTSEngine:
     """Test GTTSEngine (requires network)."""
-    
+
     @pytest.mark.skip(reason="Requires network connection")
     async def test_generate_audio(self, sample_tts_config):
         """Test generating audio with gTTS."""
         from src.infrastructure.tts.engines import GTTSEngine
-        
+
         engine = GTTSEngine()
-        config = TTSConfig(engine='gtts', language='en')
-        
+        config = TTSConfig(engine="gtts", language="en")
+
         audio = await engine.generate_audio("Hello world", config)
         cleanup = FileAudioCleanup()
-        
+
         assert audio is not None
-        assert audio.path.endswith('.mp3')
-        
+        assert audio.path.endswith(".mp3")
+
         # Cleanup
         await cleanup.cleanup(audio)
 
@@ -136,6 +142,7 @@ class TestGTTSEngine:
 
         assert generated_paths
         assert not Path(generated_paths[0]).exists()
+
 
 @pytest.mark.asyncio
 class TestEdgeTTSEngine:

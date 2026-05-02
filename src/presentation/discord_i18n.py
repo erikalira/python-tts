@@ -16,8 +16,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
     "pt-BR": {
         "voice.runtime_unavailable": "❌ O recurso de voz do bot está indisponível no momento. Tente novamente mais tarde.",
         "bot.inactive": (
-            "❌ **Bot está desligando ou inativo!**\n\n"
-            "Tente novamente em alguns instantes ou avise um administrador."
+            "❌ **Bot está desligando ou inativo!**\n\nTente novamente em alguns instantes ou avise um administrador."
         ),
         "bot.inactive.short": "❌ Bot está inativo ou desligando.",
         "error.unexpected": "❌ Erro inesperado",
@@ -117,8 +116,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
     "en-US": {
         "voice.runtime_unavailable": "❌ Bot voice is unavailable right now. Try again later.",
         "bot.inactive": (
-            "❌ **Bot is shutting down or inactive!**\n\n"
-            "Try again in a moment or notify an administrator."
+            "❌ **Bot is shutting down or inactive!**\n\nTry again in a moment or notify an administrator."
         ),
         "bot.inactive.short": "❌ Bot is inactive or shutting down.",
         "error.unexpected": "❌ Unexpected error",

@@ -58,6 +58,7 @@ jobs:
           CI: true
           PYTHONPATH: ${{ github.workspace }}
         run: |
+          uv run ruff format --check .
           uv run ruff check .
           uv run pyright
           uv run pytest tests/unit tests/smoke --tb=short -v
@@ -146,7 +147,7 @@ jobs:
           version: v0.69.3
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v4.1.1
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Sign published image with Cosign keyless
         env:

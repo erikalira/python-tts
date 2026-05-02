@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from typing import Optional, Protocol
+from typing import Protocol
 
 from src.application.dto import SpeakTextResult
 from src.core.interfaces import IAudioQueue
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class QueueOrchestratorPort(Protocol):
     """Minimal queue orchestrator behavior needed by the worker."""
 
-    async def start_processing_for_item(self, guild_id: Optional[int]) -> SpeakTextResult:
+    async def start_processing_for_item(self, guild_id: int | None) -> SpeakTextResult:
         """Process the next item for a guild."""
         ...
 
@@ -53,9 +53,7 @@ class BotQueueWorker:
             else _default_lock_renew_interval_seconds(guild_lock_ttl_seconds)
         )
         self._processing_lease_ttl_seconds = (
-            processing_lease_ttl_seconds
-            if processing_lease_ttl_seconds is not None
-            else guild_lock_ttl_seconds
+            processing_lease_ttl_seconds if processing_lease_ttl_seconds is not None else guild_lock_ttl_seconds
         )
         self._processing_lease_renew_interval_seconds = (
             processing_lease_renew_interval_seconds
@@ -64,7 +62,7 @@ class BotQueueWorker:
         )
         self._worker_token = uuid.uuid4().hex
         self._runner_task: asyncio.Task | None = None
-        self._guild_tasks: dict[Optional[int], asyncio.Task] = {}
+        self._guild_tasks: dict[int | None, asyncio.Task] = {}
         self._stop_event = asyncio.Event()
         self._otel_runtime = otel_runtime
 
@@ -93,9 +91,11 @@ class BotQueueWorker:
     async def _run(self) -> None:
         try:
             while not self._stop_event.is_set():
-                with self._otel_runtime.start_internal_span(
-                    "queue_worker.poll"
-                ) if self._otel_runtime is not None else _null_span_context():
+                with (
+                    self._otel_runtime.start_internal_span("queue_worker.poll")
+                    if self._otel_runtime is not None
+                    else _null_span_context()
+                ):
                     guild_ids = await self._list_guild_ids()
                 for guild_id in guild_ids:
                     task = self._guild_tasks.get(guild_id)
@@ -111,7 +111,7 @@ class BotQueueWorker:
         except Exception:
             logger.exception("[QUEUE_WORKER] Unhandled queue worker failure")
 
-    async def _drain_guild(self, guild_id: Optional[int]) -> None:
+    async def _drain_guild(self, guild_id: int | None) -> None:
         lock_acquired = False
         renew_task: asyncio.Task | None = None
         try:
@@ -127,14 +127,18 @@ class BotQueueWorker:
                 next_item = await self._audio_queue.peek_next(guild_id)
                 if next_item is None:
                     break
-                with self._otel_runtime.start_consumer_span(
-                    "queue_worker.process_guild_item",
-                    carrier=next_item.trace_context,
-                    attributes={
-                        "guild_id": str(guild_id) if guild_id is not None else "unknown",
-                        "engine": self._resolve_engine_name(next_item),
-                    },
-                ) if self._otel_runtime is not None else _null_span_context() as span:
+                with (
+                    self._otel_runtime.start_consumer_span(
+                        "queue_worker.process_guild_item",
+                        carrier=next_item.trace_context,
+                        attributes={
+                            "guild_id": str(guild_id) if guild_id is not None else "unknown",
+                            "engine": self._resolve_engine_name(next_item),
+                        },
+                    )
+                    if self._otel_runtime is not None
+                    else _null_span_context() as span
+                ):
                     processing_acquired = await self._acquire_processing_lease(guild_id)
                     if not processing_acquired:
                         logger.debug("[QUEUE_WORKER] Guild %s already has an active processing lease", guild_id)
@@ -164,25 +168,25 @@ class BotQueueWorker:
             if lock_acquired:
                 await self._release_guild_lock(guild_id)
 
-    async def _list_guild_ids(self) -> list[Optional[int]]:
+    async def _list_guild_ids(self) -> list[int | None]:
         list_guild_ids = getattr(self._audio_queue, "list_guild_ids", None)
         if list_guild_ids is None:
             return []
         return await list_guild_ids()
 
-    async def _acquire_guild_lock(self, guild_id: Optional[int]) -> bool:
+    async def _acquire_guild_lock(self, guild_id: int | None) -> bool:
         acquire_guild_lock = getattr(self._audio_queue, "acquire_guild_lock", None)
         if acquire_guild_lock is None:
             return True
         return await acquire_guild_lock(guild_id, self._worker_token, ttl_seconds=self._guild_lock_ttl_seconds)
 
-    async def _release_guild_lock(self, guild_id: Optional[int]) -> None:
+    async def _release_guild_lock(self, guild_id: int | None) -> None:
         release_guild_lock = getattr(self._audio_queue, "release_guild_lock", None)
         if release_guild_lock is None:
             return
         await release_guild_lock(guild_id, self._worker_token)
 
-    async def _renew_guild_lock_loop(self, guild_id: Optional[int]) -> None:
+    async def _renew_guild_lock_loop(self, guild_id: int | None) -> None:
         renew_guild_lock = getattr(self._audio_queue, "renew_guild_lock", None)
         if renew_guild_lock is None:
             return
@@ -203,17 +207,17 @@ class BotQueueWorker:
         except asyncio.CancelledError:
             raise
 
-    async def _acquire_processing_lease(self, guild_id: Optional[int]) -> bool:
+    async def _acquire_processing_lease(self, guild_id: int | None) -> bool:
         return await self._audio_queue.acquire_processing_lease(
             guild_id,
             self._worker_token,
             ttl_seconds=self._processing_lease_ttl_seconds,
         )
 
-    async def _release_processing_lease(self, guild_id: Optional[int]) -> None:
+    async def _release_processing_lease(self, guild_id: int | None) -> None:
         await self._audio_queue.release_processing_lease(guild_id, self._worker_token)
 
-    async def _renew_processing_lease_loop(self, guild_id: Optional[int]) -> None:
+    async def _renew_processing_lease_loop(self, guild_id: int | None) -> None:
         try:
             while not self._stop_event.is_set():
                 await asyncio.sleep(self._processing_lease_renew_interval_seconds)
@@ -238,7 +242,7 @@ class BotQueueWorker:
 
 
 class _null_span_context:
-    def __enter__(self) -> "_null_span_context":
+    def __enter__(self) -> _null_span_context:
         return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:

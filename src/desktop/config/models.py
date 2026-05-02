@@ -4,7 +4,6 @@
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -38,8 +37,8 @@ class DiscordConfig:
     """Discord bot configuration."""
 
     bot_url: str = field(default_factory=get_default_discord_bot_url)
-    member_id: Optional[str] = None
-    speak_token: Optional[str] = field(default_factory=get_default_bot_speak_token)
+    member_id: str | None = None
+    speak_token: str | None = field(default_factory=get_default_bot_speak_token)
 
 
 @dataclass

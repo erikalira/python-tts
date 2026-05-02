@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any
 
 from src.core.entities import TTSConfig
 
@@ -25,7 +25,7 @@ class PostgreSQLConfigStorage(IConfigStorage):
     def __init__(
         self,
         database_url: str,
-        connection_factory: Optional[Callable[[], Any]] = None,
+        connection_factory: Callable[[], Any] | None = None,
     ):
         self._database_url = database_url
         self._connection_factory = connection_factory
@@ -35,13 +35,11 @@ class PostgreSQLConfigStorage(IConfigStorage):
             return self._connection_factory()
 
         if psycopg is None:
-            raise RuntimeError(
-                "Postgres config storage requires the optional 'psycopg' dependency."
-            )
+            raise RuntimeError("Postgres config storage requires the optional 'psycopg' dependency.")
 
         return psycopg.connect(self._database_url)
 
-    def load_sync(self, guild_id: int, user_id: Optional[int] = None) -> Optional[TTSConfig]:
+    def load_sync(self, guild_id: int, user_id: int | None = None) -> TTSConfig | None:
         try:
             with self._connect() as conn, conn.cursor() as cursor:
                 if user_id is not None:
@@ -64,7 +62,9 @@ class PostgreSQLConfigStorage(IConfigStorage):
                     )
                 row = cursor.fetchone()
         except Exception as exc:
-            logger.error("[POSTGRES_CONFIG_STORAGE] Failed to load config synchronously for guild %s: %s", guild_id, exc)
+            logger.error(
+                "[POSTGRES_CONFIG_STORAGE] Failed to load config synchronously for guild %s: %s", guild_id, exc
+            )
             return None
 
         if row is None:
@@ -73,10 +73,10 @@ class PostgreSQLConfigStorage(IConfigStorage):
         engine, language, voice_id, rate = row
         return TTSConfig(engine=engine, language=language, voice_id=voice_id, rate=rate)
 
-    async def load(self, guild_id: int, user_id: Optional[int] = None) -> Optional[TTSConfig]:
+    async def load(self, guild_id: int, user_id: int | None = None) -> TTSConfig | None:
         return self.load_sync(guild_id, user_id=user_id)
 
-    async def save(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> bool:
+    async def save(self, guild_id: int, config: TTSConfig, user_id: int | None = None) -> bool:
         try:
             with self._connect() as conn:
                 with conn.cursor() as cursor:
@@ -142,7 +142,7 @@ class PostgreSQLConfigStorage(IConfigStorage):
 
         return True
 
-    async def delete(self, guild_id: int, user_id: Optional[int] = None) -> bool:
+    async def delete(self, guild_id: int, user_id: int | None = None) -> bool:
         try:
             with self._connect() as conn:
                 with conn.cursor() as cursor:

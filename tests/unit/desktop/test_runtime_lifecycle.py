@@ -180,4 +180,6 @@ def test_runtime_lifecycle_process_pending_ui_action_runs_next_action():
     coordinator.process_pending_ui_action(action_queue=action_queue, timeout=0.1)
 
     action.assert_called_once_with()
+
+
 # pyright: reportArgumentType=false

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 SPEAK_RESULT_OK = "ok"
 SPEAK_RESULT_QUEUED = "queued"
@@ -45,25 +44,25 @@ class ResultBase:
 class JoinVoiceChannelResult(ResultBase):
     success: bool
     code: str
-    error_detail: Optional[str] = None
+    error_detail: str | None = None
 
 
 @dataclass(slots=True)
 class LeaveVoiceChannelResult(ResultBase):
     success: bool
     code: str
-    error_detail: Optional[str] = None
+    error_detail: str | None = None
 
 
 @dataclass(slots=True)
 class VoiceContextResult(ResultBase):
     success: bool
     code: str
-    member_id: Optional[int] = None
-    guild_id: Optional[int] = None
-    guild_name: Optional[str] = None
-    channel_id: Optional[int] = None
-    channel_name: Optional[str] = None
+    member_id: int | None = None
+    guild_id: int | None = None
+    guild_name: str | None = None
+    channel_id: int | None = None
+    channel_name: str | None = None
 
 
 @dataclass(slots=True)
@@ -72,10 +71,10 @@ class SpeakTextResult(ResultBase):
     code: str
     queued: bool
     starts_immediately: bool = False
-    position: Optional[int] = None
-    queue_size: Optional[int] = None
-    item_id: Optional[str] = None
-    error_detail: Optional[str] = None
+    position: int | None = None
+    queue_size: int | None = None
+    item_id: str | None = None
+    error_detail: str | None = None
 
 
 @dataclass(slots=True)
@@ -89,7 +88,7 @@ class TTSConfigurationData(ResultBase):
 @dataclass(slots=True)
 class ConfigureTTSResult(ResultBase):
     success: bool
-    guild_id: Optional[int] = None
-    config: Optional[TTSConfigurationData] = None
-    message: Optional[str] = None
-    scope: Optional[str] = None
+    guild_id: int | None = None
+    config: TTSConfigurationData | None = None
+    message: str | None = None
+    scope: str | None = None

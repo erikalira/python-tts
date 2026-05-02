@@ -1,4 +1,5 @@
 """Tests for bot entry point."""
+
 import logging
 from contextlib import suppress
 from unittest.mock import AsyncMock, Mock, patch
@@ -9,13 +10,14 @@ import pytest
 @pytest.mark.asyncio
 class TestBot:
     """Test bot.py entry point."""
-    
+
     async def test_main_creates_container(self):
         """Test that main creates and initializes container."""
-        with patch('src.bot.Container') as MockContainer, \
-             patch('src.bot.Config') as MockConfig, \
-             patch('src.bot.HTTPServer') as MockHTTPServer:
-            
+        with (
+            patch("src.bot.Container") as MockContainer,
+            patch("src.bot.Config") as MockConfig,
+            patch("src.bot.HTTPServer") as MockHTTPServer,
+        ):
             # Mock config validation
             mock_config = Mock()
             mock_config.validate.return_value = (True, None)
@@ -24,12 +26,12 @@ class TestBot:
             mock_config.http_cors_allowed_origins = ()
             mock_config.http_max_body_bytes = 4096
             MockConfig.return_value = mock_config
-            
+
             # Mock HTTP server
             mock_http_server = Mock()
             mock_http_server.start = AsyncMock()
             MockHTTPServer.return_value = mock_http_server
-            
+
             # Mock container
             mock_container = Mock()
             mock_container.speak_controller = Mock()
@@ -42,19 +44,17 @@ class TestBot:
             mock_container.shutdown = AsyncMock()
             mock_container.discord_client = Mock()
             # Make start raise an exception to stop the bot from running
-            mock_container.discord_client.start = AsyncMock(
-                side_effect=KeyboardInterrupt("Test interrupt")
-            )
+            mock_container.discord_client.start = AsyncMock(side_effect=KeyboardInterrupt("Test interrupt"))
             mock_container.discord_client.close = AsyncMock()
             MockContainer.return_value = mock_container
-            
+
             # Import and run
             from src.bot import main
-            
+
             # Should handle KeyboardInterrupt gracefully
             with suppress(KeyboardInterrupt):
                 await main()
-            
+
             # Verify container was created
             MockContainer.assert_called_once()
             MockHTTPServer.assert_called_once_with(
@@ -72,40 +72,39 @@ class TestBot:
             mock_http_server.start.assert_called_once()
             mock_container.shutdown.assert_awaited_once()
             mock_container.discord_client.close.assert_awaited_once()
-    
+
     async def test_main_validates_config(self):
         """Test that main validates configuration."""
-        with patch('src.bot.Container'), \
-             patch('src.bot.Config') as MockConfig, \
-             patch('src.bot.logger') as mock_logger:
-            
+        with patch("src.bot.Container"), patch("src.bot.Config") as MockConfig, patch("src.bot.logger") as mock_logger:
             # Mock invalid config
             mock_config = Mock()
             mock_config.validate.return_value = (False, "Missing DISCORD_TOKEN")
             MockConfig.return_value = mock_config
-            
+
             from src.bot import main
-            
+
             # Should log error and return without starting
             await main()
-            
+
             # Verify error was logged
             mock_logger.error.assert_called()
 
 
 class TestBotModule:
     """Test bot module execution."""
-    
+
     def test_bot_can_be_imported(self):
         """Test that bot module can be imported."""
         from src import bot
-        assert hasattr(bot, 'main')
-    
+
+        assert hasattr(bot, "main")
+
     def test_bot_has_main_function(self):
         """Test that bot has async main function."""
         import asyncio
 
         from src.bot import main
+
         assert asyncio.iscoroutinefunction(main)
 
     def test_configure_logging_uses_warning_for_library_loggers_at_info(self):

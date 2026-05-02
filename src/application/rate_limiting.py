@@ -31,4 +31,3 @@ class RateLimiter(Protocol):
     """Contract implemented by runtime-specific rate limit adapters."""
 
     def check(self, request: RateLimitRequest) -> RateLimitResult: ...
-

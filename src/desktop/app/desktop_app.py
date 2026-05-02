@@ -4,7 +4,6 @@
 import logging
 import threading
 from collections.abc import Callable
-from typing import Optional
 
 from src.application.desktop_bot import (
     CheckDesktopBotConnectionUseCase,
@@ -42,28 +41,28 @@ class DesktopApp:
 
     def __init__(
         self,
-        config_repository: Optional[ConfigurationRepository] = None,
-        config_service: Optional[ConfigurationService] = None,
-        tts_processor_factory: Optional[Callable[[DesktopAppConfig], DesktopAppTTSProcessor]] = None,
-        hotkey_manager_factory: Optional[Callable[[DesktopAppConfig], HotkeyManager]] = None,
-        notification_service_factory: Optional[Callable[[DesktopAppConfig], SystemTrayService]] = None,
-        console_wait_factory: Optional[Callable[[], object]] = None,
+        config_repository: ConfigurationRepository | None = None,
+        config_service: ConfigurationService | None = None,
+        tts_processor_factory: Callable[[DesktopAppConfig], DesktopAppTTSProcessor] | None = None,
+        hotkey_manager_factory: Callable[[DesktopAppConfig], HotkeyManager] | None = None,
+        notification_service_factory: Callable[[DesktopAppConfig], SystemTrayService] | None = None,
+        console_wait_factory: Callable[[], object] | None = None,
     ):
-        self._config: Optional[DesktopAppConfig] = None
-        self._config_repository: Optional[ConfigurationRepository] = config_repository
+        self._config: DesktopAppConfig | None = None
+        self._config_repository: ConfigurationRepository | None = config_repository
 
-        self._tts_processor: Optional[DesktopAppTTSProcessor] = None
-        self._hotkey_manager: Optional[HotkeyManager] = None
-        self._notification_service: Optional[SystemTrayService] = None
+        self._tts_processor: DesktopAppTTSProcessor | None = None
+        self._hotkey_manager: HotkeyManager | None = None
+        self._notification_service: SystemTrayService | None = None
 
-        self._config_service: Optional[ConfigurationService] = config_service
+        self._config_service: ConfigurationService | None = config_service
         self._tts_processor_factory = tts_processor_factory or self._build_default_tts_processor
         self._hotkey_manager_factory = hotkey_manager_factory or HotkeyManager
         self._notification_service_factory = notification_service_factory or SystemTrayService
         self._console_wait_factory = console_wait_factory or KeyboardHookBackend
         self._bot_gateway_factory: Callable[[DesktopAppConfig], DesktopBotGateway] = HttpDiscordBotClient
 
-        self._configuration_coordinator: Optional[DesktopConfigurationCoordinator] = None
+        self._configuration_coordinator: DesktopConfigurationCoordinator | None = None
         self._lifecycle_coordinator = DesktopAppLifecycleCoordinator(TKINTER_AVAILABLE)
         self._ui_runtime_coordinator = DesktopAppUIRuntimeCoordinator()
         self._status_builder = DesktopAppStatusBuilder()
@@ -152,9 +151,7 @@ class DesktopApp:
         result_presenter = DesktopAppTTSResultPresenter(self._notification_service)
         hotkey_handler = DesktopAppHotkeyHandler(tts_processor, result_presenter)
         self._hotkey_manager.initialize(hotkey_handler)
-        self._hotkey_manager.set_external_suppression_check(
-            lambda: tts_processor.is_processing()
-        )
+        self._hotkey_manager.set_external_suppression_check(lambda: tts_processor.is_processing())
         if start_if_active:
             self._hotkey_manager.start()
 
@@ -191,9 +188,7 @@ class DesktopApp:
         if self._configuration_coordinator is None or self._config is None:
             return True
 
-        should_continue, updated_config = self._configuration_coordinator.handle_initial_configuration(
-            self._config
-        )
+        should_continue, updated_config = self._configuration_coordinator.handle_initial_configuration(self._config)
         self._config = updated_config
         return should_continue
 
