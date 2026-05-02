@@ -14,7 +14,7 @@ davey>=0.1.5
 pyttsx3
 gtts
 edge-tts>=7.2.8
-psycopg[binary]>=3.3.3
+psycopg[binary]>=3.3.4
 opentelemetry-api>=1.41.1
 opentelemetry-sdk>=1.41.1
 opentelemetry-exporter-otlp-proto-http>=1.41.1
