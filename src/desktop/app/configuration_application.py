@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional, Protocol
+from typing import Optional, Protocol
+from collections.abc import Callable
 
 from ..config.desktop_config import (
     ConfigurationValidator,

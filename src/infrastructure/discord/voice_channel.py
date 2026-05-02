@@ -2,7 +2,8 @@
 import asyncio
 import logging
 import time
-from typing import Optional, Dict
+from contextlib import suppress
+from typing import Optional
 import discord
 from src.application.dto import DiscordVoiceChannelCacheStatsDTO
 from src.core.interfaces import IVoiceChannel, IVoiceChannelRepository
@@ -102,10 +103,8 @@ class DiscordVoiceChannel(IVoiceChannel):
                 logger.error(f"[VOICE_CHANNEL] Connection failed: {e}")
                 active_client = self._sync_voice_client()
                 if active_client:
-                    try:
+                    with suppress(discord.errors.ClientException, Exception):
                         await active_client.disconnect(force=True)
-                    except (discord.errors.ClientException, Exception):
-                        pass
                 self._voice_client = None
                 raise RuntimeError(f"Failed to connect to voice channel: {e}") from e
     
@@ -209,7 +208,7 @@ class DiscordVoiceChannel(IVoiceChannel):
                 if playback_error:
                     raise RuntimeError(f"Audio playback error: {playback_error}")
                     
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(
                     "[VOICE_CHANNEL] Playback timeout (%ss), stopping player...",
                     self._playback_timeout_seconds,
@@ -331,11 +330,11 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
         self._connection_timeout_seconds = connection_timeout_seconds
         self._playback_timeout_seconds = playback_timeout_seconds
         self._idle_disconnect_timeout_seconds = idle_disconnect_timeout_seconds
-        self._member_cache: Dict[int, DiscordVoiceChannel] = {}
+        self._member_cache: dict[int, DiscordVoiceChannel] = {}
         # Cache to reuse same instance per channel (critical for timer management)
-        self._channel_instances: Dict[int, DiscordVoiceChannel] = {}
+        self._channel_instances: dict[int, DiscordVoiceChannel] = {}
         # Track when instances were last used for cleanup
-        self._instance_last_used: Dict[int, float] = {}
+        self._instance_last_used: dict[int, float] = {}
         logger.info("[VOICE_REPO] Initialized DiscordVoiceChannelRepository")
 
     def _create_channel_instance(self, channel: discord.VoiceChannel) -> DiscordVoiceChannel:

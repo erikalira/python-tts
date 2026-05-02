@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Optional
+from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class JSONInterfaceLanguagePreferenceRepository:
             return None
 
         try:
-            with open(path, "r", encoding="utf-8") as file:
+            with open(path, encoding="utf-8") as file:
                 data = json.load(file)
         except (OSError, json.JSONDecodeError) as exc:
             logger.error("[INTERFACE_LANGUAGE] Failed to load %s: %s", path, exc)
@@ -132,17 +133,16 @@ class PostgreSQLInterfaceLanguagePreferenceRepository:
             return self._user_cache[cache_key]
 
         try:
-            with self._connect() as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(
-                        """
+            with self._connect() as conn, conn.cursor() as cursor:
+                cursor.execute(
+                    """
                         SELECT locale
                         FROM user_interface_language_preferences
                         WHERE guild_id = %s AND user_id = %s
                         """,
-                        (guild_id, user_id),
-                    )
-                    row = cursor.fetchone()
+                    (guild_id, user_id),
+                )
+                row = cursor.fetchone()
         except Exception as exc:
             logger.error(
                 "[INTERFACE_LANGUAGE] Failed to load user locale for guild %s user %s: %s",
@@ -160,17 +160,16 @@ class PostgreSQLInterfaceLanguagePreferenceRepository:
             return self._guild_cache[guild_id]
 
         try:
-            with self._connect() as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(
-                        """
+            with self._connect() as conn, conn.cursor() as cursor:
+                cursor.execute(
+                    """
                         SELECT locale
                         FROM guild_interface_language_preferences
                         WHERE guild_id = %s
                         """,
-                        (guild_id,),
-                    )
-                    row = cursor.fetchone()
+                    (guild_id,),
+                )
+                row = cursor.fetchone()
         except Exception as exc:
             logger.error("[INTERFACE_LANGUAGE] Failed to load guild locale for guild %s: %s", guild_id, exc)
             return None

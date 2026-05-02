@@ -8,7 +8,8 @@ import logging
 from abc import ABC, abstractmethod
 import threading
 import time
-from typing import Callable, Optional
+from typing import Optional
+from collections.abc import Callable
 
 from src.application.dto import SystemTrayStatusDTO
 from ..adapters.system_tray import (

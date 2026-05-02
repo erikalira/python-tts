@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Keyboard library adapters for Desktop App services."""
 
-from typing import Callable
+from collections.abc import Callable
 
 try:
     import keyboard

@@ -37,7 +37,7 @@ class ConfigurationRepository:
             return DesktopAppConfig.create_default()
 
         try:
-            with open(self._config_file, "r", encoding="utf-8") as file:
+            with open(self._config_file, encoding="utf-8") as file:
                 data = json.load(file)
 
             return DesktopAppConfig(

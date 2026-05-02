@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional
+from typing import Optional
+from collections.abc import Callable
 
 from ..config.desktop_config import DesktopAppConfig
 from . import tk_support

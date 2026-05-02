@@ -174,7 +174,7 @@ class TTSQueueOrchestrator:
                         )
                         generate_span.set_attribute("result_code", "ok")
                     generation_ms = (time.perf_counter() - generation_started_at) * 1000
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     error = "Tempo limite excedido durante geracao do audio"
                     item.mark_failed(error)
                     await self._audio_queue.update_item(item)
@@ -292,7 +292,7 @@ class TTSQueueOrchestrator:
                         queued=False,
                         item_id=item.item_id,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     error = "Tempo limite excedido durante reproducao"
                     item.mark_failed(error)
                     await self._audio_queue.update_item(item)
@@ -330,9 +330,7 @@ class TTSQueueOrchestrator:
                 await self._audio_queue.update_item(item)
 
                 error_lower = error_msg.lower()
-                if "4017" in error_lower or "dave" in error_lower:
-                    code = SPEAK_RESULT_VOICE_CONNECTION_FAILED
-                elif "not connected" in error_lower or "connection" in error_lower:
+                if "4017" in error_lower or "dave" in error_lower or "not connected" in error_lower or "connection" in error_lower:
                     code = SPEAK_RESULT_VOICE_CONNECTION_FAILED
                 elif "permission" in error_lower:
                     code = SPEAK_RESULT_VOICE_PERMISSION_DENIED

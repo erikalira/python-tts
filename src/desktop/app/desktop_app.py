@@ -3,7 +3,8 @@
 
 import logging
 import threading
-from typing import Callable, Optional
+from typing import Optional
+from collections.abc import Callable
 
 from src.application.desktop_bot import (
     CheckDesktopBotConnectionUseCase,

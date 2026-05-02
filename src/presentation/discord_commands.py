@@ -4,7 +4,7 @@ import inspect
 import logging
 import time
 from datetime import datetime, timedelta
-from typing import Callable
+from collections.abc import Callable
 
 import discord
 from discord import app_commands

@@ -20,7 +20,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 import re
-from typing import Iterable
+from collections.abc import Iterable
 
 
 DEFAULT_REQUIREMENT_FILES = ("requirements.txt", "requirements-test.txt")

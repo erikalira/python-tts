@@ -1,5 +1,5 @@
 """Configuration repository implementation."""
-from typing import Optional, Dict
+from typing import Optional
 from src.core.interfaces import IConfigRepository
 from src.core.entities import TTSConfig
 
@@ -17,8 +17,8 @@ class InMemoryConfigRepository(IConfigRepository):
             default_config: Default TTS configuration
         """
         self._default_config = default_config
-        self._guild_configs: Dict[int, TTSConfig] = {}
-        self._user_configs: Dict[tuple[int, int], TTSConfig] = {}
+        self._guild_configs: dict[int, TTSConfig] = {}
+        self._user_configs: dict[tuple[int, int], TTSConfig] = {}
     
     def get_config(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
         """Get resolved TTS configuration for a guild/user scope or the global default.
