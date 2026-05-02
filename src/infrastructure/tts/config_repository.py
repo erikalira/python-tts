@@ -1,7 +1,8 @@
 """Configuration repository implementation."""
 from typing import Optional
-from src.core.interfaces import IConfigRepository
+
 from src.core.entities import TTSConfig
+from src.core.interfaces import IConfigRepository
 
 
 class InMemoryConfigRepository(IConfigRepository):

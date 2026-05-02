@@ -2,27 +2,27 @@
 """Public exports for Desktop App configuration."""
 
 from .desktop_config import (
-    TTSConfig,
+    ConfigurationRepository,
+    ConfigurationValidator,
+    DesktopAppConfig,
     DiscordConfig,
+    EnvironmentUpdater,
     HotkeyConfig,
     InterfaceConfig,
     NetworkConfig,
-    DesktopAppConfig,
-    ConfigurationRepository,
-    EnvironmentUpdater,
-    ConfigurationValidator,
+    TTSConfig,
     get_config_directory,
 )
 
 __all__ = [
-    "TTSConfig",
+    "ConfigurationRepository",
+    "ConfigurationValidator",
+    "DesktopAppConfig",
     "DiscordConfig",
+    "EnvironmentUpdater",
     "HotkeyConfig",
     "InterfaceConfig",
     "NetworkConfig",
-    "DesktopAppConfig",
-    "ConfigurationRepository",
-    "EnvironmentUpdater",
-    "ConfigurationValidator",
+    "TTSConfig",
     "get_config_directory",
 ]

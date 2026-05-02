@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 from collections.abc import Callable
+from typing import Optional
+
+from src.application.dto import DesktopConfigurationSaveResultDTO
 
 from ..config.desktop_config import (
     DesktopAppConfig,
 )
-from src.application.dto import DesktopConfigurationSaveResultDTO
 from ..gui.configuration_service import ConfigurationService
 from .configuration_application import DesktopConfigurationApplicationService
 

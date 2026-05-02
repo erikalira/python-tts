@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-
 _TMP_ROOT = Path(".test-artifacts") / "tmp"
 
 

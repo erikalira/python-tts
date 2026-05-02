@@ -6,12 +6,13 @@ Provides keyboard monitoring and hotkey detection services.
 
 import threading
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import Optional, Protocol
-from collections.abc import Callable
 
 from src.application.dto import HotkeyManagerStatusDTO, HotkeyServiceStatusDTO
+
 from ..adapters.keyboard_backend import KeyboardHookBackend, is_keyboard_backend_available
 from ..config.desktop_config import DesktopAppConfig
 from .hotkey_capture import HotkeyTextCaptureSession

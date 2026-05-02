@@ -8,12 +8,15 @@ import logging
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Optional, Protocol
 from collections.abc import Callable
+from typing import Optional, Protocol
 
 from src.application.dto import SystemTrayStatusDTO
+
 from ..adapters.system_tray import (
     NullSystemTrayIcon as _NullSystemTrayIcon,
+)
+from ..adapters.system_tray import (
     create_system_tray_icon,
     is_system_tray_available,
 )

@@ -1,5 +1,5 @@
-from unittest.mock import Mock
 import logging
+from unittest.mock import Mock
 
 from src.application.dto import SystemTrayStatusDTO
 from src.desktop.config.desktop_config import DesktopAppConfig

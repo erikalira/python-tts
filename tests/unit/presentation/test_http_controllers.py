@@ -1,15 +1,16 @@
 """Tests for HTTP controllers."""
 
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock
 from aiohttp import web
 
+from src.application.dto import SpeakTextResult
+from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 from src.core.entities import TTSConfig
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 from src.infrastructure.rate_limiting import InMemoryRateLimiter
 from src.presentation.http_controllers import SpeakController, VoiceContextController
-from src.application.dto import SpeakTextResult
-from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 
 
 @pytest.mark.asyncio

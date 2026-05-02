@@ -11,7 +11,6 @@ import discord
 from discord import app_commands
 
 from src.application.interface_language_preferences import InterfaceLanguagePreferenceRepository
-from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.use_cases import (
     ConfigureInterfaceLanguageUseCase,
@@ -21,13 +20,13 @@ from src.application.use_cases import (
     LeaveVoiceChannelUseCase,
     SpeakTextUseCase,
 )
-from src.bot_runtime.readiness import BotReadinessProbe
-from src.bot_runtime.readiness import AudioQueueHealthPort, ConfigRepositoryHealthPort
+from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.bot_runtime.queue_worker import BotQueueWorker
+from src.bot_runtime.readiness import AudioQueueHealthPort, BotReadinessProbe, ConfigRepositoryHealthPort
 from src.core.interfaces import IAudioQueue
 from src.infrastructure.audio_queue import InMemoryAudioQueue, RedisAudioQueue
-from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvailability
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
+from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvailability
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 from src.infrastructure.persistence.config_storage import GuildConfigRepository, IConfigStorage, JSONConfigStorage
 from src.infrastructure.persistence.interface_language_preferences import (

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 import queue
-from typing import Optional, Protocol
 from collections.abc import Callable
+from typing import Optional, Protocol
 
 from src.application.dto import (
     DesktopAppRuntimeStatusDTO,
@@ -13,6 +13,7 @@ from src.application.dto import (
     DesktopBotVoiceContextResultDTO,
     DesktopConfigurationSaveResultDTO,
 )
+
 from ..config.desktop_config import DesktopAppConfig
 from ..gui.main_window import DesktopAppMainWindow
 

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import argparse
-from http.client import HTTPConnection, HTTPSConnection
 import json
 from dataclasses import dataclass
+from http.client import HTTPConnection, HTTPSConnection
 from pathlib import Path
 from typing import Any
 from urllib.parse import ParseResult, urlparse

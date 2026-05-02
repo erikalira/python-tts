@@ -8,8 +8,8 @@ from src.desktop.config.desktop_config import (
     DesktopAppConfig,
     EnvironmentUpdater,
     HotkeyConfig,
-    get_default_discord_bot_url,
     get_config_directory,
+    get_default_discord_bot_url,
 )
 
 

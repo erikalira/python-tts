@@ -4,10 +4,12 @@ import logging
 import time
 from contextlib import suppress
 from typing import Any, Optional, cast
+
 import discord
+
 from src.application.dto import DiscordVoiceChannelCacheStatsDTO
-from src.core.interfaces import IVoiceChannel, IVoiceChannelRepository
 from src.core.entities import AudioFile
+from src.core.interfaces import IVoiceChannel, IVoiceChannelRepository
 from src.core.timeouts import (
     DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
     DEFAULT_DISCORD_IDLE_DISCONNECT_TIMEOUT_SECONDS,
@@ -335,6 +337,7 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
         self._channel_instances: dict[int, DiscordVoiceChannel] = {}
         # Track when instances were last used for cleanup
         self._instance_last_used: dict[int, float] = {}
+        self._stale_disconnect_tasks: set[asyncio.Task[None]] = set()
         logger.info("[VOICE_REPO] Initialized DiscordVoiceChannelRepository")
 
     def _create_channel_instance(self, channel: discord.VoiceChannel) -> DiscordVoiceChannel:
@@ -520,8 +523,9 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
                 if channel_instance and channel_instance.is_connected():
                     logger.info(f"[VOICE_REPO] Auto-disconnecting stale channel {channel_id} (guild {guild_id})")
                     # Run disconnect in background without waiting
-                    import asyncio
-                    asyncio.create_task(channel_instance.disconnect())
+                    disconnect_task = asyncio.create_task(channel_instance.disconnect())
+                    self._stale_disconnect_tasks.add(disconnect_task)
+                    disconnect_task.add_done_callback(self._stale_disconnect_tasks.discard)
                 
                 # Remove from cache
                 del self._channel_instances[channel_id]

@@ -1,16 +1,17 @@
 """Tests for application use cases."""
 
 import pytest
+
 from src.application.dto import (
-    ConfigureTTSResult,
     JOIN_RESULT_OK,
     JOIN_RESULT_USER_NOT_IN_CHANNEL,
     LEAVE_RESULT_NOT_CONNECTED,
     LEAVE_RESULT_OK,
     SPEAK_RESULT_MISSING_TEXT,
-    SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_QUEUE_FULL,
+    SPEAK_RESULT_QUEUED,
     SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+    ConfigureTTSResult,
     SpeakTextInputDTO,
     TTSConfigurationData,
 )

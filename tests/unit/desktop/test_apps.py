@@ -14,13 +14,13 @@ from src.application.tts_execution import (
     TTSExecutionResult,
 )
 from src.desktop.app.desktop_actions import DesktopConfigurationCoordinator
-from src.desktop.results import DesktopConfigurationSaveResult
 from src.desktop.app.desktop_app import DesktopApp
 from src.desktop.app.tts_runtime import (
     DesktopAppHotkeyHandler,
     DesktopAppTTSResultPresenter,
 )
 from src.desktop.config.desktop_config import DesktopAppConfig, get_default_discord_bot_url
+from src.desktop.results import DesktopConfigurationSaveResult
 from src.desktop.services.hotkey_services import HotkeyEvent
 
 

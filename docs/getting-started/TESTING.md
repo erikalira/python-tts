@@ -156,8 +156,9 @@ Static quality gates:
 
 CI runs these through `uv run` after `uv sync --locked --group test`.
 
-`ruff` currently enforces high-signal correctness rules such as syntax and
-undefined-name failures. `pyright` checks `src`, `scripts/test`, and
+`ruff` currently enforces high-signal correctness rules such as syntax,
+undefined-name failures, import ordering, and Ruff-specific cleanup checks.
+`pyright` checks `src`, `scripts/test`, and
 `tests/unit` in `pyrightconfig.json`; this keeps production code, test helpers,
 and unit-suite fakes visible to the static type gate while leaving slower
 integration, smoke, and manual runtime validation in their dedicated commands.

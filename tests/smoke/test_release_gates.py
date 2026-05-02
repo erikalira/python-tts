@@ -1,11 +1,11 @@
 from unittest.mock import AsyncMock, Mock
 
 from scripts.test.quality_gates import evaluate_observability_payload, load_quality_gate_config
+from src.core.entities import AudioQueueItem, TTSRequest
 from src.desktop.app.desktop_app import DesktopApp
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.infrastructure.http.server import HTTPServer
 from src.infrastructure.runtime_observability import InMemoryBotRuntimeTelemetry
-from src.core.entities import AudioQueueItem, TTSRequest
 
 
 def test_bot_health_endpoint_smoke():

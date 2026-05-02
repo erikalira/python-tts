@@ -1,5 +1,5 @@
 """Tests for core entities."""
-from src.core.entities import TTSRequest, TTSConfig, AudioFile
+from src.core.entities import AudioFile, TTSConfig, TTSRequest
 
 
 class TestTTSRequest:

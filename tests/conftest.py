@@ -1,12 +1,20 @@
 """Test fixtures and mocks shared across tests."""
 import pytest
+
 from src.application.dto import AudioQueueStatusDTO
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.tts_voice_catalog import TTSVoiceOption
 from src.application.use_cases import SpeakTextUseCase
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
-from src.core.interfaces import ITTSEngine, IVoiceChannel, IVoiceChannelRepository, IConfigRepository, IAudioQueue, IAudioFileCleanup
-from src.core.entities import TTSConfig, AudioFile, TTSRequest, AudioQueueItem
+from src.core.entities import AudioFile, AudioQueueItem, TTSConfig, TTSRequest
+from src.core.interfaces import (
+    IAudioFileCleanup,
+    IAudioQueue,
+    IConfigRepository,
+    ITTSEngine,
+    IVoiceChannel,
+    IVoiceChannelRepository,
+)
 
 
 class MockTTSEngine(ITTSEngine):
@@ -105,7 +113,7 @@ class MockConfigRepository(IConfigRepository):
             rate=180
         )
     
-    def get_config(self, guild_id: int = None, user_id: int | None = None) -> TTSConfig:
+    def get_config(self, guild_id: int | None = None, user_id: int | None = None) -> TTSConfig:
         """Get config by guild ID."""
         if guild_id and user_id and (guild_id, user_id) in self.user_configs:
             return self.user_configs[(guild_id, user_id)]
@@ -118,7 +126,7 @@ class MockConfigRepository(IConfigRepository):
             rate=self.default_config.rate
         )
 
-    async def load_config_async(self, guild_id: int = None, user_id: int | None = None) -> TTSConfig:
+    async def load_config_async(self, guild_id: int | None = None, user_id: int | None = None) -> TTSConfig:
         """Load config through the async repository contract."""
         return self.get_config(guild_id, user_id=user_id)
     
@@ -152,7 +160,7 @@ class MockConfigRepository(IConfigRepository):
         self.configs.pop(guild_id, None)
         return True
 
-    def get_effective_scope(self, guild_id: int = None, user_id: int | None = None) -> str:
+    def get_effective_scope(self, guild_id: int | None = None, user_id: int | None = None) -> str:
         if guild_id and user_id and (guild_id, user_id) in self.user_configs:
             return "user"
         if guild_id and guild_id in self.configs:

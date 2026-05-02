@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 
 
@@ -43,7 +45,7 @@ class _FakeProvider:
 
 
 class _FakeResource:
-    created_with = []
+    created_with: ClassVar[list] = []
 
     @classmethod
     def create(cls, attributes):
@@ -52,14 +54,14 @@ class _FakeResource:
 
 
 class _FakeSpanExporter:
-    endpoints = []
+    endpoints: ClassVar[list] = []
 
     def __init__(self, *, endpoint):
         self.endpoints.append(endpoint)
 
 
 class _FakeMetricExporter:
-    endpoints = []
+    endpoints: ClassVar[list] = []
 
     def __init__(self, *, endpoint):
         self.endpoints.append(endpoint)
@@ -92,7 +94,7 @@ class _FakeTracerProvider(_FakeProvider):
 
 
 class _FakeMeterProvider(_FakeProvider):
-    instances = []
+    instances: ClassVar[list] = []
 
     def __init__(self, *, resource, metric_readers):
         super().__init__()

@@ -6,10 +6,6 @@ import logging
 from typing import Optional
 
 from src.application.dto import (
-    JoinVoiceChannelResult,
-    LeaveVoiceChannelResult,
-    VoiceContextQueryDTO,
-    VoiceContextResult,
     JOIN_RESULT_MISSING_GUILD_ID,
     JOIN_RESULT_OK,
     JOIN_RESULT_USER_NOT_IN_CHANNEL,
@@ -22,6 +18,10 @@ from src.application.dto import (
     VOICE_CONTEXT_RESULT_MEMBER_REQUIRED,
     VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL,
     VOICE_CONTEXT_RESULT_OK,
+    JoinVoiceChannelResult,
+    LeaveVoiceChannelResult,
+    VoiceContextQueryDTO,
+    VoiceContextResult,
 )
 from src.core.interfaces import IVoiceChannelRepository
 

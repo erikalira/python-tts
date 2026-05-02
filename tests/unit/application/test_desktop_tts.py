@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
-from src.application.dto import DesktopTTSStatusDTO
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
+from src.application.dto import DesktopTTSStatusDTO
 
 
 class FakeEngine:

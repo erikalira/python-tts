@@ -3,8 +3,8 @@
 import inspect
 import logging
 import time
-from datetime import datetime, timedelta
 from collections.abc import Callable
+from datetime import datetime, timedelta
 
 import discord
 from discord import app_commands
@@ -12,8 +12,8 @@ from discord import app_commands
 from src.application.discord_speak_request_builder import (
     DISCORD_SPEAK_PREP_MISSING_GUILD_ID,
     DISCORD_SPEAK_PREP_VOICE_CONFIG_UNAVAILABLE,
-    DiscordSpeakRequestBuilder,
     DiscordSpeakPreparationErrorCode,
+    DiscordSpeakRequestBuilder,
 )
 from src.application.dto import SPEAK_RESULT_OK, SPEAK_RESULT_QUEUED, SpeakTextResult
 from src.application.rate_limiting import RateLimiter, RateLimitRequest, RateLimitResult

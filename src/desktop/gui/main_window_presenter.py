@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.application.dto import DesktopBotActionResultDTO
+
 from ..config.desktop_config import DesktopAppConfig
 
 SUCCESS_COLOR = "#155724"

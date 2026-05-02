@@ -18,16 +18,16 @@ from .repository import ConfigurationRepository
 from .validation import ConfigurationValidator
 
 __all__ = [
-    "TTSConfig",
+    "ConfigurationRepository",
+    "ConfigurationValidator",
+    "DesktopAppConfig",
     "DiscordConfig",
+    "EnvironmentUpdater",
     "HotkeyConfig",
     "InterfaceConfig",
     "NetworkConfig",
-    "DesktopAppConfig",
-    "ConfigurationRepository",
-    "EnvironmentUpdater",
-    "ConfigurationValidator",
-    "get_default_discord_bot_url",
+    "TTSConfig",
     "get_config_directory",
+    "get_default_discord_bot_url",
     "os",
 ]

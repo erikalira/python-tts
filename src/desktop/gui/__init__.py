@@ -7,13 +7,13 @@ from .tk_support import TKINTER_AVAILABLE, messagebox, tk, ttk
 from .ui_logging import UILogHandler
 
 __all__ = [
+    "TKINTER_AVAILABLE",
     "ConfigInterface",
     "ConfigurationService",
     "ConsoleConfig",
     "DesktopAppMainWindow",
     "GUIConfig",
     "InitialSetupGUI",
-    "TKINTER_AVAILABLE",
     "UILogHandler",
     "messagebox",
     "tk",

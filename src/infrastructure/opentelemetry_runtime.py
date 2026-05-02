@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 import logging
-from typing import Any
 from collections.abc import Mapping
+from contextlib import contextmanager
+from typing import Any
 
 logger = logging.getLogger(__name__)
 

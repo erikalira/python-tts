@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Validation for Desktop App configuration."""
 
-from .models import DesktopAppConfig
 from src.core.timeouts import (
     MAX_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS,
     MIN_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS,
 )
+
+from .models import DesktopAppConfig
 
 
 class ConfigurationValidator:

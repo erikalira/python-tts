@@ -116,5 +116,5 @@ class InMemoryBotRuntimeTelemetry:
         if not values:
             return None
         sorted_values = sorted(values)
-        index = int(round((len(sorted_values) - 1) * percentile))
+        index = round((len(sorted_values) - 1) * percentile)
         return sorted_values[index]

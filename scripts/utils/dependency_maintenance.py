@@ -12,16 +12,15 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import importlib.metadata
 import importlib
+import importlib.metadata
 import io
 import json
+import re
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-import re
-from collections.abc import Iterable
-
 
 DEFAULT_REQUIREMENT_FILES = ("requirements.txt", "requirements-test.txt")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
