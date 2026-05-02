@@ -23,11 +23,17 @@ VCS_REF=<git-sha>
 ```
 
 The `Release` GitHub Actions workflow publishes semantic version tags such as
-`v1.2.3` to GHCR and records the bot image in the GitHub release notes.
+`v1.2.3` to GHCR, signs the image, attaches build provenance, and records the
+bot image in the GitHub release notes.
 
 Use the same `APP_VERSION` in staging and production only after the staging
 promotion gate passes. Keep the previous production `APP_VERSION` in the
 release notes so rollback is a config change, not a rebuild.
+
+For Kubernetes GitOps deployments, the equivalent release identity is the
+overlay image `newTag` in `deploy/k8s/overlays/staging` or
+`deploy/k8s/overlays/prod`. The tag must refer to an immutable GHCR release
+image that passed signature, provenance, and critical vulnerability checks.
 
 ## Staging Baseline
 
@@ -67,6 +73,12 @@ Start staging with the same compose file:
 ```powershell
 docker compose --env-file .env.staging -f docker-compose.prod.yml up -d --build
 ```
+
+For Kubernetes staging, Argo CD reconciles
+`deploy/k8s/overlays/staging` through
+`deploy/gitops/argocd/staging-application.yaml`. Create runtime secrets outside
+the repository before syncing. The public Kustomize overlays reference
+`bot-secrets` but do not generate it.
 
 ## Staging Promotion Gate
 
@@ -129,6 +141,12 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml pull bot
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps --no-build bot
 ```
 
+For Kubernetes production, open a reviewed change that updates
+`deploy/k8s/overlays/prod/kustomization.yaml` to the staging-passed image tag.
+After merge, sync the Argo CD production application manually. Keep automated
+production sync disabled until staging, alerting, and rollback drills are
+routine.
+
 ## Rollback
 
 Use rollback when the release breaks health, readiness, queue processing,
@@ -176,6 +194,12 @@ Invoke-RestMethod http://127.0.0.1:10000/observability
    [BACKUP_AND_RESTORE_DATABASE.md](BACKUP_AND_RESTORE_DATABASE.md) with the
    selected backup.
 
+For Kubernetes GitOps rollback, revert the Git commit that promoted the bad
+`newTag`, or commit the previous known-good tag to the affected overlay and
+sync the Argo CD application. Do not patch the live Deployment directly except
+as a short emergency containment step; if that happens, restore Git as the
+source of truth immediately after recovery.
+
 ## Done Criteria
 
 A deploy or rollback is done only when:
@@ -185,4 +209,6 @@ A deploy or rollback is done only when:
 - the bot service health is `healthy` in Docker
 - a short TTS smoke request completes
 - the live observability SLI gate passes after smoke traffic
+- Prometheus alerts route through Alertmanager and reach the incident channel
+  during staging validation when alert routing changed
 - any validation gap is recorded in the release notes

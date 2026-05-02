@@ -121,16 +121,19 @@ jobs:
             -t tts-hotkey-windows-bot:${GITHUB_SHA} .
 
       - name: Scan Docker image with Trivy
+        id: trivy
+        continue-on-error: true
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: tts-hotkey-windows-bot:${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
-          severity: HIGH,CRITICAL
-          exit-code: "0"
+          severity: CRITICAL
+          exit-code: "1"
           version: v0.69.3
 
       - name: Verify Trivy SARIF was generated
+        if: ${{ always() }}
         run: test -s trivy-results.sarif
 
       - name: Upload Trivy SARIF
@@ -147,6 +150,10 @@ jobs:
           name: trivy-docker-image-scan
           path: trivy-results.sarif
           if-no-files-found: error
+
+      - name: Fail on critical Docker image vulnerabilities
+        if: ${{ always() }}
+        run: test "${{ steps.trivy.outcome }}" = "success"
 
   codeql:
     name: CodeQL

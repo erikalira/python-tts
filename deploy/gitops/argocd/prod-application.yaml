@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tts-hotkey-windows-prod
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: tts-hotkey-windows
+    app.kubernetes.io/component: gitops
+    app.kubernetes.io/part-of: tts-hotkey-windows
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/erikalira/python-tts.git
+    targetRevision: main
+    path: deploy/k8s/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tts-hotkey-prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true

@@ -1,0 +1,29 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: discord-webhook
+  group_by: ["alertname", "severity", "job"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity="critical"
+      receiver: discord-webhook
+      repeat_interval: 30m
+    - matchers:
+        - severity="warning"
+      receiver: discord-webhook
+      repeat_interval: 4h
+
+receivers:
+  - name: discord-webhook
+    discord_configs:
+      - webhook_url_file: /run/secrets/alertmanager_discord_webhook_url
+        send_resolved: true
+        title: '{{ template "discord.default.title" . }}'
+        message: '{{ template "discord.default.message" . }}'
+
+templates:
+  - /etc/alertmanager/templates/*.tmpl

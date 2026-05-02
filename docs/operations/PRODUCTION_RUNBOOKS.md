@@ -7,6 +7,7 @@ Runbooks for the production Docker stack:
 - Discord bot
 - healthcheck and restart policy
 - optional OpenTelemetry, Prometheus, Tempo, and Grafana services
+- optional Alertmanager routing to a Discord incident channel
 
 Use these procedures during incidents. Keep notes with timestamps, commands
 run, observed values, and the final recovery action.
@@ -38,6 +39,7 @@ Invoke-RestMethod http://127.0.0.1:10000/observability
 | Redis logs show restarts or connection failures | Redis dependency issue |
 | Postgres auth or connection errors in bot logs | config storage issue |
 | one engine bucket has high errors | engine degradation |
+| Discord incident channel receives a critical alert | follow the matching runbook and acknowledge in the incident thread |
 
 4. Prefer the smallest reversible recovery first.
 
@@ -46,6 +48,33 @@ Invoke-RestMethod http://127.0.0.1:10000/observability
 - Restore Postgres only when data is missing or wrong and a backup was
   selected.
 - Roll back only when the current version is plausibly the cause.
+
+## Alertmanager Incident Routing
+
+Alertmanager receives Prometheus alerts and posts warning and critical
+notifications to the configured Discord webhook.
+
+### Signals
+
+- A Discord incident message arrives with `FIRING`.
+- `http://localhost:9090/alerts` shows the alert as firing.
+- `http://localhost:9093` shows the alert grouped under the Discord receiver.
+
+### Triage
+
+1. Acknowledge the incident in the Discord thread with the current owner and
+   timestamp.
+2. Open Prometheus and identify the alert name, severity, job, and instance.
+3. Follow the matching runbook section for lock starvation, stuck queue, engine
+   degradation, dependency outage, or rollback.
+4. When the alert resolves, confirm Discord receives the resolved notification.
+
+### Follow-Up
+
+Record false positives, missing routing, repeated notifications, or alerts
+that did not resolve. Tune `deploy/observability/prometheus-rules.yml` or
+`deploy/observability/alertmanager.yml` in Git rather than changing live
+configuration by hand.
 
 ## Lock Starvation
 

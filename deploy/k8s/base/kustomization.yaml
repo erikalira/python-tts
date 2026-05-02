@@ -15,10 +15,3 @@ configMapGenerator:
     files:
       - postgres-initdb/001_bot_config_schema.sql
       - postgres-initdb/002_interface_language_preferences.sql
-
-secretGenerator:
-  - name: bot-secrets
-    literals:
-      - DISCORD_TOKEN=replace_me
-      - BOT_SPEAK_TOKEN=replace_me
-      - POSTGRES_PASSWORD=replace_me

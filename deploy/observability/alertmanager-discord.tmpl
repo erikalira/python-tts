@@ -1,0 +1,15 @@
+{{ define "discord.default.title" -}}
+[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}
+{{- end }}
+
+{{ define "discord.default.message" -}}
+Severity: {{ .CommonLabels.severity }}
+{{ range .Alerts -}}
+{{ if .Annotations.summary }}
+Summary: {{ .Annotations.summary }}
+{{ end }}
+{{ if .Annotations.description }}
+Description: {{ .Annotations.description }}
+{{ end }}
+{{ end -}}
+{{- end }}

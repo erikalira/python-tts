@@ -55,6 +55,9 @@ build/
 *.log
 deploy/winsw/logs/
 
+# Local incident-routing secrets
+deploy/observability/alertmanager-discord-webhook-url.txt
+
 # Local Windows service runtime artifacts
 deploy/winsw/tts-discord-bot.exe
 

@@ -13,15 +13,20 @@ kept as the durable map for what changed and why.
 Completed coverage:
 
 - supply chain: Dependabot alignment, `uv.lock`, `pip-audit`, CycloneDX SBOMs,
-  and Docker image scanning
+  blocking critical Trivy image scanning, Cosign keyless image signing, GitHub
+  build provenance attestations, and OpenSSF Scorecard reporting
 - release engineering: semantic tag release workflow, GHCR image publishing,
-  generated release notes, and rollback workflow
+  generated release notes, signed image digests, provenance, and rollback
+  workflow
 - runtime security: threat model, explicit CORS, `/speak` token auth, rate
   limiting, payload size limit, content-type validation, and text limit
 - advanced tests: HTTP contract, desktop-to-bot E2E, queue load baseline,
   mutation baseline, and dependency-failure chaos tests
 - infrastructure: OpenTofu environment contract, dev/staging/prod inventory,
-  and optional Kustomize overlays for Minikube, staging, and production
+  optional Kustomize overlays for Minikube, staging, and production, and Argo CD
+  GitOps application manifests
+- observability operations: provisioned Grafana dashboards, Prometheus alert
+  rules, Alertmanager routing, and Discord incident notifications
 - packaging and commands: `pyproject.toml` metadata, `uv.lock`, lockfile-based
   Docker/CI installs, `Makefile`, and `scripts/dev.ps1`
 
@@ -32,9 +37,10 @@ Remaining operational follow-ups:
 - run the Linux mutation workflow in CI because `mutmut run` does not support
   native Windows execution
 - replace Kubernetes placeholder secrets through a real secret-management path
-  before applying shared-environment manifests
-- promote non-blocking load, mutation, and image-scanning reports to blocking
-  gates after baseline triage
+  before applying shared-environment manifests; the public Kustomize base now
+  references but does not generate `bot-secrets`
+- promote non-blocking load, mutation, Scorecard, and high-severity Trivy
+  reports to blocking gates after baseline triage
 
 ## Current Baseline
 

@@ -15,4 +15,5 @@ observability, or operating model.
 - [0004-opentelemetry-runtime-observability.md](0004-opentelemetry-runtime-observability.md)
 - [0005-staging-and-rollback-production-deploys.md](0005-staging-and-rollback-production-deploys.md)
 - [0006-opentofu-infrastructure-baseline.md](0006-opentofu-infrastructure-baseline.md)
+- [0007-argocd-gitops-deployments.md](0007-argocd-gitops-deployments.md)
 

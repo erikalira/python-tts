@@ -42,6 +42,22 @@ meant to make the current system measurable before deeper optimization work.
 Repository thresholds are centralized in `config/quality_gates.json` so CI,
 local runs, and smoke checks enforce the same baseline.
 
+### Branch protection expectation
+
+Protect `main` with the blocking CI checks that represent release readiness:
+
+- `Critical Tests (ubuntu-latest)`
+- `Critical Tests (windows-latest)`
+- `Python Dependency Audit`
+- `Dependency Review` on pull requests
+- `Docker Image Vulnerability Scan`
+- `CodeQL`
+- `Validate Release` before publishing release artifacts
+
+Keep `Queue Load Baseline`, `Mutation Baseline`, external integration slices,
+and OpenSSF Scorecard report-only until their baselines are stable enough to
+promote without creating flaky PR friction.
+
 ### Discord bot
 
 - Required automated gate:
@@ -85,3 +101,6 @@ local runs, and smoke checks enforce the same baseline.
 - Prometheus alert rules are provisioned from
   `deploy/observability/prometheus-rules.yml` and are visible on the
   Prometheus `/alerts` page.
+- Alertmanager is provisioned from `deploy/observability/alertmanager.yml`.
+  Release validation for observability changes must confirm alerts move from
+  firing to resolved and route to the configured Discord incident channel.
