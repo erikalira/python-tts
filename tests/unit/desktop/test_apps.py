@@ -256,7 +256,7 @@ def test_desktop_app_send_test_message_uses_http_client(monkeypatch):
 
     assert result == DesktopBotActionResult(
         success=True,
-            message="Test message sent to the bot successfully",
+        message="Test message sent to the bot successfully",
     )
     fake_client.send_text.assert_called_once_with(DESKTOP_BOT_TEST_MESSAGE)
 

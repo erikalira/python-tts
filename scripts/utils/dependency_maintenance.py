@@ -224,11 +224,7 @@ def build_requirement_report(
             if latest and installed != latest:
                 status = f"update-available -> {latest}"
             constraint = f"{entry.operator}{entry.version}" if entry.operator else "(unbounded)"
-            lines.append(
-                "  "
-                f"{entry.rendered_name}: required {constraint}, "
-                f"installed {installed}, status {status}"
-            )
+            lines.append(f"  {entry.rendered_name}: required {constraint}, installed {installed}, status {status}")
         lines.append("")
 
     return "\n".join(lines).rstrip()
@@ -241,8 +237,7 @@ def resolve_target_version(package: str, explicit_version: str | None) -> str:
     installed = get_installed_version(package)
     if not installed:
         raise ValueError(
-            f"Package '{package}' is not installed in the current interpreter. "
-            "Pass --version or install it first."
+            f"Package '{package}' is not installed in the current interpreter. Pass --version or install it first."
         )
     return installed
 
@@ -327,16 +322,10 @@ def command_pin(args: argparse.Namespace) -> int:
             changed_files.append(path.as_posix())
 
     if not changed_files:
-        print(
-            f"No requirement entry for '{args.package}' was found in: "
-            f"{', '.join(path.as_posix() for path in files)}"
-        )
+        print(f"No requirement entry for '{args.package}' was found in: {', '.join(path.as_posix() for path in files)}")
         return 1
 
-    print(
-        f"Updated {args.package} to {args.operator}{version} in "
-        f"{', '.join(changed_files)}"
-    )
+    print(f"Updated {args.package} to {args.operator}{version} in {', '.join(changed_files)}")
     return 0
 
 

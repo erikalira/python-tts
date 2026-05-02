@@ -71,9 +71,7 @@ class OpenTelemetryRuntime:
         meter_provider = MeterProvider(
             resource=resource,
             metric_readers=[
-                PeriodicExportingMetricReader(
-                    OTLPMetricExporter(endpoint=f"{otlp_endpoint.rstrip('/')}/v1/metrics")
-                )
+                PeriodicExportingMetricReader(OTLPMetricExporter(endpoint=f"{otlp_endpoint.rstrip('/')}/v1/metrics"))
             ],
         )
         meter = meter_provider.get_meter("tts-hotkey-windows.bot-runtime")

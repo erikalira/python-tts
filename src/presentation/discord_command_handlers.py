@@ -27,7 +27,9 @@ class _BaseConfigEmbedBuilder:
             language=config.language,
             voice_id=config.voice_id,
         )
-        return resolved_voice.label if resolved_voice else self._build_fallback_voice_label(config.engine, config.voice_id)
+        return (
+            resolved_voice.label if resolved_voice else self._build_fallback_voice_label(config.engine, config.voice_id)
+        )
 
     def _build_fallback_voice_label(self, engine: str, voice_id: str) -> str:
         if engine == "gtts":
@@ -347,8 +349,16 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
         )
         embed.add_field(name=self._messages.text("config.field.voice", locale), value=voice_name, inline=True)
         embed.add_field(name=self._messages.text("config.field.rate", locale), value=str(config.rate), inline=True)
-        embed.add_field(name=self._messages.text("config.field.scope", locale), value=self._messages.text("config.scope.guild", locale), inline=False)
-        embed.add_field(name=self._messages.text("config.field.effective_source", locale), value=self._scope_label(result.scope, locale), inline=False)
+        embed.add_field(
+            name=self._messages.text("config.field.scope", locale),
+            value=self._messages.text("config.scope.guild", locale),
+            inline=False,
+        )
+        embed.add_field(
+            name=self._messages.text("config.field.effective_source", locale),
+            value=self._scope_label(result.scope, locale),
+            inline=False,
+        )
         self._add_voice_resolution_field(embed, config.engine, config.voice_id, locale)
         embed.set_footer(text=self._messages.text("config.footer.guild", locale, guild_id=guild_id))
         return embed
@@ -373,7 +383,11 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
             value=self._messages.text("server_config.scope.saved", locale),
             inline=False,
         )
-        embed.add_field(name=self._messages.text("config.field.effective_source", locale), value=self._scope_label(result.scope, locale), inline=False)
+        embed.add_field(
+            name=self._messages.text("config.field.effective_source", locale),
+            value=self._scope_label(result.scope, locale),
+            inline=False,
+        )
         self._add_voice_resolution_field(embed, config.engine, config.voice_id, locale)
         embed.set_footer(text=self._messages.text("config.footer.guild", locale, guild_id=guild_id))
         return embed
@@ -393,7 +407,11 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
             color=discord.Color.orange(),
         )
         embed.add_field(name=self._messages.text("config.field.active_voice", locale), value=voice_name, inline=True)
-        embed.add_field(name=self._messages.text("config.field.effective_source", locale), value=self._scope_label(result.scope, locale), inline=False)
+        embed.add_field(
+            name=self._messages.text("config.field.effective_source", locale),
+            value=self._scope_label(result.scope, locale),
+            inline=False,
+        )
         self._add_voice_resolution_field(embed, config.engine, config.voice_id, locale)
         embed.set_footer(text=self._messages.text("config.footer.guild", locale, guild_id=guild_id))
         return embed
@@ -422,17 +440,23 @@ class DiscordAboutCommandHandler:
         embed.add_field(name=self._messages.text("about.author", locale), value=__author__, inline=True)
         embed.add_field(
             name="FFmpeg",
-            value=self._messages.text("about.available" if runtime_status.ffmpeg_available else "about.not_found", locale),
+            value=self._messages.text(
+                "about.available" if runtime_status.ffmpeg_available else "about.not_found", locale
+            ),
             inline=True,
         )
         embed.add_field(
             name="PyNaCl",
-            value=self._messages.text("about.installed" if runtime_status.pynacl_installed else "about.not_installed", locale),
+            value=self._messages.text(
+                "about.installed" if runtime_status.pynacl_installed else "about.not_installed", locale
+            ),
             inline=True,
         )
         embed.add_field(
             name="davey",
-            value=self._messages.text("about.installed" if runtime_status.davey_installed else "about.not_installed", locale),
+            value=self._messages.text(
+                "about.installed" if runtime_status.davey_installed else "about.not_installed", locale
+            ),
             inline=True,
         )
         embed.add_field(
@@ -440,5 +464,7 @@ class DiscordAboutCommandHandler:
             value=self._messages.text("about.commands.value", locale),
             inline=False,
         )
-        embed.set_footer(text=self._messages.text("about.footer", locale, system=platform.system(), release=platform.release()))
+        embed.set_footer(
+            text=self._messages.text("about.footer", locale, system=platform.system(), release=platform.release())
+        )
         await interaction.response.send_message(embed=embed, ephemeral=True)

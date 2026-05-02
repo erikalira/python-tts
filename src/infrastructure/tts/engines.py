@@ -1,9 +1,10 @@
 """Infrastructure layer - TTS engines implementation."""
+
 import asyncio
 import logging
 import os
 import tempfile
-from typing import Optional, cast
+from typing import cast
 
 import pyttsx3
 from gtts import gTTS
@@ -38,17 +39,17 @@ def _cleanup_temp_audio_file_when_done(future: asyncio.Future, path: str) -> Non
 
 class GTTSEngine(ITTSEngine):
     """Google Text-to-Speech engine implementation.
-    
+
     Follows Single Responsibility: only handles gTTS audio generation.
     """
 
     async def generate_audio(self, text: str, config: TTSConfig) -> AudioFile:
         """Generate audio using Google TTS.
-        
+
         Args:
             text: Text to convert
             config: TTS configuration
-            
+
         Returns:
             AudioFile with generated audio path
         """
@@ -66,7 +67,7 @@ class GTTSEngine(ITTSEngine):
         except Exception:
             _remove_temp_audio_file(tmpname)
             raise
-    
+
     def _generate_sync(self, text: str, config: TTSConfig, output_path: str):
         """Synchronous audio generation."""
         tts = gTTS(text=text, lang=config.language)
@@ -75,50 +76,51 @@ class GTTSEngine(ITTSEngine):
 
 class Pyttsx3Engine(ITTSEngine):
     """Pyttsx3 TTS engine implementation (espeak-ng on Linux, SAPI5 on Windows).
-    
+
     Follows Single Responsibility: only handles pyttsx3 audio generation.
     """
-    
+
     def __init__(self):
         """Initialize pyttsx3 engine."""
-        self._engine: Optional[pyttsx3.Engine] = None
+        self._engine: pyttsx3.Engine | None = None
         self._initialized = False
-    
+
     def _initialize_engine(self, config: TTSConfig):
         """Lazy initialization of pyttsx3 engine."""
         if self._initialized:
             return
-        
+
         try:
             import platform
-            if platform.system() == 'Windows':
+
+            if platform.system() == "Windows":
                 logger.info("🎤 Initializing TTS with SAPI5 (Windows native)")
-                self._engine = pyttsx3.init(driverName='sapi5')
+                self._engine = pyttsx3.init(driverName="sapi5")
             else:
                 logger.info("🎤 Initializing TTS with pyttsx3 (espeak-ng on Linux)")
                 self._engine = pyttsx3.init()
-            
+
             if self._engine:
                 configure_pyttsx3_engine(cast(Pyttsx3EngineLike, self._engine), config, logger)
                 self._initialized = True
         except Exception as e:
             logger.error(f"Failed to initialize pyttsx3: {e}")
             raise
-    
+
     async def generate_audio(self, text: str, config: TTSConfig) -> AudioFile:
         """Generate audio using pyttsx3.
-        
+
         Args:
             text: Text to convert
             config: TTS configuration
-            
+
         Returns:
             AudioFile with generated audio path
         """
         self._initialize_engine(config)
         if self._engine:
             configure_pyttsx3_engine(cast(Pyttsx3EngineLike, self._engine), config, logger)
-        
+
         loop = asyncio.get_running_loop()
         tmpname = _create_temp_audio_path(".wav")
         generation_future = loop.run_in_executor(None, self._generate_sync, text, tmpname)
@@ -133,12 +135,12 @@ class Pyttsx3Engine(ITTSEngine):
         except Exception:
             _remove_temp_audio_file(tmpname)
             raise
-    
+
     def _generate_sync(self, text: str, output_path: str):
         """Synchronous audio generation."""
         if not self._engine:
             raise RuntimeError("TTS engine not initialized")
-        
+
         self._engine.save_to_file(text, output_path)
         self._engine.runAndWait()
 
@@ -196,27 +198,27 @@ class RoutedTTSEngine(ITTSEngine):
 
 class TTSEngineFactory:
     """Factory for creating TTS engines.
-    
+
     Follows Open/Closed Principle: easy to extend with new engines.
     """
-    
+
     @staticmethod
     def create(config: TTSConfig) -> ITTSEngine:
         """Create TTS engine based on configuration.
-        
+
         Args:
             config: TTS configuration
-            
+
         Returns:
             ITTSEngine implementation
-            
+
         Raises:
             ValueError: If engine type is unknown
         """
-        if config.engine == 'gtts':
+        if config.engine == "gtts":
             return GTTSEngine()
-        if config.engine == 'pyttsx3':
+        if config.engine == "pyttsx3":
             return Pyttsx3Engine()
-        if config.engine == 'edge-tts':
+        if config.engine == "edge-tts":
             return EdgeTTSEngine()
         raise ValueError(f"Unknown TTS engine: {config.engine}")

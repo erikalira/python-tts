@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import Optional, Protocol
+from typing import Protocol
 
 from ..config.desktop_config import (
     ConfigurationValidator,
@@ -37,7 +37,7 @@ class DesktopConfigurationApplicationService:
         self,
         config_repository: DesktopConfigRepository,
         update_services: Callable[[], None],
-        environment_updater: Optional[DesktopConfigEnvironment] = None,
+        environment_updater: DesktopConfigEnvironment | None = None,
     ):
         self._config_repository = config_repository
         self._update_services = update_services
@@ -55,9 +55,7 @@ class DesktopConfigurationApplicationService:
         """Persist configuration and apply its runtime side effects."""
         save_success = self._config_repository.save(config)
         if not save_success:
-            logger.warning(
-                "[DESKTOP_APP] Failed to save configuration, continuing with in-memory configuration"
-            )
+            logger.warning("[DESKTOP_APP] Failed to save configuration, continuing with in-memory configuration")
 
         self._environment_updater.update_from_config(config)
         self._update_services()

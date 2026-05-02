@@ -130,4 +130,6 @@ def test_postgres_guild_language_read_exception_does_not_cache_missing_locale():
 
     assert repository.get_guild_language(123) is None
     assert repository.get_guild_language(123) == "en-US"
+
+
 # pyright: reportGeneralTypeIssues=false, reportOptionalSubscript=false

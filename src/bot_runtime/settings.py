@@ -4,7 +4,7 @@ import logging
 import os
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Optional, overload
+from typing import overload
 
 from dotenv import dotenv_values, load_dotenv
 
@@ -35,11 +35,7 @@ def _load_environment_snapshot(env_file: Path) -> dict[str, str]:
 
 
 def _read_dotenv_values(env_file: Path) -> dict[str, str]:
-    return {
-        key: value
-        for key, value in dotenv_values(env_file).items()
-        if value is not None
-    }
+    return {key: value for key, value in dotenv_values(env_file).items() if value is not None}
 
 
 def _clear_stale_dotenv_values(next_values: Mapping[str, str]) -> None:
@@ -47,6 +43,7 @@ def _clear_stale_dotenv_values(next_values: Mapping[str, str]) -> None:
     for key in stale_loaded_keys:
         if os.environ.get(key) == _LOADED_DOTENV_VALUES.get(key):
             os.environ.pop(key, None)
+
 
 class Config:
     """Application configuration.
@@ -108,14 +105,12 @@ class Config:
         )
         processing_lease_renew = self._getenv("QUEUE_PROCESSING_LEASE_RENEW_INTERVAL_SECONDS")
         self.queue_processing_lease_renew_interval_seconds = (
-            float(processing_lease_renew.strip())
-            if processing_lease_renew and processing_lease_renew.strip()
-            else None
+            float(processing_lease_renew.strip()) if processing_lease_renew and processing_lease_renew.strip() else None
         )
         self.redis_host = self._getenv("REDIS_HOST", "127.0.0.1")
         self.redis_port = int(self._getenv("REDIS_PORT", "6379"))
         self.redis_db = int(self._getenv("REDIS_DB", "0"))
-        self.redis_password: Optional[str] = self._getenv("REDIS_PASSWORD")
+        self.redis_password: str | None = self._getenv("REDIS_PASSWORD")
         self.redis_key_prefix = self._getenv("REDIS_KEY_PREFIX", "tts").strip() or "tts"
         self.redis_completed_item_ttl_seconds = int(self._getenv("REDIS_COMPLETED_ITEM_TTL_SECONDS", "900"))
         self.otel_enabled = self._getenv("OTEL_ENABLED", "").strip().lower() in {"1", "true", "yes", "on"}
@@ -123,7 +118,7 @@ class Config:
             self._getenv("OTEL_SERVICE_NAME", "tts-hotkey-windows-bot").strip() or "tts-hotkey-windows-bot"
         )
         otlp_endpoint = self._getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-        self.otel_exporter_otlp_endpoint: Optional[str] = otlp_endpoint.strip() if otlp_endpoint else None
+        self.otel_exporter_otlp_endpoint: str | None = otlp_endpoint.strip() if otlp_endpoint else None
         self.log_level = self._parse_log_level(self._getenv("LOG_LEVEL", "INFO"))
 
         # TTS settings
@@ -135,7 +130,7 @@ class Config:
         )
         self.config_storage_backend = self._getenv("CONFIG_STORAGE_BACKEND", "json").strip().lower() or "json"
         self.config_storage_dir = self._getenv("CONFIG_STORAGE_DIR", "configs")
-        self.database_url: Optional[str] = self._getenv("DATABASE_URL")
+        self.database_url: str | None = self._getenv("DATABASE_URL")
 
     def validate(self) -> tuple[bool, str]:
         """Validate required configuration.
@@ -191,16 +186,13 @@ class Config:
         return "INFO"
 
     @overload
-    def _getenv(self, key: str) -> str | None:
-        ...
+    def _getenv(self, key: str) -> str | None: ...
 
     @overload
-    def _getenv(self, key: str, default: str) -> str:
-        ...
+    def _getenv(self, key: str, default: str) -> str: ...
 
     @overload
-    def _getenv(self, key: str, default: None) -> str | None:
-        ...
+    def _getenv(self, key: str, default: None) -> str | None: ...
 
     def _getenv(self, key: str, default: str | None = None) -> str | None:
         return self._env.get(key, default)

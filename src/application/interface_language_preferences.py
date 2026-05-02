@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Protocol
+from typing import Protocol
 
 
 @dataclass(slots=True)
@@ -11,18 +11,18 @@ class InterfaceLanguagePreferenceResult:
     """Result for interface language preference updates."""
 
     success: bool
-    locale: Optional[str] = None
-    message: Optional[str] = None
+    locale: str | None = None
+    message: str | None = None
 
 
 class InterfaceLanguagePreferenceRepository(Protocol):
     """Persistence contract for interface language preferences."""
 
-    def get_user_language(self, guild_id: int, user_id: int) -> Optional[str]:
+    def get_user_language(self, guild_id: int, user_id: int) -> str | None:
         """Return a user's explicit interface language for a guild, if any."""
         ...
 
-    def get_guild_language(self, guild_id: int) -> Optional[str]:
+    def get_guild_language(self, guild_id: int) -> str | None:
         """Return a guild's explicit default interface language, if any."""
         ...
 

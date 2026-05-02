@@ -9,7 +9,7 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Optional, Protocol
+from typing import Protocol
 
 from src.application.dto import SystemTrayStatusDTO
 
@@ -87,9 +87,9 @@ class SystemTrayIcon(Protocol):
 
     def set_handlers(
         self,
-        status_click: Optional[Callable[[], None]] = None,
-        configure: Optional[Callable[[], None]] = None,
-        quit_handler: Optional[Callable[[], None]] = None,
+        status_click: Callable[[], None] | None = None,
+        configure: Callable[[], None] | None = None,
+        quit_handler: Callable[[], None] | None = None,
     ) -> None:
         """Set callback handlers for tray actions."""
         ...
@@ -104,13 +104,13 @@ class SystemTrayService:
     def __init__(
         self,
         config: DesktopAppConfig,
-        tray_icon: Optional[SystemTrayIcon] = None,
-        notification_service: Optional[NotificationService] = None,
+        tray_icon: SystemTrayIcon | None = None,
+        notification_service: NotificationService | None = None,
     ):
         self._config = config
         self._tray_icon = tray_icon or self._create_tray_icon()
         self._notification_service = notification_service or ConsoleNotificationService()
-        self._tray_thread: Optional[threading.Thread] = None
+        self._tray_thread: threading.Thread | None = None
 
     def _create_tray_icon(self) -> SystemTrayIcon:
         """Create appropriate system tray icon based on availability."""
@@ -118,9 +118,9 @@ class SystemTrayService:
 
     def initialize(
         self,
-        status_click: Optional[Callable[[], None]] = None,
-        configure: Optional[Callable[[], None]] = None,
-        quit_handler: Optional[Callable[[], None]] = None,
+        status_click: Callable[[], None] | None = None,
+        configure: Callable[[], None] | None = None,
+        quit_handler: Callable[[], None] | None = None,
     ) -> None:
         """Initialize system tray with handlers."""
         self._tray_icon.set_handlers(status_click, configure, quit_handler)

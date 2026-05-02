@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from src.application.dto import (
     JOIN_RESULT_MISSING_GUILD_ID,
@@ -34,7 +33,7 @@ class JoinVoiceChannelUseCase:
     def __init__(self, channel_repository: IVoiceChannelRepository):
         self._channel_repository = channel_repository
 
-    async def execute(self, guild_id: Optional[int], member_id: Optional[int]) -> JoinVoiceChannelResult:
+    async def execute(self, guild_id: int | None, member_id: int | None) -> JoinVoiceChannelResult:
         if guild_id is None:
             return JoinVoiceChannelResult(success=False, code=JOIN_RESULT_MISSING_GUILD_ID)
         if member_id is None:
@@ -65,7 +64,7 @@ class LeaveVoiceChannelUseCase:
     def __init__(self, channel_repository: IVoiceChannelRepository):
         self._channel_repository = channel_repository
 
-    async def execute(self, guild_id: Optional[int]) -> LeaveVoiceChannelResult:
+    async def execute(self, guild_id: int | None) -> LeaveVoiceChannelResult:
         if guild_id is None:
             return LeaveVoiceChannelResult(success=False, code=LEAVE_RESULT_MISSING_GUILD_ID)
 

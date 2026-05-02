@@ -66,8 +66,12 @@ def test_guild_config_repository_prefers_user_scope_over_guild_scope(tmp_path):
     storage = JSONConfigStorage(storage_dir=str(tmp_path))
     default_config = TTSConfig(engine="gtts", language="pt", voice_id="roa/pt-br", rate=180)
 
-    asyncio.run(storage.save(123, TTSConfig(engine="edge-tts", language="pt-BR", voice_id="pt-BR-FranciscaNeural", rate=210)))
-    asyncio.run(storage.save(123, TTSConfig(engine="pyttsx3", language="system", voice_id="Maria", rate=190), user_id=999))
+    asyncio.run(
+        storage.save(123, TTSConfig(engine="edge-tts", language="pt-BR", voice_id="pt-BR-FranciscaNeural", rate=210))
+    )
+    asyncio.run(
+        storage.save(123, TTSConfig(engine="pyttsx3", language="system", voice_id="Maria", rate=190), user_id=999)
+    )
 
     repo = GuildConfigRepository(default_config=default_config, storage=storage)
 

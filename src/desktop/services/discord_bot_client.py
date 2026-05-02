@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Optional, Protocol
+from typing import Protocol
 
 from src.application.dto import (
     BotErrorResponseDTO,
@@ -29,6 +29,7 @@ from ..config.desktop_config import DesktopAppConfig
 logger = logging.getLogger(__name__)
 
 DiscordSpeakRequestDTO = BotSpeakRequestDTO
+
 
 @dataclass(frozen=True)
 class DiscordBotHttpResponse:
@@ -62,7 +63,7 @@ class DiscordBotClient(Protocol):
         """Fetch the current voice context for the configured member."""
         ...
 
-    def get_last_error_message(self) -> Optional[str]:
+    def get_last_error_message(self) -> str | None:
         """Return the latest human-readable error from the bot client."""
 
 
@@ -212,7 +213,7 @@ class HttpDiscordBotClient:
     def __init__(self, config: DesktopAppConfig, transport: DiscordBotHttpTransport | None = None):
         self._config = config
         self._transport = transport or DiscordBotHttpTransport(config)
-        self._last_error_message: Optional[str] = None
+        self._last_error_message: str | None = None
 
     def is_available(self) -> bool:
         """Check whether HTTP requests can be sent to the bot."""
@@ -397,7 +398,7 @@ class HttpDiscordBotClient:
             message = f"Bot returned HTTP {response.status_code}"
         return DesktopBotVoiceContextStatusDTO(success=False, message=message)
 
-    def get_last_error_message(self) -> Optional[str]:
+    def get_last_error_message(self) -> str | None:
         """Return the latest human-readable error from the bot client."""
         return self._last_error_message
 

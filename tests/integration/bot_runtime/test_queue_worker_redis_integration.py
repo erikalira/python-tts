@@ -60,7 +60,9 @@ def _build_item(*, text: str, guild_id: int, member_id: int, item_id: str) -> Au
     )
 
 
-async def _seed_orphan_processing_lease(queue: RedisAudioQueue, guild_id: int, *, owner_token: str, ttl_seconds: int) -> None:
+async def _seed_orphan_processing_lease(
+    queue: RedisAudioQueue, guild_id: int, *, owner_token: str, ttl_seconds: int
+) -> None:
     await queue._redis.set(queue._processing_key(guild_id), owner_token, ex=ttl_seconds)
 
 

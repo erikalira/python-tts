@@ -17,11 +17,7 @@ class VoiceRuntimeStatus:
     @property
     def is_available(self) -> bool:
         """Return whether all required runtime dependencies are present."""
-        return (
-            self.ffmpeg_available
-            and self.pynacl_installed
-            and self.davey_installed
-        )
+        return self.ffmpeg_available and self.pynacl_installed and self.davey_installed
 
     def missing_dependencies(self) -> list[str]:
         """Return the names of missing runtime dependencies."""

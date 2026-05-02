@@ -6,7 +6,7 @@ import json
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -54,13 +54,13 @@ class JSONInterfaceLanguagePreferenceRepository:
             return False
         return True
 
-    def get_user_language(self, guild_id: int, user_id: int) -> Optional[str]:
+    def get_user_language(self, guild_id: int, user_id: int) -> str | None:
         cache_key = (guild_id, user_id)
         if cache_key not in self._user_cache:
             self._user_cache[cache_key] = self._load(self._user_path(guild_id, user_id))
         return self._user_cache[cache_key]
 
-    def get_guild_language(self, guild_id: int) -> Optional[str]:
+    def get_guild_language(self, guild_id: int) -> str | None:
         if guild_id not in self._guild_cache:
             self._guild_cache[guild_id] = self._load(self._guild_path(guild_id))
         return self._guild_cache[guild_id]
@@ -109,7 +109,7 @@ class PostgreSQLInterfaceLanguagePreferenceRepository:
     def __init__(
         self,
         database_url: str,
-        connection_factory: Optional[Callable[[], Any]] = None,
+        connection_factory: Callable[[], Any] | None = None,
     ):
         self._database_url = database_url
         self._connection_factory = connection_factory
@@ -121,13 +121,11 @@ class PostgreSQLInterfaceLanguagePreferenceRepository:
             return self._connection_factory()
 
         if psycopg is None:
-            raise RuntimeError(
-                "Postgres interface language storage requires the optional 'psycopg' dependency."
-            )
+            raise RuntimeError("Postgres interface language storage requires the optional 'psycopg' dependency.")
 
         return psycopg.connect(self._database_url)
 
-    def get_user_language(self, guild_id: int, user_id: int) -> Optional[str]:
+    def get_user_language(self, guild_id: int, user_id: int) -> str | None:
         cache_key = (guild_id, user_id)
         if cache_key in self._user_cache:
             return self._user_cache[cache_key]
@@ -155,7 +153,7 @@ class PostgreSQLInterfaceLanguagePreferenceRepository:
         self._user_cache[cache_key] = str(row[0]) if row else None
         return self._user_cache[cache_key]
 
-    def get_guild_language(self, guild_id: int) -> Optional[str]:
+    def get_guild_language(self, guild_id: int) -> str | None:
         if guild_id in self._guild_cache:
             return self._guild_cache[guild_id]
 

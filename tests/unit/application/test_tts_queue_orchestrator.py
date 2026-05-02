@@ -127,9 +127,7 @@ class TestTTSQueueOrchestrator:
             voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository()),
             audio_cleanup=cleanup,
         )
-        item = AudioQueueItem(
-            request=TTSRequest(text="hello", guild_id=789012, member_id=345678, channel_id=123456)
-        )
+        item = AudioQueueItem(request=TTSRequest(text="hello", guild_id=789012, member_id=345678, channel_id=123456))
         await queue.enqueue(item)
 
         result = await orchestrator.start_processing_for_item(789012)
@@ -186,9 +184,7 @@ class TestTTSQueueOrchestrator:
             voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository()),
             audio_cleanup=MockAudioCleanup(),
         )
-        item = AudioQueueItem(
-            request=TTSRequest(text="robot", guild_id=789012, member_id=345678, channel_id=123456)
-        )
+        item = AudioQueueItem(request=TTSRequest(text="robot", guild_id=789012, member_id=345678, channel_id=123456))
 
         result = await orchestrator._process_item(item)
 
@@ -199,9 +195,7 @@ class TestTTSQueueOrchestrator:
         queue = InMemoryAudioQueue()
         channel = MockVoiceChannel()
         channel.connected = True
-        resolution_service = CountingVoiceChannelResolutionService(
-            MockVoiceChannelRepository(channel=channel)
-        )
+        resolution_service = CountingVoiceChannelResolutionService(MockVoiceChannelRepository(channel=channel))
         orchestrator = TTSQueueOrchestrator(
             tts_engine=MockTTSEngine(),
             config_repository=MockConfigRepository(),
@@ -247,9 +241,7 @@ class TestTTSQueueOrchestrator:
         queue = InMemoryAudioQueue()
         channel = MockVoiceChannel()
         channel.connected = True
-        resolution_service = CountingVoiceChannelResolutionService(
-            MockVoiceChannelRepository(channel=channel)
-        )
+        resolution_service = CountingVoiceChannelResolutionService(MockVoiceChannelRepository(channel=channel))
         orchestrator = TTSQueueOrchestrator(
             tts_engine=SlowTTSEngine(),
             config_repository=MockConfigRepository(),
@@ -275,9 +267,7 @@ class TestTTSQueueOrchestrator:
             voice_channel_resolution=VoiceChannelResolutionService(MockVoiceChannelRepository()),
             audio_cleanup=MockAudioCleanup(),
         )
-        item = AudioQueueItem(
-            request=TTSRequest(text="sem guild", guild_id=None, member_id=345678, channel_id=123456)
-        )
+        item = AudioQueueItem(request=TTSRequest(text="sem guild", guild_id=None, member_id=345678, channel_id=123456))
 
         result = await orchestrator._process_item(item)
 
@@ -435,4 +425,6 @@ class TestTTSQueueOrchestrator:
                 "engine": "configured_default",
             }
         ]
+
+
 # pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportIncompatibleMethodOverride=false

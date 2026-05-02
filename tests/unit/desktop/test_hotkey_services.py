@@ -1,4 +1,4 @@
-﻿from types import SimpleNamespace
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 from src.application.dto import HotkeyManagerStatusDTO
@@ -97,5 +97,6 @@ def test_hotkey_manager_status_before_initialization():
         active=False,
         keyboard_available=status.keyboard_available,
     )
+
 
 # pyright: reportAttributeAccessIssue=false

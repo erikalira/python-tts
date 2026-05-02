@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from src.core.entities import TTSRequest
 from src.core.interfaces import IVoiceChannel, IVoiceChannelRepository
@@ -27,7 +26,7 @@ class VoiceChannelResolutionService:
     def __init__(self, channel_repository: IVoiceChannelRepository):
         self._channel_repository = channel_repository
 
-    async def infer_guild_id(self, request: TTSRequest) -> Optional[int]:
+    async def infer_guild_id(self, request: TTSRequest) -> int | None:
         if request.guild_id is not None or request.member_id is None:
             return request.guild_id
 
@@ -36,7 +35,7 @@ class VoiceChannelResolutionService:
             return inferred_channel.get_guild_id()
         return request.guild_id
 
-    async def resolve_for_request(self, request: TTSRequest) -> Optional[VoiceChannelResolution]:
+    async def resolve_for_request(self, request: TTSRequest) -> VoiceChannelResolution | None:
         user_current_channel = None
         if request.member_id:
             logger.debug("[VOICE_RESOLUTION] Looking up current voice channel for member %s", request.member_id)
@@ -52,7 +51,9 @@ class VoiceChannelResolutionService:
 
             target_channel = await self._channel_repository.find_by_channel_id(request.channel_id)
             if not target_channel or not user_current_channel:
-                logger.warning("[VOICE_RESOLUTION] Explicit channel %s could not be resolved safely", request.channel_id)
+                logger.warning(
+                    "[VOICE_RESOLUTION] Explicit channel %s could not be resolved safely", request.channel_id
+                )
                 return None
 
             if target_channel.get_channel_id() != user_current_channel.get_channel_id():
@@ -64,8 +65,10 @@ class VoiceChannelResolutionService:
 
         connected_channel = await self._channel_repository.find_connected_channel()
         if connected_channel:
-            if user_current_channel and request.member_id and await self.is_member_in_channel(
-                request.member_id, connected_channel
+            if (
+                user_current_channel
+                and request.member_id
+                and await self.is_member_in_channel(request.member_id, connected_channel)
             ):
                 logger.debug("[VOICE_RESOLUTION] Reusing current bot channel connection")
                 return VoiceChannelResolution(

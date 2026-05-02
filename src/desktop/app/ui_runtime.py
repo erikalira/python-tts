@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import queue
 from collections.abc import Callable
-from typing import Optional, Protocol
+from typing import Protocol
 
 from src.application.dto import (
     DesktopAppRuntimeStatusDTO,
@@ -60,10 +60,10 @@ class ConfigurationCoordinatorLike(Protocol):
         current_config: DesktopAppConfig,
         hotkeys_were_active: bool,
         resume_hotkeys: Callable[[], None],
-        notify_error: Optional[Callable[[str, str], None]] = None,
-        notify_success: Optional[Callable[[str, str], None]] = None,
-        are_hotkeys_active: Optional[Callable[[], bool]] = None,
-    ) -> tuple[Optional[DesktopAppConfig], bool]:
+        notify_error: Callable[[str, str], None] | None = None,
+        notify_success: Callable[[str, str], None] | None = None,
+        are_hotkeys_active: Callable[[], bool] | None = None,
+    ) -> tuple[DesktopAppConfig | None, bool]:
         """Run the configuration flow and return the updated config."""
         ...
 
@@ -72,15 +72,15 @@ class DesktopAppUIRuntimeCoordinator:
     """Own Desktop App window state, queued UI actions, and tray-triggered UI flows."""
 
     def __init__(self):
-        self._main_loop_actions: "queue.Queue[Callable[[], None]]" = queue.Queue()
-        self._main_window: Optional[DesktopAppMainWindow] = None
+        self._main_loop_actions: queue.Queue[Callable[[], None]] = queue.Queue()
+        self._main_window: DesktopAppMainWindow | None = None
 
     @property
-    def action_queue(self) -> "queue.Queue[Callable[[], None]]":
+    def action_queue(self) -> queue.Queue[Callable[[], None]]:
         return self._main_loop_actions
 
     @property
-    def main_window(self) -> Optional[DesktopAppMainWindow]:
+    def main_window(self) -> DesktopAppMainWindow | None:
         return self._main_window
 
     def show_main_window(
@@ -136,7 +136,7 @@ class DesktopAppUIRuntimeCoordinator:
         get_configuration_coordinator: Callable[[], ConfigurationCoordinatorLike | None],
         current_config: DesktopAppConfig,
         notification_service: NotificationFeedbackPort | None,
-    ) -> tuple[Optional[DesktopAppConfig], bool]:
+    ) -> tuple[DesktopAppConfig | None, bool]:
         """Handle configure requests from tray or fallback UI flow."""
         if self._main_window:
             self._main_window.focus()

@@ -169,9 +169,7 @@ class DiscordCommands:
     async def _send_bot_inactive_message(self, interaction: discord.Interaction) -> bool:
         locale = self._resolve_locale(interaction)
         try:
-            await interaction.edit_original_response(
-                content=self._messages.text("bot.inactive", locale)
-            )
+            await interaction.edit_original_response(content=self._messages.text("bot.inactive", locale))
             return True
         except Exception as exc:
             logger.error("Failed to send bot inactive message: %s", exc)
@@ -181,7 +179,9 @@ class DiscordCommands:
         locale = self._resolve_locale(interaction)
         if not self._get_voice_runtime_status().is_available:
             self._log_voice_runtime_unavailable("join")
-            await interaction.response.send_message(self._messages.text("voice.runtime_unavailable", locale), ephemeral=True)
+            await interaction.response.send_message(
+                self._messages.text("voice.runtime_unavailable", locale), ephemeral=True
+            )
             return
 
         guild_id = interaction.guild.id if interaction.guild else None
@@ -245,7 +245,9 @@ class DiscordCommands:
                 rate_limit_result.scope,
                 rate_limit_result.retry_after_seconds or 0,
             )
-            await interaction.edit_original_response(content=self._speak_presenter.build_rate_limit_message(rate_limit_result, locale))
+            await interaction.edit_original_response(
+                content=self._speak_presenter.build_rate_limit_message(rate_limit_result, locale)
+            )
             return
 
         try:
@@ -452,7 +454,9 @@ class DiscordCommands:
             await interaction.response.send_message(self._messages.text("error.guild_only", locale), ephemeral=True)
             return
         if self._interface_language_use_case is None:
-            await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+            await interaction.response.send_message(
+                self._messages.text("language.update_error", locale), ephemeral=True
+            )
             return
 
         user_id = interaction.user.id if interaction.user else None
@@ -494,10 +498,14 @@ class DiscordCommands:
             await interaction.response.send_message(self._messages.text("error.guild_only", locale), ephemeral=True)
             return
         if not self._can_manage_guild(interaction):
-            await interaction.response.send_message(self._messages.text("server_language.permission", locale), ephemeral=True)
+            await interaction.response.send_message(
+                self._messages.text("server_language.permission", locale), ephemeral=True
+            )
             return
         if self._interface_language_use_case is None:
-            await interaction.response.send_message(self._messages.text("language.update_error", locale), ephemeral=True)
+            await interaction.response.send_message(
+                self._messages.text("language.update_error", locale), ephemeral=True
+            )
             return
 
         resolved_language = self._resolve_requested_interface_language(language)
@@ -532,7 +540,9 @@ class DiscordCommands:
             await interaction.edit_original_response(content=self._messages.text("language.update_error", locale))
 
     async def _handle_about(self, interaction: discord.Interaction) -> None:
-        await self._about_handler.handle(interaction, self._get_voice_runtime_status(), self._resolve_locale(interaction))
+        await self._about_handler.handle(
+            interaction, self._get_voice_runtime_status(), self._resolve_locale(interaction)
+        )
 
     def _resolve_locale(self, interaction: discord.Interaction) -> str:
         if self._interface_language_use_case is None:
@@ -576,7 +586,4 @@ class DiscordCommands:
                 or current_normalized in option.key.lower()
             ]
 
-        return [
-            app_commands.Choice(name=option.label, value=option.key)
-            for option in options[:25]
-        ]
+        return [app_commands.Choice(name=option.label, value=option.key) for option in options[:25]]

@@ -63,9 +63,7 @@ TARGETS = (
     DiagramTarget(
         slug="desktop-runtime",
         title="Generated Desktop Runtime Diagram",
-        description=(
-            "Automatic class diagram for Desktop App runtime, GUI, services, and config modules."
-        ),
+        description=("Automatic class diagram for Desktop App runtime, GUI, services, and config modules."),
         modules=(
             "src.desktop.app",
             "src.desktop.gui",
@@ -116,9 +114,7 @@ def _run_pyreverse(target: DiagramTarget) -> Path:
     generated_name = f"classes_{target.slug.replace('-', '_')}.mmd"
     generated_path = OUTPUT_DIR / generated_name
     if not generated_path.exists():
-        raise FileNotFoundError(
-            f"pyreverse did not create expected file: {generated_path}"
-        )
+        raise FileNotFoundError(f"pyreverse did not create expected file: {generated_path}")
 
     final_path = OUTPUT_DIR / f"{target.slug}.mmd"
     if final_path.exists():
@@ -136,13 +132,7 @@ def _run_pyreverse(target: DiagramTarget) -> Path:
 def _wrap_mermaid(target: DiagramTarget, mermaid_path: Path) -> None:
     markdown_path = OUTPUT_DIR / f"{target.slug}.md"
     mermaid_content = mermaid_path.read_text(encoding="utf-8").strip()
-    markdown = (
-        f"# {target.title}\n\n"
-        f"{target.description}\n\n"
-        "```mermaid\n"
-        f"{mermaid_content}\n"
-        "```\n"
-    )
+    markdown = f"# {target.title}\n\n{target.description}\n\n```mermaid\n{mermaid_content}\n```\n"
     markdown_path.write_text(markdown, encoding="utf-8")
     mermaid_path.unlink()
 
@@ -193,8 +183,7 @@ def main() -> int:
     except RuntimeError as exc:
         print("Failed to run pyreverse.", file=sys.stderr)
         print(
-            "Install pylint in the active environment or run this script "
-            "from the project's configured environment.",
+            "Install pylint in the active environment or run this script from the project's configured environment.",
             file=sys.stderr,
         )
         print(str(exc), file=sys.stderr)

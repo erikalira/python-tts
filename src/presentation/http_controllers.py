@@ -45,11 +45,15 @@ class SpeakController:
 
     async def handle(self, request: web.Request) -> web.Response:
         headers = getattr(request, "headers", {}) or {}
-        with self._otel_runtime.start_http_span(
-            "http.speak",
-            headers=headers,
-            attributes={"http.route": "/speak", "http.method": "POST"},
-        ) if self._otel_runtime is not None else NullRuntimeSpanContext() as span:
+        with (
+            self._otel_runtime.start_http_span(
+                "http.speak",
+                headers=headers,
+                attributes={"http.route": "/speak", "http.method": "POST"},
+            )
+            if self._otel_runtime is not None
+            else NullRuntimeSpanContext() as span
+        ):
             presented_token = self._presented_token(headers)
             if not self._is_authorized(presented_token):
                 logger.warning("[AUTH] HTTP /speak rejected unauthorized request")

@@ -197,6 +197,7 @@ def test_initial_setup_gui_save_and_continue_validates_member_id(prevent_real_me
     assert gui.result is None
     assert prevent_real_messageboxes["error"] == [("Error", "Discord User ID must contain only numbers!")]
 
+
 def test_initial_setup_gui_save_and_continue_requires_bot_url(prevent_real_messageboxes):
     gui = InitialSetupGUI()
     gui.root = DummyRoot()
@@ -439,4 +440,6 @@ def test_ui_log_handler_reports_queue_errors(monkeypatch):
     handler.emit(record)
 
     assert reported == [record]
+
+
 # pyright: reportArgumentType=false, reportOptionalMemberAccess=false

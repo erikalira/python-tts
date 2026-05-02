@@ -37,7 +37,4 @@ class ConfigurationValidator:
     @staticmethod
     def is_configured(config: DesktopAppConfig) -> bool:
         """Check if minimum configuration is present."""
-        return (
-            config.discord.member_id is not None
-            and len(config.discord.member_id.strip()) > 0
-        )
+        return config.discord.member_id is not None and len(config.discord.member_id.strip()) > 0

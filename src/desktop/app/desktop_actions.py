@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import Optional
 
 from src.application.dto import DesktopConfigurationSaveResultDTO
 
@@ -68,10 +67,10 @@ class DesktopConfigurationCoordinator:
         current_config: DesktopAppConfig,
         hotkeys_were_active: bool,
         resume_hotkeys: Callable[[], None],
-        notify_error: Optional[Callable[[str, str], None]] = None,
-        notify_success: Optional[Callable[[str, str], None]] = None,
-        are_hotkeys_active: Optional[Callable[[], bool]] = None,
-    ) -> tuple[Optional[DesktopAppConfig], bool]:
+        notify_error: Callable[[str, str], None] | None = None,
+        notify_success: Callable[[str, str], None] | None = None,
+        are_hotkeys_active: Callable[[], bool] | None = None,
+    ) -> tuple[DesktopAppConfig | None, bool]:
         """Open configuration UI and apply changes from the tray flow."""
         updated_config = None
         try:

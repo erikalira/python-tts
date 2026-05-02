@@ -102,4 +102,6 @@ def test_hotkey_capture_session_ignores_empty_capture_and_reset_clears_state():
     session.reset()
 
     assert session.process_key("}") is None
+
+
 # pyright: reportArgumentType=false

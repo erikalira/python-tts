@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Optional
 
 from src.application.dto import (
     SPEAK_RESULT_CROSS_GUILD_CHANNEL,
@@ -56,14 +55,14 @@ class TTSQueueOrchestrator:
         self._audio_cleanup = audio_cleanup
         self._generation_timeout_seconds = generation_timeout_seconds
         self._playback_timeout_seconds = playback_timeout_seconds
-        self._processing_guilds: set[Optional[int]] = set()
+        self._processing_guilds: set[int | None] = set()
         self._telemetry = telemetry or NoOpBotRuntimeTelemetry()
         self._otel_runtime = otel_runtime
 
-    def is_processing(self, guild_id: Optional[int]) -> bool:
+    def is_processing(self, guild_id: int | None) -> bool:
         return guild_id in self._processing_guilds
 
-    async def start_processing_for_item(self, guild_id: Optional[int]) -> SpeakTextResult:
+    async def start_processing_for_item(self, guild_id: int | None) -> SpeakTextResult:
         self._processing_guilds.add(guild_id)
         try:
             item = await self._audio_queue.dequeue(guild_id)
@@ -83,7 +82,7 @@ class TTSQueueOrchestrator:
             self._clear_guild_processing(guild_id)
             raise
 
-    def _clear_guild_processing(self, guild_id: Optional[int]) -> None:
+    def _clear_guild_processing(self, guild_id: int | None) -> None:
         self._processing_guilds.discard(guild_id)
 
     async def _process_item(self, item: AudioQueueItem) -> SpeakTextResult:
@@ -93,13 +92,17 @@ class TTSQueueOrchestrator:
         audio = None
         processing_started_at = time.perf_counter()
 
-        with self._otel_runtime.start_internal_span(
-            "tts_queue.process_item",
-            attributes={
-                "guild_id": str(request.guild_id) if request.guild_id is not None else "unknown",
-                "engine": self._resolve_engine_name(item),
-            },
-        ) if self._otel_runtime is not None else NullRuntimeSpanContext() as processing_span:
+        with (
+            self._otel_runtime.start_internal_span(
+                "tts_queue.process_item",
+                attributes={
+                    "guild_id": str(request.guild_id) if request.guild_id is not None else "unknown",
+                    "engine": self._resolve_engine_name(item),
+                },
+            )
+            if self._otel_runtime is not None
+            else NullRuntimeSpanContext() as processing_span
+        ):
             try:
                 if not request.guild_id:
                     error = "Guild ID was not provided - server isolation failed"
@@ -164,10 +167,14 @@ class TTSQueueOrchestrator:
                 telemetry_engine = self._resolve_engine_name(item)
                 try:
                     generation_started_at = time.perf_counter()
-                    with self._otel_runtime.start_internal_span(
-                        "tts_engine.generate_audio",
-                        attributes={"guild_id": str(request.guild_id), "engine": config.engine},
-                    ) if self._otel_runtime is not None else NullRuntimeSpanContext() as generate_span:
+                    with (
+                        self._otel_runtime.start_internal_span(
+                            "tts_engine.generate_audio",
+                            attributes={"guild_id": str(request.guild_id), "engine": config.engine},
+                        )
+                        if self._otel_runtime is not None
+                        else NullRuntimeSpanContext() as generate_span
+                    ):
                         audio = await asyncio.wait_for(
                             self._tts_engine.generate_audio(request.text, config),
                             timeout=self._generation_timeout_seconds,
@@ -217,9 +224,7 @@ class TTSQueueOrchestrator:
                 member_validation_ms = 0.0
                 if request.member_id is not None:
                     member_validation_started_at = time.perf_counter()
-                    if not await self._voice_channel_resolution.is_member_in_channel(
-                        request.member_id, voice_channel
-                    ):
+                    if not await self._voice_channel_resolution.is_member_in_channel(request.member_id, voice_channel):
                         error = "You left the voice channel"
                         item.mark_failed(error)
                         await self._audio_queue.update_item(item)
@@ -240,10 +245,14 @@ class TTSQueueOrchestrator:
 
                 try:
                     playback_started_at = time.perf_counter()
-                    with self._otel_runtime.start_internal_span(
-                        "tts_engine.play_audio",
-                        attributes={"guild_id": str(request.guild_id), "engine": config.engine},
-                    ) if self._otel_runtime is not None else NullRuntimeSpanContext() as playback_span:
+                    with (
+                        self._otel_runtime.start_internal_span(
+                            "tts_engine.play_audio",
+                            attributes={"guild_id": str(request.guild_id), "engine": config.engine},
+                        )
+                        if self._otel_runtime is not None
+                        else NullRuntimeSpanContext() as playback_span
+                    ):
                         await asyncio.wait_for(voice_channel.play_audio(audio), timeout=self._playback_timeout_seconds)
                         playback_span.set_attribute("result_code", "ok")
                     item.mark_completed()
@@ -330,7 +339,12 @@ class TTSQueueOrchestrator:
                 await self._audio_queue.update_item(item)
 
                 error_lower = error_msg.lower()
-                if "4017" in error_lower or "dave" in error_lower or "not connected" in error_lower or "connection" in error_lower:
+                if (
+                    "4017" in error_lower
+                    or "dave" in error_lower
+                    or "not connected" in error_lower
+                    or "connection" in error_lower
+                ):
                     code = SPEAK_RESULT_VOICE_CONNECTION_FAILED
                 elif "permission" in error_lower:
                     code = SPEAK_RESULT_VOICE_PERMISSION_DENIED

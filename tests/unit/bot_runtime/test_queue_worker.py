@@ -94,8 +94,12 @@ class TestBotQueueWorker:
                 active_processors -= 1
                 return SpeakTextResult(success=True, code=SPEAK_RESULT_OK, queued=False)
 
-        worker_one = BotQueueWorker(audio_queue=queue, queue_orchestrator=FakeOrchestrator(), poll_interval_seconds=0.01)
-        worker_two = BotQueueWorker(audio_queue=queue, queue_orchestrator=FakeOrchestrator(), poll_interval_seconds=0.01)
+        worker_one = BotQueueWorker(
+            audio_queue=queue, queue_orchestrator=FakeOrchestrator(), poll_interval_seconds=0.01
+        )
+        worker_two = BotQueueWorker(
+            audio_queue=queue, queue_orchestrator=FakeOrchestrator(), poll_interval_seconds=0.01
+        )
 
         await worker_one.start()
         await worker_two.start()
@@ -266,4 +270,6 @@ class _FakeSpanContext:
     def __exit__(self, exc_type, exc, tb):
         del exc_type, exc, tb
         return False
+
+
 # pyright: reportArgumentType=false

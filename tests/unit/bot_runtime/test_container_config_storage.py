@@ -117,7 +117,8 @@ async def test_readiness_payload_reports_redis_failure():
 
     assert payload["status"] == "not_ready"
     assert any(
-        dependency["name"] == "redis" and dependency["status"] == "not_ready"
-        for dependency in payload["dependencies"]
+        dependency["name"] == "redis" and dependency["status"] == "not_ready" for dependency in payload["dependencies"]
     )
+
+
 # pyright: reportGeneralTypeIssues=false

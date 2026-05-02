@@ -11,22 +11,80 @@ from .pyttsx3_support import list_pyttsx3_voices
 logger = logging.getLogger(__name__)
 
 _GTTS_OPTIONS = [
-    TTSVoiceOption(key="gtts:pt:roa-pt-br", engine="gtts", label="Google TTS - Portuguese (Brazil)", language="pt", voice_id="roa/pt-br"),
-    TTSVoiceOption(key="gtts:en:en-us", engine="gtts", label="Google TTS - English (US)", language="en", voice_id="en-us"),
-    TTSVoiceOption(key="gtts:en:en-gb", engine="gtts", label="Google TTS - English (UK)", language="en", voice_id="en-gb"),
+    TTSVoiceOption(
+        key="gtts:pt:roa-pt-br",
+        engine="gtts",
+        label="Google TTS - Portuguese (Brazil)",
+        language="pt",
+        voice_id="roa/pt-br",
+    ),
+    TTSVoiceOption(
+        key="gtts:en:en-us", engine="gtts", label="Google TTS - English (US)", language="en", voice_id="en-us"
+    ),
+    TTSVoiceOption(
+        key="gtts:en:en-gb", engine="gtts", label="Google TTS - English (UK)", language="en", voice_id="en-gb"
+    ),
     TTSVoiceOption(key="gtts:es:roa-es", engine="gtts", label="Google TTS - Spanish", language="es", voice_id="roa/es"),
     TTSVoiceOption(key="gtts:fr:roa-fr", engine="gtts", label="Google TTS - French", language="fr", voice_id="roa/fr"),
 ]
 
 _EDGE_TTS_OPTIONS = [
-    TTSVoiceOption(key="edge-tts:pt-br-francisca", engine="edge-tts", label="Edge TTS - Francisca (PT-BR Neural)", language="pt-BR", voice_id="pt-BR-FranciscaNeural"),
-    TTSVoiceOption(key="edge-tts:pt-br-antonio", engine="edge-tts", label="Edge TTS - Antonio (PT-BR Neural)", language="pt-BR", voice_id="pt-BR-AntonioNeural"),
-    TTSVoiceOption(key="edge-tts:en-us-aria", engine="edge-tts", label="Edge TTS - Aria (EN-US Neural)", language="en-US", voice_id="en-US-AriaNeural"),
-    TTSVoiceOption(key="edge-tts:en-us-jenny", engine="edge-tts", label="Edge TTS - Jenny (EN-US Neural)", language="en-US", voice_id="en-US-JennyNeural"),
-    TTSVoiceOption(key="edge-tts:en-us-guy", engine="edge-tts", label="Edge TTS - Guy (EN-US Neural)", language="en-US", voice_id="en-US-GuyNeural"),
-    TTSVoiceOption(key="edge-tts:en-gb-sonia", engine="edge-tts", label="Edge TTS - Sonia (EN-GB Neural)", language="en-GB", voice_id="en-GB-SoniaNeural"),
-    TTSVoiceOption(key="edge-tts:es-es-elvira", engine="edge-tts", label="Edge TTS - Elvira (ES-ES Neural)", language="es-ES", voice_id="es-ES-ElviraNeural"),
-    TTSVoiceOption(key="edge-tts:fr-fr-denise", engine="edge-tts", label="Edge TTS - Denise (FR-FR Neural)", language="fr-FR", voice_id="fr-FR-DeniseNeural"),
+    TTSVoiceOption(
+        key="edge-tts:pt-br-francisca",
+        engine="edge-tts",
+        label="Edge TTS - Francisca (PT-BR Neural)",
+        language="pt-BR",
+        voice_id="pt-BR-FranciscaNeural",
+    ),
+    TTSVoiceOption(
+        key="edge-tts:pt-br-antonio",
+        engine="edge-tts",
+        label="Edge TTS - Antonio (PT-BR Neural)",
+        language="pt-BR",
+        voice_id="pt-BR-AntonioNeural",
+    ),
+    TTSVoiceOption(
+        key="edge-tts:en-us-aria",
+        engine="edge-tts",
+        label="Edge TTS - Aria (EN-US Neural)",
+        language="en-US",
+        voice_id="en-US-AriaNeural",
+    ),
+    TTSVoiceOption(
+        key="edge-tts:en-us-jenny",
+        engine="edge-tts",
+        label="Edge TTS - Jenny (EN-US Neural)",
+        language="en-US",
+        voice_id="en-US-JennyNeural",
+    ),
+    TTSVoiceOption(
+        key="edge-tts:en-us-guy",
+        engine="edge-tts",
+        label="Edge TTS - Guy (EN-US Neural)",
+        language="en-US",
+        voice_id="en-US-GuyNeural",
+    ),
+    TTSVoiceOption(
+        key="edge-tts:en-gb-sonia",
+        engine="edge-tts",
+        label="Edge TTS - Sonia (EN-GB Neural)",
+        language="en-GB",
+        voice_id="en-GB-SoniaNeural",
+    ),
+    TTSVoiceOption(
+        key="edge-tts:es-es-elvira",
+        engine="edge-tts",
+        label="Edge TTS - Elvira (ES-ES Neural)",
+        language="es-ES",
+        voice_id="es-ES-ElviraNeural",
+    ),
+    TTSVoiceOption(
+        key="edge-tts:fr-fr-denise",
+        engine="edge-tts",
+        label="Edge TTS - Denise (FR-FR Neural)",
+        language="fr-FR",
+        voice_id="fr-FR-DeniseNeural",
+    ),
 ]
 
 

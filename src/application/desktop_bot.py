@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Protocol
+from typing import Protocol
 
 from src.application.dto import (
     DesktopBotActionResultDTO,
@@ -43,7 +43,7 @@ class DesktopBotGateway(Protocol):
         """Fetch the current detected voice context."""
         ...
 
-    def get_last_error_message(self) -> Optional[str]:
+    def get_last_error_message(self) -> str | None:
         """Return the last human-readable error message."""
         ...
 
@@ -93,10 +93,7 @@ class SendDesktopBotTestMessageUseCase:
                 message="Test message sent to the bot successfully",
             )
 
-        error_message = (
-            self._gateway.get_last_error_message()
-            or "Could not send the test message to the bot"
-        )
+        error_message = self._gateway.get_last_error_message() or "Could not send the test message to the bot"
         return DesktopBotActionResultDTO(success=False, message=error_message)
 
 

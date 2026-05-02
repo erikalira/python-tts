@@ -69,9 +69,7 @@ class TestDiscordJoinPresenter:
     def test_builds_user_not_in_channel_message(self):
         presenter = DiscordJoinPresenter()
 
-        message = presenter.build_message(
-            JoinVoiceChannelResult(success=False, code=JOIN_RESULT_USER_NOT_IN_CHANNEL)
-        )
+        message = presenter.build_message(JoinVoiceChannelResult(success=False, code=JOIN_RESULT_USER_NOT_IN_CHANNEL))
 
         assert "not connected" in message.lower()
 

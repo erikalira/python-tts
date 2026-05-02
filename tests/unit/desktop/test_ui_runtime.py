@@ -59,9 +59,7 @@ def test_ui_runtime_coordinator_show_status_focuses_existing_window():
     )
 
     coordinator.main_window.focus.assert_called_once_with()
-    coordinator.main_window.push_log.assert_called_once_with(
-        "Main window brought to front from tray"
-    )
+    coordinator.main_window.push_log.assert_called_once_with("Main window brought to front from tray")
 
 
 def test_ui_runtime_coordinator_show_status_notifies_when_window_is_closed():
@@ -100,7 +98,7 @@ def test_ui_runtime_coordinator_handle_configure_focuses_existing_window():
 
     assert (updated_config, applied) == (None, False)
     coordinator.main_window.focus.assert_called_once_with()
-    coordinator.main_window.push_log.assert_called_once_with(
-        "Configuration action requested from tray"
-    )
+    coordinator.main_window.push_log.assert_called_once_with("Configuration action requested from tray")
+
+
 # pyright: reportAttributeAccessIssue=false, reportOptionalMemberAccess=false

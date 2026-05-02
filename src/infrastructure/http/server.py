@@ -1,4 +1,5 @@
 """HTTP server using aiohttp."""
+
 from __future__ import annotations
 
 import logging
@@ -22,10 +23,10 @@ _HTTP_HEADER_TOKEN_PATTERN = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
 
 class HTTPServer:
     """HTTP server for bot endpoints.
-    
+
     Follows Single Responsibility: only handles HTTP server setup.
     """
-    
+
     def __init__(
         self,
         speak_handler: RequestHandler,
@@ -39,7 +40,7 @@ class HTTPServer:
         max_request_body_bytes: int = 4096,
     ):
         """Initialize HTTP server.
-        
+
         Args:
             speak_handler: Handler for /speak endpoint
             voice_context_handler: Handler for /voice-context endpoint
@@ -64,15 +65,15 @@ class HTTPServer:
             client_max_size=self._max_request_body_bytes,
             middlewares=[self._cors_middleware],
         )
-        app.router.add_get('/', self._home)
-        app.router.add_get('/health', self._health, name='health')
-        app.router.add_get('/ready', self._ready, name='ready')
-        app.router.add_get('/observability', self._observability, name='observability')
-        app.router.add_get('/version', self._version)
-        app.router.add_get('/about', self._about)
-        app.router.add_get('/voice-context', self._voice_context_handler)
-        app.router.add_options('/speak', self._speak_preflight)
-        app.router.add_post('/speak', self._speak_handler)
+        app.router.add_get("/", self._home)
+        app.router.add_get("/health", self._health, name="health")
+        app.router.add_get("/ready", self._ready, name="ready")
+        app.router.add_get("/observability", self._observability, name="observability")
+        app.router.add_get("/version", self._version)
+        app.router.add_get("/about", self._about)
+        app.router.add_get("/voice-context", self._voice_context_handler)
+        app.router.add_options("/speak", self._speak_preflight)
+        app.router.add_post("/speak", self._speak_handler)
         return app
 
     @web.middleware
@@ -103,11 +104,15 @@ class HTTPServer:
 
     async def _health(self, request: web.Request) -> web.Response:
         """Health check endpoint for container and runtime probes."""
-        with self._otel_runtime.start_http_span(
-            "http.health",
-            headers=getattr(request, "headers", {}) or {},
-            attributes={"http.route": "/health", "http.method": "GET"},
-        ) if self._otel_runtime is not None else _null_span_context():
+        with (
+            self._otel_runtime.start_http_span(
+                "http.health",
+                headers=getattr(request, "headers", {}) or {},
+                attributes={"http.route": "/health", "http.method": "GET"},
+            )
+            if self._otel_runtime is not None
+            else _null_span_context()
+        ):
             return web.json_response(asdict(BotHealthResponseDTO(status="healthy")))
 
     async def _observability(self, request: web.Request) -> web.Response:
@@ -125,33 +130,37 @@ class HTTPServer:
         return web.json_response(payload, status=status_code)
 
     async def _version(self, request: web.Request) -> web.Response:
-        return web.json_response({
-            "version": __version__,
-            "author": __author__,
-            "description": __description__,
-        })
+        return web.json_response(
+            {
+                "version": __version__,
+                "author": __author__,
+                "description": __description__,
+            }
+        )
 
     async def _about(self, request: web.Request) -> web.Response:
-        return web.json_response({
-            "name": "Discord Bot and Desktop App",
-            "version": __version__,
-            "author": __author__,
-            "description": __description__,
-            "status": "online",
-        })
-    
+        return web.json_response(
+            {
+                "name": "Discord Bot and Desktop App",
+                "version": __version__,
+                "author": __author__,
+                "description": __description__,
+                "status": "online",
+            }
+        )
+
     async def start(self):
         """Start HTTP server."""
         app = self._build_app()
-        
+
         self._runner = web.AppRunner(app)
         await self._runner.setup()
-        
+
         self._site = web.TCPSite(self._runner, self._host, self._port)
         await self._site.start()
-        
+
         logger.info("HTTP server started on %s:%s", self._host, self._port)
-    
+
     async def stop(self):
         """Stop HTTP server."""
         if self._runner:
@@ -159,7 +168,7 @@ class HTTPServer:
 
 
 class _null_span_context:
-    def __enter__(self) -> "_null_span_context":
+    def __enter__(self) -> _null_span_context:
         return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:
@@ -170,11 +179,7 @@ class _null_span_context:
 def _append_vary_origin(current: str | None) -> str:
     if not current:
         return "Origin"
-    values = [
-        value.strip()
-        for value in current.split(",")
-        if _HTTP_HEADER_TOKEN_PATTERN.fullmatch(value.strip())
-    ]
+    values = [value.strip() for value in current.split(",") if _HTTP_HEADER_TOKEN_PATTERN.fullmatch(value.strip())]
     if any(value.lower() == "origin" for value in values):
         return ", ".join(values)
     return ", ".join([*values, "Origin"])

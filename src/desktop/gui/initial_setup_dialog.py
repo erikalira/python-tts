@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from ..config.desktop_config import get_default_discord_bot_url
 from .config_dialog_presenter import ConfigDialogsPresenter, InitialSetupResult
@@ -12,13 +12,13 @@ class InitialSetupGUI:
     """Initial setup GUI for first-time configuration."""
 
     def __init__(self):
-        self.root: Optional[Any] = None
-        self.result: Optional[InitialSetupResult] = None
-        self.member_id_var: Optional[Any] = None
-        self.bot_url_var: Optional[Any] = None
+        self.root: Any | None = None
+        self.result: InitialSetupResult | None = None
+        self.member_id_var: Any | None = None
+        self.bot_url_var: Any | None = None
         self._presenter = ConfigDialogsPresenter()
 
-    def show_initial_setup(self) -> Optional[InitialSetupResult]:
+    def show_initial_setup(self) -> InitialSetupResult | None:
         from . import tk_support as compat
 
         if not compat.TKINTER_AVAILABLE:
@@ -28,13 +28,9 @@ class InitialSetupGUI:
             self.root.title("Desktop App - Initial Setup")
             self.root.geometry("550x500")
             self.root.resizable(False, False)
-            self.root.geometry(
-                "+%d+%d"
-                % (
-                    (self.root.winfo_screenwidth() / 2 - 275),
-                    (self.root.winfo_screenheight() / 2 - 250),
-                )
-            )
+            x_position = int(self.root.winfo_screenwidth() / 2 - 275)
+            y_position = int(self.root.winfo_screenheight() / 2 - 250)
+            self.root.geometry(f"+{x_position}+{y_position}")
             self._create_initial_setup_widgets()
             self.root.transient()
             self.root.grab_set()
@@ -101,9 +97,7 @@ class InitialSetupGUI:
         )
 
     def _skip_discord(self):
-        self.result = self._presenter.build_skip_discord_result(
-            bot_url=get_default_discord_bot_url()
-        )
+        self.result = self._presenter.build_skip_discord_result(bot_url=get_default_discord_bot_url())
         if self.root is not None:
             self.root.destroy()
 
@@ -132,7 +126,7 @@ class InitialSetupGUI:
         if self.root is not None:
             self.root.destroy()
 
-    def _console_initial_setup(self) -> Optional[InitialSetupResult]:
+    def _console_initial_setup(self) -> InitialSetupResult | None:
         print("\n" + "=" * 60)
         print("Desktop App - Initial Setup")
         print("=" * 60)

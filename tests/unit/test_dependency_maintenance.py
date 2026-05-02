@@ -53,10 +53,7 @@ def test_rewrite_requirement_lines_preserves_inline_comment(tmp_path: Path):
     )
 
     assert changed is True
-    assert (
-        requirements_file.read_text(encoding="utf-8")
-        == "requests>=2.32.0  # pinned for desktop flow\n"
-    )
+    assert requirements_file.read_text(encoding="utf-8") == "requests>=2.32.0  # pinned for desktop flow\n"
 
 
 def test_rewrite_requirement_lines_preserves_environment_marker(tmp_path: Path):
@@ -74,10 +71,7 @@ def test_rewrite_requirement_lines_preserves_environment_marker(tmp_path: Path):
     )
 
     assert changed is True
-    assert (
-        requirements_file.read_text(encoding="utf-8")
-        == 'pywin32>=307; platform_system == "Windows"\n'
-    )
+    assert requirements_file.read_text(encoding="utf-8") == 'pywin32>=307; platform_system == "Windows"\n'
 
 
 def test_get_outdated_versions_returns_empty_dict_for_invalid_json(

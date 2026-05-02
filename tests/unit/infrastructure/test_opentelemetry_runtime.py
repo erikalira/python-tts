@@ -208,7 +208,9 @@ def test_runtime_wires_enabled_otel_providers_and_records_runtime_metrics(monkey
     fake_propagate = _FakePropagate()
     monkeypatch.setattr("opentelemetry.propagate.inject", fake_propagate.inject)
     monkeypatch.setattr("opentelemetry.propagate.extract", fake_propagate.extract)
-    monkeypatch.setattr("opentelemetry.exporter.otlp.proto.http.metric_exporter.OTLPMetricExporter", _FakeMetricExporter)
+    monkeypatch.setattr(
+        "opentelemetry.exporter.otlp.proto.http.metric_exporter.OTLPMetricExporter", _FakeMetricExporter
+    )
     monkeypatch.setattr("opentelemetry.exporter.otlp.proto.http.trace_exporter.OTLPSpanExporter", _FakeSpanExporter)
     monkeypatch.setattr("opentelemetry.sdk.metrics.MeterProvider", _FakeMeterProvider)
     monkeypatch.setattr("opentelemetry.sdk.metrics.export.PeriodicExportingMetricReader", _FakeMetricReader)
@@ -261,12 +263,8 @@ def test_runtime_wires_enabled_otel_providers_and_records_runtime_metrics(monkey
     meter = _FakeMeterProvider.instances[-1].meters[-1]
     assert _FakeSpanExporter.endpoints[-1] == "http://otel-collector:4318/v1/traces"
     assert _FakeMetricExporter.endpoints[-1] == "http://otel-collector:4318/v1/metrics"
-    assert meter.histograms["bot.queue.depth"].calls == [
-        (4, {"guild_id": "123", "queue_backend": "redis"})
-    ]
-    assert meter.histograms["bot.queue.age.seconds"].calls == [
-        (0.0, {"guild_id": "unknown", "queue_backend": "redis"})
-    ]
+    assert meter.histograms["bot.queue.depth"].calls == [(4, {"guild_id": "123", "queue_backend": "redis"})]
+    assert meter.histograms["bot.queue.age.seconds"].calls == [(0.0, {"guild_id": "unknown", "queue_backend": "redis"})]
     assert meter.counters["bot.queue.items.processed"].calls == [
         (
             1,
@@ -307,7 +305,9 @@ def test_runtime_marks_enabled_spans_as_errors(monkeypatch):
     fake_propagate = _FakePropagate()
     monkeypatch.setattr("opentelemetry.propagate.inject", fake_propagate.inject)
     monkeypatch.setattr("opentelemetry.propagate.extract", fake_propagate.extract)
-    monkeypatch.setattr("opentelemetry.exporter.otlp.proto.http.metric_exporter.OTLPMetricExporter", _FakeMetricExporter)
+    monkeypatch.setattr(
+        "opentelemetry.exporter.otlp.proto.http.metric_exporter.OTLPMetricExporter", _FakeMetricExporter
+    )
     monkeypatch.setattr("opentelemetry.exporter.otlp.proto.http.trace_exporter.OTLPSpanExporter", _FakeSpanExporter)
     monkeypatch.setattr("opentelemetry.sdk.metrics.MeterProvider", _FakeMeterProvider)
     monkeypatch.setattr("opentelemetry.sdk.metrics.export.PeriodicExportingMetricReader", _FakeMetricReader)
@@ -414,4 +414,6 @@ def test_runtime_records_tts_submission_and_latency_metrics():
             },
         )
     ]
+
+
 # pyright: reportAttributeAccessIssue=false

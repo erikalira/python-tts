@@ -112,4 +112,3 @@ class HTTPVoiceContextPresenter:
         if result.code == VOICE_CONTEXT_RESULT_NOT_IN_CHANNEL:
             return 404
         return 200
-

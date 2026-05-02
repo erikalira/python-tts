@@ -28,30 +28,23 @@ class DesktopTTSProcessorLike(Protocol):
 class HotkeyManagerLike(Protocol):
     """Runtime contract for Desktop App hotkey management."""
 
-    def start(self) -> bool:
-        ...
+    def start(self) -> bool: ...
 
-    def stop(self) -> None:
-        ...
+    def stop(self) -> None: ...
 
-    def is_active(self) -> bool:
-        ...
+    def is_active(self) -> bool: ...
 
 
 class NotificationServiceLike(Protocol):
     """Runtime contract for Desktop App notification and tray services."""
 
-    def start(self) -> bool:
-        ...
+    def start(self) -> bool: ...
 
-    def stop(self) -> None:
-        ...
+    def stop(self) -> None: ...
 
-    def is_running(self) -> bool:
-        ...
+    def is_running(self) -> bool: ...
 
-    def is_available(self) -> bool:
-        ...
+    def is_available(self) -> bool: ...
 
 
 class DesktopAppLifecycleCoordinator:
@@ -183,7 +176,7 @@ class DesktopAppLifecycleCoordinator:
     def process_pending_ui_action(
         self,
         *,
-        action_queue: "queue.Queue[Callable[[], None]]",
+        action_queue: queue.Queue[Callable[[], None]],
         timeout: float,
     ) -> None:
         """Execute a queued UI action on the main thread."""

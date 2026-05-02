@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 from src.application.dto import AudioQueueItemStatusDTO, AudioQueueStatusDTO
 from src.core.entities import AudioQueueItem, AudioQueueItemStatus, TTSConfig, TTSRequest
@@ -21,7 +21,7 @@ except ImportError:  # pragma: no cover - local tests can still exercise the que
 logger = logging.getLogger(__name__)
 
 
-def _normalize_guild_id(guild_id: Optional[int]) -> str:
+def _normalize_guild_id(guild_id: int | None) -> str:
     return str(guild_id) if guild_id is not None else "noguild"
 
 
@@ -112,16 +112,16 @@ class InMemoryAudioQueue(IAudioQueue):
         max_queue_wait_seconds: int = 3600,
         telemetry: OpenTelemetryRuntime | None = None,
     ):
-        self._queues: dict[Optional[int], list[AudioQueueItem]] = {}
-        self._history: dict[Optional[int], list[AudioQueueItem]] = {}
+        self._queues: dict[int | None, list[AudioQueueItem]] = {}
+        self._history: dict[int | None, list[AudioQueueItem]] = {}
         self._lock = asyncio.Lock()
-        self._guild_locks: dict[Optional[int], str] = {}
-        self._processing_leases: dict[Optional[int], str] = {}
+        self._guild_locks: dict[int | None, str] = {}
+        self._processing_leases: dict[int | None, str] = {}
         self._max_queue_size = max_queue_size
         self._max_queue_wait = max_queue_wait_seconds
         self._telemetry = telemetry
 
-    async def enqueue(self, item: AudioQueueItem) -> Optional[str]:
+    async def enqueue(self, item: AudioQueueItem) -> str | None:
         async with self._lock:
             guild_id = item.request.guild_id
             queue = self._queues.setdefault(guild_id, [])
@@ -146,7 +146,7 @@ class InMemoryAudioQueue(IAudioQueue):
             )
             return item.item_id
 
-    async def dequeue(self, guild_id: Optional[int]) -> Optional[AudioQueueItem]:
+    async def dequeue(self, guild_id: int | None) -> AudioQueueItem | None:
         async with self._lock:
             queue = self._queues.get(guild_id)
             if not queue:
@@ -158,12 +158,12 @@ class InMemoryAudioQueue(IAudioQueue):
             logger.info("[QUEUE] Item %s dequeued from guild %s", item.item_id, guild_id)
             return item
 
-    async def peek_next(self, guild_id: Optional[int]) -> Optional[AudioQueueItem]:
+    async def peek_next(self, guild_id: int | None) -> AudioQueueItem | None:
         async with self._lock:
             queue = self._queues.get(guild_id)
             return queue[0] if queue else None
 
-    async def get_queue_status(self, guild_id: Optional[int]) -> AudioQueueStatusDTO:
+    async def get_queue_status(self, guild_id: int | None) -> AudioQueueStatusDTO:
         async with self._lock:
             items = self._history.get(guild_id, [])
             return AudioQueueStatusDTO(
@@ -188,7 +188,7 @@ class InMemoryAudioQueue(IAudioQueue):
                     history[index] = item
                     break
 
-    async def clear_completed(self, guild_id: Optional[int], older_than_seconds: int = 3600):
+    async def clear_completed(self, guild_id: int | None, older_than_seconds: int = 3600):
         async with self._lock:
             now = time.time()
             history = self._history.get(guild_id, [])
@@ -199,11 +199,11 @@ class InMemoryAudioQueue(IAudioQueue):
                 or (item.completed_at and now - item.completed_at < older_than_seconds)
             ]
 
-    async def list_guild_ids(self) -> list[Optional[int]]:
+    async def list_guild_ids(self) -> list[int | None]:
         async with self._lock:
             return [guild_id for guild_id, queue in self._queues.items() if queue]
 
-    async def acquire_guild_lock(self, guild_id: Optional[int], owner_token: str, ttl_seconds: int = 30) -> bool:
+    async def acquire_guild_lock(self, guild_id: int | None, owner_token: str, ttl_seconds: int = 30) -> bool:
         del ttl_seconds
         async with self._lock:
             current = self._guild_locks.get(guild_id)
@@ -212,19 +212,19 @@ class InMemoryAudioQueue(IAudioQueue):
             self._guild_locks[guild_id] = owner_token
             return True
 
-    async def release_guild_lock(self, guild_id: Optional[int], owner_token: str) -> None:
+    async def release_guild_lock(self, guild_id: int | None, owner_token: str) -> None:
         async with self._lock:
             if self._guild_locks.get(guild_id) == owner_token:
                 self._guild_locks.pop(guild_id, None)
 
-    async def renew_guild_lock(self, guild_id: Optional[int], owner_token: str, ttl_seconds: int = 30) -> bool:
+    async def renew_guild_lock(self, guild_id: int | None, owner_token: str, ttl_seconds: int = 30) -> bool:
         del ttl_seconds
         async with self._lock:
             return self._guild_locks.get(guild_id) == owner_token
 
     async def acquire_processing_lease(
         self,
-        guild_id: Optional[int],
+        guild_id: int | None,
         owner_token: str,
         ttl_seconds: int = 30,
     ) -> bool:
@@ -236,14 +236,14 @@ class InMemoryAudioQueue(IAudioQueue):
             self._processing_leases[guild_id] = owner_token
             return True
 
-    async def release_processing_lease(self, guild_id: Optional[int], owner_token: str) -> None:
+    async def release_processing_lease(self, guild_id: int | None, owner_token: str) -> None:
         async with self._lock:
             if self._processing_leases.get(guild_id) == owner_token:
                 self._processing_leases.pop(guild_id, None)
 
     async def renew_processing_lease(
         self,
-        guild_id: Optional[int],
+        guild_id: int | None,
         owner_token: str,
         ttl_seconds: int = 30,
     ) -> bool:
@@ -251,16 +251,16 @@ class InMemoryAudioQueue(IAudioQueue):
         async with self._lock:
             return self._processing_leases.get(guild_id) == owner_token
 
-    async def is_guild_processing(self, guild_id: Optional[int]) -> bool:
+    async def is_guild_processing(self, guild_id: int | None) -> bool:
         async with self._lock:
             return guild_id in self._processing_leases
 
-    async def _refresh_positions_unlocked(self, guild_id: Optional[int]) -> None:
+    async def _refresh_positions_unlocked(self, guild_id: int | None) -> None:
         queue = self._queues.get(guild_id, [])
         for index, remaining_item in enumerate(queue):
             remaining_item.position_in_queue = index
 
-    def _record_queue_metrics_unlocked(self, guild_id: Optional[int], queue: list[AudioQueueItem]) -> None:
+    def _record_queue_metrics_unlocked(self, guild_id: int | None, queue: list[AudioQueueItem]) -> None:
         if self._telemetry is None:
             return
         self._telemetry.record_queue_depth(guild_id=guild_id, depth=len(queue))
@@ -270,6 +270,7 @@ class InMemoryAudioQueue(IAudioQueue):
                 guild_id=guild_id,
                 age_seconds=time.time() - oldest_item.created_at,
             )
+
 
 class RedisAudioQueue(IAudioQueue):
     """Redis-backed FIFO queue with item metadata per guild."""
@@ -293,12 +294,16 @@ class RedisAudioQueue(IAudioQueue):
         self._completed_item_ttl_seconds = completed_item_ttl_seconds
         self._telemetry = telemetry
 
-    async def enqueue(self, item: AudioQueueItem) -> Optional[str]:
+    async def enqueue(self, item: AudioQueueItem) -> str | None:
         guild_id = item.request.guild_id
-        with self._telemetry.start_internal_span(
-            "audio_queue.redis.enqueue",
-            attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
-        ) if self._telemetry is not None else _null_span_context() as span:
+        with (
+            self._telemetry.start_internal_span(
+                "audio_queue.redis.enqueue",
+                attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
+            )
+            if self._telemetry is not None
+            else _null_span_context() as span
+        ):
             queue_key = self._queue_key(guild_id)
             queue_size = await self._redis.llen(queue_key)
             if queue_size >= self._max_queue_size:
@@ -320,11 +325,15 @@ class RedisAudioQueue(IAudioQueue):
             span.set_attribute("result_code", "enqueued")
             return item.item_id
 
-    async def dequeue(self, guild_id: Optional[int]) -> Optional[AudioQueueItem]:
-        with self._telemetry.start_internal_span(
-            "audio_queue.redis.dequeue",
-            attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
-        ) if self._telemetry is not None else _null_span_context() as span:
+    async def dequeue(self, guild_id: int | None) -> AudioQueueItem | None:
+        with (
+            self._telemetry.start_internal_span(
+                "audio_queue.redis.dequeue",
+                attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
+            )
+            if self._telemetry is not None
+            else _null_span_context() as span
+        ):
             item_id = await self._redis.lpop(self._queue_key(guild_id))
             if item_id is None:
                 await self._redis.srem(self._active_guilds_key(), self._guild_value(guild_id))
@@ -341,13 +350,13 @@ class RedisAudioQueue(IAudioQueue):
             span.set_attribute("result_code", "dequeued")
             return item
 
-    async def peek_next(self, guild_id: Optional[int]) -> Optional[AudioQueueItem]:
+    async def peek_next(self, guild_id: int | None) -> AudioQueueItem | None:
         item_id = await self._redis.lindex(self._queue_key(guild_id), 0)
         if item_id is None:
             return None
         return await self._load_item(self._decode(item_id))
 
-    async def get_queue_status(self, guild_id: Optional[int]) -> AudioQueueStatusDTO:
+    async def get_queue_status(self, guild_id: int | None) -> AudioQueueStatusDTO:
         item_ids = await self._redis.lrange(self._items_key(guild_id), 0, -1)
         items = []
         kept_ids: list[str] = []
@@ -375,7 +384,7 @@ class RedisAudioQueue(IAudioQueue):
             ttl_seconds = self._completed_item_ttl_seconds
         await self._store_item(item, ttl_seconds=ttl_seconds)
 
-    async def clear_completed(self, guild_id: Optional[int], older_than_seconds: int = 3600):
+    async def clear_completed(self, guild_id: int | None, older_than_seconds: int = 3600):
         item_ids = await self._redis.lrange(self._items_key(guild_id), 0, -1)
         kept_ids: list[str] = []
         now = time.time()
@@ -394,33 +403,41 @@ class RedisAudioQueue(IAudioQueue):
 
         await self._rewrite_item_index(guild_id, kept_ids)
 
-    async def list_guild_ids(self, include_empty: bool = False) -> list[Optional[int]]:
+    async def list_guild_ids(self, include_empty: bool = False) -> list[int | None]:
         guild_values = await self._redis.smembers(self._active_guilds_key())
         guild_ids = [self._guild_from_value(self._decode(value)) for value in guild_values]
         if include_empty:
             return guild_ids
 
-        result: list[Optional[int]] = []
+        result: list[int | None] = []
         for guild_id in guild_ids:
             if await self._redis.llen(self._queue_key(guild_id)) > 0:
                 result.append(guild_id)
         return result
 
-    async def acquire_guild_lock(self, guild_id: Optional[int], owner_token: str, ttl_seconds: int = 30) -> bool:
-        with self._telemetry.start_internal_span(
-            "audio_queue.redis.acquire_guild_lock",
-            attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
-        ) if self._telemetry is not None else _null_span_context() as span:
+    async def acquire_guild_lock(self, guild_id: int | None, owner_token: str, ttl_seconds: int = 30) -> bool:
+        with (
+            self._telemetry.start_internal_span(
+                "audio_queue.redis.acquire_guild_lock",
+                attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
+            )
+            if self._telemetry is not None
+            else _null_span_context() as span
+        ):
             ttl = ttl_seconds or self._guild_lock_ttl_seconds
             acquired = bool(await self._redis.set(self._lock_key(guild_id), owner_token, ex=ttl, nx=True))
             span.set_attribute("result_code", "acquired" if acquired else "busy")
             return acquired
 
-    async def release_guild_lock(self, guild_id: Optional[int], owner_token: str) -> None:
-        with self._telemetry.start_internal_span(
-            "audio_queue.redis.release_guild_lock",
-            attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
-        ) if self._telemetry is not None else _null_span_context():
+    async def release_guild_lock(self, guild_id: int | None, owner_token: str) -> None:
+        with (
+            self._telemetry.start_internal_span(
+                "audio_queue.redis.release_guild_lock",
+                attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
+            )
+            if self._telemetry is not None
+            else _null_span_context()
+        ):
             lock_key = self._lock_key(guild_id)
             current = await self._redis.get(lock_key)
             if current is None:
@@ -428,19 +445,25 @@ class RedisAudioQueue(IAudioQueue):
             if self._decode(current) == owner_token:
                 await self._redis.delete(lock_key)
 
-    async def renew_guild_lock(self, guild_id: Optional[int], owner_token: str, ttl_seconds: int = 30) -> bool:
-        with self._telemetry.start_internal_span(
-            "audio_queue.redis.renew_guild_lock",
-            attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
-        ) if self._telemetry is not None else _null_span_context() as span:
+    async def renew_guild_lock(self, guild_id: int | None, owner_token: str, ttl_seconds: int = 30) -> bool:
+        with (
+            self._telemetry.start_internal_span(
+                "audio_queue.redis.renew_guild_lock",
+                attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
+            )
+            if self._telemetry is not None
+            else _null_span_context() as span
+        ):
             lock_key = self._lock_key(guild_id)
             current = await self._redis.get(lock_key)
             if current is None or self._decode(current) != owner_token:
                 span.set_attribute("result_code", "lost")
                 return False
             expire = getattr(self._redis, "expire", None)
-            renewed = bool(await self._redis.set(lock_key, owner_token, ex=ttl_seconds)) if expire is None else bool(
-                await expire(lock_key, ttl_seconds)
+            renewed = (
+                bool(await self._redis.set(lock_key, owner_token, ex=ttl_seconds))
+                if expire is None
+                else bool(await expire(lock_key, ttl_seconds))
             )
             span.set_attribute("result_code", "renewed" if renewed else "lost")
             return renewed
@@ -459,13 +482,13 @@ class RedisAudioQueue(IAudioQueue):
     async def _store_item(self, item: AudioQueueItem, ttl_seconds: int | None = None) -> None:
         await self._redis.set(self._item_key(item.item_id), json.dumps(_item_to_payload(item)), ex=ttl_seconds)
 
-    async def _load_item(self, item_id: str) -> Optional[AudioQueueItem]:
+    async def _load_item(self, item_id: str) -> AudioQueueItem | None:
         payload = await self._redis.get(self._item_key(item_id))
         if payload is None:
             return None
         return _item_from_payload(json.loads(self._decode(payload)))
 
-    async def _refresh_positions(self, guild_id: Optional[int]) -> None:
+    async def _refresh_positions(self, guild_id: int | None) -> None:
         queue_ids = await self._redis.lrange(self._queue_key(guild_id), 0, -1)
         for index, raw_item_id in enumerate(queue_ids):
             item_id = self._decode(raw_item_id)
@@ -476,34 +499,34 @@ class RedisAudioQueue(IAudioQueue):
             if item.status == AudioQueueItemStatus.PENDING:
                 await self._store_item(item)
 
-    async def _rewrite_item_index(self, guild_id: Optional[int], item_ids: list[str]) -> None:
+    async def _rewrite_item_index(self, guild_id: int | None, item_ids: list[str]) -> None:
         items_key = self._items_key(guild_id)
         await self._redis.delete(items_key)
         if item_ids:
             await self._redis.rpush(items_key, *item_ids)
 
-    def _queue_key(self, guild_id: Optional[int]) -> str:
+    def _queue_key(self, guild_id: int | None) -> str:
         return f"{self._key_prefix}:queue:guild:{_normalize_guild_id(guild_id)}"
 
     def _item_key(self, item_id: str) -> str:
         return f"{self._key_prefix}:item:{item_id}"
 
-    def _items_key(self, guild_id: Optional[int]) -> str:
+    def _items_key(self, guild_id: int | None) -> str:
         return f"{self._key_prefix}:items:guild:{_normalize_guild_id(guild_id)}"
 
-    def _lock_key(self, guild_id: Optional[int]) -> str:
+    def _lock_key(self, guild_id: int | None) -> str:
         return f"{self._key_prefix}:lock:guild:{_normalize_guild_id(guild_id)}"
 
-    def _processing_key(self, guild_id: Optional[int]) -> str:
+    def _processing_key(self, guild_id: int | None) -> str:
         return f"{self._key_prefix}:processing:guild:{_normalize_guild_id(guild_id)}"
 
     def _active_guilds_key(self) -> str:
         return f"{self._key_prefix}:guilds:active"
 
-    def _guild_value(self, guild_id: Optional[int]) -> str:
+    def _guild_value(self, guild_id: int | None) -> str:
         return _normalize_guild_id(guild_id)
 
-    def _guild_from_value(self, value: str) -> Optional[int]:
+    def _guild_from_value(self, value: str) -> int | None:
         return None if value == "noguild" else int(value)
 
     def _decode(self, value: Any) -> str:
@@ -513,23 +536,31 @@ class RedisAudioQueue(IAudioQueue):
 
     async def acquire_processing_lease(
         self,
-        guild_id: Optional[int],
+        guild_id: int | None,
         owner_token: str,
         ttl_seconds: int = 30,
     ) -> bool:
-        with self._telemetry.start_internal_span(
-            "audio_queue.redis.acquire_processing_lease",
-            attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
-        ) if self._telemetry is not None else _null_span_context() as span:
+        with (
+            self._telemetry.start_internal_span(
+                "audio_queue.redis.acquire_processing_lease",
+                attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
+            )
+            if self._telemetry is not None
+            else _null_span_context() as span
+        ):
             acquired = bool(await self._redis.set(self._processing_key(guild_id), owner_token, ex=ttl_seconds, nx=True))
             span.set_attribute("result_code", "acquired" if acquired else "busy")
             return acquired
 
-    async def release_processing_lease(self, guild_id: Optional[int], owner_token: str) -> None:
-        with self._telemetry.start_internal_span(
-            "audio_queue.redis.release_processing_lease",
-            attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
-        ) if self._telemetry is not None else _null_span_context():
+    async def release_processing_lease(self, guild_id: int | None, owner_token: str) -> None:
+        with (
+            self._telemetry.start_internal_span(
+                "audio_queue.redis.release_processing_lease",
+                attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
+            )
+            if self._telemetry is not None
+            else _null_span_context()
+        ):
             processing_key = self._processing_key(guild_id)
             current = await self._redis.get(processing_key)
             if current is None:
@@ -539,30 +570,36 @@ class RedisAudioQueue(IAudioQueue):
 
     async def renew_processing_lease(
         self,
-        guild_id: Optional[int],
+        guild_id: int | None,
         owner_token: str,
         ttl_seconds: int = 30,
     ) -> bool:
-        with self._telemetry.start_internal_span(
-            "audio_queue.redis.renew_processing_lease",
-            attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
-        ) if self._telemetry is not None else _null_span_context() as span:
+        with (
+            self._telemetry.start_internal_span(
+                "audio_queue.redis.renew_processing_lease",
+                attributes={"guild_id": str(guild_id) if guild_id is not None else "unknown"},
+            )
+            if self._telemetry is not None
+            else _null_span_context() as span
+        ):
             processing_key = self._processing_key(guild_id)
             current = await self._redis.get(processing_key)
             if current is None or self._decode(current) != owner_token:
                 span.set_attribute("result_code", "lost")
                 return False
             expire = getattr(self._redis, "expire", None)
-            renewed = bool(
-                await self._redis.set(processing_key, owner_token, ex=ttl_seconds)
-            ) if expire is None else bool(await expire(processing_key, ttl_seconds))
+            renewed = (
+                bool(await self._redis.set(processing_key, owner_token, ex=ttl_seconds))
+                if expire is None
+                else bool(await expire(processing_key, ttl_seconds))
+            )
             span.set_attribute("result_code", "renewed" if renewed else "lost")
             return renewed
 
-    async def is_guild_processing(self, guild_id: Optional[int]) -> bool:
+    async def is_guild_processing(self, guild_id: int | None) -> bool:
         return await self._redis.get(self._processing_key(guild_id)) is not None
 
-    async def _record_queue_metrics(self, guild_id: Optional[int]) -> None:
+    async def _record_queue_metrics(self, guild_id: int | None) -> None:
         if self._telemetry is None:
             return
         queue_ids = await self._redis.lrange(self._queue_key(guild_id), 0, -1)
@@ -578,7 +615,7 @@ class RedisAudioQueue(IAudioQueue):
 
 
 class _null_span_context:
-    def __enter__(self) -> "_null_span_context":
+    def __enter__(self) -> _null_span_context:
         return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from src.application.dto import ConfigureTTSResult, TTSConfigurationData
 from src.core.interfaces import IConfigRepository
@@ -17,7 +16,7 @@ class ConfigureTTSUseCase:
     def __init__(self, config_repository: IConfigRepository):
         self._config_repository = config_repository
 
-    def get_config(self, guild_id: int, user_id: Optional[int] = None) -> ConfigureTTSResult:
+    def get_config(self, guild_id: int, user_id: int | None = None) -> ConfigureTTSResult:
         if guild_id is None:
             return ConfigureTTSResult(success=False, message="Guild ID is required")
 
@@ -37,11 +36,11 @@ class ConfigureTTSUseCase:
     async def update_config_async(
         self,
         guild_id: int,
-        user_id: Optional[int] = None,
-        engine: Optional[str] = None,
-        language: Optional[str] = None,
-        voice_id: Optional[str] = None,
-        rate: Optional[int] = None,
+        user_id: int | None = None,
+        engine: str | None = None,
+        language: str | None = None,
+        voice_id: str | None = None,
+        rate: int | None = None,
     ) -> ConfigureTTSResult:
         if guild_id is None:
             return ConfigureTTSResult(success=False, message="Guild ID is required")
@@ -85,7 +84,7 @@ class ConfigureTTSUseCase:
             scope="user" if user_id is not None else "guild",
         )
 
-    async def reset_config_async(self, guild_id: int, user_id: Optional[int] = None) -> ConfigureTTSResult:
+    async def reset_config_async(self, guild_id: int, user_id: int | None = None) -> ConfigureTTSResult:
         if guild_id is None:
             return ConfigureTTSResult(success=False, message="Guild ID is required")
 

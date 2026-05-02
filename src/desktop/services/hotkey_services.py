@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Optional, Protocol
+from typing import Protocol
 
 from src.application.dto import HotkeyManagerStatusDTO, HotkeyServiceStatusDTO
 
@@ -59,7 +59,7 @@ class StandardKeyboardMonitor(KeyboardMonitor):
         self,
         config: DesktopAppConfig,
         handler: HotkeyHandler,
-        backend: Optional[KeyboardHookBackend] = None,
+        backend: KeyboardHookBackend | None = None,
     ):
         self._handler = handler
         self._backend = backend or KeyboardHookBackend()
@@ -69,7 +69,7 @@ class StandardKeyboardMonitor(KeyboardMonitor):
         )
         self._monitoring = False
         self._lock = threading.Lock()
-        self._external_suppression_check: Optional[Callable[[], bool]] = None
+        self._external_suppression_check: Callable[[], bool] | None = None
 
     def set_external_suppression_check(self, check_func: Callable[[], bool]) -> None:
         """Set function to check if events should be suppressed externally."""
@@ -144,9 +144,7 @@ class HotkeyService:
     ):
         self._config = config
         self._handler = handler
-        self._monitor_factory = monitor_factory or (
-            lambda cfg, hnd: StandardKeyboardMonitor(cfg, hnd)
-        )
+        self._monitor_factory = monitor_factory or (lambda cfg, hnd: StandardKeyboardMonitor(cfg, hnd))
         self._monitor: KeyboardMonitor = self._monitor_factory(config, handler)
         self._active = False
 
@@ -196,11 +194,9 @@ class HotkeyManager:
         service_factory: Callable[[DesktopAppConfig, HotkeyHandler], HotkeyService] | None = None,
     ):
         self._config = config
-        self._service_factory = service_factory or (
-            lambda cfg, handler: HotkeyService(cfg, handler)
-        )
-        self._service: Optional[HotkeyService] = None
-        self._handler: Optional[HotkeyHandler] = None
+        self._service_factory = service_factory or (lambda cfg, handler: HotkeyService(cfg, handler))
+        self._service: HotkeyService | None = None
+        self._handler: HotkeyHandler | None = None
 
     def initialize(self, handler: HotkeyHandler) -> bool:
         """Initialize the hotkey manager with a handler."""

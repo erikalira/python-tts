@@ -48,19 +48,13 @@ class SecurityTestRepository(MockVoiceChannelRepository):
     async def find_connected_channel(self):
         """Return the channel where the bot is connected."""
 
-        print(
-            "[REPOSITORY] Bot is connected to channel "
-            f"{self.bot_connected_channel.get_channel_id()}"
-        )
+        print(f"[REPOSITORY] Bot is connected to channel {self.bot_connected_channel.get_channel_id()}")
         return self.bot_connected_channel
 
     async def find_by_member_id(self, member_id: int):
         """Return the channel where the user is currently connected."""
 
-        print(
-            f"[REPOSITORY] User {member_id} is in channel "
-            f"{self.user_current_channel.get_channel_id()}"
-        )
+        print(f"[REPOSITORY] User {member_id} is in channel {self.user_current_channel.get_channel_id()}")
         return self.user_current_channel
 
 
@@ -117,10 +111,7 @@ async def test_security_vulnerability() -> None:
         print("Information was protected from cross-channel playback.")
 
     if repository.bot_connected_channel.played_audio:
-        print(
-            "\nAUDIO PLAYED IN THE WRONG CHANNEL: "
-            f"{repository.bot_connected_channel.played_audio}"
-        )
+        print(f"\nAUDIO PLAYED IN THE WRONG CHANNEL: {repository.bot_connected_channel.played_audio}")
     else:
         print("\nNo audio was played, as expected.")
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Protocol
+from typing import Protocol
 
 from src.application.dto import DesktopAppRuntimeStatusDTO, DesktopTTSServiceStatusDTO
 
@@ -41,7 +41,7 @@ class DesktopAppStatusBuilder:
         *,
         initialized: bool,
         running: bool,
-        config: Optional[DesktopAppConfig],
+        config: DesktopAppConfig | None,
         hotkey_manager: HotkeyManagerStatusPort | None,
         tts_processor: DesktopTTSProcessorStatusPort | None,
         notification_service: NotificationServiceStatusPort | None,

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from src.application.tts_voice_catalog import TTSCatalog
 from src.infrastructure.tts.voice_catalog import RuntimeTTSCatalog
 
@@ -18,7 +16,7 @@ class ConsoleConfig(ConfigInterface):
     def __init__(self, tts_catalog: TTSCatalog | None = None):
         self._tts_catalog = tts_catalog or RuntimeTTSCatalog()
 
-    def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
+    def show_config(self, config: DesktopAppConfig) -> DesktopAppConfig | None:
         print("\n" + "=" * 50)
         print("Desktop App - Configuration")
         print("=" * 50)

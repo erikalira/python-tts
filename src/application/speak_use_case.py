@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import Optional
 
 from src.application.dto import (
     SPEAK_RESULT_MISSING_TEXT,
@@ -34,7 +33,7 @@ class SpeakTextUseCase:
         audio_queue: IAudioQueue,
         voice_channel_resolution: VoiceChannelResolutionService,
         queue_orchestrator: TTSQueueOrchestrator,
-        max_text_length: Optional[int] = None,
+        max_text_length: int | None = None,
         queue_runtime_is_active: Callable[[], bool] | None = None,
         telemetry: BotRuntimeTelemetry | None = None,
         otel_runtime: RuntimeTelemetry | None = None,

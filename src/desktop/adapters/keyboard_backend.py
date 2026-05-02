@@ -5,6 +5,7 @@ from collections.abc import Callable
 
 try:
     import keyboard
+
     _keyboard_available = True
 except ImportError:
     keyboard = None

@@ -8,7 +8,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Optional, Protocol
+from typing import Protocol
 
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
 from src.application.dto import BotSpeakRequestDTO, DesktopTTSStatusDTO
@@ -69,10 +69,10 @@ class DesktopTTSBotClient(Protocol):
 class LocalPyTTSX3Engine(TTSEngine):
     """Local TTS engine using pyttsx3."""
 
-    def __init__(self, config: DesktopAppConfig, adapter: Optional[Pyttsx3Adapter] = None):
+    def __init__(self, config: DesktopAppConfig, adapter: Pyttsx3Adapter | None = None):
         self._config = config
         self._adapter = adapter or Pyttsx3Adapter()
-        self._engine: Optional[Pyttsx3EngineLike] = None
+        self._engine: Pyttsx3EngineLike | None = None
         self._lock = threading.Lock()
         self._last_error_message: str | None = None
 
@@ -125,7 +125,7 @@ class LocalPyTTSX3Engine(TTSEngine):
 class DiscordTTSService(TTSEngine):
     """TTS service that sends text to the Discord bot."""
 
-    def __init__(self, config: DesktopAppConfig, bot_client: Optional[DesktopTTSBotClient] = None):
+    def __init__(self, config: DesktopAppConfig, bot_client: DesktopTTSBotClient | None = None):
         self._config = config
         self._bot_client = bot_client or HttpDiscordBotClient(config)
 
@@ -146,6 +146,7 @@ class DiscordTTSService(TTSEngine):
         """Return the latest error reported by the bot client."""
         return self._bot_client.get_last_error_message()
 
+
 class DesktopAppTTSService:
     """Main Desktop App TTS service that coordinates available engines."""
 
@@ -153,13 +154,11 @@ class DesktopAppTTSService:
         self,
         config: DesktopAppConfig,
         bot_client: DesktopTTSBotClient,
-        local_engine_factory: Optional[Callable[[DesktopAppConfig], TTSEngine]] = None,
+        local_engine_factory: Callable[[DesktopAppConfig], TTSEngine] | None = None,
     ):
         self._config = config
         self._bot_client = bot_client
-        self._local_engine_factory = local_engine_factory or (
-            lambda cfg: LocalPyTTSX3Engine(cfg)
-        )
+        self._local_engine_factory = local_engine_factory or (lambda cfg: LocalPyTTSX3Engine(cfg))
         self._flow_service = self._create_flow_service()
 
     def _create_flow_service(self) -> DesktopTTSFlowService:
@@ -225,7 +224,7 @@ class DesktopAppTTSService:
 class KeyboardCleanupService:
     """Service for handling keyboard cleanup after TTS."""
 
-    def __init__(self, keyboard_backend: Optional[KeyboardHookBackend] = None):
+    def __init__(self, keyboard_backend: KeyboardHookBackend | None = None):
         self._keyboard_backend = keyboard_backend or KeyboardHookBackend()
         self._suppress_events = threading.Event()
 
@@ -249,6 +248,7 @@ class KeyboardCleanupService:
     def is_suppressing_events(self) -> bool:
         """Check if keyboard events are currently being suppressed."""
         return self._suppress_events.is_set()
+
 
 class _DesktopAppTTSStatusGateway:
     """Adapter exposing Desktop App TTS status through the shared status port."""
