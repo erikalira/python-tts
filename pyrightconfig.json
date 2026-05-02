@@ -1,5 +1,6 @@
 {
   "include": [
+    "src/application",
     "src/application/dto",
     "src/application/rate_limiting.py",
     "src/application/runtime_telemetry.py",
@@ -15,7 +16,7 @@
     "__pycache__"
   ],
   "pythonVersion": "3.11",
-  "typeCheckingMode": "basic",
+  "typeCheckingMode": "standard",
   "reportMissingTypeStubs": "none",
   "reportUnknownMemberType": "none",
   "reportUnknownVariableType": "none",

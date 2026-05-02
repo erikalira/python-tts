@@ -16,12 +16,15 @@ class TTSEnginePort(Protocol):
 
     def speak(self, text: str) -> bool:
         """Speak the given text."""
+        ...
 
     def is_available(self) -> bool:
         """Return whether the engine can be used."""
+        ...
 
     def get_last_error_message(self) -> str | None:
         """Return the last human-readable engine error when available."""
+        ...
 
 
 class DesktopTTSStatusGateway(Protocol):
@@ -29,21 +32,27 @@ class DesktopTTSStatusGateway(Protocol):
 
     def is_remote_available(self) -> bool:
         """Return whether the remote/Discord path is available."""
+        ...
 
     def is_local_enabled(self) -> bool:
         """Return whether local TTS is enabled in configuration."""
+        ...
 
     def is_local_available(self) -> bool:
         """Return whether the local TTS adapter is usable."""
+        ...
 
     def is_local_dependency_installed(self) -> bool:
         """Return whether the local TTS dependency is installed."""
+        ...
 
     def has_transport(self) -> bool:
         """Return whether the HTTP transport dependency is installed."""
+        ...
 
     def has_bot_url(self) -> bool:
         """Return whether the bot URL is configured."""
+        ...
 
 
 class DesktopTTSFlowService:

@@ -81,6 +81,18 @@ class SpeakTextUseCase:
             )
             return SpeakTextResult(success=False, code=SPEAK_RESULT_MISSING_TEXT, queued=False)
 
+        if domain_request.member_id is None:
+            self._record_submission_result(
+                request=domain_request,
+                accepted=False,
+                code=SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+            )
+            return SpeakTextResult(
+                success=False,
+                code=SPEAK_RESULT_USER_NOT_IN_CHANNEL,
+                queued=False,
+            )
+
         user_channel = await self._channel_repository.find_by_member_id(domain_request.member_id)
         if not user_channel:
             self._record_submission_result(

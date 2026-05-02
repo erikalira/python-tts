@@ -107,7 +107,7 @@ class DiscordVoiceChannel(IVoiceChannel):
                     except (discord.errors.ClientException, Exception):
                         pass
                 self._voice_client = None
-                raise RuntimeError(f"Failed to connect to voice channel: {e}")
+                raise RuntimeError(f"Failed to connect to voice channel: {e}") from e
     
     async def disconnect(self) -> None:
         """Disconnect from the voice channel."""
@@ -135,7 +135,7 @@ class DiscordVoiceChannel(IVoiceChannel):
                 await self.connect()
             except Exception as e:
                 logger.error(f"[VOICE_CHANNEL] Failed to reconnect: {e}")
-                raise RuntimeError("Failed to reconnect to voice channel")
+                raise RuntimeError("Failed to reconnect to voice channel") from e
             voice_client = self._sync_voice_client()
         
         logger.debug(f"[VOICE_CHANNEL] Voice client is connected, preparing to play audio: {audio.path}")
@@ -216,7 +216,9 @@ class DiscordVoiceChannel(IVoiceChannel):
                 )
                 if voice_client:
                     voice_client.stop()
-                raise TimeoutError(f"Audio playback exceeded {self._playback_timeout_seconds} second timeout")
+                raise TimeoutError(
+                    f"Audio playback exceeded {self._playback_timeout_seconds} second timeout"
+                ) from None
             
         except Exception as e:
             logger.error(f"[VOICE_CHANNEL] Error during playback: {e}")

@@ -27,15 +27,19 @@ class DesktopTTSExecutionPort(Protocol):
 
     def speak_text(self, text: str) -> bool:
         """Execute speech for the provided normalized text."""
+        ...
 
     def is_available(self) -> bool:
         """Return whether the underlying TTS flow is available."""
+        ...
 
     def get_status_info(self) -> DesktopTTSStatusDTO:
         """Return runtime status details for the Desktop App."""
+        ...
 
     def get_last_error_message(self) -> str | None:
         """Return the latest execution error when available."""
+        ...
 
 
 class SpeakTextExecutionUseCase:

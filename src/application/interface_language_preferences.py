@@ -20,21 +20,27 @@ class InterfaceLanguagePreferenceRepository(Protocol):
 
     def get_user_language(self, guild_id: int, user_id: int) -> Optional[str]:
         """Return a user's explicit interface language for a guild, if any."""
+        ...
 
     def get_guild_language(self, guild_id: int) -> Optional[str]:
         """Return a guild's explicit default interface language, if any."""
+        ...
 
     async def set_user_language(self, guild_id: int, user_id: int, locale: str) -> bool:
         """Persist a user's explicit interface language for a guild."""
+        ...
 
     async def set_guild_language(self, guild_id: int, locale: str) -> bool:
         """Persist a guild's explicit default interface language."""
+        ...
 
     async def delete_user_language(self, guild_id: int, user_id: int) -> bool:
         """Delete a user's explicit interface language preference."""
+        ...
 
     async def delete_guild_language(self, guild_id: int) -> bool:
         """Delete a guild's explicit default interface language."""
+        ...
 
 
 class ConfigureInterfaceLanguageUseCase:

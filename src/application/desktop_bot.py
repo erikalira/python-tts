@@ -25,21 +25,27 @@ class DesktopBotGateway(Protocol):
 
     def has_bot_url(self) -> bool:
         """Return whether the bot base URL is configured."""
+        ...
 
     def has_member_id(self) -> bool:
         """Return whether the configured Discord member is available."""
+        ...
 
     def check_connection(self) -> DesktopBotConnectionStatusDTO:
         """Check whether the bot runtime is reachable."""
+        ...
 
     def send_text(self, text: str) -> bool:
         """Send a text payload to the bot runtime."""
+        ...
 
     def fetch_voice_context(self) -> DesktopBotVoiceContextStatusDTO:
         """Fetch the current detected voice context."""
+        ...
 
     def get_last_error_message(self) -> Optional[str]:
         """Return the last human-readable error message."""
+        ...
 
 
 class CheckDesktopBotConnectionUseCase:

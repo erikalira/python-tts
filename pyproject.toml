@@ -83,6 +83,7 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = [
+  "B",
   "E9",
   "F",
 ]

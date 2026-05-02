@@ -20,6 +20,7 @@ class BotRuntimeTelemetry(Protocol):
         engine: str,
     ) -> None:
         """Record the outcome of a speak request submission."""
+        ...
 
     def record_processing_result(
         self,
@@ -30,9 +31,11 @@ class BotRuntimeTelemetry(Protocol):
         engine: str,
     ) -> None:
         """Record the outcome of queued playback processing."""
+        ...
 
     def snapshot(self) -> BotRuntimeObservabilityDTO:
         """Return the current operational snapshot."""
+        ...
 
 
 class NoOpBotRuntimeTelemetry:
