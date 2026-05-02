@@ -68,6 +68,10 @@ pytest_add_cli_args_test_selection = [
 ]
 also_copy = [
   "mutmut_pytest.ini",
+  "src/application/",
+  "src/infrastructure/__init__.py",
+  "src/infrastructure/audio_queue.py",
+  "src/infrastructure/opentelemetry_runtime.py",
 ]
 mutate_only_covered_lines = true
 
