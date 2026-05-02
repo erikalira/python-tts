@@ -80,7 +80,7 @@ def _item_to_payload(item: AudioQueueItem) -> dict[str, Any]:
 
 
 def _item_from_payload(payload: dict[str, Any]) -> AudioQueueItem:
-    item = AudioQueueItem(
+    return AudioQueueItem(
         request=_request_from_payload(payload["request"]),
         item_id=str(payload["item_id"]),
         status=AudioQueueItemStatus(str(payload.get("status", AudioQueueItemStatus.PENDING.value))),
@@ -91,7 +91,6 @@ def _item_from_payload(payload: dict[str, Any]) -> AudioQueueItem:
         trace_context=payload.get("trace_context"),
         position_in_queue=int(payload.get("position_in_queue", 0)),
     )
-    return item
 
 
 def _build_status_dto(item: AudioQueueItem) -> AudioQueueItemStatusDTO:

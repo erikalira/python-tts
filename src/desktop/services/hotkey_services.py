@@ -39,17 +39,14 @@ class KeyboardMonitor(ABC):
     @abstractmethod
     def start_monitoring(self) -> bool:
         """Start keyboard monitoring. Returns True if successful."""
-        pass
 
     @abstractmethod
     def stop_monitoring(self) -> None:
         """Stop keyboard monitoring."""
-        pass
 
     @abstractmethod
     def is_monitoring(self) -> bool:
         """Check if currently monitoring keyboard."""
-        pass
 
 
 class StandardKeyboardMonitor(KeyboardMonitor):

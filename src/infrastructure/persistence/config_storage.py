@@ -23,7 +23,6 @@ class IConfigStorage(ABC):
         Returns:
             TTSConfig if found, None otherwise
         """
-        pass
 
     @abstractmethod
     async def save(self, guild_id: int, config: TTSConfig, user_id: Optional[int] = None) -> bool:
@@ -36,7 +35,6 @@ class IConfigStorage(ABC):
         Returns:
             True if saved successfully
         """
-        pass
 
     @abstractmethod
     async def delete(self, guild_id: int, user_id: Optional[int] = None) -> bool:
@@ -48,7 +46,6 @@ class IConfigStorage(ABC):
         Returns:
             True if deleted successfully
         """
-        pass
 
 
 class JSONConfigStorage(IConfigStorage):
@@ -296,9 +293,8 @@ class GuildConfigRepository(IConfigRepository):
                 self._cache[guild_id] = self._clone_config(config)
                 logger.debug(f"[CONFIG_REPO] Loaded config from storage for guild {guild_id}")
                 return self._clone_config(self._cache[guild_id])
-            else:
-                logger.debug(f"[CONFIG_REPO] No config in storage for guild {guild_id}, using default")
-                return self._get_default_config()
+            logger.debug(f"[CONFIG_REPO] No config in storage for guild {guild_id}, using default")
+            return self._get_default_config()
 
         except Exception as e:
             logger.error(f"[CONFIG_REPO] Error loading config for guild {guild_id}: {e}")

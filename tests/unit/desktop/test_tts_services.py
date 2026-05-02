@@ -238,7 +238,7 @@ def test_http_discord_bot_client_reports_when_voice_context_endpoint_is_missing(
         return_value=SimpleNamespace(
             ok=False,
             status_code=404,
-            json=lambda: {},
+            json=dict,
         )
     )
     monkeypatch.setattr("src.desktop.services.discord_bot_client.requests.get", get)

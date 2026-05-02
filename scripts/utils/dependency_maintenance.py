@@ -301,9 +301,9 @@ def run_command(command: list[str]) -> int:
     command_tuple = tuple(command)
     if command_tuple == UNIT_TEST_COMMAND:
         return run_unit_tests_command()
-    elif command_tuple == INTEGRATION_TEST_COMMAND:
+    if command_tuple == INTEGRATION_TEST_COMMAND:
         return run_integration_tests_command()
-    elif command_tuple == IMPORT_SMOKE_COMMAND:
+    if command_tuple == IMPORT_SMOKE_COMMAND:
         return run_import_smoke_command()
     raise ValueError(f"Unsafe command rejected: {command!r}")
 

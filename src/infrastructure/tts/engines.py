@@ -216,9 +216,8 @@ class TTSEngineFactory:
         """
         if config.engine == 'gtts':
             return GTTSEngine()
-        elif config.engine == 'pyttsx3':
+        if config.engine == 'pyttsx3':
             return Pyttsx3Engine()
-        elif config.engine == 'edge-tts':
+        if config.engine == 'edge-tts':
             return EdgeTTSEngine()
-        else:
-            raise ValueError(f"Unknown TTS engine: {config.engine}")
+        raise ValueError(f"Unknown TTS engine: {config.engine}")

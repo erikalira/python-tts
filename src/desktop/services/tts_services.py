@@ -35,17 +35,14 @@ class TTSEngine(ABC):
     @abstractmethod
     def speak(self, text: str) -> bool:
         """Speak the given text. Returns True if successful."""
-        pass
 
     @abstractmethod
     def is_available(self) -> bool:
         """Check if the TTS engine is available."""
-        pass
 
     @abstractmethod
     def get_last_error_message(self) -> str | None:
         """Return the last human-readable error for the engine."""
-        pass
 
 
 class LocalPyTTSX3Engine(TTSEngine):
