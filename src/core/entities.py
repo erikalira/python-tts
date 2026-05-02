@@ -1,7 +1,7 @@
 """Domain entities - pure business objects without external dependencies."""
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-import time
 from typing import Optional
 from uuid import uuid4
 

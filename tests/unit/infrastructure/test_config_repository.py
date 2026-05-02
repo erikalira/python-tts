@@ -1,6 +1,6 @@
 """Tests for configuration repository."""
-from src.infrastructure.tts.config_repository import InMemoryConfigRepository
 from src.core.entities import TTSConfig
+from src.infrastructure.tts.config_repository import InMemoryConfigRepository
 
 
 class TestInMemoryConfigRepository:

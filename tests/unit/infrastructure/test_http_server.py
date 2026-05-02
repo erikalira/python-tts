@@ -1,8 +1,9 @@
 """Tests for aiohttp HTTP server endpoints."""
+from unittest.mock import AsyncMock
+
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
-from unittest.mock import AsyncMock
 
 from src.infrastructure.http.server import HTTPServer
 

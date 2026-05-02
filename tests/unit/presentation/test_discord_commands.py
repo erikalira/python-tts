@@ -1,8 +1,10 @@
 """Tests for Discord commands presentation layer."""
-import pytest
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
+
 import discord
+import pytest
 from discord import app_commands
+
 from src.application.dto import (
     ConfigureTTSResult,
     JoinVoiceChannelResult,
@@ -10,8 +12,13 @@ from src.application.dto import (
     SpeakTextResult,
 )
 from src.application.interface_language_preferences import ConfigureInterfaceLanguageUseCase
-from src.infrastructure.rate_limiting import InMemoryRateLimiter
+from src.application.use_cases import (
+    ConfigureTTSUseCase,
+    JoinVoiceChannelUseCase,
+    LeaveVoiceChannelUseCase,
+)
 from src.application.voice_runtime import VoiceRuntimeStatus
+from src.infrastructure.rate_limiting import InMemoryRateLimiter
 from src.presentation.discord_commands import DiscordCommands
 from src.presentation.discord_i18n import (
     DiscordCommandTranslator,
@@ -19,11 +26,6 @@ from src.presentation.discord_i18n import (
     command_text,
     supported_locales,
     supported_message_locales,
-)
-from src.application.use_cases import (
-    ConfigureTTSUseCase,
-    JoinVoiceChannelUseCase,
-    LeaveVoiceChannelUseCase,
 )
 
 

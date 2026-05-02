@@ -3,7 +3,8 @@ from __future__ import annotations
 """Interfaces (abstract base classes) following Dependency Inversion Principle."""
 from abc import ABC, abstractmethod
 from typing import Optional, Protocol
-from .entities import TTSConfig, AudioFile, AudioQueueItem
+
+from .entities import AudioFile, AudioQueueItem, TTSConfig
 
 
 class AudioQueueStatusView(Protocol):

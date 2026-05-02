@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-
 RATE_LIMIT_REASON_TOO_MANY_REQUESTS = "too_many_requests"
 
 

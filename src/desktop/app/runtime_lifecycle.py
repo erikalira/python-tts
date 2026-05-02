@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import logging
 import queue
+from collections.abc import Callable
 from threading import Event
 from typing import Protocol, TypeVar
-from collections.abc import Callable
 
 from src.application.dto import DesktopTTSServiceStatusDTO
 

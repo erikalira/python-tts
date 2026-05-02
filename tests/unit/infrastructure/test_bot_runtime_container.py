@@ -1,7 +1,8 @@
 """Tests for bot runtime container behavior."""
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from src.bot_runtime.container import Container
 

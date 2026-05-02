@@ -32,7 +32,6 @@ from src.application.dto import (
 from src.application.rate_limiting import RateLimitResult
 from src.presentation.discord_i18n import DEFAULT_LOCALE, DiscordMessageCatalog
 
-
 _MESSAGES = DiscordMessageCatalog()
 
 

@@ -4,15 +4,15 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Optional
-from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
 try:
-    from pystray import Icon, Menu, MenuItem
     from PIL import Image, ImageDraw
+    from pystray import Icon, Menu, MenuItem
 
     _pystray_available = True
 except Exception as exc:

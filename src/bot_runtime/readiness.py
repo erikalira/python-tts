@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import asdict
 from collections.abc import Awaitable, Callable
+from dataclasses import asdict
 from typing import Protocol, Self, cast
 
 from src.application.dto import BotDependencyReadinessDTO, BotReadinessResponseDTO

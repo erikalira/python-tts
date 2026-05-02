@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Optional, Protocol
 
 from src.application.dto import DesktopAppRuntimeStatusDTO, DesktopTTSServiceStatusDTO
+
 from ..config.desktop_config import DesktopAppConfig
 
 

@@ -1,9 +1,9 @@
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.gui.main_window_presenter import (
-    DesktopAppMainWindowPresenter,
     ERROR_COLOR,
     SUCCESS_COLOR,
     WARNING_COLOR,
+    DesktopAppMainWindowPresenter,
 )
 
 

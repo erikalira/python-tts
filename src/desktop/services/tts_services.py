@@ -7,11 +7,11 @@ Provides Desktop App TTS engines and orchestration helpers.
 import logging
 import threading
 from abc import ABC, abstractmethod
-from typing import Optional, Protocol
 from collections.abc import Callable
+from typing import Optional, Protocol
 
-from src.application.dto import BotSpeakRequestDTO, DesktopTTSStatusDTO
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
+from src.application.dto import BotSpeakRequestDTO, DesktopTTSStatusDTO
 from src.infrastructure.tts.pyttsx3_support import Pyttsx3EngineLike
 
 from ..adapters.keyboard_backend import KeyboardHookBackend

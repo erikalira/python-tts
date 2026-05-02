@@ -3,8 +3,8 @@
 
 import logging
 import threading
-from typing import Optional
 from collections.abc import Callable
+from typing import Optional
 
 from src.application.desktop_bot import (
     CheckDesktopBotConnectionUseCase,
@@ -18,6 +18,7 @@ from src.application.dto import (
     DesktopBotVoiceContextResultDTO,
     DesktopConfigurationSaveResultDTO,
 )
+
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..config.desktop_config import ConfigurationRepository, DesktopAppConfig
 from ..gui.configuration_service import ConfigurationService

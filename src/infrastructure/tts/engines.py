@@ -7,8 +7,9 @@ from typing import Optional, cast
 
 import pyttsx3
 from gtts import gTTS
+
+from src.core.entities import AudioFile, TTSConfig
 from src.core.interfaces import ITTSEngine
-from src.core.entities import TTSConfig, AudioFile
 from src.infrastructure.tts.pyttsx3_support import Pyttsx3EngineLike, configure_pyttsx3_engine
 
 logger = logging.getLogger(__name__)
@@ -172,7 +173,7 @@ class EdgeTTSEngine(ITTSEngine):
     @staticmethod
     def _map_rate(rate: int) -> str:
         baseline = 180
-        delta = int(round(((rate - baseline) / baseline) * 100))
+        delta = round(((rate - baseline) / baseline) * 100)
         clamped = max(-50, min(100, delta))
         sign = "+" if clamped >= 0 else ""
         return f"{sign}{clamped}%"

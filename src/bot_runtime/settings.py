@@ -2,9 +2,9 @@
 
 import logging
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Optional, overload
-from collections.abc import Mapping
 
 from dotenv import dotenv_values, load_dotenv
 

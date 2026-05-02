@@ -9,9 +9,9 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from src.application.use_cases import SpeakTextUseCase
 from src.application.dto import SpeakTextInputDTO
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
+from src.application.use_cases import SpeakTextUseCase
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 from tests.conftest import (

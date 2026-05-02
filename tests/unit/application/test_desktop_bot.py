@@ -1,6 +1,6 @@
 from src.application.desktop_bot import (
-    CheckDesktopBotConnectionUseCase,
     DESKTOP_BOT_TEST_MESSAGE,
+    CheckDesktopBotConnectionUseCase,
     DesktopBotActionResult,
     DesktopBotConnectionStatus,
     DesktopBotVoiceContextResult,

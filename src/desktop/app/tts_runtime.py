@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Optional, Protocol
 from collections.abc import Callable
+from typing import Optional, Protocol
 
 from src.application.dto import DesktopTTSServiceStatusDTO, DesktopTTSStatusDTO
 from src.application.tts_execution import (

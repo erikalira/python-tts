@@ -1,8 +1,9 @@
 """Tests for bot entry point."""
-from contextlib import suppress
 import logging
+from contextlib import suppress
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
 
 
 @pytest.mark.asyncio
@@ -102,8 +103,9 @@ class TestBotModule:
     
     def test_bot_has_main_function(self):
         """Test that bot has async main function."""
-        from src.bot import main
         import asyncio
+
+        from src.bot import main
         assert asyncio.iscoroutinefunction(main)
 
     def test_configure_logging_uses_warning_for_library_loggers_at_info(self):

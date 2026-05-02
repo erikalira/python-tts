@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from contextlib import AbstractContextManager
 from typing import Any, Protocol
-from collections.abc import Mapping
 
 
 class RuntimeSpan(Protocol):

@@ -1,6 +1,7 @@
 """Generate system tray icon for the Desktop App."""
-from PIL import Image, ImageDraw
 from pathlib import Path
+
+from PIL import Image, ImageDraw
 
 # Create a 64x64 icon with a microphone symbol
 img = Image.new('RGB', (64, 64), color='#2C2F33')

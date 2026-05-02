@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
+
 from src.core.entities import TTSConfig
 from src.core.timeouts import DEFAULT_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
 

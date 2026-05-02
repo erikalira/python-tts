@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import logging
 import queue
-from typing import Any, Optional
 from collections.abc import Callable
+from typing import Any, Optional
 
 from src.application.dto import (
     DesktopBotActionResultDTO,
     DesktopBotVoiceContextResultDTO,
     DesktopConfigurationSaveResultDTO,
 )
+
 from ..config.desktop_config import ConfigurationValidator, DesktopAppConfig
 from .config_dialogs import GUIConfig
 from .main_window_presenter import DesktopAppMainWindowPresenter, MainWindowMessage
