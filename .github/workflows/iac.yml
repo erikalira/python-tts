@@ -32,7 +32,7 @@ jobs:
           tofu_wrapper: false
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415 # v4
+        uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4
 
       - name: Check formatting
         run: tofu fmt -check -recursive infra
