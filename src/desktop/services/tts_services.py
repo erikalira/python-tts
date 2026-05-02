@@ -7,7 +7,8 @@ Provides Desktop App TTS engines and orchestration helpers.
 import logging
 import threading
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, Protocol
+from typing import Optional, Protocol
+from collections.abc import Callable
 
 from src.application.dto import DesktopTTSStatusDTO
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase

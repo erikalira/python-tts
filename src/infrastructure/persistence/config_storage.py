@@ -2,7 +2,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional
 from abc import ABC, abstractmethod
 from src.core.interfaces import IConfigRepository
 from src.core.entities import TTSConfig
@@ -102,7 +102,7 @@ class JSONConfigStorage(IConfigStorage):
             return None
 
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 data = json.load(f)
 
             config = self._parse_config_data(data)
@@ -202,8 +202,8 @@ class GuildConfigRepository(IConfigRepository):
         self._default_config = default_config
         self._storage = storage
         # In-memory cache for fast access
-        self._cache: Dict[int, TTSConfig] = {}
-        self._user_cache: Dict[tuple[int, int], TTSConfig] = {}
+        self._cache: dict[int, TTSConfig] = {}
+        self._user_cache: dict[tuple[int, int], TTSConfig] = {}
         logger.info("[CONFIG_REPO] Initialized per-guild configuration repository")
 
     def _clone_config(self, config: TTSConfig) -> TTSConfig:

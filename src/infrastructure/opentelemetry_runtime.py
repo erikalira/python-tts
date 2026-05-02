@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 import logging
-from typing import Any, Mapping
+from typing import Any
+from collections.abc import Mapping
 
 logger = logging.getLogger(__name__)
 

@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 import queue
 from threading import Event
-from typing import Callable, Protocol, TypeVar
+from typing import Protocol, TypeVar
+from collections.abc import Callable
 
 from src.application.dto import DesktopTTSServiceStatusDTO
 

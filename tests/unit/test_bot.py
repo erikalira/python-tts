@@ -1,4 +1,5 @@
 """Tests for bot entry point."""
+from contextlib import suppress
 import logging
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
@@ -50,10 +51,8 @@ class TestBot:
             from src.bot import main
             
             # Should handle KeyboardInterrupt gracefully
-            try:
+            with suppress(KeyboardInterrupt):
                 await main()
-            except KeyboardInterrupt:
-                pass
             
             # Verify container was created
             MockContainer.assert_called_once()

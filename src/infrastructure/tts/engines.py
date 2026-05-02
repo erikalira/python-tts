@@ -15,10 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 def _create_temp_audio_path(suffix: str) -> str:
-    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
-    tmpname = tmp.name
-    tmp.close()
-    return tmpname
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        return tmp.name
 
 
 def _remove_temp_audio_file(path: str) -> None:

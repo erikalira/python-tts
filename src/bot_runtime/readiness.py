@@ -68,10 +68,9 @@ class BotReadinessProbe:
 
         def _ping_postgres() -> None:
             conn: Any = connect()
-            with conn:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT 1")
-                    cursor.fetchone()
+            with conn, conn.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
 
         try:
             await asyncio.to_thread(_ping_postgres)

@@ -3,7 +3,8 @@
 import logging
 import os
 from pathlib import Path
-from typing import Mapping, Optional
+from typing import Optional
+from collections.abc import Mapping
 
 from dotenv import dotenv_values, load_dotenv
 

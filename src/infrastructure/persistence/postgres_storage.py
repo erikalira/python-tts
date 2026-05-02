@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Callable, Optional
+from typing import Optional
+from collections.abc import Callable
 
 from src.core.entities import TTSConfig
 
@@ -42,27 +43,26 @@ class PostgreSQLConfigStorage(IConfigStorage):
 
     def load_sync(self, guild_id: int, user_id: Optional[int] = None) -> Optional[TTSConfig]:
         try:
-            with self._connect() as conn:
-                with conn.cursor() as cursor:
-                    if user_id is not None:
-                        cursor.execute(
-                            """
+            with self._connect() as conn, conn.cursor() as cursor:
+                if user_id is not None:
+                    cursor.execute(
+                        """
                             SELECT engine, language, voice_id, rate
                             FROM user_tts_settings
                             WHERE guild_id = %s AND user_id = %s
                             """,
-                            (guild_id, user_id),
-                        )
-                    else:
-                        cursor.execute(
-                            """
+                        (guild_id, user_id),
+                    )
+                else:
+                    cursor.execute(
+                        """
                             SELECT engine, language, voice_id, rate
                             FROM guild_tts_settings
                             WHERE guild_id = %s
                             """,
-                            (guild_id,),
-                        )
-                    row = cursor.fetchone()
+                        (guild_id,),
+                    )
+                row = cursor.fetchone()
         except Exception as exc:
             logger.error("[POSTGRES_CONFIG_STORAGE] Failed to load config synchronously for guild %s: %s", guild_id, exc)
             return None

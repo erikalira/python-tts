@@ -6,8 +6,10 @@ Provides keyboard monitoring and hotkey detection services.
 
 import threading
 from abc import ABC, abstractmethod
+from contextlib import suppress
 from dataclasses import dataclass
-from typing import Callable, Optional, Protocol
+from typing import Optional, Protocol
+from collections.abc import Callable
 
 from src.application.dto import HotkeyManagerStatusDTO, HotkeyServiceStatusDTO
 from ..adapters.keyboard_backend import KeyboardHookBackend, is_keyboard_backend_available
@@ -90,10 +92,8 @@ class StandardKeyboardMonitor(KeyboardMonitor):
     def stop_monitoring(self) -> None:
         """Stop monitoring keyboard events."""
         if self._backend.is_available() and self._monitoring:
-            try:
+            with suppress(Exception):
                 self._backend.unhook_all()
-            except Exception:
-                pass
             self._monitoring = False
 
     def is_monitoring(self) -> bool:

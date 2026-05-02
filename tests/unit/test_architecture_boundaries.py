@@ -50,9 +50,12 @@ def _find_forbidden_imports(layer: str, forbidden_prefixes: tuple[str, ...]) -> 
                 for alias in node.names:
                     if _matches_forbidden_prefix(alias.name, forbidden_prefixes):
                         violations.append(f"{path.relative_to(REPO_ROOT)}:{node.lineno} imports {alias.name}")
-            elif isinstance(node, ast.ImportFrom):
-                if node.module and _matches_forbidden_prefix(node.module, forbidden_prefixes):
-                    violations.append(f"{path.relative_to(REPO_ROOT)}:{node.lineno} imports from {node.module}")
+            elif (
+                isinstance(node, ast.ImportFrom)
+                and node.module
+                and _matches_forbidden_prefix(node.module, forbidden_prefixes)
+            ):
+                violations.append(f"{path.relative_to(REPO_ROOT)}:{node.lineno} imports from {node.module}")
     return violations
 
 

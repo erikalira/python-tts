@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from contextlib import AbstractContextManager
-from typing import Any, Mapping, Protocol
+from typing import Any, Protocol
+from collections.abc import Mapping
 
 
 class RuntimeSpan(Protocol):

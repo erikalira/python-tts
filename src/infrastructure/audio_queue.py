@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from src.application.dto import AudioQueueItemStatusDTO, AudioQueueStatusDTO
 from src.core.entities import AudioQueueItem, AudioQueueItemStatus, TTSConfig, TTSRequest
@@ -112,8 +112,8 @@ class InMemoryAudioQueue(IAudioQueue):
         max_queue_wait_seconds: int = 3600,
         telemetry: OpenTelemetryRuntime | None = None,
     ):
-        self._queues: Dict[Optional[int], List[AudioQueueItem]] = {}
-        self._history: Dict[Optional[int], List[AudioQueueItem]] = {}
+        self._queues: dict[Optional[int], list[AudioQueueItem]] = {}
+        self._history: dict[Optional[int], list[AudioQueueItem]] = {}
         self._lock = asyncio.Lock()
         self._guild_locks: dict[Optional[int], str] = {}
         self._processing_leases: dict[Optional[int], str] = {}

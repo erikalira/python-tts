@@ -89,5 +89,13 @@ select = [
   "F",
   "PIE",
   "RET",
+  "SIM",
+  "UP006",
+  "UP015",
+  "UP035",
+  "UP041",
+]
+ignore = [
+  "SIM108",
 ]
 

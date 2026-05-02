@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Protocol
+from typing import Protocol
+from collections.abc import Iterable
 
 
 class TTSDeliveryEngine(Protocol):

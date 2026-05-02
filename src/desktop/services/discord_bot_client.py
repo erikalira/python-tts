@@ -376,9 +376,7 @@ class HttpDiscordBotClient:
             )
 
         message = None
-        if isinstance(payload, BotVoiceContextResponseDTO):
-            message = payload.message
-        elif isinstance(payload, BotErrorResponseDTO):
+        if isinstance(payload, (BotVoiceContextResponseDTO, BotErrorResponseDTO)):
             message = payload.message
         if not message:
             message = f"Bot returned HTTP {response.status_code}"
