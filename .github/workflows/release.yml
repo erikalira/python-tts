@@ -12,8 +12,11 @@ on:
         type: string
 
 permissions:
+  attestations: write
   contents: write
+  id-token: write
   packages: write
+  security-events: write
 
 env:
   PYTHON_VERSION: "3.11"
@@ -48,7 +51,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --locked --group test
+          uv sync --locked --group test --group security
 
       - name: Run release validation
         env:
@@ -59,11 +62,17 @@ jobs:
           uv run pyright
           uv run pytest tests/unit tests/smoke --tb=short -v
 
+      - name: Audit release dependencies
+        run: |
+          uv run pip-audit -r requirements.txt
+          uv run pip-audit -r requirements-test.txt
+
   publish-bot-image:
     name: Publish Bot Image
     needs: validate
     runs-on: ubuntu-latest
     outputs:
+      digest: ${{ steps.build.outputs.digest }}
       image: ${{ steps.image.outputs.image_name }}
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -113,16 +122,45 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
         with:
           context: .
           file: Dockerfile
           push: true
+          provenance: true
+          sbom: true
           build-args: |
             APP_VERSION=${{ steps.version.outputs.version }}
             VCS_REF=${{ github.sha }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Scan published image for critical vulnerabilities
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        with:
+          image-ref: ${{ steps.image.outputs.image_name }}@${{ steps.build.outputs.digest }}
+          format: table
+          severity: CRITICAL
+          exit-code: "1"
+          version: v0.69.3
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v4.1.1
+
+      - name: Sign published image with Cosign keyless
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+          IMAGE_DIGEST: ${{ steps.image.outputs.image_name }}@${{ steps.build.outputs.digest }}
+        run: |
+          cosign sign --yes "${IMAGE_DIGEST}"
+
+      - name: Generate GitHub build provenance attestation
+        uses: actions/attest-build-provenance@v4.1.0
+        with:
+          subject-name: ${{ steps.image.outputs.image_name }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
 
   github-release:
     name: Create GitHub Release
@@ -152,11 +190,16 @@ jobs:
           ## Release Artifacts
 
           - Bot image: \`${BOT_IMAGE}:${RELEASE_TAG}\`
+          - Signed image digest: \`${BOT_IMAGE}@${{ needs.publish-bot-image.outputs.digest }}\`
           - Rollback image tag: record the previous production \`APP_VERSION\` before deploy
 
           ## Validation
 
           - Release workflow validation passed before image publish
+          - Runtime dependency audit passed before image publish
+          - Docker image critical vulnerability scan passed before signing
+          - Docker image was signed with Cosign keyless identity
+          - Build provenance attestation was pushed to the registry
           - Docker image was built from \`${GITHUB_SHA}\`
 
           ${generated_notes}

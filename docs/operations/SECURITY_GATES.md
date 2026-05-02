@@ -14,10 +14,35 @@ runtime-entrypoint changes.
   manual dispatch.
 - The `Security` workflow generates CycloneDX SBOM artifacts for runtime
   Python dependencies, test Python dependencies, and the Docker image.
-- The Docker image is scanned with Trivy for high and critical vulnerabilities.
-  The first gate is intentionally non-blocking while the repository establishes
-  a clean baseline; promote it to blocking by changing the Trivy `exit-code`
-  once baseline findings are triaged.
+- The Docker image is scanned with Trivy. Critical image vulnerabilities are a
+  blocking gate. High vulnerabilities remain a documented follow-up threshold
+  until the baseline is clean enough to promote `HIGH,CRITICAL` to blocking.
+- The `Release` workflow repeats the runtime dependency audit and scans the
+  published image digest before signing it.
+- Release images are signed with Cosign keyless signing and receive a GitHub
+  build provenance attestation pushed to the registry.
+- The OpenSSF Scorecard workflow runs on `main`, weekly, and manually. It
+  publishes SARIF and remains report-only until a stable project score baseline
+  is recorded.
+
+## Artifact Verification
+
+For a released image, verify the keyless signature and build provenance before
+promoting the tag:
+
+```bash
+cosign verify \
+  --certificate-identity-regexp "https://github.com/.*/.github/workflows/release.yml@refs/tags/.*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/<owner>/tts-hotkey-windows-bot@sha256:<digest>
+
+gh attestation verify \
+  oci://ghcr.io/<owner>/tts-hotkey-windows-bot@sha256:<digest> \
+  --repo <owner>/tts-hotkey-windows
+```
+
+Download the CycloneDX SBOM artifacts from the `Security` workflow or use the
+Buildx registry SBOM attached during release for registry-native inspection.
 
 ## Runtime Entry Points
 
@@ -36,7 +61,9 @@ or runtime configuration:
 
 - confirm the `Security` workflow is green
 - download and archive the CycloneDX SBOM artifacts for release traceability
-- review the Trivy Docker image scan artifact and record any accepted risk
+- confirm the Trivy critical vulnerability gate passed
+- verify the Cosign signature and build provenance for the selected image digest
+- review OpenSSF Scorecard output and record any newly accepted risk
 - run the dependency maintenance validation flow when requirements changed
 - check `docs/operations/RELEASE_CHECKLIST.md` for observability and rollback
   gates

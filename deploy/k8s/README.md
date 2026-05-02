@@ -22,12 +22,32 @@ kubectl kustomize deploy/k8s/overlays/prod
 For Minikube, build or load an image that matches the overlay tag before
 applying the manifests.
 
+## GitOps
+
+Argo CD applications live in `deploy/gitops/argocd/`.
+
+- Staging reconciles `deploy/k8s/overlays/staging` automatically with prune and
+  self-heal enabled.
+- Production reconciles `deploy/k8s/overlays/prod` with manual sync first.
+- Promote by changing the overlay image `newTag` to an immutable GHCR release
+  tag.
+- Roll back by reverting that Git change or committing the previous known-good
+  tag.
+
 ## Secret Handling
 
-The base uses placeholder `secretGenerator` literals so `kubectl kustomize`
-produces a complete manifest for validation. Do not deploy those placeholders
-to shared environments. Replace them through a sealed secret, external secret
-operator, CI-created Secret, or a private overlay that is not committed.
+The base references a `bot-secrets` Kubernetes Secret but does not generate it.
+Create that Secret outside this public repository before applying or syncing a
+shared environment.
+
+Required keys:
+
+- `DISCORD_TOKEN`
+- `BOT_SPEAK_TOKEN`
+- `POSTGRES_PASSWORD`
+
+Use a sealed secret, external secret operator, CI-created Secret, or a private
+overlay that is not committed.
 
 ## Database Schema
 

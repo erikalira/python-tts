@@ -56,6 +56,9 @@ services:
     image: prom/prometheus:v3.11.2
     container_name: tts-bot-prometheus
     restart: unless-stopped
+    depends_on:
+      alertmanager:
+        condition: service_started
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -65,6 +68,22 @@ services:
       - ./deploy/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./deploy/observability/prometheus-rules.yml:/etc/prometheus/rules/prometheus-rules.yml:ro
       - prometheus_data:/prometheus
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: tts-bot-alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./deploy/observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./deploy/observability/alertmanager-discord.tmpl:/etc/alertmanager/templates/alertmanager-discord.tmpl:ro
+      - alertmanager_data:/alertmanager
+    secrets:
+      - alertmanager_discord_webhook_url
 
   grafana:
     image: grafana/grafana:12.4.2
@@ -142,3 +161,8 @@ volumes:
   tempo_data:
   prometheus_data:
   grafana_data:
+  alertmanager_data:
+
+secrets:
+  alertmanager_discord_webhook_url:
+    file: ${ALERTMANAGER_DISCORD_WEBHOOK_FILE:-./deploy/observability/alertmanager-discord-webhook-url.example}

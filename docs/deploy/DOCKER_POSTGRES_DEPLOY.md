@@ -1,8 +1,8 @@
 # Docker + Postgres + Redis Deploy
 
 This guide shows the simplest way to run the Discord bot with Docker,
-Postgres, Redis, an OpenTelemetry Collector, Prometheus, Tempo, and Grafana
-using the repository files.
+Postgres, Redis, an OpenTelemetry Collector, Prometheus, Alertmanager, Tempo,
+and Grafana using the repository files.
 
 ## Files involved
 
@@ -14,6 +14,8 @@ using the repository files.
 - `deploy/observability/tempo.yaml`
 - `deploy/observability/prometheus.yml`
 - `deploy/observability/prometheus-rules.yml`
+- `deploy/observability/alertmanager.yml`
+- `deploy/observability/alertmanager-discord.tmpl`
 - `deploy/observability/grafana/provisioning/datasources/datasources.yaml`
 - `deploy/observability/grafana/provisioning/dashboards/dashboards.yaml`
 - `deploy/observability/grafana/dashboards/bot-runtime.json`
@@ -51,6 +53,7 @@ OTEL_SERVICE_NAME=tts-hotkey-windows-bot
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
 GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=change_me
+ALERTMANAGER_DISCORD_WEBHOOK_FILE=./deploy/observability/alertmanager-discord-webhook-url.txt
 ```
 
 For the bundled compose file, the bot `DATABASE_URL` is built inside
@@ -64,8 +67,20 @@ For the bundled OpenTelemetry Collector, use
 `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318`. Inside Docker, the
 bot must connect to the collector service name, not `127.0.0.1`.
 
+Create the Alertmanager Discord webhook file before starting a real routed
+environment:
+
+```bash
+printf '%s' 'https://discord.com/api/webhooks/...' > deploy/observability/alertmanager-discord-webhook-url.txt
+```
+
+Do not commit that file. The repository includes
+`deploy/observability/alertmanager-discord-webhook-url.example` only so local
+compose configuration has a non-secret placeholder.
+
 Grafana will be available at `http://localhost:3000`, Prometheus at
-`http://localhost:9090`, and Tempo at `http://localhost:3200`.
+`http://localhost:9090`, Alertmanager at `http://localhost:9093`, and Tempo at
+`http://localhost:3200`.
 
 The production compose stack pins dependency images to explicit tags instead of
 using `latest`. Update image versions intentionally and validate the stack after
@@ -117,6 +132,7 @@ docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml logs -f bot
 docker compose -f docker-compose.prod.yml logs -f otel-collector
 docker compose -f docker-compose.prod.yml logs -f prometheus
+docker compose -f docker-compose.prod.yml logs -f alertmanager
 docker compose -f docker-compose.prod.yml logs -f tempo
 docker compose -f docker-compose.prod.yml logs -f grafana
 ```
@@ -127,6 +143,8 @@ inside the Docker Compose network. Those ingestion ports are not published on
 the host by default.
 Grafana will listen on port `3000`.
 Prometheus will listen on port `9090`.
+Alertmanager will listen on port `9093` and route Prometheus alerts to the
+configured Discord webhook.
 Tempo will listen on port `3200` for HTTP queries and Grafana integration. Its
 OTLP ingestion ports stay internal to the Docker Compose network.
 Prometheus scrapes and evaluates rules every 1 minute by default, and the
@@ -151,13 +169,28 @@ The stack is wired like this:
 - `prometheus` scrapes the collector
 - `prometheus` evaluates bundled alerting rules from
   `deploy/observability/prometheus-rules.yml`
+- `prometheus` sends firing and resolved alerts to `alertmanager`
+- `alertmanager` routes warning and critical incidents to Discord
 - `grafana` queries both Prometheus and Tempo
 
 Prometheus alerts are visible at `http://localhost:9090/alerts`. The bundled
 rules cover missing telemetry, target health, queue buildup, queue age,
 queue-to-playback latency, high submission error rate, and Redis queue lock
-loss. Add Alertmanager or Grafana contact points in the host environment when
-you are ready to route these alerts to chat, email, or paging.
+loss. Alertmanager routing is visible at `http://localhost:9093`.
+
+To validate incident routing in staging, temporarily stop a scraped service and
+wait for the matching rule's `for` window:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml stop tempo
+```
+
+Confirm the alert appears in Prometheus, reaches Alertmanager, and posts to the
+Discord incident channel. Restart the service after validation:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml start tempo
+```
 
 ## 4. Stop the stack
 
@@ -183,6 +216,8 @@ docker compose -f docker-compose.prod.yml down -v
 - The bundled stack now stores traces in Tempo local storage and metrics in
   Prometheus TSDB volumes, which is fine for a single-node deployment but not
   a substitute for a HA observability platform.
+- The bundled Alertmanager has one Discord receiver. Add paging, escalation,
+  or on-call schedules when the deployment has more than one operator.
 - The current pinned image tags are intentionally conservative and should be
   reviewed as part of dependency maintenance.
 
