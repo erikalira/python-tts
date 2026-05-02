@@ -18,9 +18,11 @@ try:
     import requests
 
     _requests_available = True
+    _request_timeout_error = requests.exceptions.Timeout
 except ImportError:  # pragma: no cover - exercised via availability checks
     requests = None
     _requests_available = False
+    _request_timeout_error = TimeoutError
 
 from ..config.desktop_config import DesktopAppConfig
 
@@ -42,18 +44,23 @@ class DiscordBotClient(Protocol):
 
     def is_available(self) -> bool:
         """Return whether the bot client is ready for requests."""
+        ...
 
     def build_request(self, text: str) -> BotSpeakRequestDTO:
         """Build a speak request from the provided text."""
+        ...
 
     def send_speak_request(self, request: BotSpeakRequestDTO) -> bool:
         """Send a speak request to the Discord bot."""
+        ...
 
     def check_connection(self) -> DesktopBotConnectionStatusDTO:
         """Check whether the bot runtime is reachable."""
+        ...
 
     def fetch_voice_context(self) -> DesktopBotVoiceContextStatusDTO:
         """Fetch the current voice context for the configured member."""
+        ...
 
     def get_last_error_message(self) -> Optional[str]:
         """Return the latest human-readable error from the bot client."""
@@ -66,6 +73,8 @@ class DiscordBotHttpTransport:
         self._config = config
 
     def post_speak(self, url: str, request_dto: BotSpeakRequestDTO) -> DiscordBotHttpResponse:
+        if requests is None:
+            raise RuntimeError("requests library is not available")
         response = requests.post(
             url,
             json=request_dto.to_payload(),
@@ -79,6 +88,8 @@ class DiscordBotHttpTransport:
         )
 
     def get_health(self, url: str) -> tuple[DiscordBotHttpResponse, BotHealthResponseDTO | BotErrorResponseDTO | None]:
+        if requests is None:
+            raise RuntimeError("requests library is not available")
         response = requests.get(
             url,
             timeout=self._config.network.request_timeout,
@@ -97,6 +108,8 @@ class DiscordBotHttpTransport:
         *,
         member_id: str,
     ) -> tuple[DiscordBotHttpResponse, BotVoiceContextResponseDTO | BotErrorResponseDTO | None]:
+        if requests is None:
+            raise RuntimeError("requests library is not available")
         response = requests.get(
             url,
             params={"member_id": member_id},
@@ -166,6 +179,8 @@ class DiscordBotHttpTransport:
 
     def _parse_optional_int(self, value: object) -> int | None:
         if value is None:
+            return None
+        if not isinstance(value, (str, int, float)):
             return None
         try:
             return int(value)
@@ -255,7 +270,7 @@ class HttpDiscordBotClient:
 
         try:
             response = self._transport.post_speak(self.get_speak_url(), request)
-        except requests.exceptions.Timeout:
+        except _request_timeout_error:
             logger.warning("[DISCORD_BOT_CLIENT] Timeout while connecting to Discord bot")
             self._last_error_message = "Timeout ao conectar no bot"
             return False
@@ -293,7 +308,7 @@ class HttpDiscordBotClient:
 
         try:
             response, payload = self._transport.get_health(self.get_health_url())
-        except requests.exceptions.Timeout:
+        except _request_timeout_error:
             logger.warning("[DISCORD_BOT_CLIENT] Timeout while checking bot health")
             return DesktopBotConnectionStatusDTO(success=False, message="Timeout ao conectar no bot")
         except Exception as exc:
@@ -334,7 +349,7 @@ class HttpDiscordBotClient:
                 self.get_voice_context_url(),
                 member_id=self._config.discord.member_id,
             )
-        except requests.exceptions.Timeout:
+        except _request_timeout_error:
             logger.warning("[DISCORD_BOT_CLIENT] Timeout while fetching voice context")
             return DesktopBotVoiceContextStatusDTO(
                 success=False,

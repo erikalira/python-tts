@@ -66,7 +66,7 @@ class DesktopTTSFlowService:
         local_engine: TTSEnginePort | None,
         max_text_length: int | None,
         logger: logging.Logger | None = None,
-    ):
+    ) -> None:
         self._max_text_length = max_text_length
         self._logger = logger or logging.getLogger(__name__)
         self._engine = TTSFallbackChain(
@@ -103,7 +103,7 @@ class DesktopTTSFlowService:
 class DesktopTTSStatusUseCase:
     """Build Desktop App status information for local/remote TTS availability."""
 
-    def __init__(self, gateway: DesktopTTSStatusGateway):
+    def __init__(self, gateway: DesktopTTSStatusGateway) -> None:
         self._gateway = gateway
 
     def execute(self) -> DesktopTTSStatusDTO:

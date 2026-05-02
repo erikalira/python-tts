@@ -20,6 +20,7 @@ class DesktopConfigRepository(Protocol):
 
     def save(self, config: DesktopAppConfig) -> bool:
         """Persist the provided Desktop App configuration."""
+        ...
 
 
 class DesktopConfigEnvironment(Protocol):

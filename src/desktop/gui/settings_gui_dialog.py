@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from src.application.tts_voice_catalog import TTSCatalog, TTSVoiceOption
 from src.infrastructure.tts.voice_catalog import RuntimeTTSCatalog
@@ -19,28 +19,28 @@ class GUIConfig(ConfigInterface):
 
     _MAX_NOTEBOOK_TAB_HEIGHT = 200
 
-    def __init__(self, tts_catalog: TTSCatalog | None = None):
-        self.root: Optional[object] = None
+    def __init__(self, tts_catalog: TTSCatalog | None = None) -> None:
+        self.root: Any | None = None
         self.config: Optional[DesktopAppConfig] = None
         self.result: Optional[DesktopAppConfig] = None
-        self._main_frame: Optional[object] = None
-        self._button_frame: Optional[object] = None
-        self._notebook: Optional[object] = None
-        self._tab_scroll_pairs: list[tuple[object, object]] = []
+        self._main_frame: Any | None = None
+        self._button_frame: Any | None = None
+        self._notebook: Any | None = None
+        self._tab_scroll_pairs: list[tuple[Any, Any]] = []
         self._presenter = ConfigDialogsPresenter()
         self._tts_catalog = tts_catalog or RuntimeTTSCatalog()
-        self.member_id_var: Optional[object] = None
-        self.bot_url_var: Optional[object] = None
-        self.engine_var: Optional[object] = None
-        self.voice_selection_var: Optional[object] = None
-        self.language_var: Optional[object] = None
-        self.voice_id_var: Optional[object] = None
-        self.rate_var: Optional[object] = None
-        self.trigger_open_var: Optional[object] = None
-        self.trigger_close_var: Optional[object] = None
-        self.show_notifications_var = None
-        self.console_logs_var = None
-        self.local_tts_enabled_var = None
+        self.member_id_var: Any | None = None
+        self.bot_url_var: Any | None = None
+        self.engine_var: Any | None = None
+        self.voice_selection_var: Any | None = None
+        self.language_var: Any | None = None
+        self.voice_id_var: Any | None = None
+        self.rate_var: Any | None = None
+        self.trigger_open_var: Any | None = None
+        self.trigger_close_var: Any | None = None
+        self.show_notifications_var: Any | None = None
+        self.console_logs_var: Any | None = None
+        self.local_tts_enabled_var: Any | None = None
         self._voice_options_by_label: dict[str, TTSVoiceOption] = {}
 
     def show_config(self, config: DesktopAppConfig) -> Optional[DesktopAppConfig]:
@@ -62,7 +62,7 @@ class GUIConfig(ConfigInterface):
         self.root.mainloop()
         return self.result
 
-    def _create_interface(self):
+    def _create_interface(self) -> None:
         from . import tk_support as compat
 
         if not self.root or not self.config:
@@ -76,7 +76,7 @@ class GUIConfig(ConfigInterface):
         compat.ttk.Button(self._button_frame, text="Save", command=self._save_config).pack(side="right", padx=(10, 0))
         compat.ttk.Button(self._button_frame, text="Cancel", command=self._cancel).pack(side="right")
 
-    def _build_config_notebook(self, parent):
+    def _build_config_notebook(self, parent: Any) -> Any:
         from . import tk_support as compat
 
         notebook = compat.ttk.Notebook(parent)
@@ -100,7 +100,7 @@ class GUIConfig(ConfigInterface):
             notebook.bind("<<NotebookTabChanged>>", self._handle_tab_changed)
         return notebook
 
-    def _create_scrollable_tab(self, notebook, title: str):
+    def _create_scrollable_tab(self, notebook: Any, title: str) -> Any:
         from . import tk_support as compat
 
         tab_container = compat.ttk.Frame(notebook)
@@ -122,10 +122,10 @@ class GUIConfig(ConfigInterface):
 
         window_id = canvas.create_window((0, 0), window=content_frame, anchor="nw")
 
-        def _refresh_scroll_region(_event=None):
+        def _refresh_scroll_region(_event: object = None) -> None:
             canvas.configure(scrollregion=canvas.bbox("all"))
 
-        def _sync_content_width(event):
+        def _sync_content_width(event: Any) -> None:
             canvas.itemconfigure(window_id, width=event.width)
 
         content_frame.bind("<Configure>", _refresh_scroll_region)
@@ -134,18 +134,18 @@ class GUIConfig(ConfigInterface):
         self._tab_scroll_pairs.append((canvas, scrollbar))
         return content_frame
 
-    def _bind_mousewheel(self, canvas, content_frame) -> None:
-        def _on_mousewheel(event):
+    def _bind_mousewheel(self, canvas: Any, content_frame: Any) -> None:
+        def _on_mousewheel(event: object) -> None:
             delta = getattr(event, "delta", 0)
             if delta == 0:
                 return
             canvas.yview_scroll(int(-delta / 120), "units")
 
-        def _bind(_event=None):
+        def _bind(_event: object = None) -> None:
             if self.root and hasattr(self.root, "bind_all"):
                 self.root.bind_all("<MouseWheel>", _on_mousewheel)
 
-        def _unbind(_event=None):
+        def _unbind(_event: object = None) -> None:
             if self.root and hasattr(self.root, "unbind_all"):
                 self.root.unbind_all("<MouseWheel>")
 
@@ -154,17 +154,20 @@ class GUIConfig(ConfigInterface):
                 widget.bind("<Enter>", _bind)
                 widget.bind("<Leave>", _unbind)
 
-    def _create_discord_tab(self, parent):
+    def _create_discord_tab(self, parent: Any) -> None:
         from . import tk_support as compat
 
         if not self.config:
             return
         compat.ttk.Label(parent, text="Discord User ID:").pack(anchor="w", pady=(0, 5))
         self.member_id_var = compat.tk.StringVar(value=self.config.discord.member_id or "")
-        member_id_entry = compat.ttk.Entry(parent, textvariable=self.member_id_var, width=50)
+        member_id_var = self.member_id_var
+        member_id_entry = compat.ttk.Entry(parent, textvariable=member_id_var, width=50)
         member_id_entry.pack(fill="x", pady=(0, 10))
         if hasattr(member_id_entry, "focus_set"):
-            self.root.after(0, member_id_entry.focus_set)
+            root = self.root
+            if root is not None:
+                root.after(0, member_id_entry.focus_set)
         compat.ttk.Label(parent, text="Bot URL:").pack(anchor="w", pady=(0, 5))
         self.bot_url_var = compat.tk.StringVar(value=self.config.discord.bot_url)
         compat.ttk.Entry(parent, textvariable=self.bot_url_var, width=50).pack(fill="x", pady=(0, 10))
@@ -180,7 +183,7 @@ class GUIConfig(ConfigInterface):
             font=("Arial", 8),
         ).pack(anchor="w", pady=(10, 0))
 
-    def _create_tts_tab(self, parent):
+    def _create_tts_tab(self, parent: Any) -> None:
         from . import tk_support as compat
 
         if not self.config:
@@ -234,7 +237,7 @@ class GUIConfig(ConfigInterface):
         self.rate_var = compat.tk.StringVar(value=str(self.config.tts.rate))
         compat.ttk.Entry(parent, textvariable=self.rate_var, width=50).pack(fill="x", pady=(0, 10))
 
-    def _create_hotkey_tab(self, parent):
+    def _create_hotkey_tab(self, parent: Any) -> None:
         from . import tk_support as compat
 
         if not self.config:
@@ -255,7 +258,7 @@ class GUIConfig(ConfigInterface):
             font=("Arial", 8),
         ).pack(anchor="w", pady=(10, 0))
 
-    def _create_interface_tab(self, parent):
+    def _create_interface_tab(self, parent: Any) -> None:
         from . import tk_support as compat
 
         if not self.config:
@@ -281,7 +284,7 @@ class GUIConfig(ConfigInterface):
             font=("Arial", 8),
         ).pack(anchor="w", pady=(10, 0))
 
-    def _save_config(self):
+    def _save_config(self) -> None:
         from . import tk_support as compat
 
         try:
@@ -304,36 +307,45 @@ class GUIConfig(ConfigInterface):
             compat.messagebox.showerror("Error", f"Unexpected error: {exc}")
 
     def _build_config_from_form(self) -> Optional[DesktopAppConfig]:
-        if not self.config or not all(
-            [
-                self.member_id_var,
-                self.bot_url_var,
-                self.engine_var,
-                self.voice_selection_var,
-                self.language_var,
-                self.voice_id_var,
-                self.rate_var,
-                self.trigger_open_var,
-                self.trigger_close_var,
-                self.show_notifications_var,
-                self.console_logs_var,
-                self.local_tts_enabled_var,
-            ]
+        member_id_var = self.member_id_var
+        bot_url_var = self.bot_url_var
+        engine_var = self.engine_var
+        language_var = self.language_var
+        voice_id_var = self.voice_id_var
+        rate_var = self.rate_var
+        trigger_open_var = self.trigger_open_var
+        trigger_close_var = self.trigger_close_var
+        show_notifications_var = self.show_notifications_var
+        console_logs_var = self.console_logs_var
+        local_tts_enabled_var = self.local_tts_enabled_var
+        if (
+            not self.config
+            or member_id_var is None
+            or bot_url_var is None
+            or engine_var is None
+            or language_var is None
+            or voice_id_var is None
+            or rate_var is None
+            or trigger_open_var is None
+            or trigger_close_var is None
+            or show_notifications_var is None
+            or console_logs_var is None
+            or local_tts_enabled_var is None
         ):
             return None
         return build_updated_config(
             self.config,
-            member_id=self.member_id_var.get().strip(),
-            bot_url=self.bot_url_var.get().strip(),
-            engine=self.engine_var.get(),
-            language=self.language_var.get().strip(),
-            voice_id=self.voice_id_var.get().strip(),
-            rate=int(self.rate_var.get()),
-            trigger_open=self.trigger_open_var.get().strip(),
-            trigger_close=self.trigger_close_var.get().strip(),
-            show_notifications=bool(self.show_notifications_var.get()),
-            console_logs=bool(self.console_logs_var.get()),
-            local_tts_enabled=bool(self.local_tts_enabled_var.get()),
+            member_id=member_id_var.get().strip(),
+            bot_url=bot_url_var.get().strip(),
+            engine=engine_var.get(),
+            language=language_var.get().strip(),
+            voice_id=voice_id_var.get().strip(),
+            rate=int(rate_var.get()),
+            trigger_open=trigger_open_var.get().strip(),
+            trigger_close=trigger_close_var.get().strip(),
+            show_notifications=bool(show_notifications_var.get()),
+            console_logs=bool(console_logs_var.get()),
+            local_tts_enabled=bool(local_tts_enabled_var.get()),
         )
 
     def _list_engine_values(self) -> list[str]:
@@ -357,7 +369,7 @@ class GUIConfig(ConfigInterface):
         )
         return selected_option.label if selected_option is not None else ""
 
-    def _handle_voice_selection(self, _event=None) -> None:
+    def _handle_voice_selection(self, _event: object = None) -> None:
         if not self.voice_selection_var:
             return
 
@@ -373,12 +385,12 @@ class GUIConfig(ConfigInterface):
         if self.voice_id_var is not None and hasattr(self.voice_id_var, "set"):
             self.voice_id_var.set(selected_option.voice_id)
 
-    def _cancel(self):
+    def _cancel(self) -> None:
         self.result = None
         if self.root:
             self.root.destroy()
 
-    def _handle_tab_changed(self, _event=None) -> None:
+    def _handle_tab_changed(self, _event: object = None) -> None:
         self._fit_notebook_to_selected_tab()
         self._update_tab_scrollbars()
         self._resize_to_selected_tab()

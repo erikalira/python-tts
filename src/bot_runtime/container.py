@@ -1,13 +1,16 @@
 """Dependency injection container."""
 
 import importlib.util
+import inspect
 import logging
 import os
 import uuid
+from typing import cast
 
 import discord
 from discord import app_commands
 
+from src.application.interface_language_preferences import InterfaceLanguagePreferenceRepository
 from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
 from src.application.use_cases import (
@@ -19,12 +22,14 @@ from src.application.use_cases import (
     SpeakTextUseCase,
 )
 from src.bot_runtime.readiness import BotReadinessProbe
+from src.bot_runtime.readiness import AudioQueueHealthPort, ConfigRepositoryHealthPort
 from src.bot_runtime.queue_worker import BotQueueWorker
+from src.core.interfaces import IAudioQueue
 from src.infrastructure.audio_queue import InMemoryAudioQueue, RedisAudioQueue
 from src.infrastructure.discord.voice_runtime import DependencyVoiceRuntimeAvailability
 from src.infrastructure.discord.voice_channel import DiscordVoiceChannelRepository
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
-from src.infrastructure.persistence.config_storage import GuildConfigRepository, JSONConfigStorage
+from src.infrastructure.persistence.config_storage import GuildConfigRepository, IConfigStorage, JSONConfigStorage
 from src.infrastructure.persistence.interface_language_preferences import (
     JSONInterfaceLanguagePreferenceRepository,
     PostgreSQLInterfaceLanguagePreferenceRepository,
@@ -51,7 +56,7 @@ except ImportError:  # pragma: no cover - unit tests still cover the fallback pa
 class Container:
     """Centralize dependency construction and wiring."""
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config) -> None:
         self.config = config
         self.process_marker = f"pid={os.getpid()} run={uuid.uuid4().hex[:8]}"
         self._commands_synced = False
@@ -106,8 +111,8 @@ class Container:
             config=config,
             discord_client=self.discord_client,
             queue_worker=self.queue_worker,
-            config_repository=self.config_repository,
-            audio_queue=self.audio_queue,
+            config_repository=cast(ConfigRepositoryHealthPort, self.config_repository),
+            audio_queue=cast(AudioQueueHealthPort, self.audio_queue),
         )
 
         self.speak_use_case = SpeakTextUseCase(
@@ -158,7 +163,7 @@ class Container:
         self._log_voice_runtime_status()
         self._register_events()
 
-    def _build_config_storage(self, config: Config):
+    def _build_config_storage(self, config: Config) -> IConfigStorage:
         if config.config_storage_backend == "postgres":
             logger.info("[CONTAINER] Using Postgres config storage")
             return PostgreSQLConfigStorage(database_url=config.database_url or "")
@@ -166,7 +171,7 @@ class Container:
         logger.info("[CONTAINER] Using JSON config storage at %s", config.config_storage_dir)
         return JSONConfigStorage(storage_dir=config.config_storage_dir)
 
-    def _build_interface_language_repository(self, config: Config):
+    def _build_interface_language_repository(self, config: Config) -> InterfaceLanguagePreferenceRepository:
         if config.config_storage_backend == "postgres":
             logger.info("[CONTAINER] Using Postgres interface language preference storage")
             return PostgreSQLInterfaceLanguagePreferenceRepository(database_url=config.database_url or "")
@@ -174,8 +179,10 @@ class Container:
         logger.info("[CONTAINER] Using JSON interface language preference storage at %s", config.config_storage_dir)
         return JSONInterfaceLanguagePreferenceRepository(storage_dir=config.config_storage_dir)
 
-    def _build_audio_queue(self, config: Config):
+    def _build_audio_queue(self, config: Config) -> IAudioQueue:
         otel_runtime = getattr(self, "otel_runtime", None)
+        if not isinstance(otel_runtime, OpenTelemetryRuntime):
+            otel_runtime = None
         if config.tts_queue_backend == "redis":
             if Redis is None:
                 raise RuntimeError("redis package is required for TTS_QUEUE_BACKEND=redis")
@@ -212,9 +219,9 @@ class Container:
         if not has_davey:
             logger.warning("Voice support requires the `davey` package with newer discord.py versions.")
 
-    def _register_events(self):
+    def _register_events(self) -> None:
         @self.discord_client.event
-        async def on_connect():
+        async def on_connect() -> None:
             logger.info(
                 "[GATEWAY] Connected to Discord gateway | process=%s | session_id=%s",
                 self.process_marker,
@@ -222,7 +229,7 @@ class Container:
             )
 
         @self.discord_client.event
-        async def on_ready():
+        async def on_ready() -> None:
             logger.info(
                 "Discord bot ready as %s | process=%s | session_id=%s",
                 self.discord_client.user,
@@ -236,7 +243,7 @@ class Container:
             await self._start_queue_worker_once()
 
         @self.discord_client.event
-        async def on_resumed():
+        async def on_resumed() -> None:
             logger.info(
                 "[GATEWAY] Discord gateway session resumed | process=%s | session_id=%s",
                 self.process_marker,
@@ -244,7 +251,7 @@ class Container:
             )
 
         @self.discord_client.event
-        async def on_disconnect():
+        async def on_disconnect() -> None:
             logger.warning(
                 "[GATEWAY] Disconnected from Discord gateway | process=%s | session_id=%s | client_ready=%s",
                 self.process_marker,
@@ -253,8 +260,14 @@ class Container:
             )
 
         @self.discord_client.event
-        async def on_voice_state_update(member, before, after):
-            self.voice_channel_repository.update_member_cache(member.id, after.channel)
+        async def on_voice_state_update(
+            member: discord.Member,
+            before: discord.VoiceState,
+            after: discord.VoiceState,
+        ) -> None:
+            del before
+            channel = after.channel if isinstance(after.channel, discord.VoiceChannel) else None
+            self.voice_channel_repository.update_member_cache(member.id, channel)
 
     def _gateway_session_id(self) -> str:
         ws = getattr(self.discord_client, "ws", None)
@@ -274,10 +287,8 @@ class Container:
             return
 
         try:
-            set_translator = getattr(self.command_tree, "set_translator", None)
-            command_translator = getattr(getattr(self, "discord_commands", None), "command_translator", None)
-            if callable(set_translator) and callable(command_translator):
-                await set_translator(command_translator())
+            if hasattr(self.command_tree, "set_translator") and hasattr(self, "discord_commands"):
+                await self.command_tree.set_translator(self.discord_commands.command_translator())
             await self.command_tree.sync()
             self._commands_synced = True
             logger.info("Slash commands synced")
@@ -293,8 +304,10 @@ class Container:
         if self.queue_worker.is_running():
             await self.queue_worker.stop()
         close_queue = getattr(self.audio_queue, "aclose", None)
-        if close_queue is not None:
-            await close_queue()
+        if callable(close_queue):
+            close_result = close_queue()
+            if inspect.isawaitable(close_result):
+                await close_result
         otel_runtime = getattr(self, "otel_runtime", None)
         otel_shutdown = getattr(otel_runtime, "shutdown", None)
         if callable(otel_shutdown):

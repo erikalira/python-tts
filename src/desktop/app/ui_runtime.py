@@ -31,12 +31,14 @@ class HotkeyManagerLike(Protocol):
 
     def is_active(self) -> bool:
         """Return whether hotkeys are active."""
+        ...
 
     def stop(self) -> None:
         """Pause hotkeys."""
 
     def start(self) -> bool:
         """Resume hotkeys."""
+        ...
 
 
 class NotificationFeedbackPort(Protocol):
@@ -62,6 +64,7 @@ class ConfigurationCoordinatorLike(Protocol):
         are_hotkeys_active: Optional[Callable[[], bool]] = None,
     ) -> tuple[Optional[DesktopAppConfig], bool]:
         """Run the configuration flow and return the updated config."""
+        ...
 
 
 class DesktopAppUIRuntimeCoordinator:
@@ -143,9 +146,10 @@ class DesktopAppUIRuntimeCoordinator:
         ensure_action_coordinators()
         configuration_coordinator = get_configuration_coordinator()
 
-        hotkeys_were_active = bool(hotkey_manager and hotkey_manager.is_active())
-        if hotkeys_were_active:
-            hotkey_manager.stop()
+        active_hotkey_manager = hotkey_manager
+        hotkeys_were_active = active_hotkey_manager is not None and active_hotkey_manager.is_active()
+        if active_hotkey_manager is not None and hotkeys_were_active:
+            active_hotkey_manager.stop()
 
         if configuration_coordinator is None:
             logger.error("[DESKTOP_APP] Configuration coordinator is unavailable")
@@ -154,11 +158,16 @@ class DesktopAppUIRuntimeCoordinator:
         return configuration_coordinator.reconfigure(
             current_config=current_config,
             hotkeys_were_active=hotkeys_were_active,
-            resume_hotkeys=lambda: hotkey_manager.start() if hotkey_manager else None,
+            resume_hotkeys=lambda: self._resume_hotkeys(hotkey_manager),
             notify_error=notification_service.notify_error if notification_service else None,
             notify_success=notification_service.notify_success if notification_service else None,
             are_hotkeys_active=hotkey_manager.is_active if hotkey_manager else None,
         )
+
+    @staticmethod
+    def _resume_hotkeys(hotkey_manager: HotkeyManagerLike | None) -> None:
+        if hotkey_manager is not None:
+            hotkey_manager.start()
 
     def drain_queued_actions(self) -> None:
         """Run all queued UI actions without blocking the Tk main loop."""

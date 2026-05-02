@@ -25,6 +25,7 @@ from ..gui.tk_support import TKINTER_AVAILABLE
 from ..services.discord_bot_client import HttpDiscordBotClient
 from ..services.hotkey_services import HotkeyManager
 from ..services.notification_services import SystemTrayService
+from ..services.tts_services import DesktopAppTTSService, KeyboardCleanupService
 from .configuration_application import DesktopConfigurationApplicationService
 from .desktop_actions import DesktopConfigurationCoordinator
 from .runtime_lifecycle import DesktopAppLifecycleCoordinator
@@ -42,9 +43,9 @@ class DesktopApp:
         self,
         config_repository: Optional[ConfigurationRepository] = None,
         config_service: Optional[ConfigurationService] = None,
-        tts_processor_factory: Callable[[DesktopAppConfig], DesktopAppTTSProcessor] = DesktopAppTTSProcessor,
-        hotkey_manager_factory: Callable[[DesktopAppConfig], HotkeyManager] = HotkeyManager,
-        notification_service_factory: Callable[[DesktopAppConfig], SystemTrayService] = SystemTrayService,
+        tts_processor_factory: Optional[Callable[[DesktopAppConfig], DesktopAppTTSProcessor]] = None,
+        hotkey_manager_factory: Optional[Callable[[DesktopAppConfig], HotkeyManager]] = None,
+        notification_service_factory: Optional[Callable[[DesktopAppConfig], SystemTrayService]] = None,
         console_wait_factory: Optional[Callable[[], object]] = None,
     ):
         self._config: Optional[DesktopAppConfig] = None
@@ -55,9 +56,9 @@ class DesktopApp:
         self._notification_service: Optional[SystemTrayService] = None
 
         self._config_service: Optional[ConfigurationService] = config_service
-        self._tts_processor_factory = tts_processor_factory
-        self._hotkey_manager_factory = hotkey_manager_factory
-        self._notification_service_factory = notification_service_factory
+        self._tts_processor_factory = tts_processor_factory or self._build_default_tts_processor
+        self._hotkey_manager_factory = hotkey_manager_factory or HotkeyManager
+        self._notification_service_factory = notification_service_factory or SystemTrayService
         self._console_wait_factory = console_wait_factory or KeyboardHookBackend
         self._bot_gateway_factory: Callable[[DesktopAppConfig], DesktopBotGateway] = HttpDiscordBotClient
 
@@ -69,6 +70,16 @@ class DesktopApp:
         self._initialized = False
         self._running = False
         self._shutdown_requested = threading.Event()
+
+    @staticmethod
+    def _build_default_tts_processor(config: DesktopAppConfig) -> DesktopAppTTSProcessor:
+        """Build the default TTS processor for direct DesktopApp construction."""
+        bot_client = HttpDiscordBotClient(config)
+        tts_service = DesktopAppTTSService(config, bot_client=bot_client)
+        return DesktopAppTTSProcessor(
+            tts_service=tts_service,
+            cleanup_service=KeyboardCleanupService(),
+        )
 
     def initialize(self) -> bool:
         """Initialize all Desktop App components."""
@@ -115,6 +126,8 @@ class DesktopApp:
 
     def _setup_integrations(self) -> None:
         """Wire tray callbacks and hotkey processing to the current services."""
+        if self._notification_service is None:
+            raise RuntimeError("Notification service must be initialized before integrations")
         self._initialize_notification_service(self._notification_service)
         self._rebuild_hotkey_manager()
 
@@ -128,15 +141,18 @@ class DesktopApp:
 
     def _rebuild_hotkey_manager(self, start_if_active: bool = False) -> None:
         """Recreate the hotkey manager so it points at the latest services."""
-        if not self._config:
+        if self._config is None:
+            return
+        if self._notification_service is None or self._tts_processor is None:
             return
 
+        tts_processor = self._tts_processor
         self._hotkey_manager = self._hotkey_manager_factory(self._config)
         result_presenter = DesktopAppTTSResultPresenter(self._notification_service)
-        hotkey_handler = DesktopAppHotkeyHandler(self._tts_processor, result_presenter)
+        hotkey_handler = DesktopAppHotkeyHandler(tts_processor, result_presenter)
         self._hotkey_manager.initialize(hotkey_handler)
         self._hotkey_manager.set_external_suppression_check(
-            lambda: self._tts_processor.is_processing()
+            lambda: tts_processor.is_processing()
         )
         if start_if_active:
             self._hotkey_manager.start()
@@ -171,7 +187,7 @@ class DesktopApp:
     def _handle_initial_configuration(self) -> bool:
         """Handle first-run configuration when required."""
         self._ensure_action_coordinators()
-        if self._configuration_coordinator is None:
+        if self._configuration_coordinator is None or self._config is None:
             return True
 
         should_continue, updated_config = self._configuration_coordinator.handle_initial_configuration(
@@ -182,6 +198,9 @@ class DesktopApp:
 
     def _start_services(self) -> bool:
         """Start all runtime services."""
+        if self._hotkey_manager is None or self._notification_service is None:
+            logger.error("[DESKTOP_APP] Runtime services are not initialized")
+            return False
         started = self._lifecycle_coordinator.start_services(
             self._hotkey_manager,
             self._notification_service,
@@ -191,6 +210,9 @@ class DesktopApp:
 
     def _run_main_loop(self) -> None:
         """Run the main Desktop App loop."""
+        if self._notification_service is None:
+            logger.error("[DESKTOP_APP] Notification service is not initialized")
+            return
         self._lifecycle_coordinator.run_main_loop(
             show_main_window=self._show_main_window,
             notification_service=self._notification_service,
@@ -209,6 +231,9 @@ class DesktopApp:
 
     def _show_main_window(self) -> None:
         """Show the main Desktop App panel when Tkinter is available."""
+        if self._config is None:
+            logger.error("[DESKTOP_APP] Configuration is not loaded")
+            return
         self._ui_runtime_coordinator.show_main_window(
             config=self._config,
             on_save=self._save_configuration_from_ui,
@@ -291,6 +316,9 @@ class DesktopApp:
 
     def _update_services_config(self) -> None:
         """Update dependent services after configuration changes."""
+        if self._config is None:
+            logger.error("[DESKTOP_APP] Cannot update services without configuration")
+            return
         (
             self._tts_processor,
             self._notification_service,
@@ -333,6 +361,9 @@ class DesktopApp:
 
     def _handle_configure(self) -> None:
         """Handle system tray configure action."""
+        if self._config is None:
+            logger.error("[DESKTOP_APP] Cannot configure before configuration is loaded")
+            return
         updated_config, applied = self._ui_runtime_coordinator.handle_configure(
             ensure_action_coordinators=self._ensure_action_coordinators,
             hotkey_manager=self._hotkey_manager,

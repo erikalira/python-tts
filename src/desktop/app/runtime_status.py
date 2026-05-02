@@ -13,6 +13,7 @@ class HotkeyManagerStatusPort(Protocol):
 
     def is_active(self) -> bool:
         """Return whether hotkey monitoring is active."""
+        ...
 
 
 class DesktopTTSProcessorStatusPort(Protocol):
@@ -20,6 +21,7 @@ class DesktopTTSProcessorStatusPort(Protocol):
 
     def get_service_status(self) -> DesktopTTSServiceStatusDTO:
         """Return the typed TTS runtime status."""
+        ...
 
 
 class NotificationServiceStatusPort(Protocol):
@@ -27,6 +29,7 @@ class NotificationServiceStatusPort(Protocol):
 
     def is_available(self) -> bool:
         """Return whether tray support is available."""
+        ...
 
 
 class DesktopAppStatusBuilder:

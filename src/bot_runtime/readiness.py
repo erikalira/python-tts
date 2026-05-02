@@ -4,9 +4,90 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import asdict
-from typing import Any
+from collections.abc import Awaitable, Callable
+from typing import Protocol, Self, cast
 
 from src.application.dto import BotDependencyReadinessDTO, BotReadinessResponseDTO
+
+
+class BotReadinessConfig(Protocol):
+    """Configuration values needed by readiness checks."""
+
+    config_storage_backend: str
+    tts_queue_backend: str
+
+
+class DiscordClientReadinessPort(Protocol):
+    """Discord client readiness surface."""
+
+    def is_ready(self) -> bool:
+        """Return whether the Discord client is connected and ready."""
+        ...
+
+
+class QueueWorkerReadinessPort(Protocol):
+    """Queue worker readiness surface."""
+
+    def is_running(self) -> bool:
+        """Return whether queue processing is active."""
+        ...
+
+
+class DatabaseCursorPort(Protocol):
+    """Minimal DB cursor surface used by readiness pings."""
+
+    def __enter__(self) -> Self:
+        ...
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> object:
+        ...
+
+    def execute(self, query: str) -> object:
+        ...
+
+    def fetchone(self) -> object:
+        ...
+
+
+class DatabaseConnectionPort(Protocol):
+    """Minimal DB connection/context-manager surface."""
+
+    def __enter__(self) -> Self:
+        ...
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> object:
+        ...
+
+    def cursor(self) -> DatabaseCursorPort:
+        ...
+
+
+class ConfigStorageHealthPort(Protocol):
+    """Storage adapter surface used for readiness pings."""
+
+    def _connect(self) -> DatabaseConnectionPort:
+        ...
+
+
+class ConfigRepositoryHealthPort(Protocol):
+    """Repository surface exposing its concrete storage health adapter."""
+
+    @property
+    def _storage(self) -> object:
+        ...
+
+
+class RedisHealthPort(Protocol):
+    """Redis client surface used by readiness pings."""
+
+    def ping(self) -> object | Awaitable[object]:
+        ...
+
+
+class AudioQueueHealthPort(Protocol):
+    """Audio queue surface exposing the Redis client when configured."""
+
+    _redis: RedisHealthPort | object
 
 
 class BotReadinessProbe:
@@ -15,11 +96,11 @@ class BotReadinessProbe:
     def __init__(
         self,
         *,
-        config: Any,
-        discord_client: Any,
-        queue_worker: Any,
-        config_repository: Any,
-        audio_queue: Any,
+        config: BotReadinessConfig,
+        discord_client: DiscordClientReadinessPort,
+        queue_worker: QueueWorkerReadinessPort,
+        config_repository: ConfigRepositoryHealthPort,
+        audio_queue: AudioQueueHealthPort,
     ) -> None:
         self._config = config
         self._discord_client = discord_client
@@ -61,13 +142,14 @@ class BotReadinessProbe:
                 detail=f"{self._config.config_storage_backend} backend configured",
             )
 
-        storage = getattr(self._config_repository, "_storage", None)
+        storage = self._config_repository._storage
         connect = getattr(storage, "_connect", None)
         if not callable(connect):
             return self._dependency("postgres", ok=False, required=True, detail="connect method unavailable")
+        connect_to_database = cast(Callable[[], DatabaseConnectionPort], connect)
 
         def _ping_postgres() -> None:
-            conn: Any = connect()
+            conn = connect_to_database()
             with conn, conn.cursor() as cursor:
                 cursor.execute("SELECT 1")
                 cursor.fetchone()
@@ -87,13 +169,14 @@ class BotReadinessProbe:
                 detail=f"{self._config.tts_queue_backend} backend configured",
             )
 
-        redis_client = getattr(self._audio_queue, "_redis", None)
+        redis_client = self._audio_queue._redis
         ping = getattr(redis_client, "ping", None)
         if not callable(ping):
             return self._dependency("redis", ok=False, required=True, detail="ping method unavailable")
+        ping_redis = cast(Callable[[], object | Awaitable[object]], ping)
 
         try:
-            result = ping()
+            result = ping_redis()
             if asyncio.iscoroutine(result):
                 result = await result
         except Exception as exc:

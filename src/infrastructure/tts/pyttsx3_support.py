@@ -19,11 +19,21 @@ class Pyttsx3VoiceLike(Protocol):
 class Pyttsx3EngineLike(Protocol):
     """Contract for pyttsx3 engine operations used by shared helpers."""
 
-    def getProperty(self, name: str):
+    def getProperty(self, name: str) -> object:
         """Read a pyttsx3 property."""
+        ...
 
-    def setProperty(self, name: str, value) -> None:
+    def setProperty(self, name: str, value: object) -> None:
         """Set a pyttsx3 property."""
+        ...
+
+    def say(self, text: str) -> None:
+        """Queue text to speak."""
+        ...
+
+    def runAndWait(self) -> None:
+        """Run queued speech synchronously."""
+        ...
 
 
 def _normalize_voice_token(value: str) -> str:

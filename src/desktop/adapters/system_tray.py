@@ -41,6 +41,15 @@ class SystemTrayIconAdapter:
     def is_running(self) -> bool:
         raise NotImplementedError
 
+    def set_handlers(
+        self,
+        status_click: Optional[Callable[[], None]] = None,
+        configure: Optional[Callable[[], None]] = None,
+        quit_handler: Optional[Callable[[], None]] = None,
+    ) -> None:
+        """Set callback handlers for tray actions."""
+        raise NotImplementedError
+
 
 class NullSystemTrayIcon(SystemTrayIconAdapter):
     """Null object used when no tray implementation is available."""
@@ -60,6 +69,14 @@ class NullSystemTrayIcon(SystemTrayIconAdapter):
     def is_running(self) -> bool:
         return False
 
+    def set_handlers(
+        self,
+        status_click: Optional[Callable[[], None]] = None,
+        configure: Optional[Callable[[], None]] = None,
+        quit_handler: Optional[Callable[[], None]] = None,
+    ) -> None:
+        pass
+
 
 class PySystemTrayIcon(SystemTrayIconAdapter):
     """pystray-backed system tray adapter."""
@@ -74,9 +91,9 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
 
     def set_handlers(
         self,
-        status_click: Optional[Callable] = None,
-        configure: Optional[Callable] = None,
-        quit_handler: Optional[Callable] = None,
+        status_click: Optional[Callable[[], None]] = None,
+        configure: Optional[Callable[[], None]] = None,
+        quit_handler: Optional[Callable[[], None]] = None,
     ) -> None:
         """Set callback handlers for tray actions."""
         self._on_status_click = status_click

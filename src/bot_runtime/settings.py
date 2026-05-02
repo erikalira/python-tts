@@ -3,7 +3,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, overload
 from collections.abc import Mapping
 
 from dotenv import dotenv_values, load_dotenv
@@ -54,7 +54,7 @@ class Config:
     Follows Single Responsibility: only handles configuration loading.
     """
 
-    def __init__(self, env_file: Path | None = None):
+    def __init__(self, env_file: Path | None = None) -> None:
         """Initialize configuration.
 
         Args:
@@ -189,6 +189,18 @@ class Config:
         if normalized in logging.getLevelNamesMapping():
             return normalized
         return "INFO"
+
+    @overload
+    def _getenv(self, key: str) -> str | None:
+        ...
+
+    @overload
+    def _getenv(self, key: str, default: str) -> str:
+        ...
+
+    @overload
+    def _getenv(self, key: str, default: None) -> str | None:
+        ...
 
     def _getenv(self, key: str, default: str | None = None) -> str | None:
         return self._env.get(key, default)

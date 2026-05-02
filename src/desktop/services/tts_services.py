@@ -80,8 +80,12 @@ class LocalPyTTSX3Engine(TTSEngine):
                 return False
 
             try:
-                self._engine.say(text)
-                self._engine.runAndWait()
+                engine = self._engine
+                if engine is None:
+                    self._last_error_message = "pyttsx3 engine is not initialized"
+                    return False
+                engine.say(text)
+                engine.runAndWait()
                 self._last_error_message = None
                 return True
             except Exception as exc:
