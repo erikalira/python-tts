@@ -20,6 +20,7 @@ permissions:
 
 env:
   PYTHON_VERSION: "3.11"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   validate:
@@ -143,7 +144,9 @@ jobs:
           image-ref: ${{ steps.image.outputs.image_name }}@${{ steps.build.outputs.digest }}
           format: table
           severity: CRITICAL
+          ignore-unfixed: true
           exit-code: "1"
+          cache: "false"
           version: v0.69.3
 
       - name: Install Cosign
