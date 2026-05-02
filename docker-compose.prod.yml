@@ -136,6 +136,7 @@ services:
       start_period: 60s
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
+      BOT_SPEAK_TOKEN: ${BOT_SPEAK_TOKEN}
       DISCORD_BOT_HOST: 0.0.0.0
       PORT: 10000
       CONFIG_STORAGE_BACKEND: postgres
