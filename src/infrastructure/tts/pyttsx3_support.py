@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import platform
-from typing import Protocol
+from collections.abc import Iterable
+from typing import Protocol, cast
 
 from src.core.entities import TTSConfig
 
@@ -23,11 +24,11 @@ class Pyttsx3EngineLike(Protocol):
         """Read a pyttsx3 property."""
         ...
 
-    def setProperty(self, name: str, value: object) -> None:
+    def setProperty(self, name: str, value: str | float) -> None:
         """Set a pyttsx3 property."""
         ...
 
-    def say(self, text: str) -> None:
+    def say(self, text: str | None, name: str | None = None) -> str | None:
         """Queue text to speak."""
         ...
 
@@ -64,7 +65,10 @@ def list_pyttsx3_voices(logger: logging.Logger | None = None) -> list[Pyttsx3Voi
 
         driver_name = "sapi5" if platform.system() == "Windows" else None
         engine = pyttsx3.init(driverName=driver_name) if driver_name else pyttsx3.init()
-        return list(engine.getProperty("voices") or [])
+        voices = engine.getProperty("voices")
+        if voices is None:
+            return []
+        return list(cast(Iterable[Pyttsx3VoiceLike], voices))
     except Exception as exc:
         active_logger.warning("Could not enumerate pyttsx3 voices: %s", exc)
         return []
@@ -77,7 +81,7 @@ def configure_pyttsx3_engine(
 ) -> None:
     """Apply the shared voice and rate configuration to a pyttsx3 engine."""
     active_logger = logger or logging.getLogger(__name__)
-    engine.setProperty("rate", config.rate)
+    engine.setProperty("rate", float(config.rate))
 
     if not config.voice_id:
         return
@@ -88,7 +92,7 @@ def configure_pyttsx3_engine(
         active_logger.warning(f"Could not enumerate voices: {exc}")
         return
 
-    for voice in voices:
+    for voice in cast(Iterable[Pyttsx3VoiceLike], voices):
         if _voice_matches(voice, config.voice_id):
             engine.setProperty("voice", voice.id)
             return

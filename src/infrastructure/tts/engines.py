@@ -3,13 +3,13 @@ import asyncio
 import logging
 import os
 import tempfile
-from typing import Optional
+from typing import Optional, cast
 
 import pyttsx3
 from gtts import gTTS
 from src.core.interfaces import ITTSEngine
 from src.core.entities import TTSConfig, AudioFile
-from src.infrastructure.tts.pyttsx3_support import configure_pyttsx3_engine
+from src.infrastructure.tts.pyttsx3_support import Pyttsx3EngineLike, configure_pyttsx3_engine
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ class Pyttsx3Engine(ITTSEngine):
                 self._engine = pyttsx3.init()
             
             if self._engine:
-                configure_pyttsx3_engine(self._engine, config, logger)
+                configure_pyttsx3_engine(cast(Pyttsx3EngineLike, self._engine), config, logger)
                 self._initialized = True
         except Exception as e:
             logger.error(f"Failed to initialize pyttsx3: {e}")
@@ -116,7 +116,7 @@ class Pyttsx3Engine(ITTSEngine):
         """
         self._initialize_engine(config)
         if self._engine:
-            configure_pyttsx3_engine(self._engine, config, logger)
+            configure_pyttsx3_engine(cast(Pyttsx3EngineLike, self._engine), config, logger)
         
         loop = asyncio.get_running_loop()
         tmpname = _create_temp_audio_path(".wav")

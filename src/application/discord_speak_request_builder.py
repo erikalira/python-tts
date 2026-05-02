@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Protocol
 
-from src.application.dto import SpeakTextInputDTO
-from src.application.tts_config_use_case import ConfigureTTSUseCase
+from src.application.dto import ConfigureTTSResult, SpeakTextInputDTO
 from src.application.tts_voice_catalog import TTSCatalog
 from src.core.entities import TTSConfig
 
@@ -30,10 +29,18 @@ class DiscordSpeakPreparationResult:
     error_message: str | None = None
 
 
+class TTSConfigLookup(Protocol):
+    """Minimal config lookup needed to build a speak request."""
+
+    def get_config(self, guild_id: int, user_id: int | None = None) -> ConfigureTTSResult | None:
+        """Return the effective TTS config for a guild/user."""
+        ...
+
+
 class DiscordSpeakRequestBuilder:
     """Build speak-command input from Discord interaction primitives."""
 
-    def __init__(self, config_use_case: ConfigureTTSUseCase, tts_catalog: TTSCatalog):
+    def __init__(self, config_use_case: TTSConfigLookup, tts_catalog: TTSCatalog):
         self._config_use_case = config_use_case
         self._tts_catalog = tts_catalog
 
@@ -61,7 +68,7 @@ class DiscordSpeakRequestBuilder:
                 )
 
             current_config = self._config_use_case.get_config(guild_id, user_id=member_id)
-            if not current_config.success or current_config.config is None:
+            if current_config is None or not current_config.success or current_config.config is None:
                 return DiscordSpeakPreparationResult(
                     error_code=DISCORD_SPEAK_PREP_VOICE_CONFIG_UNAVAILABLE,
                     error_message="voice config unavailable",

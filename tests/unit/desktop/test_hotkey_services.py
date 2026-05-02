@@ -98,3 +98,4 @@ def test_hotkey_manager_status_before_initialization():
         keyboard_available=status.keyboard_available,
     )
 
+# pyright: reportAttributeAccessIssue=false

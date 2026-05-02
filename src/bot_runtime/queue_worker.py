@@ -5,13 +5,21 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from typing import Optional
+from typing import Optional, Protocol
 
-from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
+from src.application.dto import SpeakTextResult
 from src.core.interfaces import IAudioQueue
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 
 logger = logging.getLogger(__name__)
+
+
+class QueueOrchestratorPort(Protocol):
+    """Minimal queue orchestrator behavior needed by the worker."""
+
+    async def start_processing_for_item(self, guild_id: Optional[int]) -> SpeakTextResult:
+        """Process the next item for a guild."""
+        ...
 
 
 def _default_lock_renew_interval_seconds(ttl_seconds: float) -> float:
@@ -27,7 +35,7 @@ class BotQueueWorker:
         self,
         *,
         audio_queue: IAudioQueue,
-        queue_orchestrator: TTSQueueOrchestrator,
+        queue_orchestrator: QueueOrchestratorPort,
         poll_interval_seconds: float = 0.2,
         guild_lock_ttl_seconds: int = 30,
         guild_lock_renew_interval_seconds: float | None = None,

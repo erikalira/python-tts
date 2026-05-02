@@ -2,6 +2,7 @@
 """Local text-to-speech adapters for Desktop App services."""
 
 import logging
+from typing import cast
 
 from src.core.entities import TTSConfig
 from src.infrastructure.tts.pyttsx3_support import Pyttsx3EngineLike, configure_pyttsx3_engine
@@ -25,7 +26,7 @@ class Pyttsx3Adapter:
         """Create a pyttsx3 engine instance."""
         if pyttsx3 is None:
             raise RuntimeError("pyttsx3 unavailable")
-        return pyttsx3.init()
+        return cast(Pyttsx3EngineLike, pyttsx3.init())
 
     def create_configured_engine(self, config: TTSConfig, logger: logging.Logger) -> Pyttsx3EngineLike:
         """Create and configure a pyttsx3 engine instance."""

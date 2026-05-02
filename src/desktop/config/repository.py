@@ -5,7 +5,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from src.core.timeouts import DEFAULT_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS
 
@@ -39,33 +39,35 @@ class ConfigurationRepository:
         try:
             with open(self._config_file, encoding="utf-8") as file:
                 data = json.load(file)
+            if not isinstance(data, dict):
+                raise ValueError("Desktop configuration root must be an object")
 
             return DesktopAppConfig(
                 tts=TTSConfig(
-                    engine=self._get_env_or_file_value(data, "tts_engine", "TTS_ENGINE", "gtts"),
-                    language=self._get_env_or_file_value(data, "tts_language", "TTS_LANGUAGE", "pt"),
-                    voice_id=self._get_env_or_file_value(data, "tts_voice_id", "TTS_VOICE_ID", "roa/pt-br"),
-                    rate=int(self._get_env_or_file_value(data, "tts_rate", "TTS_RATE", 180)),
-                    output_device=self._get_env_or_file_value(data, "tts_output_device", "TTS_OUTPUT_DEVICE"),
+                    engine=self._get_str_value(data, "tts_engine", "TTS_ENGINE", "gtts"),
+                    language=self._get_str_value(data, "tts_language", "TTS_LANGUAGE", "pt"),
+                    voice_id=self._get_str_value(data, "tts_voice_id", "TTS_VOICE_ID", "roa/pt-br"),
+                    rate=self._get_int_value(data, "tts_rate", "TTS_RATE", 180),
+                    output_device=self._get_optional_str_value(data, "tts_output_device", "TTS_OUTPUT_DEVICE"),
                 ),
                 discord=DiscordConfig(
-                    bot_url=self._get_env_or_file_value(data, "discord_bot_url", "DISCORD_BOT_URL"),
-                    member_id=self._get_env_or_file_value(data, "discord_member_id", "DISCORD_MEMBER_ID"),
+                    bot_url=self._get_str_value(data, "discord_bot_url", "DISCORD_BOT_URL", ""),
+                    member_id=self._get_optional_str_value(data, "discord_member_id", "DISCORD_MEMBER_ID"),
                     speak_token=os.getenv("BOT_SPEAK_TOKEN") or None,
                 ),
                 hotkey=HotkeyConfig(
-                    trigger_open=data.get("trigger_open", "{"),
-                    trigger_close=data.get("trigger_close", "}"),
+                    trigger_open=str(data.get("trigger_open", "{")),
+                    trigger_close=str(data.get("trigger_close", "}")),
                 ),
                 interface=InterfaceConfig(
-                    show_notifications=data.get("show_notifications", True),
-                    console_logs=data.get("console_logs", True),
-                    local_tts_enabled=data.get("local_tts_enabled", False),
+                    show_notifications=bool(data.get("show_notifications", True)),
+                    console_logs=bool(data.get("console_logs", True)),
+                    local_tts_enabled=bool(data.get("local_tts_enabled", False)),
                 ),
                 network=NetworkConfig(
-                    request_timeout=data.get("request_timeout", DEFAULT_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS),
-                    user_agent=data.get("user_agent", "DesktopApp/2.0"),
-                    max_text_length=data.get("max_text_length", 500),
+                    request_timeout=int(data.get("request_timeout", DEFAULT_DESKTOP_HTTP_REQUEST_TIMEOUT_SECONDS)),
+                    user_agent=str(data.get("user_agent", "DesktopApp/2.0")),
+                    max_text_length=int(data.get("max_text_length", 500)),
                 ),
             )
         except Exception as exc:
@@ -74,16 +76,32 @@ class ConfigurationRepository:
 
     @staticmethod
     def _get_env_or_file_value(
-        data: dict,
+        data: dict[str, Any],
         file_key: str,
         env_key: str,
-        default=None,
-    ):
+        default: object = None,
+    ) -> object:
         """Prefer persisted values; fall back to env only for missing legacy keys."""
         if file_key in data:
             return data[file_key]
 
         return os.getenv(env_key, default)
+
+    @classmethod
+    def _get_str_value(cls, data: dict[str, Any], file_key: str, env_key: str, default: str) -> str:
+        return str(cls._get_env_or_file_value(data, file_key, env_key, default))
+
+    @classmethod
+    def _get_optional_str_value(cls, data: dict[str, Any], file_key: str, env_key: str) -> str | None:
+        value = cls._get_env_or_file_value(data, file_key, env_key)
+        if value is None:
+            return None
+        text = str(value)
+        return text if text else None
+
+    @classmethod
+    def _get_int_value(cls, data: dict[str, Any], file_key: str, env_key: str, default: int) -> int:
+        return int(str(cls._get_env_or_file_value(data, file_key, env_key, default)))
 
     def save(self, config: DesktopAppConfig) -> bool:
         """Save configuration to file."""

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import queue
-from typing import Optional
+from typing import Any, Optional
 from collections.abc import Callable
 
 from src.application.dto import (
@@ -33,7 +33,7 @@ class DesktopAppMainWindow:
         on_refresh_voice_context: Callable[[DesktopAppConfig], DesktopBotVoiceContextResultDTO],
         on_process_ui_actions: Optional[Callable[[], None]] = None,
     ):
-        self.root: Optional[object] = None
+        self.root: Optional[Any] = None
         self.config = config
         self._on_save = on_save
         self._on_test_connection = on_test_connection
@@ -44,15 +44,15 @@ class DesktopAppMainWindow:
         self._config_form = GUIConfig()
         self._log_queue: "queue.Queue[str]" = queue.Queue()
         self._log_handler = UILogHandler(self._log_queue)
-        self._status_var: Optional[object] = None
-        self._config_var: Optional[object] = None
-        self._connection_var: Optional[object] = None
-        self._voice_context_var: Optional[object] = None
-        self._logs_widget = None
-        self._status_label = None
-        self._config_label = None
-        self._connection_label = None
-        self._voice_context_label = None
+        self._status_var: Optional[Any] = None
+        self._config_var: Optional[Any] = None
+        self._connection_var: Optional[Any] = None
+        self._voice_context_var: Optional[Any] = None
+        self._logs_widget: Any | None = None
+        self._status_label: Any | None = None
+        self._config_label: Any | None = None
+        self._connection_label: Any | None = None
+        self._voice_context_label: Any | None = None
 
     def show(self) -> None:
         from . import tk_support as compat
@@ -225,12 +225,13 @@ class DesktopAppMainWindow:
             return
 
         result = self._on_test_connection(config)
+        feedback = self._presenter.build_connection_result(result, "No test response")
         self._apply_message(
             self._connection_var,
             self._connection_label,
-            self._presenter.build_connection_result(result, "No test response"),
+            feedback,
         )
-        self.push_log(f"Connection test: {self._connection_var.get()}")
+        self.push_log(f"Connection test: {feedback.text}")
 
     def _handle_send_test(self) -> None:
         try:
@@ -295,12 +296,12 @@ class DesktopAppMainWindow:
         self._sync_config_form()
         return self._config_form._build_config_from_form()
 
-    def _apply_message(self, variable: Optional[object], label, message: MainWindowMessage) -> None:
+    def _apply_message(self, variable: Optional[Any], label: Any, message: MainWindowMessage) -> None:
         if variable is not None and hasattr(variable, "set"):
             variable.set(message.text)
         self._set_label_color(label, message.color)
 
-    def _set_label_color(self, label, color: str) -> None:
+    def _set_label_color(self, label: Any, color: str) -> None:
         if label is not None and hasattr(label, "configure"):
             label.configure(fg=color)
 

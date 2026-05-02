@@ -439,3 +439,4 @@ def test_ui_log_handler_reports_queue_errors(monkeypatch):
     handler.emit(record)
 
     assert reported == [record]
+# pyright: reportArgumentType=false, reportOptionalMemberAccess=false

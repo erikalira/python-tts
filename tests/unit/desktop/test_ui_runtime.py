@@ -103,3 +103,4 @@ def test_ui_runtime_coordinator_handle_configure_focuses_existing_window():
     coordinator.main_window.push_log.assert_called_once_with(
         "Configuration action requested from tray"
     )
+# pyright: reportAttributeAccessIssue=false, reportOptionalMemberAccess=false

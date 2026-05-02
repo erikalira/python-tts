@@ -22,10 +22,6 @@ class TTSEnginePort(Protocol):
         """Return whether the engine can be used."""
         ...
 
-    def get_last_error_message(self) -> str | None:
-        """Return the last human-readable engine error when available."""
-        ...
-
 
 class DesktopTTSStatusGateway(Protocol):
     """Port for status data needed by Desktop App TTS views."""

@@ -844,3 +844,4 @@ class TestDiscordI18n:
         )
 
         assert translated == "Faz o bot falar o texto informado no canal de voz"
+# pyright: reportArgumentType=false, reportOptionalMemberAccess=false

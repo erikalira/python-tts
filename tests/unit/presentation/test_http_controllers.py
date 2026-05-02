@@ -492,3 +492,4 @@ class _FakeSpanContext:
     def __exit__(self, exc_type, exc, tb):
         del exc_type, exc, tb
         return False
+# pyright: reportOperatorIssue=false, reportOptionalMemberAccess=false

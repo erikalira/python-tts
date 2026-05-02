@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
@@ -83,11 +83,11 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
 
     def __init__(self, config: DesktopAppConfig):
         self._config = config
-        self._icon: Optional[Icon] = None
+        self._icon: Any | None = None
         self._running = False
-        self._on_status_click: Optional[Callable] = None
-        self._on_configure: Optional[Callable] = None
-        self._on_quit: Optional[Callable] = None
+        self._on_status_click: Optional[Callable[[], None]] = None
+        self._on_configure: Optional[Callable[[], None]] = None
+        self._on_quit: Optional[Callable[[], None]] = None
 
     def set_handlers(
         self,
@@ -106,10 +106,11 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
             return
 
         try:
-            self._icon = self._create_icon()
+            icon = self._create_icon()
+            self._icon = icon
             self._running = True
             logger.info("[TRAY] System tray started")
-            self._icon.run()
+            icon.run()
         except Exception as exc:
             logger.error("[TRAY] Failed to start system tray: %s", exc)
             self._running = False
@@ -137,7 +138,10 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         """Return whether the tray event loop is running."""
         return self._running
 
-    def _create_icon(self) -> Icon:
+    def _create_icon(self) -> Any:
+        if Icon is None or Menu is None or MenuItem is None:
+            raise RuntimeError("pystray unavailable")
+
         menu = Menu(
             MenuItem("Open Desktop App", self._handle_status_click, default=True),
             MenuItem(
@@ -151,7 +155,10 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         )
         return Icon("Desktop App", self._create_icon_image(), "Desktop App", menu)
 
-    def _create_icon_image(self):
+    def _create_icon_image(self) -> Any:
+        if Image is None or ImageDraw is None:
+            raise RuntimeError("Pillow unavailable")
+
         try:
             icon_path = Path(__file__).resolve().parents[3] / "assets" / "icon.png"
             if icon_path.exists():
@@ -165,7 +172,7 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         draw.ellipse([22, 30, 42, 45], fill="#7289DA")
         return img
 
-    def _handle_status_click(self, icon, item) -> None:
+    def _handle_status_click(self, icon: object, item: object) -> None:
         if self._on_status_click:
             self._on_status_click()
         elif self._config.discord.bot_url and self._config.discord.member_id:
@@ -174,13 +181,13 @@ class PySystemTrayIcon(SystemTrayIconAdapter):
         else:
             logger.warning("Discord is not fully configured")
 
-    def _handle_configure(self, icon, item) -> None:
+    def _handle_configure(self, icon: object, item: object) -> None:
         if self._on_configure:
             self._on_configure()
         else:
             logger.warning("Settings are unavailable")
 
-    def _handle_quit(self, icon, item) -> None:
+    def _handle_quit(self, icon: object, item: object) -> None:
         if self._on_quit:
             self._on_quit()
         else:

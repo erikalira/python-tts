@@ -551,3 +551,4 @@ def test_desktop_app_tts_processor_skips_cleanup_when_execution_fails(monkeypatc
     on_complete.assert_called_once_with(
         TTSExecutionResult(success=False, code=TTS_EXECUTION_RESULT_FAILED)
     )
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false

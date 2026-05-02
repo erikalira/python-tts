@@ -211,3 +211,4 @@ def test_py_system_tray_icon_uses_open_as_default_menu_action(monkeypatch):
 
     assert items[0].text == "Open Desktop App"
     assert items[0].default is True
+# pyright: reportArgumentType=false

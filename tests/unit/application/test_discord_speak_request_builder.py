@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false
 from src.application.discord_speak_request_builder import DiscordSpeakRequestBuilder
 from src.application.dto import ConfigureTTSResult, TTSConfigurationData
 

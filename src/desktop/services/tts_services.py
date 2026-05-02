@@ -10,14 +10,14 @@ from abc import ABC, abstractmethod
 from typing import Optional, Protocol
 from collections.abc import Callable
 
-from src.application.dto import DesktopTTSStatusDTO
+from src.application.dto import BotSpeakRequestDTO, DesktopTTSStatusDTO
 from src.application.desktop_tts import DesktopTTSFlowService, DesktopTTSStatusUseCase
 from src.infrastructure.tts.pyttsx3_support import Pyttsx3EngineLike
 
 from ..adapters.keyboard_backend import KeyboardHookBackend
 from ..adapters.local_tts import Pyttsx3Adapter, is_pyttsx3_available
 from ..config.desktop_config import DesktopAppConfig
-from .discord_bot_client import DiscordBotClient, HttpDiscordBotClient
+from .discord_bot_client import HttpDiscordBotClient
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,26 @@ class TTSEngine(ABC):
     @abstractmethod
     def get_last_error_message(self) -> str | None:
         """Return the last human-readable error for the engine."""
+
+
+class DesktopTTSBotClient(Protocol):
+    """Minimal bot-client behavior needed by Desktop App TTS delivery."""
+
+    def is_available(self) -> bool:
+        """Return whether the bot client can send requests."""
+        ...
+
+    def build_request(self, text: str) -> BotSpeakRequestDTO:
+        """Build the bot speak request for text."""
+        ...
+
+    def send_speak_request(self, request: BotSpeakRequestDTO) -> bool:
+        """Send the prepared speak request."""
+        ...
+
+    def get_last_error_message(self) -> str | None:
+        """Return the last transport error, when any."""
+        ...
 
 
 class LocalPyTTSX3Engine(TTSEngine):
@@ -105,7 +125,7 @@ class LocalPyTTSX3Engine(TTSEngine):
 class DiscordTTSService(TTSEngine):
     """TTS service that sends text to the Discord bot."""
 
-    def __init__(self, config: DesktopAppConfig, bot_client: Optional[DiscordBotClient] = None):
+    def __init__(self, config: DesktopAppConfig, bot_client: Optional[DesktopTTSBotClient] = None):
         self._config = config
         self._bot_client = bot_client or HttpDiscordBotClient(config)
 
@@ -132,7 +152,7 @@ class DesktopAppTTSService:
     def __init__(
         self,
         config: DesktopAppConfig,
-        bot_client: DiscordBotClient,
+        bot_client: DesktopTTSBotClient,
         local_engine_factory: Optional[Callable[[DesktopAppConfig], TTSEngine]] = None,
     ):
         self._config = config

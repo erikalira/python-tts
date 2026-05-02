@@ -157,10 +157,10 @@ Static quality gates:
 CI runs these through `uv run` after `uv sync --locked --group test`.
 
 `ruff` currently enforces high-signal correctness rules such as syntax and
-undefined-name failures. `pyright` is intentionally scoped in
-`pyrightconfig.json` to typed application contracts, core interfaces, and
-quality-gate helpers. Expand the checked surface area as modules become
-type-clean instead of disabling the gate when legacy typing gaps appear.
+undefined-name failures. `pyright` checks `src`, `scripts/test`, and
+`tests/unit` in `pyrightconfig.json`; this keeps production code, test helpers,
+and unit-suite fakes visible to the static type gate while leaving slower
+integration, smoke, and manual runtime validation in their dedicated commands.
 
 To validate the repository quality gates against an existing `coverage.xml`:
 
