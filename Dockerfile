@@ -1,5 +1,5 @@
-# Use Python 3.13 slim image
-FROM python:3.13-slim
+# Keep the runtime Python aligned with CI and release validation.
+FROM python:3.11-slim
 
 ARG APP_VERSION=local
 ARG VCS_REF=unknown
