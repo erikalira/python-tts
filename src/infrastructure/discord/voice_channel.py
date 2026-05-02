@@ -3,7 +3,7 @@ import asyncio
 import logging
 import time
 from contextlib import suppress
-from typing import Optional
+from typing import Any, Optional, cast
 import discord
 from src.application.dto import DiscordVoiceChannelCacheStatsDTO
 from src.core.interfaces import IVoiceChannel, IVoiceChannelRepository
@@ -38,7 +38,7 @@ class DiscordVoiceChannel(IVoiceChannel):
             channel: Discord voice channel
         """
         self._channel = channel
-        self._voice_client: Optional[discord.VoiceClient] = None
+        self._voice_client: Optional[Any] = None
         self._disconnect_task: Optional[asyncio.Task] = None
         self._last_activity: float = 0
         self._connection_lock = asyncio.Lock()
@@ -48,7 +48,7 @@ class DiscordVoiceChannel(IVoiceChannel):
 
     def _sync_voice_client(self) -> Optional[discord.VoiceClient]:
         """Synchronize cached voice client with Discord's guild state."""
-        guild_voice_client = self._channel.guild.voice_client
+        guild_voice_client = cast(Any, self._channel.guild.voice_client)
         if guild_voice_client and guild_voice_client.channel and guild_voice_client.channel.guild.id == self.get_guild_id():
             self._voice_client = guild_voice_client
         elif self._voice_client and not self._voice_client.is_connected():
@@ -73,12 +73,12 @@ class DiscordVoiceChannel(IVoiceChannel):
                 except Exception as e:
                     logger.warning(f"[VOICE_CHANNEL] Error resetting stale connection: {e}")
                 self._voice_client = None
-                existing_client = guild.voice_client
+                existing_client = cast(Any, guild.voice_client)
 
             try:
                 if existing_client and existing_client.channel:
                     logger.info(f"[VOICE_CHANNEL] Moving existing voice connection to channel: {self._channel.name}")
-                    await existing_client.move_to(self._channel, timeout=self._connection_timeout_seconds)
+                    await cast(Any, existing_client).move_to(self._channel, timeout=self._connection_timeout_seconds)
                     self._voice_client = existing_client
                 else:
                     logger.info(f"[VOICE_CHANNEL] Connecting to voice channel: {self._channel.name}")
@@ -358,9 +358,10 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
             now = time.time()
             
             for guild in self._client.guilds:
-                if guild.voice_client and guild.voice_client.is_connected():
-                    channel = guild.voice_client.channel
-                    if channel:
+                voice_client = cast(Any, guild.voice_client)
+                if voice_client and voice_client.is_connected():
+                    channel = voice_client.channel
+                    if isinstance(channel, discord.VoiceChannel):
                         logger.debug(f"[VOICE_REPO] Found connected channel: {channel.name} in guild {guild.name} (id={guild.id})")
                         # Reuse existing instance if available
                         if channel.id not in self._channel_instances:
@@ -444,9 +445,10 @@ class DiscordVoiceChannelRepository(IVoiceChannelRepository):
                 guild = self._client.get_guild(guild_id)
                 if guild:
                     # Try to find connected channel first
-                    if guild.voice_client and guild.voice_client.is_connected():
+                    voice_client = cast(Any, guild.voice_client)
+                    if voice_client and voice_client.is_connected():
                         for vc in guild.voice_channels:
-                            if vc.guild.voice_client == guild.voice_client:
+                            if cast(Any, vc.guild.voice_client) == voice_client:
                                 # Reuse existing instance if available
                                 if vc.id not in self._channel_instances:
                                     self._channel_instances[vc.id] = self._create_channel_instance(vc)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Optional
+from typing import Any, Optional
 from collections.abc import Callable
 
 from src.core.entities import TTSConfig
@@ -25,12 +25,12 @@ class PostgreSQLConfigStorage(IConfigStorage):
     def __init__(
         self,
         database_url: str,
-        connection_factory: Optional[Callable[[], object]] = None,
+        connection_factory: Optional[Callable[[], Any]] = None,
     ):
         self._database_url = database_url
         self._connection_factory = connection_factory
 
-    def _connect(self):
+    def _connect(self) -> Any:
         if self._connection_factory is not None:
             return self._connection_factory()
 

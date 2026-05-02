@@ -14,9 +14,9 @@ from src.core.interfaces import IAudioQueue
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
 
 try:  # pragma: no cover - exercised through runtime wiring when dependency is installed.
-    from redis.asyncio import Redis
+    from redis.asyncio import Redis as RedisClient
 except ImportError:  # pragma: no cover - local tests can still exercise the queue with a fake client.
-    Redis = Any  # type: ignore[assignment]
+    RedisClient = Any
 
 logger = logging.getLogger(__name__)
 
@@ -276,7 +276,7 @@ class RedisAudioQueue(IAudioQueue):
 
     def __init__(
         self,
-        redis_client: Redis,
+        redis_client: Any,
         *,
         max_queue_size: int = 50,
         max_queue_wait_seconds: int = 3600,

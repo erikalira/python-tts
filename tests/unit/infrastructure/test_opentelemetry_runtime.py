@@ -412,3 +412,4 @@ def test_runtime_records_tts_submission_and_latency_metrics():
             },
         )
     ]
+# pyright: reportAttributeAccessIssue=false

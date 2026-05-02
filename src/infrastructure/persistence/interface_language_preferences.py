@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
@@ -109,14 +109,14 @@ class PostgreSQLInterfaceLanguagePreferenceRepository:
     def __init__(
         self,
         database_url: str,
-        connection_factory: Optional[Callable[[], object]] = None,
+        connection_factory: Optional[Callable[[], Any]] = None,
     ):
         self._database_url = database_url
         self._connection_factory = connection_factory
         self._guild_cache: dict[int, str | None] = {}
         self._user_cache: dict[tuple[int, int], str | None] = {}
 
-    def _connect(self):
+    def _connect(self) -> Any:
         if self._connection_factory is not None:
             return self._connection_factory()
 

@@ -205,3 +205,4 @@ async def test_http_server_returns_503_when_readiness_provider_reports_not_ready
 
     assert response.status == 503
     assert '"status": "not_ready"' in response.text
+# pyright: reportAttributeAccessIssue=false

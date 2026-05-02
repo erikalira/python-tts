@@ -5,7 +5,7 @@ import inspect
 import logging
 import os
 import uuid
-from typing import cast
+from typing import Any, cast
 
 import discord
 from discord import app_commands
@@ -63,8 +63,8 @@ class Container:
         intents = discord.Intents.default()
         intents.voice_states = True
         self.discord_client = discord.Client(intents=intents)
-        self.command_tree = app_commands.CommandTree(self.discord_client)
-        self.otel_runtime = OpenTelemetryRuntime(
+        self.command_tree: Any = app_commands.CommandTree(self.discord_client)
+        self.otel_runtime: Any = OpenTelemetryRuntime(
             enabled=config.otel_enabled,
             service_name=config.otel_service_name,
             queue_backend=config.tts_queue_backend,
@@ -80,7 +80,7 @@ class Container:
             playback_timeout_seconds=config.tts_playback_timeout_seconds,
             idle_disconnect_timeout_seconds=config.voice_idle_disconnect_timeout_seconds,
         )
-        self.audio_queue = self._build_audio_queue(config)
+        self.audio_queue: Any = self._build_audio_queue(config)
         self.audio_cleanup = FileAudioCleanup()
         self.tts_engine = RoutedTTSEngine()
         self.tts_catalog = RuntimeTTSCatalog()
@@ -98,7 +98,7 @@ class Container:
             telemetry=self.runtime_telemetry,
             otel_runtime=self.otel_runtime,
         )
-        self.queue_worker = BotQueueWorker(
+        self.queue_worker: Any = BotQueueWorker(
             audio_queue=self.audio_queue,
             queue_orchestrator=self.tts_queue_orchestrator,
             guild_lock_ttl_seconds=config.queue_guild_lock_ttl_seconds,

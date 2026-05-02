@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from ..config.desktop_config import get_default_discord_bot_url
 from .config_dialog_presenter import ConfigDialogsPresenter, InitialSetupResult
@@ -12,10 +12,10 @@ class InitialSetupGUI:
     """Initial setup GUI for first-time configuration."""
 
     def __init__(self):
-        self.root: Optional[object] = None
+        self.root: Optional[Any] = None
         self.result: Optional[InitialSetupResult] = None
-        self.member_id_var: Optional[object] = None
-        self.bot_url_var: Optional[object] = None
+        self.member_id_var: Optional[Any] = None
+        self.bot_url_var: Optional[Any] = None
         self._presenter = ConfigDialogsPresenter()
 
     def show_initial_setup(self) -> Optional[InitialSetupResult]:
@@ -104,10 +104,14 @@ class InitialSetupGUI:
         self.result = self._presenter.build_skip_discord_result(
             bot_url=get_default_discord_bot_url()
         )
-        self.root.destroy()
+        if self.root is not None:
+            self.root.destroy()
 
     def _save_and_continue(self):
         from . import tk_support as compat
+
+        if self.member_id_var is None or self.bot_url_var is None:
+            return
 
         member_id = self.member_id_var.get().strip()
         bot_url = self.bot_url_var.get().strip()
@@ -125,7 +129,8 @@ class InitialSetupGUI:
             bot_url=bot_url,
         )
         compat.messagebox.showinfo(feedback.title, feedback.message)
-        self.root.destroy()
+        if self.root is not None:
+            self.root.destroy()
 
     def _console_initial_setup(self) -> Optional[InitialSetupResult]:
         print("\n" + "=" * 60)

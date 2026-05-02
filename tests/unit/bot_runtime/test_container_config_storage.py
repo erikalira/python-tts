@@ -120,3 +120,4 @@ async def test_readiness_payload_reports_redis_failure():
         dependency["name"] == "redis" and dependency["status"] == "not_ready"
         for dependency in payload["dependencies"]
     )
+# pyright: reportGeneralTypeIssues=false

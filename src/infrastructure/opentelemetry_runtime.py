@@ -34,19 +34,19 @@ class OpenTelemetryRuntime:
     ) -> None:
         self._enabled = False
         self._queue_backend = queue_backend
-        self._status_factory = None
-        self._status_code_error = None
-        self._span_kind = None
-        self._propagate = None
-        self._tracer = None
-        self._tracer_provider = None
-        self._meter_provider = None
-        self._queue_depth_histogram = None
-        self._queue_age_histogram = None
-        self._queue_item_counter = None
-        self._queue_lock_loss_counter = None
-        self._tts_submission_counter = None
-        self._enqueue_to_playback_histogram = None
+        self._status_factory: Any | None = None
+        self._status_code_error: Any | None = None
+        self._span_kind: Any | None = None
+        self._propagate: Any | None = None
+        self._tracer: Any | None = None
+        self._tracer_provider: Any | None = None
+        self._meter_provider: Any | None = None
+        self._queue_depth_histogram: Any | None = None
+        self._queue_age_histogram: Any | None = None
+        self._queue_item_counter: Any | None = None
+        self._queue_lock_loss_counter: Any | None = None
+        self._tts_submission_counter: Any | None = None
+        self._enqueue_to_playback_histogram: Any | None = None
         if not enabled or not otlp_endpoint:
             return
 
@@ -169,8 +169,8 @@ class OpenTelemetryRuntime:
         ) as span:
             yield span
 
-    def mark_span_error(self, span: object, exception: BaseException) -> None:
-        if not self._enabled or self._status_factory is None:
+    def mark_span_error(self, span: Any, exception: BaseException) -> None:
+        if not self._enabled or self._status_factory is None or self._status_code_error is None:
             return
         span.record_exception(exception)
         span.set_status(self._status_factory(self._status_code_error, str(exception)))
@@ -281,7 +281,7 @@ class OpenTelemetryRuntime:
         name: str,
         *,
         carrier: Mapping[str, str] | None,
-        kind: object | None,
+        kind: Any | None,
         attributes: Mapping[str, Any] | None,
     ):
         if not self._enabled or self._tracer is None or self._propagate is None:

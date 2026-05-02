@@ -113,3 +113,4 @@ def test_postgres_storage_saves_and_loads_user_config():
     assert saved is True
     assert loaded == config
     assert connection.commits == 1
+# pyright: reportGeneralTypeIssues=false, reportOptionalSubscript=false

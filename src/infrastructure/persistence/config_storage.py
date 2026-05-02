@@ -2,7 +2,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, cast
 from abc import ABC, abstractmethod
 from src.core.interfaces import IConfigRepository
 from src.core.entities import TTSConfig
@@ -84,13 +84,13 @@ class JSONConfigStorage(IConfigStorage):
             return self.storage_dir / f"guild_{guild_id}_user_{user_id}.json"
         return self.storage_dir / f"guild_{guild_id}.json"
 
-    def _parse_config_data(self, data: dict) -> TTSConfig:
+    def _parse_config_data(self, data: dict[str, Any]) -> TTSConfig:
         """Build TTSConfig from persisted JSON payload."""
         return TTSConfig(
-            engine=data.get("engine", "gtts"),
-            language=data.get("language", "pt"),
-            voice_id=data.get("voice_id", "roa/pt-br"),
-            rate=data.get("rate", 180),
+            engine=str(data.get("engine", "gtts")),
+            language=str(data.get("language", "pt")),
+            voice_id=str(data.get("voice_id", "roa/pt-br")),
+            rate=int(data.get("rate", 180)),
         )
 
     def load_sync(self, guild_id: int, user_id: Optional[int] = None) -> Optional[TTSConfig]:
@@ -104,6 +104,8 @@ class JSONConfigStorage(IConfigStorage):
         try:
             with open(config_path) as f:
                 data = json.load(f)
+            if not isinstance(data, dict):
+                raise ValueError("Config root must be an object")
 
             config = self._parse_config_data(data)
             logger.debug(f"[CONFIG_STORAGE] Loaded config synchronously for guild {guild_id}: {config.engine}")
@@ -241,16 +243,16 @@ class GuildConfigRepository(IConfigRepository):
             return self._clone_config(self._cache[guild_id])
 
         logger.debug(f"[CONFIG_REPO] Cache miss for guild {guild_id}, loading from storage")
-        load_sync = getattr(self._storage, "load_sync", None)
+        load_sync: Any = getattr(self._storage, "load_sync", None)
         if callable(load_sync):
             if user_id is not None:
-                user_config = load_sync(guild_id, user_id=user_id)
+                user_config = cast(TTSConfig | None, load_sync(guild_id, user_id=user_id))
                 if user_config:
                     self._user_cache[(guild_id, user_id)] = self._clone_config(user_config)
                     return self._clone_config(self._user_cache[(guild_id, user_id)])
                 if guild_id in self._cache:
                     return self._clone_config(self._cache[guild_id])
-            config = load_sync(guild_id)
+            config = cast(TTSConfig | None, load_sync(guild_id))
             if config:
                 self._cache[guild_id] = self._clone_config(config)
                 return self._clone_config(self._cache[guild_id])
@@ -259,9 +261,11 @@ class GuildConfigRepository(IConfigRepository):
 
     async def load_config_async(self, guild_id: Optional[int] = None, user_id: Optional[int] = None) -> TTSConfig:
         """Load configuration asynchronously through the repository contract."""
+        if guild_id is None:
+            return self._get_default_config()
         return await self.load_from_storage(guild_id, user_id=user_id)
 
-    async def load_from_storage(self, guild_id: int, user_id: Optional[int] = None) -> TTSConfig:
+    async def load_from_storage(self, guild_id: Optional[int], user_id: Optional[int] = None) -> TTSConfig:
         """Load configuration from storage asynchronously.
         
         This method fetches from persistence layer and updates cache.
@@ -401,7 +405,7 @@ class GuildConfigRepository(IConfigRepository):
             cache_key = (guild_id, user_id)
             if cache_key in self._user_cache:
                 return "user"
-            load_sync = getattr(self._storage, "load_sync", None)
+            load_sync: Any = getattr(self._storage, "load_sync", None)
             if callable(load_sync) and load_sync(guild_id, user_id=user_id):
                 return "user"
 

@@ -9,7 +9,10 @@ from .entities import TTSConfig, AudioFile, AudioQueueItem
 class AudioQueueStatusView(Protocol):
     """Core-facing view of queue status without depending on application DTOs."""
 
-    size: int
+    @property
+    def size(self) -> int:
+        """Current queue size."""
+        ...
 
 
 class ITTSEngine(ABC):

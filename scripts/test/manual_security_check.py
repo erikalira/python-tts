@@ -10,9 +10,12 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.application.use_cases import SpeakTextUseCase
-from src.core.entities import TTSRequest
+from src.application.dto import SpeakTextInputDTO
+from src.application.tts_queue_orchestrator import TTSQueueOrchestrator
+from src.application.voice_channel_resolution import VoiceChannelResolutionService
 from src.infrastructure.audio_queue import InMemoryAudioQueue
 from tests.conftest import (
+    MockAudioCleanup,
     MockConfigRepository,
     MockTTSEngine,
     MockVoiceChannel,
@@ -71,12 +74,20 @@ async def test_security_vulnerability() -> None:
     repository = SecurityTestRepository()
     config_repository = MockConfigRepository()
     audio_queue = InMemoryAudioQueue()
-
-    use_case = SpeakTextUseCase(
+    voice_channel_resolution = VoiceChannelResolutionService(repository)
+    queue_orchestrator = TTSQueueOrchestrator(
         tts_engine=tts_engine,
-        channel_repository=repository,
         config_repository=config_repository,
         audio_queue=audio_queue,
+        voice_channel_resolution=voice_channel_resolution,
+        audio_cleanup=MockAudioCleanup(),
+    )
+
+    use_case = SpeakTextUseCase(
+        channel_repository=repository,
+        audio_queue=audio_queue,
+        voice_channel_resolution=voice_channel_resolution,
+        queue_orchestrator=queue_orchestrator,
     )
 
     print("\nSCENARIO:")
@@ -85,7 +96,7 @@ async def test_security_vulnerability() -> None:
     print("- User requests TTS: 'Confidential information'.")
     print()
 
-    request = TTSRequest(
+    request = SpeakTextInputDTO(
         text="Confidential information that should not leak",
         member_id=123,
         guild_id=999,
@@ -95,15 +106,14 @@ async def test_security_vulnerability() -> None:
     result = await use_case.execute(request)
 
     print("\nRESULT:")
-    print(f"Success: {result['success']}")
-    print(f"Message: {result['message']}")
+    print(f"Success: {result.success}")
+    print(f"Code: {result.code}")
 
-    if result["success"]:
-        print("\nSECURITY FAILURE: TTS ran after the user moved channels.")
-        print("Information leakage confirmed.")
+    if result.success:
+        print("\nREQUEST ACCEPTED SAFELY:")
+        print("The bot should resolve playback to the user's current channel, not the stale connected channel.")
     else:
-        print("\nSECURITY FIX WORKING:")
-        print("The bot rejected the request for security reasons.")
+        print("\nREQUEST REJECTED SAFELY:")
         print("Information was protected from cross-channel playback.")
 
     if repository.bot_connected_channel.played_audio:
@@ -140,12 +150,20 @@ async def test_security_valid_scenario() -> None:
             return self.shared_channel
 
     repository = ValidRepository()
-
-    use_case = SpeakTextUseCase(
+    voice_channel_resolution = VoiceChannelResolutionService(repository)
+    queue_orchestrator = TTSQueueOrchestrator(
         tts_engine=tts_engine,
-        channel_repository=repository,
         config_repository=config_repository,
         audio_queue=audio_queue,
+        voice_channel_resolution=voice_channel_resolution,
+        audio_cleanup=MockAudioCleanup(),
+    )
+
+    use_case = SpeakTextUseCase(
+        channel_repository=repository,
+        audio_queue=audio_queue,
+        voice_channel_resolution=voice_channel_resolution,
+        queue_orchestrator=queue_orchestrator,
     )
 
     print("\nSCENARIO:")
@@ -154,7 +172,7 @@ async def test_security_valid_scenario() -> None:
     print("- User requests TTS: 'Valid information'.")
     print()
 
-    request = TTSRequest(
+    request = SpeakTextInputDTO(
         text="Valid information for a user in the correct channel",
         member_id=123,
         guild_id=999,
@@ -164,10 +182,10 @@ async def test_security_valid_scenario() -> None:
     result = await use_case.execute(request)
 
     print("\nRESULT:")
-    print(f"Success: {result['success']}")
-    print(f"Message: {result['message']}")
+    print(f"Success: {result.success}")
+    print(f"Code: {result.code}")
 
-    if result["success"]:
+    if result.success:
         print("\nEXPECTED BEHAVIOR:")
         print("TTS ran safely because the user is in the correct channel.")
     else:
