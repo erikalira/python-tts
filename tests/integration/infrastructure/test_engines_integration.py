@@ -69,6 +69,8 @@ class TestPyttsx3EngineIntegration:
 
     @staticmethod
     def _ensure_pyttsx3_backend_available() -> None:
+        if os.getenv("RUN_WINDOWS_TTS_INTEGRATION_TESTS") != "1":
+            pytest.skip("Set RUN_WINDOWS_TTS_INTEGRATION_TESTS=1 to run pyttsx3 SAPI5 integration tests")
         if platform.system() != "Windows":
             pytest.skip("pyttsx3 SAPI5 integration is only exercised on Windows")
         try:
