@@ -22,12 +22,16 @@ class TTSCatalog(Protocol):
 
     def list_voice_options(self) -> list[TTSVoiceOption]:
         """Return available voice options."""
+        ...
 
     def get_voice_option(self, key: str) -> TTSVoiceOption | None:
         """Resolve a selectable option by its stable key."""
+        ...
 
     def find_voice_option(self, *, engine: str, language: str, voice_id: str) -> TTSVoiceOption | None:
         """Resolve the currently active configuration back to a catalog option."""
+        ...
 
     def is_voice_available(self, *, engine: str, voice_id: str) -> bool:
         """Return whether the configured voice identifier resolves for the engine."""
+        ...

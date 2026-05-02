@@ -11,9 +11,11 @@ class TTSDeliveryEngine(Protocol):
 
     def speak(self, text: str) -> bool:
         """Speak the provided text."""
+        ...
 
     def is_available(self) -> bool:
         """Return whether the engine can be used."""
+        ...
 
 
 def build_tts_engine_chain(
@@ -33,8 +35,7 @@ def build_tts_engine_chain(
     else:
         engine_order = ("discord", "pyttsx3")
 
-    ordered = [candidates[name] for name in engine_order if candidates[name] is not None]
-    return ordered
+    return [engine for name in engine_order if (engine := candidates[name]) is not None]
 
 
 class TTSFallbackChain:
@@ -78,6 +79,7 @@ class TTSFallbackChain:
             return None
 
         try:
-            return reader()
+            error_message = reader()
         except Exception:
             return None
+        return error_message if isinstance(error_message, str) else None

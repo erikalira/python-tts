@@ -40,3 +40,4 @@ class VoiceRuntimeAvailability(Protocol):
 
     def get_status(self) -> VoiceRuntimeStatus:
         """Return the current runtime availability details."""
+        ...
