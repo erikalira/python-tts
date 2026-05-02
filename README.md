@@ -175,6 +175,15 @@ lives in the dedicated docs:
 - Advanced SLOs and alerting
 - Multi-tenant support and billing boundaries
 
+## License
+
+Copyright (c) 2026 Erika Lira. All rights reserved.
+
+This repository is public for portfolio review and technical evaluation only.
+No permission is granted to copy, modify, distribute, sublicense, publish, sell,
+host, deploy, or use this software commercially without explicit prior written
+permission. See [LICENSE](LICENSE).
+
 ## Author
 
 Erika Lira
