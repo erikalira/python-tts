@@ -30,3 +30,11 @@ uv run mutmut results
 The CI mutation job is non-blocking while the baseline is noisy. Treat survived
 mutants as backlog for focused tests; raise the bar only after the first reports
 are triaged.
+
+## Current CI Limitation
+
+The mutation baseline is intentionally report-only. The codebase imports modules
+through the `src.*` package path, while `mutmut` 3.x rejects stats trampoline
+hits whose module name starts with `src.`. The workflow still runs `mutmut` and
+uploads any available report, but a `mutmut run` failure does not fail CI until
+the mutation setup is migrated to a compatible import layout or runner strategy.
