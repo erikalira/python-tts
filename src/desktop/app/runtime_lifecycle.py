@@ -13,6 +13,8 @@ from src.application.dto import DesktopTTSServiceStatusDTO
 logger = logging.getLogger(__name__)
 
 ConfigT = TypeVar("ConfigT")
+ProcessorT = TypeVar("ProcessorT", bound="DesktopTTSProcessorLike")
+NotificationT = TypeVar("NotificationT", bound="NotificationServiceLike")
 
 
 class DesktopTTSProcessorLike(Protocol):
@@ -20,6 +22,7 @@ class DesktopTTSProcessorLike(Protocol):
 
     def get_service_status(self) -> DesktopTTSServiceStatusDTO:
         """Return the typed TTS status object."""
+        ...
 
 
 class HotkeyManagerLike(Protocol):
@@ -100,7 +103,8 @@ class DesktopAppLifecycleCoordinator:
 
         logger.info("[DESKTOP_APP] Console mode active. Press Ctrl+C to exit...")
         wait_backend = console_wait_factory()
-        if hasattr(wait_backend, "is_available") and wait_backend.is_available():
+        is_available = getattr(wait_backend, "is_available", None)
+        if callable(is_available) and is_available():
             try:
                 import keyboard
 
@@ -116,17 +120,18 @@ class DesktopAppLifecycleCoordinator:
         running: bool,
         config: ConfigT,
         hotkey_manager: HotkeyManagerLike | None,
-        tts_processor: DesktopTTSProcessorLike | None,
-        notification_service: NotificationServiceLike | None,
-        tts_processor_factory: Callable[[ConfigT], DesktopTTSProcessorLike],
-        notification_service_factory: Callable[[ConfigT], NotificationServiceLike],
-        initialize_notification_service: Callable[[NotificationServiceLike], None],
+        tts_processor: ProcessorT | None,
+        notification_service: NotificationT | None,
+        tts_processor_factory: Callable[[ConfigT], ProcessorT],
+        notification_service_factory: Callable[[ConfigT], NotificationT],
+        initialize_notification_service: Callable[[NotificationT], None],
         rebuild_hotkey_manager: Callable[[bool], None],
-    ) -> tuple[DesktopTTSProcessorLike | None, NotificationServiceLike | None]:
+    ) -> tuple[ProcessorT | None, NotificationT | None]:
         """Rebuild dependent services after a configuration change."""
-        hotkeys_were_active = bool(hotkey_manager and hotkey_manager.is_active())
-        if hotkeys_were_active:
-            hotkey_manager.stop()
+        active_hotkey_manager = hotkey_manager
+        hotkeys_were_active = active_hotkey_manager is not None and active_hotkey_manager.is_active()
+        if active_hotkey_manager is not None and hotkeys_were_active:
+            active_hotkey_manager.stop()
 
         if tts_processor:
             tts_processor = tts_processor_factory(config)

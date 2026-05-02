@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 from collections.abc import Iterable
 
 
@@ -16,6 +16,15 @@ class TTSDeliveryEngine(Protocol):
 
     def is_available(self) -> bool:
         """Return whether the engine can be used."""
+        ...
+
+
+@runtime_checkable
+class TTSDeliveryEngineWithError(TTSDeliveryEngine, Protocol):
+    """Optional delivery-engine extension that exposes a failure reason."""
+
+    def get_last_error_message(self) -> str | None:
+        """Return the latest human-friendly engine error when available."""
         ...
 
 
@@ -42,7 +51,7 @@ def build_tts_engine_chain(
 class TTSFallbackChain:
     """Try TTS engines in order until one succeeds."""
 
-    def __init__(self, engines: Iterable[TTSDeliveryEngine], logger: logging.Logger | None = None):
+    def __init__(self, engines: Iterable[TTSDeliveryEngine], logger: logging.Logger | None = None) -> None:
         self._engines = list(engines)
         self._logger = logger or logging.getLogger(__name__)
         self._last_error_message: str | None = None
@@ -75,12 +84,11 @@ class TTSFallbackChain:
     @staticmethod
     def _read_engine_error(engine: TTSDeliveryEngine) -> str | None:
         """Read an optional human-friendly error message from an engine."""
-        reader = getattr(engine, "get_last_error_message", None)
-        if not callable(reader):
+        if not isinstance(engine, TTSDeliveryEngineWithError):
             return None
 
         try:
-            error_message = reader()
+            error_message = engine.get_last_error_message()
         except Exception:
             return None
-        return error_message if isinstance(error_message, str) else None
+        return error_message

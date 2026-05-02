@@ -5,10 +5,10 @@ Provides system tray icon and notification services.
 """
 
 import logging
-from abc import ABC, abstractmethod
 import threading
 import time
-from typing import Optional
+from abc import ABC, abstractmethod
+from typing import Optional, Protocol
 from collections.abc import Callable
 
 from src.application.dto import SystemTrayStatusDTO
@@ -59,28 +59,37 @@ class ConsoleNotificationService(NotificationService):
         return True
 
 
-class SystemTrayIcon(ABC):
-    """Abstract interface for system tray functionality."""
+class SystemTrayIcon(Protocol):
+    """Protocol for system tray functionality."""
 
-    @abstractmethod
     def show(self) -> None:
         """Show the system tray icon."""
+        ...
 
-    @abstractmethod
     def hide(self) -> None:
         """Hide the system tray icon."""
+        ...
 
-    @abstractmethod
     def set_tooltip(self, tooltip: str) -> None:
         """Set the tooltip text."""
+        ...
 
-    @abstractmethod
     def is_available(self) -> bool:
         """Check if system tray is available."""
+        ...
 
-    @abstractmethod
     def is_running(self) -> bool:
         """Check if the tray loop is running."""
+        ...
+
+    def set_handlers(
+        self,
+        status_click: Optional[Callable[[], None]] = None,
+        configure: Optional[Callable[[], None]] = None,
+        quit_handler: Optional[Callable[[], None]] = None,
+    ) -> None:
+        """Set callback handlers for tray actions."""
+        ...
 
 
 class SystemTrayService:
@@ -106,13 +115,12 @@ class SystemTrayService:
 
     def initialize(
         self,
-        status_click: Optional[Callable] = None,
-        configure: Optional[Callable] = None,
-        quit_handler: Optional[Callable] = None,
+        status_click: Optional[Callable[[], None]] = None,
+        configure: Optional[Callable[[], None]] = None,
+        quit_handler: Optional[Callable[[], None]] = None,
     ) -> None:
         """Initialize system tray with handlers."""
-        if hasattr(self._tray_icon, "set_handlers"):
-            self._tray_icon.set_handlers(status_click, configure, quit_handler)
+        self._tray_icon.set_handlers(status_click, configure, quit_handler)
 
     def start(self) -> bool:
         """Start system tray service only after startup is confirmed."""

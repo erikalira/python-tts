@@ -4,8 +4,13 @@
     "src/application/dto",
     "src/application/rate_limiting.py",
     "src/application/runtime_telemetry.py",
-    "src/bot_runtime/readiness.py",
+    "src/bot_runtime",
     "src/core",
+    "src/desktop/app",
+    "src/desktop/gui/settings_gui_dialog.py",
+    "src/desktop/services",
+    "src/presentation/discord_command_handlers.py",
+    "src/presentation/discord_commands.py",
     "scripts/test/quality_gates.py",
     "tests/unit/test_architecture_boundaries.py",
     "tests/unit/test_quality_gates.py"
@@ -15,10 +20,13 @@
     "htmlcov",
     "__pycache__"
   ],
+  "venvPath": ".",
+  "venv": ".venv",
   "pythonVersion": "3.11",
   "typeCheckingMode": "standard",
+  "reportMissingModuleSource": "none",
   "reportMissingTypeStubs": "none",
-  "reportUnknownMemberType": "none",
-  "reportUnknownVariableType": "none",
-  "reportUnknownArgumentType": "none"
+  "reportUnknownMemberType": "warning",
+  "reportUnknownVariableType": "warning",
+  "reportUnknownArgumentType": "warning"
 }

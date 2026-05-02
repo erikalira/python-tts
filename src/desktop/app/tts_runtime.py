@@ -29,12 +29,15 @@ class DesktopTTSExecutionService(Protocol):
 
     def execute(self, text: str | None) -> TTSExecutionResult:
         """Execute TTS for the given text."""
+        ...
 
     def is_available(self) -> bool:
         """Return whether TTS is currently available."""
+        ...
 
     def get_status_info(self) -> DesktopTTSStatusDTO:
         """Return typed TTS status information."""
+        ...
 
 
 class KeyboardCleanupPort(Protocol):
@@ -45,6 +48,7 @@ class KeyboardCleanupPort(Protocol):
 
     def is_suppressing_events(self) -> bool:
         """Return whether keyboard events are being suppressed."""
+        ...
 
 
 class DesktopAppTTSResultPresenter:

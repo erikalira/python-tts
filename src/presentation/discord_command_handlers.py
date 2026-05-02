@@ -7,7 +7,8 @@ import platform
 
 import discord
 
-from src.application.dto import ConfigureTTSResult
+from src.application.dto import ConfigureTTSResult, TTSConfigurationData
+from src.application.tts_config_use_case import ConfigureTTSUseCase
 from src.application.tts_voice_catalog import TTSCatalog
 from src.application.voice_runtime import VoiceRuntimeStatus
 from src.presentation.discord_i18n import DEFAULT_LOCALE, DiscordMessageCatalog
@@ -16,11 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class _BaseConfigEmbedBuilder:
-    def __init__(self, tts_catalog: TTSCatalog):
+    def __init__(self, tts_catalog: TTSCatalog) -> None:
         self._tts_catalog = tts_catalog
         self._messages = DiscordMessageCatalog()
 
-    def _resolve_voice_name(self, config) -> str:
+    def _resolve_voice_name(self, config: TTSConfigurationData) -> str:
         resolved_voice = self._tts_catalog.find_voice_option(
             engine=config.engine,
             language=config.language,
@@ -65,11 +66,16 @@ class _BaseConfigEmbedBuilder:
             return self._messages.text("config.scope.guild", locale)
         return self._messages.text("config.scope.global", locale)
 
+    def _require_config(self, result: ConfigureTTSResult) -> TTSConfigurationData:
+        if result.config is None:
+            raise ValueError("ConfigureTTSResult.config is required for config embeds")
+        return result.config
+
 
 class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
     """Handle the `/config` command flow and embed construction."""
 
-    def __init__(self, config_use_case, tts_catalog: TTSCatalog):
+    def __init__(self, config_use_case: ConfigureTTSUseCase, tts_catalog: TTSCatalog) -> None:
         super().__init__(tts_catalog)
         self._config_use_case = config_use_case
 
@@ -156,7 +162,7 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
         result: ConfigureTTSResult,
         locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
-        config = result.config
+        config = self._require_config(result)
         voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
             title=self._messages.text("config.title.current", locale),
@@ -186,7 +192,7 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
         result: ConfigureTTSResult,
         locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
-        config = result.config
+        config = self._require_config(result)
         voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
             title=self._messages.text("config.title.updated", locale),
@@ -215,7 +221,7 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
         result: ConfigureTTSResult,
         locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
-        config = result.config
+        config = self._require_config(result)
         voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
             title=self._messages.text("config.title.reset", locale),
@@ -236,7 +242,7 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
 class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
     """Handle the `/server-config` command flow for guild defaults."""
 
-    def __init__(self, config_use_case, tts_catalog: TTSCatalog):
+    def __init__(self, config_use_case: ConfigureTTSUseCase, tts_catalog: TTSCatalog) -> None:
         super().__init__(tts_catalog)
         self._config_use_case = config_use_case
 
@@ -332,7 +338,7 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
         result: ConfigureTTSResult,
         locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
-        config = result.config
+        config = self._require_config(result)
         voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
             title=self._messages.text("server_config.title.current", locale),
@@ -354,7 +360,7 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
         result: ConfigureTTSResult,
         locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
-        config = result.config
+        config = self._require_config(result)
         voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
             title=self._messages.text("server_config.title.updated", locale),
@@ -379,7 +385,7 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
         result: ConfigureTTSResult,
         locale: str = DEFAULT_LOCALE,
     ) -> discord.Embed:
-        config = result.config
+        config = self._require_config(result)
         voice_name = self._resolve_voice_name(config)
         embed = discord.Embed(
             title=self._messages.text("server_config.title.reset", locale),
@@ -396,7 +402,7 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
 class DiscordAboutCommandHandler:
     """Build and send the `/about` response."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._messages = DiscordMessageCatalog()
 
     async def handle(
