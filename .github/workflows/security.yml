@@ -95,7 +95,7 @@ jobs:
             -t tts-hotkey-windows-bot:${GITHUB_SHA} .
 
       - name: Generate Docker image SBOM
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: tts-hotkey-windows-bot:${{ github.sha }}
           format: cyclonedx
@@ -125,7 +125,7 @@ jobs:
             -t tts-hotkey-windows-bot:${GITHUB_SHA} .
 
       - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: tts-hotkey-windows-bot:${{ github.sha }}
           format: sarif
@@ -137,7 +137,7 @@ jobs:
       - name: Gate on fixable critical Docker image vulnerabilities
         id: trivy_gate
         continue-on-error: true
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: tts-hotkey-windows-bot:${{ github.sha }}
           format: table
