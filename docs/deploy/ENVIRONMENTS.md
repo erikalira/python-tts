@@ -134,6 +134,7 @@ Recommended minimum values:
 
 ```env
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+BOT_SPEAK_TOKEN=change_me_in_production
 BOT_IMAGE=ghcr.io/your-org/tts-hotkey-windows-bot
 APP_VERSION=v2026.04.24-1
 VCS_REF=<git-sha>
@@ -156,6 +157,9 @@ Notes:
   bot without rebuilding.
 - The bundled compose stack builds `DATABASE_URL` for the bot from
   `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
+- The bundled compose stack binds the bot to `0.0.0.0`, so
+  `BOT_SPEAK_TOKEN` is required and must match the token configured in any
+  Desktop App client that calls `/speak`.
 - The bundled compose stack includes Redis. Use `REDIS_HOST=redis` so the bot
   container connects through Docker service discovery.
 - For OpenTelemetry, set `OTEL_ENABLED=true` and point

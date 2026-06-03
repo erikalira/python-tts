@@ -29,6 +29,7 @@ Minimum values:
 
 ```env
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+BOT_SPEAK_TOKEN=change_me_in_production
 BOT_IMAGE=ghcr.io/your-org/tts-hotkey-windows-bot
 APP_VERSION=v2026.04.24-1
 VCS_REF=<git-sha>
@@ -59,6 +60,11 @@ ALERTMANAGER_DISCORD_WEBHOOK_FILE=./deploy/observability/alertmanager-discord-we
 For the bundled compose file, the bot `DATABASE_URL` is built inside
 `docker-compose.prod.yml` from the same `POSTGRES_*` variables used by the
 database container, so you do not need to set `DATABASE_URL` separately.
+
+The bundled compose file exposes the bot HTTP server on `0.0.0.0`, so
+`BOT_SPEAK_TOKEN` is required. Generate a long random value, store it only in
+your real env file or secret store, and configure the Desktop App with the same
+token when it calls `POST /speak`.
 
 For the bundled Redis service, use `REDIS_HOST=redis`. Inside Docker, the bot
 must connect to the Redis service name, not `127.0.0.1`.
