@@ -7,11 +7,9 @@ description: Check package versions, update Python dependencies, and validate de
 
 Read these first:
 
-- `.specify/README.md`
-- `.specify/memory/constitution.md`
-- `.specify/review-checklist.md`
-- `docs/DEPENDENCY_MAINTENANCE.md`
-- `docs/TESTING.md`
+- `docs/PROJECT_RULES.md`
+- `docs/maintenance/DEPENDENCY_MAINTENANCE.md`
+- `docs/getting-started/TESTING.md`
 
 For the step-by-step command checklist, read:
 

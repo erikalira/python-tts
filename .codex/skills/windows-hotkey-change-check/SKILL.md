@@ -7,11 +7,9 @@ description: Validate changes that may impact Windows hotkey app behavior and in
 
 Read these first:
 
-- `.specify/README.md`
-- `.specify/memory/constitution.md`
-- `.specify/review-checklist.md`
-- `docs/README_DESKTOP_APP.md`
-- `docs/RUNTIME_FLOWS.md`
+- `docs/PROJECT_RULES.md`
+- `docs/desktop/DESKTOP_APP_GUIDE.md`
+- `docs/architecture/RUNTIME_FLOWS.md`
 
 # When to use
 

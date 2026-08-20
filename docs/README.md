@@ -53,18 +53,9 @@ This directory contains the repository's supporting documentation. The root
 
 ## Governance
 
-- [../.specify/README.md](../.specify/README.md): canonical Spec Kit governance and workflow index
-- [../.specify/memory/constitution.md](../.specify/memory/constitution.md): repository constitution and non-negotiable rules
-- [../.specify/memory/ai-pitfalls.md](../.specify/memory/ai-pitfalls.md): common AI-assisted change pitfalls to avoid
-- [../.specify/sync-report-template.md](../.specify/sync-report-template.md): template for constitution sync reports
-- [../.specify/templates/spec-template.md](../.specify/templates/spec-template.md): feature specification standard
-- [../.specify/templates/plan-template.md](../.specify/templates/plan-template.md): implementation plan standard
-- [../.specify/templates/tasks-template.md](../.specify/templates/tasks-template.md): task breakdown standard
-- [../.specify/review-checklist.md](../.specify/review-checklist.md): canonical review and self-review checklist
-- [../.specify/transition-cleanup.md](../.specify/transition-cleanup.md): canonical temporary compatibility cleanup rule
-- [../.specify/change-map.md](../.specify/change-map.md): canonical guide for where to start a change
-- [../AGENTS.md](../AGENTS.md): derivative agent summary for the current repository
-- [../.github/copilot-instructions.md](../.github/copilot-instructions.md): derivative GitHub Copilot summary aligned to `.specify/`
+- [PROJECT_RULES.md](PROJECT_RULES.md): binding repository rules — architecture boundaries, change starting points, contracts, validation, language
+- [../AGENTS.md](../AGENTS.md): agent entrypoint for this repository
+- [../.github/copilot-instructions.md](../.github/copilot-instructions.md): GitHub Copilot summary
 
 ## Conventions
 
@@ -73,10 +64,9 @@ This directory contains the repository's supporting documentation. The root
 - `docs/operations/` also contains production runbooks, DR drills, and release checklists
 - `docs/architecture/diagrams/` contains editable Mermaid architecture sources
 - `docs/adr/` contains architecture decision records for major technical choices
-- `.specify/` contains canonical project guidance and feature workflow templates
-- AI/tool-specific instruction files should remain derivative of `.specify/`
-- `.agents/` and `.codex/` contain project-specific agent skills and playbooks
-  that remain derivative of `.specify/` for repository policy
+- `docs/PROJECT_RULES.md` contains the binding repository rules
+- `openspec/` contains change proposals, specs, and task lists
+- `.codex/` contains project-specific agent skills and review playbooks
 
 ## Navigation
 

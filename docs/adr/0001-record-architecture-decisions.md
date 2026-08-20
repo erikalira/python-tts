@@ -13,7 +13,8 @@ need durable rationale beyond implementation comments.
 ## Decision
 
 Use ADRs in `docs/adr/` for major architecture, persistence, observability, and
-deployment decisions. Keep governance rules in `.specify/`; ADRs record why a
+deployment decisions. Keep repository rules in `docs/PROJECT_RULES.md`; ADRs
+record why a
 specific technical choice was made.
 
 ## Consequences

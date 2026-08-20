@@ -3,8 +3,8 @@
 Use this guide when deciding whether code should live in shared layers under
 `src/` or stay runtime-specific in the Discord bot or Desktop App flows.
 
-This is a durable decision aid, not the canonical governance source. For binding
-rules, use `.specify/memory/constitution.md`.
+This is a durable decision aid. For binding rules, use
+`docs/PROJECT_RULES.md`.
 
 ## Default Rule
 

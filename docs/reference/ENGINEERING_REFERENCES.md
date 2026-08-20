@@ -4,15 +4,14 @@ This file records the books and software design references that inform the
 engineering direction of this repository.
 
 It is intentionally not a second source of truth for repository rules.
-Project-specific operating guidance still lives in `.specify/`. This file exists
+Project-specific operating guidance lives in `docs/PROJECT_RULES.md`. This file exists
 to preserve context about the ideas the project values and how they translate
 into practical decisions here.
 
 ## How To Use This Document
 
 - Use this file to understand the architectural taste behind the repository.
-- Use `.specify/memory/constitution.md` for binding principles.
-- Use `.specify/review-checklist.md` for actionable review questions.
+- Use `docs/PROJECT_RULES.md` for binding rules.
 - Prefer project-specific rules over generic book vocabulary when making code
   changes.
 

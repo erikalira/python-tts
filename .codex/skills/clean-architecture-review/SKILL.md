@@ -7,9 +7,7 @@ description: Review changes for clean architecture boundary violations, layer le
 
 Read these first:
 
-- `.specify/README.md`
-- `.specify/memory/constitution.md`
-- `.specify/review-checklist.md`
+- `docs/PROJECT_RULES.md`
 - `docs/architecture/ARCHITECTURE.md`
 - `docs/architecture/ARCHITECTURE_TRANSITIONS.md`
 
