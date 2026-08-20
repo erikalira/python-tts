@@ -18,12 +18,34 @@ runtime-entrypoint changes.
   blocking gate. High vulnerabilities remain a documented follow-up threshold
   until the baseline is clean enough to promote `HIGH,CRITICAL` to blocking.
 - The `Release` workflow repeats the runtime dependency audit and scans the
-  published image digest before signing it.
+  published image digest before signing it. Both audits carry the documented
+  exception listed under Accepted Vulnerability Exceptions.
 - Release images are signed with Cosign keyless signing and receive a GitHub
   build provenance attestation pushed to the registry.
 - The OpenSSF Scorecard workflow runs on `main`, weekly, and manually. It
   publishes SARIF and remains report-only until a stable project score baseline
   is recorded.
+
+## Accepted Vulnerability Exceptions
+
+An exception is recorded here only when there is no resolvable upgrade and the
+flaw is not reachable from either runtime. Each one is re-evaluated whenever its
+blocking constraint changes.
+
+| ID | Package | Status |
+| --- | --- | --- |
+| `PYSEC-2026-2132` | `click < 8.3.3` | Accepted. No upgrade path |
+
+`gtts 2.5.4`, the latest released version, pins `click<8.2`, so the fixed
+`click 8.3.3` cannot be resolved while `gtts` is a runtime dependency. The flaw
+is a command injection in `click.edit()`, which opens an interactive editor.
+This repository never imports `click`, and `gtts` uses it only in its own CLI
+(`gtts/cli.py`), which neither the bot nor the Desktop App invokes.
+
+The exception is applied with `pip-audit --ignore-vuln PYSEC-2026-2132` in the
+`Security` workflow, the `Release` workflow, and the `security` Makefile target.
+Remove the flag once `gtts` relaxes the constraint, and re-run the audit to
+confirm the finding is gone rather than merely re-suppressed.
 
 ## Artifact Verification
 
