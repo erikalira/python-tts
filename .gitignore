@@ -67,3 +67,8 @@ deploy/winsw/tts-discord-bot.exe
 # create_icon.py is kept for rebuilding
 
 configs/
+
+# graphify (generated knowledge graph output; keep human-readable docs)
+graphify-out/*
+!graphify-out/GRAPH_REPORT.md
+!graphify-out/wiki/
