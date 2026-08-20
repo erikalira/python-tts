@@ -39,8 +39,7 @@ Presentation -> Application -> Domain <- Infrastructure
 - Domain must remain pure Python and must not depend on outer layers
 - Application must not import Infrastructure directly
 
-The canonical repository rules live in `.specify/`. If this file and `.specify/`
-conflict, `.specify/` wins.
+The full repository rules live in `docs/PROJECT_RULES.md`.
 
 ## Pull Request Checklist
 

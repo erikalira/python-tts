@@ -68,11 +68,8 @@
 
 - [ ] No documentation update needed
 - [ ] Documentation updated in `docs/`
-- [ ] Workflow or guidance updated in `.specify/`
-- [ ] Derivative instruction files updated (`AGENTS.md`, `.github/`, skills)
-
-<!-- If instructions or governance changed, keep `.specify/` as the source of truth.
-Update tool-specific instruction files only to point back to the canonical docs. -->
+- [ ] Repository rules updated in `docs/PROJECT_RULES.md`
+- [ ] Instruction files updated (`AGENTS.md`, `.github/`, `.codex/` skills)
 
 ## Screenshots or Recordings
 

@@ -7,11 +7,8 @@ description: Generate a safe, step-by-step refactor plan minimizing risk and pre
 
 Read these first:
 
-- `.specify/README.md`
-- `.specify/memory/constitution.md`
-- `.specify/templates/plan-template.md`
-- `.specify/review-checklist.md`
-- `docs/ARCHITECTURE_TRANSITIONS.md`
+- `docs/PROJECT_RULES.md`
+- `docs/architecture/ARCHITECTURE_TRANSITIONS.md`
 
 # When to use
 

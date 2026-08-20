@@ -7,11 +7,9 @@ description: Review or validate Desktop App GUI changes for responsiveness, edit
 
 Read these first:
 
-- `.specify/README.md`
-- `.specify/memory/constitution.md`
-- `.specify/review-checklist.md`
-- `docs/README_DESKTOP_APP.md`
-- `docs/RUNTIME_FLOWS.md`
+- `docs/PROJECT_RULES.md`
+- `docs/desktop/DESKTOP_APP_GUIDE.md`
+- `docs/architecture/RUNTIME_FLOWS.md`
 
 # When to use
 

@@ -166,7 +166,7 @@ lives in the dedicated docs:
 - [Desktop App guide](docs/desktop/DESKTOP_APP_GUIDE.md)
 - [Server deployment guide](docs/deploy/DEPLOYMENT_GUIDE.md)
 - [Threat model](docs/security/THREAT_MODEL.md)
-- [Canonical constitution and workflow](.specify/README.md)
+- [Project rules](docs/PROJECT_RULES.md)
 
 ## Future Improvements
 

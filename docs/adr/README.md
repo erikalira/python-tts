@@ -1,8 +1,8 @@
 # Architecture Decision Records
 
 ADRs capture durable technical decisions, their tradeoffs, and the expected
-steady state. They complement `.specify/`, which remains the canonical source
-for repository workflow and governance.
+steady state. They complement `docs/PROJECT_RULES.md`, which holds the binding
+repository rules.
 
 Use an ADR when a decision changes architecture, deployment, persistence,
 observability, or operating model.

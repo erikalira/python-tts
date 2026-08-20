@@ -3,8 +3,8 @@
 Use this guide when deciding whether a boundary in the repository needs a DTO,
 `Protocol`, or other explicit contract.
 
-This is a durable decision aid, not the canonical governance source. For binding
-rules, use `.specify/memory/constitution.md`.
+This is a durable decision aid. For binding rules, use
+`docs/PROJECT_RULES.md`.
 
 ## Goal
 

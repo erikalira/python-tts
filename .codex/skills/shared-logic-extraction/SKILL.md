@@ -7,11 +7,9 @@ description: Identify duplicated logic between the Desktop App runtime and the s
 
 Read these first:
 
-- `.specify/README.md`
-- `.specify/memory/constitution.md`
-- `.specify/review-checklist.md`
-- `docs/ARCHITECTURE.md`
-- `docs/RUNTIME_FLOWS.md`
+- `docs/PROJECT_RULES.md`
+- `docs/architecture/ARCHITECTURE.md`
+- `docs/architecture/RUNTIME_FLOWS.md`
 
 # When to use
 

@@ -7,11 +7,9 @@ description: Validate changes that may impact Discord bot behavior and execution
 
 Read these first:
 
-- `.specify/README.md`
-- `.specify/memory/constitution.md`
-- `.specify/review-checklist.md`
-- `docs/RUNTIME_FLOWS.md`
-- `docs/ARCHITECTURE.md`
+- `docs/PROJECT_RULES.md`
+- `docs/architecture/RUNTIME_FLOWS.md`
+- `docs/architecture/ARCHITECTURE.md`
 
 # When to use
 

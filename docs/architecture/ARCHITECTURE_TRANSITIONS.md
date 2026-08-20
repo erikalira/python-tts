@@ -1,8 +1,7 @@
 # Architecture Transitions
 
-This guide complements the canonical transition rule in
-`.specify/transition-cleanup.md` with repository-specific architectural
-examples.
+This guide complements the transition-code rule in `docs/PROJECT_RULES.md` with
+repository-specific architectural examples.
 
 ## Typical transition shapes in this repository
 
@@ -37,6 +36,6 @@ Avoid spreading the same transition behavior across multiple layers.
 
 ## How to use this guide
 
-Use `.specify/transition-cleanup.md` for the rule and removal criteria.
+Use `docs/PROJECT_RULES.md` for the rule and removal criteria.
 Use this file when you want concrete architecture examples tied to this
 repository's layers and runtime structure.
