@@ -1,0 +1,25 @@
+# .graphifyignore — o que fica de fora do grafo de conhecimento.
+#
+# O graphify ja lê o .gitignore automaticamente e ja pula por padrao
+# .venv/, __pycache__/, .pytest_cache/, .ruff_cache/, .terraform/, htmlcov/,
+# dist/, build/ e arquivos sensiveis (.env*, *.pem, *.key). Nao repetimos isso aqui.
+#
+# O que este arquivo remove e ruido *semantico*: instrucoes para agentes de IA
+# e scaffolding de ferramenta, que descrevem como um agente deve trabalhar e nao
+# como o bot TTS funciona. Se entrarem, viram god nodes que competem com a
+# arquitetura real do sistema.
+
+# Configuracao de agentes e skills
+.agents/
+.codex/
+.codacy/
+AGENTS.md
+
+# Scaffolding Spec Kit — templates e checklists de processo, nao conteudo
+.specify/
+
+# Configuracao de editor
+.vscode/
+
+# Lockfile grande, sem valor estrutural (o default do graphify so cobre poetry.lock)
+uv.lock
