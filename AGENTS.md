@@ -13,8 +13,14 @@ independently after changes:
 - `docs/architecture/ARCHITECTURE.md` — how the system is structured.
 - `docs/README.md` — documentation index.
 
-Change workflow runs through OpenSpec (`openspec/`). General engineering
-practice comes from the agent definitions, not from files in this repo.
+Change workflow runs through OpenSpec (`openspec/`).
+
+# Precedence
+
+General engineering practice comes from the installed agent definitions, not
+from files in this repo. This repo owns project-specific rules: where the two
+overlap, `docs/PROJECT_RULES.md` wins for anything specific to this codebase —
+layers, runtimes, file paths, validation.
 
 # Hard boundary
 
@@ -22,6 +28,11 @@ practice comes from the agent definitions, not from files in this repo.
 `src/infrastructure/` directly. If shared logic needs infrastructure behavior,
 define a contract inward and bind the concrete adapter in a composition root or
 runtime layer.
+
+This is enforced by `tests/unit/test_architecture_boundaries.py`, which also
+guards the full inward dependency flow and keeps the desktop runtime
+independent of the bot runtime. Run it before finishing a change that moves
+imports between layers.
 
 # Validation
 
@@ -31,7 +42,9 @@ changed path. Call out any validation gap explicitly.
 
 # Local agent assets
 
-`.codex/` contains Codex skills and project-specific review playbooks.
+`.codex/` contains Codex skills and project-specific review playbooks. They are
+tool-specific execution detail; where one restates repository policy,
+`docs/PROJECT_RULES.md` is authoritative.
 
 ## graphify
 
