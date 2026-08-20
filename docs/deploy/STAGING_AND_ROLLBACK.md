@@ -153,8 +153,10 @@ Use rollback when the release breaks health, readiness, queue processing,
 storage access, or the desktop-connected bot flow.
 
 For Docker image rollback on a runner with access to the production compose
-stack, use the `Rollback Bot Image` GitHub Actions workflow. It defaults to a
-dry run. For an actual rollback, provide:
+stack, use the `Rollback Bot Image` GitHub Actions workflow. Its inputs are
+deployment-shape agnostic, so it targets any Compose-based host, including the
+OCI instance, when the runner runs there. It defaults to a dry run. For an
+actual rollback, provide:
 
 - runner labels, for example `["self-hosted","linux","bot-server"]`
 - previous `BOT_IMAGE`
@@ -200,6 +202,21 @@ sync the Argo CD application. Do not patch the live Deployment directly except
 as a short emergency containment step; if that happens, restore Git as the
 source of truth immediately after recovery.
 
+For the OCI Ampere A1 host, rollback is the same operation as deployment with
+an earlier tag. The deploy script records the outgoing version, so:
+
+```bash
+# recorded previous version
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh --rollback'
+
+# or an explicit known-good tag
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh v1.2.4'
+```
+
+The `Deploy OCI` workflow with `release_tag = <previous-version>` performs the
+same rollback from GitHub Actions. See
+[OCI_AMPERE_A1_DEPLOY.md](OCI_AMPERE_A1_DEPLOY.md#rollback).
+
 ## Done Criteria
 
 A deploy or rollback is done only when:
@@ -211,4 +228,6 @@ A deploy or rollback is done only when:
 - the live observability SLI gate passes after smoke traffic
 - Prometheus alerts route through Alertmanager and reach the incident channel
   during staging validation when alert routing changed
+- on the OCI target, which runs neither Prometheus nor Alertmanager, `/health`,
+  `/ready`, and a TTS smoke request are the applicable criteria
 - any validation gap is recorded in the release notes

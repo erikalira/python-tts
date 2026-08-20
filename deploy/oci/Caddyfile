@@ -1,0 +1,50 @@
+# Reverse proxy for the OCI Ampere A1 bot host.
+#
+# Exposes only what the Desktop App needs. /observability, /version, /about and
+# the bare / route stay private to the host: they describe runtime internals and
+# have no authentication of their own.
+#
+# Authentication is unchanged: BOT_SPEAK_TOKEN still guards /speak. Caddy adds
+# transport security, it does not replace the application token.
+{
+	# ACME account contact. Empty is valid; Let's Encrypt simply sends no
+	# expiry notifications.
+	email {$ACME_EMAIL}
+
+	# The bot's own access logs are the record of interest on a 1 OCPU host.
+	admin off
+}
+
+{$PUBLIC_HOSTNAME} {
+	encode zstd gzip
+
+	# Never log the shared token. Caddy does not log request headers by
+	# default; this makes the intent explicit and survives config edits.
+	log {
+		output file /data/access.log {
+			roll_size 10MiB
+			roll_keep 3
+		}
+		format json
+	}
+
+	handle /speak {
+		reverse_proxy 127.0.0.1:{$BOT_HTTP_PORT:10000}
+	}
+
+	handle /voice-context {
+		reverse_proxy 127.0.0.1:{$BOT_HTTP_PORT:10000}
+	}
+
+	# Liveness for external uptime checks. Returns no runtime detail beyond
+	# a status field.
+	handle /health {
+		reverse_proxy 127.0.0.1:{$BOT_HTTP_PORT:10000}
+	}
+
+	# Everything else is not published. /ready, /observability, /version and
+	# /about remain reachable from the host itself for deploy validation.
+	handle {
+		respond "Not Found" 404
+	}
+}

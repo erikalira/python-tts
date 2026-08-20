@@ -297,3 +297,77 @@ jobs:
           RUN_WINDOWS_TTS_INTEGRATION_TESTS: "0"
         run: |
           uv run pytest ${{ matrix.pytest_args }} --tb=short -v --no-cov
+
+  container-image:
+    name: Container Image (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    strategy:
+      # Report amd64 and arm64 independently so an ARM64-only regression is
+      # visible on its own job instead of hiding behind a combined build.
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up QEMU for cross-platform builds
+        if: matrix.platform != 'linux/amd64'
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+
+      - name: Build bot image
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
+        with:
+          context: .
+          file: Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false
+          load: true
+          tags: tts-hotkey-windows-bot:ci
+          build-args: |
+            APP_VERSION=ci
+            VCS_REF=${{ github.sha }}
+          cache-from: type=gha,scope=bot-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=bot-${{ matrix.platform }}
+
+      - name: Verify native runtime dependencies import
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+
+          # Native wheels are the real cross-architecture risk for this image.
+          # Importing them proves the ARM64 build is usable, not merely buildable.
+          docker run --rm --platform "${PLATFORM}" --entrypoint python3 \
+            tts-hotkey-windows-bot:ci -c '
+          import importlib
+          import platform
+
+          modules = ["nacl", "davey", "aiohttp", "discord", "gtts", "psycopg", "redis"]
+          for module in modules:
+              importlib.import_module(module)
+              print(f"imported {module}")
+          print(f"machine={platform.machine()}")
+          '
+
+      - name: Verify audio system dependencies
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          docker run --rm --platform "${PLATFORM}" --entrypoint sh \
+            tts-hotkey-windows-bot:ci -c 'ffmpeg -version >/dev/null && espeak-ng --version'
+
+      - name: Verify bot runtime module loads
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          docker run --rm --platform "${PLATFORM}" --entrypoint python3 \
+            tts-hotkey-windows-bot:ci -c 'import src.bot; print("bot module import ok")'

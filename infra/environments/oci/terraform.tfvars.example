@@ -1,0 +1,50 @@
+# Copy to terraform.tfvars and fill in your own tenancy values.
+# terraform.tfvars is gitignored. Never commit real OCIDs, keys, or secrets.
+#
+# Provider authentication is NOT set here. Configure it with the OCI CLI
+# (~/.oci/config) or TF_VAR-free provider environment variables:
+#   OCI_CLI_USER, OCI_CLI_TENANCY, OCI_CLI_FINGERPRINT, OCI_CLI_KEY_FILE, OCI_CLI_REGION
+
+# --- Identity ---------------------------------------------------------------
+tenancy_ocid        = "ocid1.tenancy.oc1..REPLACE_ME"
+compartment_ocid    = "ocid1.compartment.oc1..REPLACE_ME"
+region              = "sa-saopaulo-1"
+availability_domain = "Uocm:SA-SAOPAULO-1-AD-1"
+
+# --- Compute ----------------------------------------------------------------
+# Defaults target a small always-on host. Verify your tenancy's current Always
+# Free allocation before increasing these: A1 capacity is tenancy-wide and
+# Oracle's published limits can change.
+instance_ocpus      = 1
+instance_memory_gb  = 6
+boot_volume_size_gb = 50
+
+# Leave empty to discover the newest Ubuntu 24.04 ARM64 platform image.
+# Pin an OCID only when a tenancy needs a reproducible image.
+instance_image_ocid = ""
+
+# --- Access -----------------------------------------------------------------
+# Public key material only. Never put a private key in this file.
+ssh_public_key = "ssh-ed25519 AAAA... your-key-comment"
+
+# Required. Restrict SSH to your own administrative range.
+# 0.0.0.0/0 is rejected by variable validation.
+ssh_allowed_cidrs = ["203.0.113.10/32"]
+
+# --- Public /speak access ---------------------------------------------------
+# Set both to serve /speak over HTTPS through the bundled Caddy proxy.
+# Create a DNS A record for public_hostname pointing at instance_public_ip
+# after the first apply.
+enable_public_https = false
+public_hostname     = ""
+
+# Opt-in direct access to the bot HTTP port. Keep this empty and use HTTPS or
+# an SSH tunnel. 0.0.0.0/0 is rejected by variable validation.
+bot_http_allowed_cidrs = []
+
+# --- Tagging ----------------------------------------------------------------
+name_prefix = "python-tts"
+
+freeform_tags = {
+  "owner" = "replace-me"
+}

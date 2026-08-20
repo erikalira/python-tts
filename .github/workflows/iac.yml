@@ -5,6 +5,9 @@ on:
     paths:
       - "infra/**"
       - "deploy/k8s/**"
+      - "deploy/oci/**"
+      - "scripts/deploy/**"
+      - "docker-compose*.yml"
       - ".github/workflows/iac.yml"
   push:
     branches:
@@ -12,6 +15,9 @@ on:
     paths:
       - "infra/**"
       - "deploy/k8s/**"
+      - "deploy/oci/**"
+      - "scripts/deploy/**"
+      - "docker-compose*.yml"
       - ".github/workflows/iac.yml"
   workflow_dispatch:
 
@@ -57,3 +63,59 @@ jobs:
               kubectl kustomize "${overlay_dir}" >/dev/null
             fi
           done
+
+      - name: Validate Docker Compose files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Placeholder values only. This checks file structure and variable
+          # interpolation, never real credentials.
+          compose_env="$(mktemp)"
+          cat > "${compose_env}" <<'ENVFILE'
+          BOT_IMAGE=ghcr.io/example/tts-hotkey-windows-bot
+          APP_VERSION=v0.0.0
+          VCS_REF=ci
+          DISCORD_TOKEN=placeholder
+          BOT_SPEAK_TOKEN=placeholder
+          POSTGRES_DB=placeholder
+          POSTGRES_USER=placeholder
+          POSTGRES_PASSWORD=placeholder
+          PUBLIC_HOSTNAME=tts.example.com
+          ENVFILE
+
+          docker compose --env-file "${compose_env}" -f docker-compose.prod.yml config >/dev/null
+          echo "docker-compose.prod.yml is valid."
+
+          # The OCI compose file expects its runtime layout beside it: a
+          # configs directory, the Caddy files, and the runtime env file that
+          # the bot service reads through env_file.
+          oci_dir="$(mktemp -d)"
+          mkdir -p "${oci_dir}/configs" "${oci_dir}/caddy/data" "${oci_dir}/caddy/config"
+          cp deploy/oci/Caddyfile "${oci_dir}/caddy/Caddyfile"
+          cp "${compose_env}" "${oci_dir}/.env.runtime"
+
+          docker compose --env-file "${compose_env}" --project-directory "${oci_dir}" \
+            -f docker-compose.oci.yml config >/dev/null
+          docker compose --env-file "${compose_env}" --project-directory "${oci_dir}" \
+            -f docker-compose.oci.yml --profile https config >/dev/null
+          echo "docker-compose.oci.yml is valid for both profiles."
+
+      - name: Validate Caddy reverse proxy configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "${PWD}/deploy/oci/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -e PUBLIC_HOSTNAME=tts.example.com \
+            -e ACME_EMAIL=ops@example.com \
+            -e BOT_HTTP_PORT=10000 \
+            caddy:2.10-alpine caddy validate --config /etc/caddy/Caddyfile
+
+      - name: Lint deployment shell scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm -v "${PWD}:/mnt" -w /mnt koalaman/shellcheck:stable \
+            scripts/deploy/oci-deploy.sh \
+            scripts/deploy/oci-bootstrap-env.sh

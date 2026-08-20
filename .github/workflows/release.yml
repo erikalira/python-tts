@@ -21,6 +21,9 @@ permissions:
 env:
   PYTHON_VERSION: "3.11"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # Both platforms must publish for a release to be considered successful:
+  # amd64 serves the existing Docker/Compose deploys, arm64 serves OCI Ampere A1.
+  RELEASE_PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
   validate:
@@ -98,6 +101,11 @@ jobs:
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           echo "image_name=ghcr.io/${owner}/tts-hotkey-windows-bot" >> "$GITHUB_OUTPUT"
 
+      - name: Set up QEMU for cross-platform builds
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: arm64
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
 
@@ -129,6 +137,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
+          platforms: ${{ env.RELEASE_PLATFORMS }}
           push: true
           provenance: true
           sbom: true
@@ -137,6 +146,35 @@ jobs:
             VCS_REF=${{ github.sha }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Verify multi-architecture manifest
+        env:
+          IMAGE_DIGEST: ${{ steps.image.outputs.image_name }}@${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+
+          manifest="$(docker buildx imagetools inspect --raw "${IMAGE_DIGEST}")"
+
+          missing=0
+          for platform in ${RELEASE_PLATFORMS//,/ }; do
+            os="${platform%%/*}"
+            arch="${platform##*/}"
+            if printf '%s' "${manifest}" \
+              | jq -e --arg os "${os}" --arg arch "${arch}" \
+                '[.manifests[]? | select(.platform.os == $os and .platform.architecture == $arch)] | length > 0' \
+                >/dev/null; then
+              echo "Found platform ${platform} in the published manifest."
+            else
+              echo "::error::Published manifest is missing platform ${platform}."
+              missing=1
+            fi
+          done
+
+          if [ "${missing}" -ne 0 ]; then
+            echo "::error::Release aborted: the GHCR artifact is not a complete multi-platform manifest."
+            printf '%s\n' "${manifest}"
+            exit 1
+          fi
 
       - name: Scan published image for critical vulnerabilities
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
@@ -195,12 +233,14 @@ jobs:
 
           - Bot image: \`${BOT_IMAGE}:${RELEASE_TAG}\`
           - Signed image digest: \`${BOT_IMAGE}@${{ needs.publish-bot-image.outputs.digest }}\`
+          - Platforms: \`${RELEASE_PLATFORMS}\`
           - Rollback image tag: record the previous production \`APP_VERSION\` before deploy
 
           ## Validation
 
           - Release workflow validation passed before image publish
           - Runtime dependency audit passed before image publish
+          - Published manifest was verified to contain every released platform
           - Docker image critical vulnerability scan passed before signing
           - Docker image was signed with Cosign keyless identity
           - Build provenance attestation was pushed to the registry

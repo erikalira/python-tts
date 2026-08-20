@@ -1,0 +1,114 @@
+#cloud-config
+# Bootstraps the OCI Ampere A1 host into a Docker host for the python-tts bot.
+#
+# This file is rendered into instance metadata and is therefore readable from
+# the instance and stored in OpenTofu state. It must never contain
+# DISCORD_TOKEN, BOT_SPEAK_TOKEN, registry credentials, or any other secret.
+# Runtime secrets are installed separately by
+# scripts/deploy/oci-bootstrap-env.sh over SSH.
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - jq
+  - unattended-upgrades
+
+write_files:
+  # Docker's own JSON logging is the disk-exhaustion risk for an always-on bot.
+  - path: /etc/docker/daemon.json
+    owner: root:root
+    permissions: "0644"
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "3"
+        },
+        "live-restore": true
+      }
+
+  - path: /etc/logrotate.d/python-tts
+    owner: root:root
+    permissions: "0644"
+    content: |
+      /opt/python-tts/logs/*.log {
+        weekly
+        rotate 4
+        compress
+        delaycompress
+        missingok
+        notifempty
+        copytruncate
+      }
+
+  - path: /etc/ssh/sshd_config.d/60-python-tts-hardening.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root:root
+    permissions: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+
+  - path: ${app_dir}/README.txt
+    owner: root:root
+    permissions: "0644"
+    content: |
+      python-tts OCI Ampere A1 host.
+
+      compose.yaml     deployment definition, delivered by the deploy script
+      .env.runtime     runtime secrets, installed out of band, mode 0600
+      configs/         persisted bot configuration, bind mounted to /app/configs
+      caddy/           reverse proxy configuration and certificate storage
+      scripts/         deployment and bootstrap scripts
+      logs/            host-side logs
+
+      Do not build application source on this host. Deploy immutable GHCR tags.
+
+runcmd:
+  # Docker Engine and the Compose plugin from Docker's own ARM64 repository.
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - >
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc]
+    https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable"
+    > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - systemctl enable --now docker
+  - usermod -aG docker ${admin_user}
+
+  # Application directories. configs/ is bind mounted into the container and is
+  # owned by uid/gid 1000 to match the non-root appuser in the bot image.
+  - mkdir -p ${app_dir}/configs ${app_dir}/caddy/data ${app_dir}/caddy/config ${app_dir}/scripts ${app_dir}/logs
+  - chown -R ${admin_user}:${admin_user} ${app_dir}
+  - chown -R 1000:1000 ${app_dir}/configs
+  - chmod 0750 ${app_dir}
+  - chmod 0700 ${app_dir}/configs
+
+  # Placeholder so the deploy script can start before secrets are installed and
+  # fail with a clear message instead of an unreadable compose error.
+  - touch ${app_dir}/.env.runtime
+  - chown ${admin_user}:${admin_user} ${app_dir}/.env.runtime
+  - chmod 0600 ${app_dir}/.env.runtime
+
+  # OCI Ubuntu images ship a restrictive iptables policy. The proxy ports are
+  # already limited by the network security group; this makes the host agree.
+  - netfilter-persistent flush || true
+  - systemctl disable --now netfilter-persistent.service || true
+
+  - systemctl restart ssh || systemctl restart sshd || true
+
+final_message: "python-tts OCI host ready after $UPTIME seconds. Install ${app_dir}/.env.runtime, then deploy a released tag."
