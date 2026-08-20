@@ -24,6 +24,35 @@ You will probably also need:
 
 - [ENVIRONMENTS.md](ENVIRONMENTS.md)
 
+## I want a lightweight always-on cloud deploy
+
+Use:
+
+- [OCI_AMPERE_A1_DEPLOY.md](OCI_AMPERE_A1_DEPLOY.md)
+
+Recommended lightweight always-on cloud deployment for the Discord bot when an
+ARM64 OCI Ampere A1 instance is available.
+
+Choose this when:
+
+- you want the bot running continuously at very low cost
+- you have an Oracle Cloud tenancy with Ampere A1 capacity
+- you want a single small ARM64 VM instead of a full production-like stack
+- JSON config storage and an in-memory queue are sufficient
+- you do not need Postgres, Redis, or the observability stack on the host
+
+Do not choose this when:
+
+- you need durable Postgres persistence
+- you need Redis queue coordination across processes
+- you need Grafana, Prometheus, or Tempo alongside the bot
+
+You will probably also need:
+
+- [ENVIRONMENTS.md](ENVIRONMENTS.md)
+- [STAGING_AND_ROLLBACK.md](STAGING_AND_ROLLBACK.md)
+- [../adr/0008-oci-ampere-a1-deployment-target.md](../adr/0008-oci-ampere-a1-deployment-target.md)
+
 ## I want Docker plus Postgres
 
 Use:
@@ -126,8 +155,9 @@ If you are still unsure, read in this order:
 
 1. [ENVIRONMENTS.md](ENVIRONMENTS.md)
 2. one primary deploy guide:
-   - [WINDOWS_BOT_DEPLOY.md](WINDOWS_BOT_DEPLOY.md), or
-   - [DOCKER_POSTGRES_DEPLOY.md](DOCKER_POSTGRES_DEPLOY.md)
+   - [WINDOWS_BOT_DEPLOY.md](WINDOWS_BOT_DEPLOY.md),
+   - [DOCKER_POSTGRES_DEPLOY.md](DOCKER_POSTGRES_DEPLOY.md), or
+   - [OCI_AMPERE_A1_DEPLOY.md](OCI_AMPERE_A1_DEPLOY.md)
 3. [BOT_PRODUCTION_PERSISTENCE.md](BOT_PRODUCTION_PERSISTENCE.md) when making
    production decisions
 4. [BACKUP_AND_RESTORE_DATABASE.md](BACKUP_AND_RESTORE_DATABASE.md) if Postgres

@@ -1,6 +1,9 @@
 # Environment variables
 .env
 .env.prod
+.env.oci
+.env.runtime
+.env.staging
 
 # Python cache
 __pycache__/

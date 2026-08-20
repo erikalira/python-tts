@@ -102,14 +102,13 @@ def test_clean_architecture_layers_keep_inward_dependency_flow():
 
 def test_desktop_runtime_stays_independent_from_bot_runtime():
     violations = _find_forbidden_imports("desktop", ("src.presentation", "src.bot_runtime"))
-    assert violations == [], (
-        "Desktop runtime must not depend on the bot runtime:\n" + "\n".join(violations)
-    )
+    assert violations == [], "Desktop runtime must not depend on the bot runtime:\n" + "\n".join(violations)
 
 
 def test_relative_imports_are_resolved_before_matching():
     """Guards the guard: a relative import must not slip past the prefix match."""
     node = ast.parse("from ...infrastructure.tts import Engine").body[0]
+    assert isinstance(node, ast.ImportFrom)
     resolved = _resolve_module(REPO_ROOT / "src" / "application" / "dto" / "x.py", node)
     assert resolved == "src.infrastructure.tts"
     assert _matches_forbidden_prefix(resolved, ("src.infrastructure",))

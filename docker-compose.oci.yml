@@ -1,0 +1,66 @@
+# Lightweight runtime for the OCI Ampere A1 host.
+#
+# This is intentionally NOT the production-like stack in docker-compose.prod.yml:
+# no Postgres, no Redis, no Grafana, Prometheus, Tempo, or OTel collector. A
+# 1 OCPU / 6 GB ARM64 instance runs the bot and a reverse proxy, nothing else.
+#
+# The bot port is published on the loopback interface only. Public access goes
+# through Caddy over HTTPS; administrative access goes through an SSH tunnel.
+services:
+  bot:
+    # Immutable released tag. APP_VERSION must never be "latest" here.
+    image: ${BOT_IMAGE:?BOT_IMAGE is required}:${APP_VERSION:?APP_VERSION is required}
+    container_name: tts-discord-bot
+    restart: unless-stopped
+    env_file:
+      - ${RUNTIME_ENV_FILE:-./.env.runtime}
+    ports:
+      # Loopback only: nothing on the public interface reaches the bot directly.
+      - "127.0.0.1:${BOT_HTTP_PORT:-10000}:10000"
+    volumes:
+      # Configuration outlives container recreation and image upgrades.
+      - ${CONFIG_HOST_DIR:-./configs}:/app/configs
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import json, urllib.request; response = urllib.request.urlopen('http://127.0.0.1:10000/ready', timeout=5); payload = json.load(response); raise SystemExit(0 if response.status == 200 and payload.get('status') == 'ready' else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      # Only non-secret runtime shape lives here. Secrets come from env_file.
+      DISCORD_BOT_HOST: 0.0.0.0
+      PORT: 10000
+      CONFIG_STORAGE_BACKEND: ${CONFIG_STORAGE_BACKEND:-json}
+      CONFIG_STORAGE_DIR: ${CONFIG_STORAGE_DIR:-/app/configs}
+      TTS_QUEUE_BACKEND: ${TTS_QUEUE_BACKEND:-inmemory}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+
+  # Terminates TLS for the Desktop App's /speak call. Started only by the
+  # "https" profile so a host without a hostname runs the bot alone.
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: tts-caddy
+    restart: unless-stopped
+    profiles: ["https"]
+    depends_on:
+      bot:
+        condition: service_healthy
+    network_mode: host
+    volumes:
+      - ${CADDY_CONFIG_FILE:-./caddy/Caddyfile}:/etc/caddy/Caddyfile:ro
+      - ${CADDY_DATA_DIR:-./caddy/data}:/data
+      - ${CADDY_CONFIG_DIR:-./caddy/config}:/config
+    environment:
+      PUBLIC_HOSTNAME: ${PUBLIC_HOSTNAME:?PUBLIC_HOSTNAME is required for the https profile}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+      BOT_HTTP_PORT: ${BOT_HTTP_PORT:-10000}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
