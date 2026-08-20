@@ -69,8 +69,14 @@ jobs:
 
       - name: Audit release dependencies
         run: |
-          uv run pip-audit -r requirements.txt
-          uv run pip-audit -r requirements-test.txt
+          # PYSEC-2026-2132 (click < 8.3.3) is accepted, not ignored silently.
+          # gtts 2.5.4 — the latest release — pins click<8.2, so no resolvable
+          # upgrade exists. The flaw is in click.edit(), which opens an
+          # interactive editor: this project never imports click, and gtts only
+          # uses it in its own CLI, which the bot does not invoke.
+          # Re-evaluate when gtts relaxes the constraint, then drop this flag.
+          uv run pip-audit --ignore-vuln PYSEC-2026-2132 -r requirements.txt
+          uv run pip-audit --ignore-vuln PYSEC-2026-2132 -r requirements-test.txt
 
   publish-bot-image:
     name: Publish Bot Image

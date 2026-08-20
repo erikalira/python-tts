@@ -16,8 +16,10 @@ typecheck:
 test:
 	UV_PROJECT_ENVIRONMENT=$(UV_PROJECT_ENVIRONMENT) CI=true PYTHONPATH=$(PYTHONPATH) uv run --group test pytest $(CRITICAL_TESTS) --tb=short -v
 
+# PYSEC-2026-2132: click<8.3.3 is pinned by gtts 2.5.4 and is not reachable
+# from this project. See .github/workflows/security.yml for the full rationale.
 security:
-	UV_PROJECT_ENVIRONMENT=$(UV_PROJECT_ENVIRONMENT) uv run --group security pip-audit
+	UV_PROJECT_ENVIRONMENT=$(UV_PROJECT_ENVIRONMENT) uv run --group security pip-audit --ignore-vuln PYSEC-2026-2132
 
 ci: lint typecheck test
 
