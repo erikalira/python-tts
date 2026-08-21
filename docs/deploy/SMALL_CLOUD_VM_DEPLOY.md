@@ -14,6 +14,7 @@ rollback procedure. Pick one; you do not need both.
 | Disk | 50 GB | 30 GB standard |
 | Regions | any with capacity | us-west1, us-central1, us-east1 only |
 | Billing risk | Always Free, no card charge | **requires active billing account** |
+| Public IPv4 | included free | **billed** (ephemeral by default; static costs more) |
 | Availability | frequently out of capacity | reliably available |
 
 **Prefer OCI.** Six times the memory and a dedicated core matter for this
@@ -138,9 +139,26 @@ This configuration:
 - caps the boot disk at the 30 GB allowance
 - provisions no load balancer, Cloud NAT, database, or other managed service
 
-Egress is the limit most likely to surprise a voice bot: the Free Tier includes
-only 1 GB/month to destinations outside North America. Verify your project's
-current terms and your own traffic before relying on it.
+Two costs are **not** covered by the e2-micro allowance:
+
+- **The public IPv4 address.** GCP bills every public IPv4, including one
+  attached to a running Free Tier instance. This configuration uses an
+  ephemeral address by default because a reserved static one bills at a higher
+  rate and keeps billing while reserved even when the instance is stopped. Set
+  `use_static_ip = true` only once a DNS record depends on the address staying
+  stable across instance recreation.
+- **Egress**, the limit most likely to surprise a voice bot: the Free Tier
+  includes only 1 GB/month to destinations outside North America.
+
+Check the current rates before relying on any figure here; published prices
+change. Set a budget alert under Billing → Budgets & alerts. Note that a budget
+alert notifies, it does not cap spending.
+
+Stopping the instance does not stop all charges: a reserved static address
+keeps billing while it exists. `tofu destroy` is what takes the cost to zero.
+
+By comparison, OCI Always Free includes the public IP at no charge, which is one
+more reason to prefer that target when Ampere A1 capacity allows.
 
 ## Provisioning
 
@@ -243,6 +261,7 @@ and the DNS record does not need updating after a rebuild.
 | `enable_public_https` | `false` | Opens 80 and 443 |
 | `public_hostname` | `""` | Required when HTTPS is enabled |
 | `bot_http_allowed_cidrs` | `[]` | Opt-in. `0.0.0.0/0` is rejected |
+| `use_static_ip` | `false` | Reserve a billed static IP. Enable only with DNS |
 
 The boot image uses the `ubuntu-2404-lts-amd64` family, which tracks the newest
 patched image. As on OCI, an image family update alone does not recreate a

@@ -79,6 +79,12 @@ variable "bot_http_allowed_cidrs" {
   default     = []
 }
 
+variable "use_static_ip" {
+  description = "Reserve a static external IP. GCP bills every public IPv4 address; a static one costs more and keeps billing while reserved. Enable only once DNS points at it."
+  type        = bool
+  default     = false
+}
+
 variable "app_dir" {
   description = "Application directory created on the instance."
   type        = string

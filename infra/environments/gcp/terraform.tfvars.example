@@ -33,6 +33,14 @@ ssh_public_key = "ssh-ed25519 AAAA... your-key-comment"
 # 0.0.0.0/0 is rejected by variable validation.
 ssh_allowed_cidrs = ["203.0.113.10/32"]
 
+# --- Networking cost --------------------------------------------------------
+# GCP bills every public IPv4 address and the Free Tier e2-micro allowance does
+# not cover it. An ephemeral address is the cheaper default; a reserved static
+# one costs more per hour and keeps billing while reserved even when the
+# instance is stopped. Enable this only once a DNS record depends on the
+# address staying the same across instance recreation.
+use_static_ip = false
+
 # --- Public /speak access ---------------------------------------------------
 # Set both to serve /speak over HTTPS through the bundled Caddy proxy.
 # Create a DNS A record for public_hostname pointing at instance_public_ip.

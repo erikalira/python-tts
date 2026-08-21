@@ -4,8 +4,13 @@ output "environment_contract" {
 }
 
 output "instance_public_ip" {
-  description = "Static public IP of the bot host. Create the DNS record for public_hostname pointing here."
+  description = "Public IP of the bot host. Create the DNS record for public_hostname pointing here."
   value       = module.bot_host.public_ip
+}
+
+output "public_ip_is_static" {
+  description = "Whether the public IP is a reserved static address. Ephemeral by default because GCP bills static addresses at a higher rate."
+  value       = module.bot_host.public_ip_is_static
 }
 
 output "ssh_command" {

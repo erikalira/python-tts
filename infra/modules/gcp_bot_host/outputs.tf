@@ -4,8 +4,13 @@ output "instance_id" {
 }
 
 output "public_ip" {
-  description = "Static public IP of the bot host. Point the DNS record for public_hostname at this address."
-  value       = google_compute_address.bot.address
+  description = "Public IP of the bot host. Ephemeral unless use_static_ip is set, in which case it survives instance recreation."
+  value       = var.use_static_ip ? google_compute_address.bot[0].address : google_compute_instance.bot.network_interface[0].access_config[0].nat_ip
+}
+
+output "public_ip_is_static" {
+  description = "Whether the public IP is a reserved static address. Static addresses cost more and keep billing while reserved."
+  value       = var.use_static_ip
 }
 
 output "ssh_user" {

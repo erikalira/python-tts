@@ -118,14 +118,18 @@ resource "google_compute_firewall" "bot_http" {
 # GCP denies ingress by default, so no explicit deny rule is needed. Egress is
 # allowed by default, which the bot needs for Discord, GHCR, and TTS providers.
 
+# GCP bills every public IPv4 address, and the Free Tier e2-micro allowance does
+# not cover it. A reserved static address costs more per hour than an ephemeral
+# one and keeps billing while reserved even when the instance is stopped, so it
+# stays opt-in: reserve one only when a DNS record depends on a stable address.
 resource "google_compute_address" "bot" {
+  count = var.use_static_ip ? 1 : 0
+
   name         = "${var.name_prefix}-ip"
   project      = var.project_id
   region       = var.region
   address_type = "EXTERNAL"
 
-  # A static address survives instance recreation, so the DNS record and the
-  # deployment secrets do not need updating after a rebuild.
   description = "Static public IP for the python-tts bot host."
 }
 
@@ -149,7 +153,8 @@ resource "google_compute_instance" "bot" {
     subnetwork = google_compute_subnetwork.bot.id
 
     access_config {
-      nat_ip = google_compute_address.bot.address
+      # Empty selects an ephemeral address, which is the cheaper default.
+      nat_ip = var.use_static_ip ? google_compute_address.bot[0].address : null
     }
   }
 
