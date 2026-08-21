@@ -52,14 +52,52 @@ scripts.sh
 # Logs
 *.log
 
-# Environment
-.env
-.env.local
+# Environment and local state.
+# Deny every dotenv variant, then re-allow only the committed examples. The
+# previous rules listed .env and .env.local by name, so any new secret file
+# (.env.vm, .env.prod, ...) would have been copied into the image.
+.env*
+!.env.example
+!.env.prod.example
+!.env.vm.example
+!.env.test
+
+# Infrastructure state and variable files can contain OCIDs, IPs, and keys.
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.terraform/
+terraform.tfstate*
+
+# Local runtime config produced by tests or manual runs.
+configs/
+configs-test/
 
 # Test files
 test_*.py
+tests/
+conftest.py
+pytest.ini
+mutmut_pytest.ini
+pyrightconfig.json
+requirements-test.txt
 .coverage
 coverage.xml
+
+# Documentation, infrastructure, and deployment definitions. None of these are
+# read by the bot at run time; they only enlarge the image and its scan surface.
+docs/
+infra/
+openspec/
+deploy/
+graphify-out/
+.github/
+docker-compose*.yml
+render.yaml
+LICENSE
+README.md
+AGENTS.md
 
 # Audio files (generated)
 *.mp3
