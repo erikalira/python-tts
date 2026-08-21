@@ -291,6 +291,14 @@ Equivalently, from the instance:
 ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh v1.2.3'
 ```
 
+### Git tag vs registry tag
+
+Always pass the git tag form, `v1.2.3`. The release workflow publishes through
+`docker/metadata-action` with `type=semver,pattern={{version}}`, which strips
+the leading `v`, so the tag in GHCR is `1.2.3`. The deploy script and the
+deployment workflow accept `v1.2.3` and resolve it to the published tag for
+you; `APP_VERSION` in the runtime file therefore records the registry form.
+
 The deploy script:
 
 1. validates the tag is semantic, rejecting `latest`

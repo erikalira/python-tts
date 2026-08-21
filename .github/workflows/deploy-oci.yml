@@ -49,12 +49,19 @@ jobs:
 
           echo "Release tag ${RELEASE_TAG} accepted."
 
-      - name: Resolve image name
+      - name: Resolve image name and registry tag
         id: image
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           echo "image_name=ghcr.io/${owner}/tts-hotkey-windows-bot" >> "$GITHUB_OUTPUT"
+
+          # The release workflow publishes through docker/metadata-action with
+          # type=semver,pattern={{version}}, which strips the leading "v".
+          # Operators pass the git tag, so resolve it to the published tag here.
+          echo "registry_tag=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
@@ -65,7 +72,7 @@ jobs:
 
       - name: Verify the release manifest contains linux/arm64
         env:
-          TARGET_IMAGE: ${{ steps.image.outputs.image_name }}:${{ inputs.release_tag }}
+          TARGET_IMAGE: ${{ steps.image.outputs.image_name }}:${{ steps.image.outputs.registry_tag }}
         run: |
           set -euo pipefail
 

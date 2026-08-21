@@ -134,6 +134,8 @@ main() {
   if [ "$1" = "--rollback" ]; then
     requested_version="$(read_env_value PREVIOUS_APP_VERSION "${RUNTIME_ENV_FILE}")"
     [ -n "${requested_version}" ] || fail "PREVIOUS_APP_VERSION is not recorded. Pass an explicit tag instead."
+    # Stored in registry form; the validation below expects the git tag form.
+    requested_version="v${requested_version#v}"
     log "Rolling back to the recorded previous version."
   else
     requested_version="$1"
@@ -148,7 +150,12 @@ main() {
   log "Current version: ${current_version:-none}"
   log "Requested version: ${requested_version}"
 
-  local target_image="${bot_image}:${requested_version}"
+  # The release workflow publishes through docker/metadata-action with
+  # type=semver,pattern={{version}}, which strips the leading "v": the tag
+  # v1.2.3 becomes the registry tag 1.2.3. Operators and documentation use the
+  # git tag form, so accept it and resolve to the published tag here.
+  local registry_tag="${requested_version#v}"
+  local target_image="${bot_image}:${registry_tag}"
 
   # Verify the tag exists and carries an arm64 image before touching the
   # running deployment.
@@ -172,12 +179,14 @@ main() {
 
   # Record the rollback target before changing the running version, so an
   # interrupted deploy still leaves a recoverable previous tag.
-  if [ -n "${current_version}" ] && [ "${current_version}" != "${requested_version}" ]; then
+  if [ -n "${current_version}" ] && [ "${current_version}" != "${registry_tag}" ]; then
     write_env_value PREVIOUS_APP_VERSION "${current_version}" "${RUNTIME_ENV_FILE}"
     log "Recorded previous version: ${current_version}"
   fi
 
-  write_env_value APP_VERSION "${requested_version}" "${RUNTIME_ENV_FILE}"
+  # APP_VERSION is interpolated straight into the compose image reference, so it
+  # must hold the registry tag rather than the git tag.
+  write_env_value APP_VERSION "${registry_tag}" "${RUNTIME_ENV_FILE}"
 
   local compose_profiles=()
   if [ -n "$(read_env_value PUBLIC_HOSTNAME "${RUNTIME_ENV_FILE}")" ]; then
