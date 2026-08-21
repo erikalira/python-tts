@@ -53,6 +53,9 @@ build/
 .terraform.lock.hcl
 *.tfvars
 *.tfvars.json
+# Saved plan files can embed resolved variable values.
+*.tfplan
+tfplan.out
 
 # Log Files
 *.log
