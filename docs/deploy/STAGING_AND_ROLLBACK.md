@@ -207,15 +207,15 @@ an earlier tag. The deploy script records the outgoing version, so:
 
 ```bash
 # recorded previous version
-ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh --rollback'
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/vm-deploy.sh --rollback'
 
 # or an explicit known-good tag
-ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh v1.2.4'
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/vm-deploy.sh v1.2.4'
 ```
 
 The `Deploy OCI` workflow with `release_tag = <previous-version>` performs the
 same rollback from GitHub Actions. See
-[OCI_AMPERE_A1_DEPLOY.md](OCI_AMPERE_A1_DEPLOY.md#rollback).
+[SMALL_CLOUD_VM_DEPLOY.md](SMALL_CLOUD_VM_DEPLOY.md#rollback).
 
 ## Done Criteria
 

@@ -2,7 +2,7 @@
 #
 # Scope rule: this module owns infrastructure only. Application secrets
 # (DISCORD_TOKEN, BOT_SPEAK_TOKEN) are installed on the instance out of band by
-# scripts/deploy/oci-bootstrap-env.sh so they never enter OpenTofu state.
+# scripts/deploy/vm-bootstrap-env.sh so they never enter OpenTofu state.
 
 locals {
   # Discovery keeps the newest patched Ubuntu ARM64 image without pinning an

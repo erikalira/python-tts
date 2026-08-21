@@ -26,23 +26,23 @@ The executable is created at `dist/HotkeyTTS.exe`.
 ## OCI Deployment
 
 Bash scripts for the OCI Ampere A1 target. Both run against a Linux host; see
-[OCI_AMPERE_A1_DEPLOY.md](../docs/deploy/OCI_AMPERE_A1_DEPLOY.md).
+[SMALL_CLOUD_VM_DEPLOY.md](../docs/deploy/SMALL_CLOUD_VM_DEPLOY.md).
 
 ```bash
 # Install runtime configuration and deployment assets on the instance
-./scripts/deploy/oci-bootstrap-env.sh --host <PUBLIC_IP> --env-file ./.env.oci
+./scripts/deploy/vm-bootstrap-env.sh --host <PUBLIC_IP> --env-file ./.env.oci
 
 # Deploy an immutable released tag (runs on the instance)
-ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh v1.2.3'
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/vm-deploy.sh v1.2.3'
 
 # Roll back to the recorded previous version
-ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh --rollback'
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/vm-deploy.sh --rollback'
 ```
 
-- `deploy/oci-bootstrap-env.sh`: uploads the runtime env file with mode 0600,
+- `deploy/vm-bootstrap-env.sh`: uploads the runtime env file with mode 0600,
   plus the compose file, Caddyfile, and deploy script. Refuses placeholder
   secrets. Never disables SSH host key verification.
-- `deploy/oci-deploy.sh`: validates the tag, verifies the GHCR manifest has a
+- `deploy/vm-deploy.sh`: validates the tag, verifies the GHCR manifest has a
   `linux/arm64` entry, pulls, records the previous version, restarts, and waits
   for `/health` and `/ready`.
 

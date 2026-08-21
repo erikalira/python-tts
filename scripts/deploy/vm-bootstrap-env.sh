@@ -3,14 +3,15 @@
 # side before each remote command is sent, so SC2029 is the intended behavior.
 # shellcheck disable=SC2029
 #
-# Install the runtime configuration and deployment assets on the OCI Ampere A1
-# host, then set restrictive permissions on the secret-bearing file.
+# Install the runtime configuration and deployment assets on a single-node
+# Docker host, then set restrictive permissions on the secret-bearing file.
+# Works for any supported target: OCI Ampere A1 and GCP e2-micro.
 #
 # Runs from a workstation. The local env file is copied over SSH and never
 # passed as a command argument, so secrets do not appear in process lists,
 # shell history, or OpenTofu state.
 #
-#   ./oci-bootstrap-env.sh --host 203.0.113.10 --env-file ./.env.oci
+#   ./vm-bootstrap-env.sh --host 203.0.113.10 --env-file ./.env.vm
 #
 # Re-running is safe: it overwrites the runtime configuration and refreshes the
 # compose file, Caddyfile, and deploy script.
@@ -23,24 +24,26 @@ SSH_USER="ubuntu"
 SSH_KEY=""
 ENV_FILE=""
 APP_DIR="/opt/python-tts"
+# Both supported targets share the lightweight compose definition.
+COMPOSE_SOURCE="docker-compose.vm.yml"
 
 log() {
-  printf '[oci-bootstrap] %s\n' "$*"
+  printf '[vm-bootstrap] %s\n' "$*"
 }
 
 fail() {
-  printf '[oci-bootstrap] ERROR: %s\n' "$*" >&2
+  printf '[vm-bootstrap] ERROR: %s\n' "$*" >&2
   exit 1
 }
 
 usage() {
   cat <<'USAGE'
 Usage:
-  oci-bootstrap-env.sh --host <ip-or-hostname> --env-file <path> [options]
+  vm-bootstrap-env.sh --host <ip-or-hostname> --env-file <path> [options]
 
 Required:
   --host <host>       Instance public IP or hostname
-  --env-file <path>   Local runtime env file built from .env.oci.example
+  --env-file <path>   Local runtime env file built from .env.vm.example
 
 Options:
   --user <user>       SSH user (default: ubuntu)
@@ -123,15 +126,15 @@ ssh "${ssh_opts[@]}" "${remote}" "sudo mkdir -p '${APP_DIR}/configs' '${APP_DIR}
 
 log "Uploading deployment assets..."
 scp "${scp_opts[@]}" -q \
-  "${REPO_ROOT}/docker-compose.oci.yml" \
+  "${REPO_ROOT}/${COMPOSE_SOURCE}" \
   "${remote}:${APP_DIR}/compose.yaml"
 scp "${scp_opts[@]}" -q \
-  "${REPO_ROOT}/deploy/oci/Caddyfile" \
+  "${REPO_ROOT}/deploy/vm/Caddyfile" \
   "${remote}:${APP_DIR}/caddy/Caddyfile"
 scp "${scp_opts[@]}" -q \
-  "${REPO_ROOT}/scripts/deploy/oci-deploy.sh" \
-  "${remote}:${APP_DIR}/scripts/oci-deploy.sh"
-ssh "${ssh_opts[@]}" "${remote}" "chmod 0755 '${APP_DIR}/scripts/oci-deploy.sh'"
+  "${REPO_ROOT}/scripts/deploy/vm-deploy.sh" \
+  "${remote}:${APP_DIR}/scripts/vm-deploy.sh"
+ssh "${ssh_opts[@]}" "${remote}" "chmod 0755 '${APP_DIR}/scripts/vm-deploy.sh'"
 
 # Upload the secret file to a private path first, then move it into place, so
 # it is never briefly world readable.
@@ -144,9 +147,9 @@ ssh "${ssh_opts[@]}" "${remote}" "stat -c '%a %U:%G %n' '${APP_DIR}/.env.runtime
 
 cat <<EOF
 
-[oci-bootstrap] Done. Deploy a released version with:
+[vm-bootstrap] Done. Deploy a released version with:
 
-  ssh ${remote} '${APP_DIR}/scripts/oci-deploy.sh v1.2.3'
+  ssh ${remote} '${APP_DIR}/scripts/vm-deploy.sh v1.2.3'
 
 The runtime configuration is installed at ${APP_DIR}/.env.runtime with mode 0600.
 It is not stored in OpenTofu state and is not part of any repository file.

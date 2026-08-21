@@ -1,4 +1,4 @@
-name: Deploy OCI
+name: Deploy Cloud VM
 
 # Deployment is a separate operation from release. This workflow never builds
 # an image: it deploys an already released, signed, multi-arch GHCR tag onto
@@ -10,6 +10,14 @@ on:
         description: "Released semantic tag to deploy, for example v1.2.3"
         required: true
         type: string
+      target_arch:
+        description: "Architecture of the deployment host"
+        required: true
+        default: arm64
+        type: choice
+        options:
+          - arm64
+          - amd64
       dry_run:
         description: "Validate the release tag and manifest without touching the host"
         required: true
@@ -22,14 +30,14 @@ permissions:
 
 concurrency:
   # Never let two deploys race for the same single-node host.
-  group: deploy-oci
+  group: deploy-vm
   cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy Release To OCI
+    name: Deploy Release To Cloud VM
     runs-on: ubuntu-latest
-    environment: oci-production
+    environment: cloud-vm-production
     steps:
       - name: Validate release tag format
         env:
@@ -70,9 +78,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify the release manifest contains linux/arm64
+      - name: Verify the release manifest supports the target architecture
         env:
           TARGET_IMAGE: ${{ steps.image.outputs.image_name }}:${{ steps.image.outputs.registry_tag }}
+          TARGET_ARCH: ${{ inputs.target_arch }}
         run: |
           set -euo pipefail
 
@@ -81,61 +90,62 @@ jobs:
             exit 1
           fi
 
-          # The A1 host is ARM64. Deploying a tag without an arm64 entry would
+          # Deploying a tag without an entry for the host's architecture would
           # fail on the instance instead of here.
-          if ! printf '%s' "${manifest}" | jq -e \
-            '[.manifests[]? | select(.platform.os == "linux" and .platform.architecture == "arm64")] | length > 0' \
+          if ! printf '%s' "${manifest}" | jq -e --arg arch "${TARGET_ARCH}" \
+            '[.manifests[]? | select(.platform.os == "linux" and .platform.architecture == $arch)] | length > 0' \
             >/dev/null; then
-            echo "::error::${TARGET_IMAGE} has no linux/arm64 manifest entry."
+            echo "::error::${TARGET_IMAGE} has no linux/${TARGET_ARCH} manifest entry."
             printf '%s\n' "${manifest}"
             exit 1
           fi
 
-          echo "Confirmed linux/arm64 support for ${TARGET_IMAGE}."
+          echo "Confirmed linux/${TARGET_ARCH} support for ${TARGET_IMAGE}."
 
       - name: Report dry run
         if: ${{ inputs.dry_run }}
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
+          TARGET_ARCH: ${{ inputs.target_arch }}
         run: |
-          echo "Dry run: ${RELEASE_TAG} is a valid, arm64-capable release. The host was not modified."
+          echo "Dry run: ${RELEASE_TAG} is a valid ${TARGET_ARCH} release. The host was not modified."
 
       - name: Configure SSH access
         if: ${{ !inputs.dry_run }}
         env:
-          DEPLOY_SSH_KEY: ${{ secrets.OCI_DEPLOY_SSH_KEY }}
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.OCI_DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_SSH_KEY: ${{ secrets.VM_DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.VM_DEPLOY_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
 
           if [ -z "${DEPLOY_SSH_KEY}" ] || [ -z "${DEPLOY_KNOWN_HOSTS}" ]; then
-            echo "::error::OCI_DEPLOY_SSH_KEY and OCI_DEPLOY_KNOWN_HOSTS must both be configured."
+            echo "::error::VM_DEPLOY_SSH_KEY and VM_DEPLOY_KNOWN_HOSTS must both be configured."
             exit 1
           fi
 
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
-          printf '%s\n' "${DEPLOY_SSH_KEY}" > ~/.ssh/oci_deploy_key
-          chmod 600 ~/.ssh/oci_deploy_key
+          printf '%s\n' "${DEPLOY_SSH_KEY}" > ~/.ssh/vm_deploy_key
+          chmod 600 ~/.ssh/vm_deploy_key
 
           # Pinned host keys. StrictHostKeyChecking stays enabled so a
           # substituted host cannot receive this deployment.
           printf '%s\n' "${DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Deploy release on the OCI host
+      - name: Deploy release on the cloud VM host
         if: ${{ !inputs.dry_run }}
         env:
-          DEPLOY_HOST: ${{ secrets.OCI_DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.OCI_DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.VM_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.VM_DEPLOY_USER }}
           RELEASE_TAG: ${{ inputs.release_tag }}
-          APP_DIR: ${{ vars.OCI_APP_DIR || '/opt/python-tts' }}
+          APP_DIR: ${{ vars.VM_APP_DIR || '/opt/python-tts' }}
         run: |
           set -euo pipefail
 
           if [ -z "${DEPLOY_HOST}" ] || [ -z "${DEPLOY_USER}" ]; then
-            echo "::error::OCI_DEPLOY_HOST and OCI_DEPLOY_USER must both be configured."
+            echo "::error::VM_DEPLOY_HOST and VM_DEPLOY_USER must both be configured."
             exit 1
           fi
 
@@ -144,15 +154,15 @@ jobs:
           # are never transmitted by this workflow.
           ssh -o StrictHostKeyChecking=yes \
               -o IdentitiesOnly=yes \
-              -i ~/.ssh/oci_deploy_key \
+              -i ~/.ssh/vm_deploy_key \
               "${DEPLOY_USER}@${DEPLOY_HOST}" \
-              "${APP_DIR}/scripts/oci-deploy.sh '${RELEASE_TAG}'"
+              "${APP_DIR}/scripts/vm-deploy.sh '${RELEASE_TAG}'"
 
       - name: Report deployed version
         if: ${{ !inputs.dry_run }}
         env:
-          DEPLOY_HOST: ${{ secrets.OCI_DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.OCI_DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.VM_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.VM_DEPLOY_USER }}
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
@@ -161,12 +171,12 @@ jobs:
           # confirms what is actually serving rather than what was requested.
           deployed="$(ssh -o StrictHostKeyChecking=yes \
               -o IdentitiesOnly=yes \
-              -i ~/.ssh/oci_deploy_key \
+              -i ~/.ssh/vm_deploy_key \
               "${DEPLOY_USER}@${DEPLOY_HOST}" \
               "curl --fail --silent --max-time 10 http://127.0.0.1:10000/health")"
 
           {
-            echo "### OCI deployment"
+            echo "### Cloud VM deployment"
             echo ""
             echo "- Requested tag: \`${RELEASE_TAG}\`"
             echo "- Health response: \`${deployed}\`"
@@ -177,4 +187,4 @@ jobs:
       - name: Remove deployment credentials
         if: always()
         run: |
-          rm -f ~/.ssh/oci_deploy_key
+          rm -f ~/.ssh/vm_deploy_key

@@ -2,6 +2,7 @@
 .env
 .env.prod
 .env.oci
+.env.vm
 .env.runtime
 .env.staging
 

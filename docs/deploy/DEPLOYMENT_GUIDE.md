@@ -28,16 +28,18 @@ You will probably also need:
 
 Use:
 
-- [OCI_AMPERE_A1_DEPLOY.md](OCI_AMPERE_A1_DEPLOY.md)
+- [SMALL_CLOUD_VM_DEPLOY.md](SMALL_CLOUD_VM_DEPLOY.md)
 
-Recommended lightweight always-on cloud deployment for the Discord bot when an
-ARM64 OCI Ampere A1 instance is available.
+Recommended lightweight always-on cloud deployment for the Discord bot when a
+small cloud VM is available. Two targets share the same runtime: **OCI Ampere
+A1** (arm64, 6 GB — preferred) and **GCP e2-micro** (amd64, 1 GB — fallback for
+when Ampere A1 capacity is unavailable).
 
 Choose this when:
 
 - you want the bot running continuously at very low cost
-- you have an Oracle Cloud tenancy with Ampere A1 capacity
-- you want a single small ARM64 VM instead of a full production-like stack
+- you have an Oracle Cloud tenancy with Ampere A1 capacity, or a GCP project
+- you want a single small VM instead of a full production-like stack
 - JSON config storage and an in-memory queue are sufficient
 - you do not need Postgres, Redis, or the observability stack on the host
 
@@ -157,7 +159,7 @@ If you are still unsure, read in this order:
 2. one primary deploy guide:
    - [WINDOWS_BOT_DEPLOY.md](WINDOWS_BOT_DEPLOY.md),
    - [DOCKER_POSTGRES_DEPLOY.md](DOCKER_POSTGRES_DEPLOY.md), or
-   - [OCI_AMPERE_A1_DEPLOY.md](OCI_AMPERE_A1_DEPLOY.md)
+   - [SMALL_CLOUD_VM_DEPLOY.md](SMALL_CLOUD_VM_DEPLOY.md)
 3. [BOT_PRODUCTION_PERSISTENCE.md](BOT_PRODUCTION_PERSISTENCE.md) when making
    production decisions
 4. [BACKUP_AND_RESTORE_DATABASE.md](BACKUP_AND_RESTORE_DATABASE.md) if Postgres
