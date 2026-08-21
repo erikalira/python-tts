@@ -53,7 +53,9 @@ ssh ubuntu@<HOST> '/opt/python-tts/scripts/vm-deploy.sh --rollback'
 ```
 
 The workflow's `dry_run: true` mode does work from CI and is worth running first:
-it confirms a release tag exists for the target architecture.
+it confirms a release tag exists for the architecture given in `target_arch`.
+Production is amd64, so use `amd64` unless checking the OCI arm64 host — a
+manifest can carry one architecture without the other.
 
 Two things that break quietly:
 

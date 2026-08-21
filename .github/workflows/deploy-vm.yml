@@ -11,9 +11,9 @@ on:
         required: true
         type: string
       target_arch:
-        description: "Architecture of the deployment host"
+        description: "Architecture of the deployment host: amd64 for GCP e2-micro, arm64 for OCI Ampere A1"
         required: true
-        default: arm64
+        default: amd64
         type: choice
         options:
           - arm64
