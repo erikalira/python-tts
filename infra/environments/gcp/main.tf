@@ -39,6 +39,8 @@ module "bot_host" {
   ssh_public_key    = var.ssh_public_key
   ssh_allowed_cidrs = var.ssh_allowed_cidrs
 
+  use_static_ip = var.use_static_ip
+
   enable_public_https    = var.enable_public_https
   public_hostname        = var.public_hostname
   bot_http_allowed_cidrs = var.bot_http_allowed_cidrs

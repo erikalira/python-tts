@@ -139,6 +139,12 @@ variable "bot_http_port" {
   default     = 10000
 }
 
+variable "use_static_ip" {
+  description = "Reserve a static external IP instead of using an ephemeral one. GCP bills every public IPv4 address, and a static one costs more than an ephemeral one and keeps billing while reserved even if the instance is stopped. Enable this only once a DNS record points at the address."
+  type        = bool
+  default     = false
+}
+
 variable "subnet_cidr" {
   description = "CIDR block for the subnet."
   type        = string
