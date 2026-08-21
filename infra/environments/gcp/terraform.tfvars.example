@@ -1,0 +1,51 @@
+# Copy to terraform.tfvars and fill in your own project values.
+# terraform.tfvars is gitignored. Never commit real IDs, keys, or secrets.
+#
+# Provider authentication is NOT set here. Use Application Default Credentials:
+#   gcloud auth application-default login
+# or point GOOGLE_APPLICATION_CREDENTIALS at a service account key file.
+
+# --- Identity ---------------------------------------------------------------
+project_id = "your-project-id"
+
+# Only us-west1, us-central1, and us-east1 qualify for the Free Tier e2-micro
+# allowance. Other regions are rejected by variable validation.
+region = "us-central1"
+zone   = "us-central1-a"
+
+# --- Compute ----------------------------------------------------------------
+# e2-micro is 2 shared vCPU and 1 GB RAM. It is materially smaller than the OCI
+# Ampere host; cloud-init adds 2 GB of swap and the compose file caps container
+# memory. Verify your project's current Free Tier terms before changing these.
+machine_type      = "e2-micro"
+boot_disk_size_gb = 30
+boot_disk_type    = "pd-standard"
+
+# Image family tracks the newest patched Ubuntu 24.04 LTS amd64 image.
+boot_image = "ubuntu-os-cloud/ubuntu-2404-lts-amd64"
+
+# --- Access -----------------------------------------------------------------
+# Public key material only. Never put a private key in this file.
+ssh_username   = "ubuntu"
+ssh_public_key = "ssh-ed25519 AAAA... your-key-comment"
+
+# Required. Restrict SSH to your own administrative range.
+# 0.0.0.0/0 is rejected by variable validation.
+ssh_allowed_cidrs = ["203.0.113.10/32"]
+
+# --- Public /speak access ---------------------------------------------------
+# Set both to serve /speak over HTTPS through the bundled Caddy proxy.
+# Create a DNS A record for public_hostname pointing at instance_public_ip.
+enable_public_https = false
+public_hostname     = ""
+
+# Opt-in direct access to the bot HTTP port. Keep empty and use HTTPS or an
+# SSH tunnel. 0.0.0.0/0 is rejected by variable validation.
+bot_http_allowed_cidrs = []
+
+# --- Tagging ----------------------------------------------------------------
+name_prefix = "python-tts"
+
+labels = {
+  "owner" = "replace-me"
+}

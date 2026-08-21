@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 #
-# Deploy an immutable released bot image on the OCI Ampere A1 host.
+# Deploy an immutable released bot image on a single-node Docker host.
 #
-# Runs ON the instance. It never builds application source: the released
-# multi-arch GHCR image is the only artifact. Rolling back is the same
-# operation with an earlier tag.
+# Runs ON the instance, on any supported target: OCI Ampere A1 (arm64) and GCP
+# e2-micro (amd64) both use this script. It never builds application source:
+# the released multi-arch GHCR image is the only artifact. Rolling back is the
+# same operation with an earlier tag.
 #
-#   ./oci-deploy.sh v1.2.3        deploy a released version
-#   ./oci-deploy.sh --rollback    redeploy the recorded previous version
+#   ./vm-deploy.sh v1.2.3        deploy a released version
+#   ./vm-deploy.sh --rollback    redeploy the recorded previous version
 #
 # Exit codes: 0 success, 1 usage or validation failure, 2 health check failure.
 set -euo pipefail
@@ -20,24 +21,36 @@ READY_URL="${READY_URL:-http://127.0.0.1:10000/ready}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-30}"
 HEALTH_DELAY_SECONDS="${HEALTH_DELAY_SECONDS:-5}"
 
+# The released image is a multi-platform manifest. Deploy the platform this
+# host actually runs, so the same script serves arm64 and amd64 targets.
+detect_architecture() {
+  case "$(uname -m)" in
+    aarch64 | arm64) printf 'arm64' ;;
+    x86_64 | amd64) printf 'amd64' ;;
+    *) printf 'unsupported' ;;
+  esac
+}
+
+TARGET_ARCH="${TARGET_ARCH:-$(detect_architecture)}"
+
 log() {
-  printf '[oci-deploy] %s\n' "$*"
+  printf '[vm-deploy] %s\n' "$*"
 }
 
 fail() {
-  printf '[oci-deploy] ERROR: %s\n' "$*" >&2
+  printf '[vm-deploy] ERROR: %s\n' "$*" >&2
   exit "${2:-1}"
 }
 
 usage() {
   cat <<'USAGE'
 Usage:
-  oci-deploy.sh <release_tag>   Deploy an immutable released tag, e.g. v1.2.3
-  oci-deploy.sh --rollback      Redeploy PREVIOUS_APP_VERSION from the runtime env file
+  vm-deploy.sh <release_tag>   Deploy an immutable released tag, e.g. v1.2.3
+  vm-deploy.sh --rollback      Redeploy PREVIOUS_APP_VERSION from the runtime env file
 
 Environment overrides:
   APP_DIR, COMPOSE_FILE, RUNTIME_ENV_FILE, HEALTH_URL, READY_URL,
-  HEALTH_RETRIES, HEALTH_DELAY_SECONDS
+  HEALTH_RETRIES, HEALTH_DELAY_SECONDS, TARGET_ARCH
 USAGE
 }
 
@@ -115,8 +128,11 @@ main() {
       ;;
   esac
 
+  [ "${TARGET_ARCH}" != "unsupported" ] \
+    || fail "Unsupported host architecture: $(uname -m). Set TARGET_ARCH explicitly if this is wrong."
+
   [ -f "${COMPOSE_FILE}" ] || fail "Compose file not found: ${COMPOSE_FILE}"
-  [ -f "${RUNTIME_ENV_FILE}" ] || fail "Runtime env file not found: ${RUNTIME_ENV_FILE}. Run oci-bootstrap-env.sh first."
+  [ -f "${RUNTIME_ENV_FILE}" ] || fail "Runtime env file not found: ${RUNTIME_ENV_FILE}. Run vm-bootstrap-env.sh first."
 
   local bot_image current_version requested_version
   bot_image="$(read_env_value BOT_IMAGE "${RUNTIME_ENV_FILE}")"
@@ -157,25 +173,25 @@ main() {
   local registry_tag="${requested_version#v}"
   local target_image="${bot_image}:${registry_tag}"
 
-  # Verify the tag exists and carries an arm64 image before touching the
-  # running deployment.
-  log "Verifying ${target_image} exists and supports arm64..."
+  # Verify the tag exists and carries an image for this host's architecture
+  # before touching the running deployment.
+  log "Verifying ${target_image} exists and supports linux/${TARGET_ARCH}..."
   local manifest
   if ! manifest="$(docker manifest inspect "${target_image}" 2>&1)"; then
     fail "Image not found or not readable: ${target_image}"
   fi
 
   # jq is installed by cloud-init. Match on os AND architecture so an
-  # attestation entry can never be mistaken for a runnable arm64 image.
-  if ! printf '%s' "${manifest}" | jq -e \
-    '[.manifests[]? | select(.platform.os == "linux" and .platform.architecture == "arm64")] | length > 0' \
+  # attestation entry can never be mistaken for a runnable image.
+  if ! printf '%s' "${manifest}" | jq -e --arg arch "${TARGET_ARCH}" \
+    '[.manifests[]? | select(.platform.os == "linux" and .platform.architecture == $arch)] | length > 0' \
     >/dev/null 2>&1; then
-    fail "Image ${target_image} has no linux/arm64 manifest entry. This host cannot run it."
+    fail "Image ${target_image} has no linux/${TARGET_ARCH} manifest entry. This host cannot run it."
   fi
-  log "linux/arm64 manifest entry confirmed."
+  log "linux/${TARGET_ARCH} manifest entry confirmed."
 
   log "Pulling ${target_image}..."
-  docker pull --platform linux/arm64 "${target_image}" >/dev/null
+  docker pull --platform "linux/${TARGET_ARCH}" "${target_image}" >/dev/null
 
   # Record the rollback target before changing the running version, so an
   # interrupted deploy still leaves a recoverable previous tag.
@@ -202,7 +218,7 @@ main() {
     log "Health check failed. Container status:"
     compose ps || true
     compose logs --tail 50 bot || true
-    fail "Deployment of ${requested_version} failed the health check. Run 'oci-deploy.sh --rollback' to restore ${current_version:-the previous version}." 2
+    fail "Deployment of ${requested_version} failed the health check. Run 'vm-deploy.sh --rollback' to restore ${current_version:-the previous version}." 2
   fi
 
   log "Validating /ready..."
@@ -210,7 +226,7 @@ main() {
     log "Readiness check failed. Container status:"
     compose ps || true
     compose logs --tail 50 bot || true
-    fail "Deployment of ${requested_version} failed the readiness check. Run 'oci-deploy.sh --rollback' to restore ${current_version:-the previous version}." 2
+    fail "Deployment of ${requested_version} failed the readiness check. Run 'vm-deploy.sh --rollback' to restore ${current_version:-the previous version}." 2
   fi
 
   # Conservative cleanup: dangling layers only. Tagged images stay so a

@@ -92,21 +92,29 @@ jobs:
           # the bot service reads through env_file.
           oci_dir="$(mktemp -d)"
           mkdir -p "${oci_dir}/configs" "${oci_dir}/caddy/data" "${oci_dir}/caddy/config"
-          cp deploy/oci/Caddyfile "${oci_dir}/caddy/Caddyfile"
+          cp deploy/vm/Caddyfile "${oci_dir}/caddy/Caddyfile"
           cp "${compose_env}" "${oci_dir}/.env.runtime"
 
           docker compose --env-file "${compose_env}" --project-directory "${oci_dir}" \
-            -f docker-compose.oci.yml config >/dev/null
+            -f docker-compose.vm.yml config >/dev/null
           docker compose --env-file "${compose_env}" --project-directory "${oci_dir}" \
-            -f docker-compose.oci.yml --profile https config >/dev/null
-          echo "docker-compose.oci.yml is valid for both profiles."
+            -f docker-compose.vm.yml --profile https config >/dev/null
+          echo "docker-compose.vm.yml is valid for both profiles."
+
+          # The default deployment has no DNS name and never starts the https
+          # profile. Compose interpolates inactive profiles too, so validate
+          # without a hostname to keep that path from regressing.
+          grep -v '^PUBLIC_HOSTNAME=' "${compose_env}" > "${oci_dir}/.env.runtime"
+          docker compose --env-file "${oci_dir}/.env.runtime" --project-directory "${oci_dir}" \
+            -f docker-compose.vm.yml config >/dev/null
+          echo "docker-compose.vm.yml is valid without a public hostname."
 
       - name: Validate Caddy reverse proxy configuration
         shell: bash
         run: |
           set -euo pipefail
           docker run --rm \
-            -v "${PWD}/deploy/oci/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -v "${PWD}/deploy/vm/Caddyfile:/etc/caddy/Caddyfile:ro" \
             -e PUBLIC_HOSTNAME=tts.example.com \
             -e ACME_EMAIL=ops@example.com \
             -e BOT_HTTP_PORT=10000 \
@@ -117,5 +125,5 @@ jobs:
         run: |
           set -euo pipefail
           docker run --rm -v "${PWD}:/mnt" -w /mnt koalaman/shellcheck:stable \
-            scripts/deploy/oci-deploy.sh \
-            scripts/deploy/oci-bootstrap-env.sh
+            scripts/deploy/vm-deploy.sh \
+            scripts/deploy/vm-bootstrap-env.sh

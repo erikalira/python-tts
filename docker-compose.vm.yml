@@ -1,8 +1,11 @@
-# Lightweight runtime for the OCI Ampere A1 host.
+# Lightweight runtime for a single-node cloud host.
+#
+# Shared by both small-VM targets: OCI Ampere A1 (arm64, 1 OCPU / 6 GB) and
+# GCP e2-micro (amd64, 2 shared vCPU / 1 GB). The image is a multi-platform
+# manifest, so the same definition serves both.
 #
 # This is intentionally NOT the production-like stack in docker-compose.prod.yml:
-# no Postgres, no Redis, no Grafana, Prometheus, Tempo, or OTel collector. A
-# 1 OCPU / 6 GB ARM64 instance runs the bot and a reverse proxy, nothing else.
+# no Postgres, no Redis, no Grafana, Prometheus, Tempo, or OTel collector.
 #
 # The bot port is published on the loopback interface only. Public access goes
 # through Caddy over HTTPS; administrative access goes through an SSH tunnel.
@@ -31,6 +34,10 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    # Bound the bot's memory so the kernel kills the container, which restarts,
+    # rather than picking dockerd or sshd. Default suits a 1 GB e2-micro; raise
+    # it via BOT_MEMORY_LIMIT on the 6 GB Ampere host.
+    mem_limit: ${BOT_MEMORY_LIMIT:-768m}
     environment:
       # Only non-secret runtime shape lives here. Secrets come from env_file.
       DISCORD_BOT_HOST: 0.0.0.0
@@ -56,7 +63,11 @@ services:
       - ${CADDY_DATA_DIR:-./caddy/data}:/data
       - ${CADDY_CONFIG_DIR:-./caddy/config}:/config
     environment:
-      PUBLIC_HOSTNAME: ${PUBLIC_HOSTNAME:?PUBLIC_HOSTNAME is required for the https profile}
+      # Not a ${VAR:?} guard: compose interpolates every service, including
+      # inactive profiles, so requiring it here breaks the default bot-only
+      # deployment. The deploy script only starts this profile when
+      # PUBLIC_HOSTNAME is set, and Caddy fails fast on an empty site address.
+      PUBLIC_HOSTNAME: ${PUBLIC_HOSTNAME:-}
       ACME_EMAIL: ${ACME_EMAIL:-}
       BOT_HTTP_PORT: ${BOT_HTTP_PORT:-10000}
     logging:

@@ -12,7 +12,7 @@ environment has a chosen host.
 
 The `oci` environment is the first one with real provider resources, following
 the adoption rule below. It provisions the ARM64 host described in
-[docs/deploy/OCI_AMPERE_A1_DEPLOY.md](../docs/deploy/OCI_AMPERE_A1_DEPLOY.md).
+[docs/deploy/SMALL_CLOUD_VM_DEPLOY.md](../docs/deploy/SMALL_CLOUD_VM_DEPLOY.md).
 
 ## Layout
 
@@ -59,7 +59,7 @@ Authentication comes from the OCI CLI configuration or the `OCI_CLI_*`
 environment variables, not from committed files.
 
 This module owns infrastructure only. `DISCORD_TOKEN` and `BOT_SPEAK_TOKEN` are
-installed on the instance by `scripts/deploy/oci-bootstrap-env.sh` and never
+installed on the instance by `scripts/deploy/vm-bootstrap-env.sh` and never
 appear in variables, cloud-init user data, or state.
 
 Instance metadata, including cloud-init user data, is readable from the instance

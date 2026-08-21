@@ -1,13 +1,42 @@
-# OCI Ampere A1 Deploy
+# Small Cloud VM Deploy
 
-Run the Discord bot continuously on a small ARM64 Oracle Cloud instance.
+Run the Discord bot continuously on a single small cloud instance.
 
-This is the recommended lightweight always-on cloud deployment for the bot when
-an ARM64 OCI Ampere A1 instance is available. It is an additional target: the
-Windows, Docker/Postgres, and Render shapes remain fully supported. See
-[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) to compare them.
+Two targets are supported and share everything above the machine itself: the
+same released image, compose definition, reverse proxy, deploy script, and
+rollback procedure. Pick one; you do not need both.
 
-The decision behind this target is recorded in
+| | **OCI Ampere A1** (preferred) | **GCP e2-micro** (fallback) |
+| --- | --- | --- |
+| Architecture | arm64 | amd64 |
+| CPU | 1 OCPU dedicated | 2 vCPU shared, ~0.25 baseline |
+| Memory | 6 GB | **1 GB** |
+| Disk | 50 GB | 30 GB standard |
+| Regions | any with capacity | us-west1, us-central1, us-east1 only |
+| Billing risk | Always Free, no card charge | **requires active billing account** |
+| Availability | frequently out of capacity | reliably available |
+
+**Prefer OCI.** Six times the memory and a dedicated core matter for this
+workload: `ffmpeg` transcoding and Opus voice encoding are memory-hungry, and
+1 GB leaves little headroom. On GCP, cloud-init provisions 2 GB of swap and the
+compose file caps container memory so the kernel restarts the container rather
+than killing `dockerd` or `sshd`.
+
+**Use GCP when OCI Ampere A1 capacity is unavailable.** `Out of host capacity`
+on `tofu apply` is common and unpredictable; the GCP path exists so a bot does
+not wait on Oracle's inventory.
+
+Two cost differences are worth knowing before choosing GCP: the Free Tier
+requires an active billing account and bills automatically past its limits,
+where OCI Always Free does not; and it includes only 1 GB/month of egress to
+destinations outside North America. A voice bot produces continuous egress, so
+confirm your own traffic against the current published limits.
+
+This is an additional deployment shape. The Windows, Docker/Postgres, and
+Render targets remain fully supported; see
+[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
+
+The decision behind these targets is recorded in
 [ADR 0008](../adr/0008-oci-ampere-a1-deployment-target.md).
 
 ## Architecture
@@ -50,15 +79,30 @@ and an in-memory queue so it fits comfortably in 1 OCPU and 6 GB.
 
 ## Prerequisites
 
+Common to both targets:
+
 | Requirement | Notes |
 | --- | --- |
-| OCI account | With a compartment you can create resources in |
-| OCI API credentials | For OpenTofu. Configure with `oci setup config` or the `OCI_CLI_*` environment variables |
 | OpenTofu | `>= 1.6.0` |
 | SSH key pair | Public key goes to OpenTofu; the private key never does |
 | Discord bot token | From the Discord Developer Portal |
 | `BOT_SPEAK_TOKEN` | Generate with `openssl rand -hex 32` |
 | Domain name | Optional. Required only for public HTTPS `/speak` |
+
+For **OCI**:
+
+| Requirement | Notes |
+| --- | --- |
+| OCI account | With a compartment you can create resources in |
+| OCI API credentials | Run `oci setup config`, then upload the generated public key under Profile → User Settings → API Keys. Verify with `oci iam region-subscription list` |
+
+For **GCP**:
+
+| Requirement | Notes |
+| --- | --- |
+| GCP project | With the Compute Engine API enabled |
+| Active billing account | Required even for Free Tier usage |
+| Credentials | `gcloud auth application-default login`, or point `GOOGLE_APPLICATION_CREDENTIALS` at a service account key |
 
 ### Free-tier notes
 
@@ -80,7 +124,27 @@ Verify your current Always Free allocation in the OCI console before running
 These are guardrails against an accidentally large instance. They are not a
 guarantee that your tenancy will not be charged. Confirm your own limits.
 
+#### GCP Free Tier
+
+The GCP Free Tier covers **one** e2-micro in `us-west1`, `us-central1`, or
+`us-east1`, with 30 GB of standard persistent disk, per billing account. Unlike
+OCI Always Free, it **requires an active billing account and charges
+automatically** once a limit is passed.
+
+This configuration:
+
+- rejects any region outside the three eligible ones
+- defaults to `e2-micro` and warns if another shape is selected
+- caps the boot disk at the 30 GB allowance
+- provisions no load balancer, Cloud NAT, database, or other managed service
+
+Egress is the limit most likely to surprise a voice bot: the Free Tier includes
+only 1 GB/month to destinations outside North America. Verify your project's
+current terms and your own traffic before relying on it.
+
 ## Provisioning
+
+### OCI
 
 ```bash
 cd infra/environments/oci
@@ -105,7 +169,7 @@ tofu output instance_public_ip
 tofu output ssh_command
 ```
 
-### Required variables
+#### Required OCI variables
 
 | Variable | Default | Notes |
 | --- | --- | --- |
@@ -123,7 +187,7 @@ tofu output ssh_command
 | `public_hostname` | `""` | Required when HTTPS is enabled |
 | `bot_http_allowed_cidrs` | `[]` | Opt-in direct access. `0.0.0.0/0` is rejected |
 
-### Image discovery
+#### Image discovery
 
 The module resolves the newest `Canonical Ubuntu 24.04` ARM64 platform image
 through the `oci_core_images` data source, filtered by shape. If your tenancy or
@@ -134,6 +198,71 @@ region does not return a match, `tofu plan` fails with a clear message; set
 A platform image update alone will not recreate a running instance: the
 instance ignores changes to the discovered image ID. To move to a newer image,
 recreate the instance deliberately.
+
+### GCP
+
+```bash
+cd infra/environments/gcp
+
+cp terraform.tfvars.example terraform.tfvars
+# Edit with your project ID, zone, SSH public key, and administrative CIDR.
+
+gcloud auth application-default login
+
+tofu init
+tofu fmt -check
+tofu validate
+tofu plan
+tofu apply
+```
+
+`terraform.tfvars` is gitignored. Never commit it.
+
+Record the outputs:
+
+```bash
+tofu output instance_public_ip
+tofu output ssh_command
+```
+
+The public IP is a reserved static address, so it survives instance recreation
+and the DNS record does not need updating after a rebuild.
+
+#### Required GCP variables
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `project_id` | — | Required |
+| `region` | `us-central1` | Only the three Free Tier regions are accepted |
+| `zone` | `us-central1-a` | Must be inside `region` |
+| `ssh_public_key` | — | Public key material only |
+| `ssh_allowed_cidrs` | — | Required. `0.0.0.0/0` is rejected |
+| `machine_type` | `e2-micro` | Anything else is billed |
+| `boot_disk_size_gb` | `30` | Free Tier allowance |
+| `boot_disk_type` | `pd-standard` | Only this type is covered |
+| `enable_public_https` | `false` | Opens 80 and 443 |
+| `public_hostname` | `""` | Required when HTTPS is enabled |
+| `bot_http_allowed_cidrs` | `[]` | Opt-in. `0.0.0.0/0` is rejected |
+
+The boot image uses the `ubuntu-2404-lts-amd64` family, which tracks the newest
+patched image. As on OCI, an image family update alone does not recreate a
+running instance; recreate it deliberately to move to a newer image.
+
+#### Memory on e2-micro
+
+1 GB is the real constraint on this target. Two mitigations are applied
+automatically:
+
+- cloud-init provisions a 2 GB swap file with `vm.swappiness=10`, so swap acts
+  as an OOM cushion rather than routine storage on a slow standard disk
+- `docker-compose.vm.yml` sets `mem_limit` (default `768m`), so the kernel kills
+  and restarts the bot container instead of picking `dockerd` or `sshd`
+
+Raise the ceiling on the roomier OCI host by setting `BOT_MEMORY_LIMIT=2g` in
+the runtime file.
+
+If the bot is repeatedly OOM-killed under real load, that is the signal to move
+to OCI, or to accept a billed `e2-small`.
 
 ## First deployment
 
@@ -147,7 +276,7 @@ ssh ubuntu@<PUBLIC_IP> 'cloud-init status --wait && docker compose version'
 Create the runtime configuration locally from the example:
 
 ```bash
-cp .env.oci.example .env.oci
+cp .env.vm.example .env.vm
 # Fill in DISCORD_TOKEN, BOT_SPEAK_TOKEN, and BOT_IMAGE.
 # Set PUBLIC_HOSTNAME only if you enabled HTTPS.
 ```
@@ -161,21 +290,21 @@ ssh-keyscan -H <PUBLIC_IP> >> ~/.ssh/known_hosts
 Install the configuration and deployment assets:
 
 ```bash
-./scripts/deploy/oci-bootstrap-env.sh --host <PUBLIC_IP> --env-file ./.env.oci
+./scripts/deploy/vm-bootstrap-env.sh --host <PUBLIC_IP> --env-file ./.env.vm
 ```
 
-The script uploads `.env.oci` over SSH, installs it as
+The script uploads `.env.vm` over SSH, installs it as
 `/opt/python-tts/.env.runtime` with mode `0600`, and copies the compose file,
 Caddyfile, and deploy script. It refuses to run if `DISCORD_TOKEN` or
 `BOT_SPEAK_TOKEN` is empty or still a placeholder.
 
-`.env.oci` is gitignored, but it holds real secrets. Store it in a password
+`.env.vm` is gitignored, but it holds real secrets. Store it in a password
 manager and delete the local copy when you are done.
 
 Deploy a released version:
 
 ```bash
-ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh v1.2.3'
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/vm-deploy.sh v1.2.3'
 ```
 
 ## DNS and HTTPS
@@ -202,7 +331,7 @@ Public `/speak` access is off by default. To enable it:
    tts.example.com.  A  <OCI_PUBLIC_IP>
    ```
 
-3. Set `PUBLIC_HOSTNAME` in `.env.oci`, re-run the bootstrap script, and
+3. Set `PUBLIC_HOSTNAME` in `.env.vm`, re-run the bootstrap script, and
    redeploy. The deploy script starts the `https` profile automatically when
    `PUBLIC_HOSTNAME` is set.
 
@@ -288,7 +417,7 @@ without touching the host.
 Equivalently, from the instance:
 
 ```bash
-ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh v1.2.3'
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/vm-deploy.sh v1.2.3'
 ```
 
 ### Git tag vs registry tag
@@ -326,13 +455,13 @@ deploy v1.3.0  ->  health/readiness fail  ->  rollback to v1.2.4
 **On the instance**, using the recorded previous version:
 
 ```bash
-ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh --rollback'
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/vm-deploy.sh --rollback'
 ```
 
 **Explicitly**, to any known-good tag:
 
 ```bash
-ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/oci-deploy.sh v1.2.4'
+ssh ubuntu@<PUBLIC_IP> '/opt/python-tts/scripts/vm-deploy.sh v1.2.4'
 ```
 
 **Through GitHub Actions**, which is the same operation:
@@ -448,10 +577,10 @@ Full recovery on a new instance:
 
 ```bash
 tofu apply                                    # provision
-./scripts/deploy/oci-bootstrap-env.sh ...     # reinstall secrets
+./scripts/deploy/vm-bootstrap-env.sh ...     # reinstall secrets
 scp tts-configs-backup.tar.gz ubuntu@<NEW_IP>:/tmp/
 ssh ubuntu@<NEW_IP> 'sudo tar xzf /tmp/tts-configs-backup.tar.gz -C /opt/python-tts && sudo chown -R 1000:1000 /opt/python-tts/configs'
-ssh ubuntu@<NEW_IP> '/opt/python-tts/scripts/oci-deploy.sh v1.2.3'
+ssh ubuntu@<NEW_IP> '/opt/python-tts/scripts/vm-deploy.sh v1.2.3'
 ```
 
 There is no database to restore on this target. If you need durable Postgres
@@ -461,17 +590,22 @@ and see [BACKUP_AND_RESTORE_DATABASE.md](BACKUP_AND_RESTORE_DATABASE.md).
 ## Destroy
 
 ```bash
-cd infra/environments/oci
+cd infra/environments/oci   # or infra/environments/gcp
 tofu destroy
 ```
+
+Run this from the environment directory. From the repository root there is no
+state, so OpenTofu reports "No changes" and destroys nothing.
 
 This permanently deletes:
 
 - the instance and its **boot volume**, including `/opt/python-tts/configs`
   (all bot guild configuration) and `/opt/python-tts/.env.runtime`
-- the VCN, subnet, internet gateway, route table, and network security group
-- the instance's public IP — a new instance gets a new address, so the DNS
-  record must be updated
+- the network: on OCI the VCN, subnet, internet gateway, route table, and
+  network security group; on GCP the VPC, subnet, and firewall rules
+- the public IP. On OCI a new instance gets a new address, so the DNS record
+  must be updated; on GCP the reserved static address is released only by
+  `destroy`, so keeping the environment means keeping the address
 
 Back up `configs/` and confirm you still hold `DISCORD_TOKEN` and
 `BOT_SPEAK_TOKEN` before destroying. Published GHCR images are not affected.

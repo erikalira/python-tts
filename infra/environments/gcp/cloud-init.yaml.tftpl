@@ -1,5 +1,5 @@
 #cloud-config
-# Bootstraps the OCI Ampere A1 host into a Docker host for the python-tts bot.
+# Bootstraps the GCP e2-micro host into a Docker host for the python-tts bot.
 #
 # This file is rendered into instance metadata and is therefore readable from
 # the instance and stored in OpenTofu state. It must never contain
@@ -65,7 +65,7 @@ write_files:
     owner: root:root
     permissions: "0644"
     content: |
-      python-tts OCI Ampere A1 host.
+      python-tts GCP e2-micro host.
 
       compose.yaml     deployment definition, delivered by the deploy script
       .env.runtime     runtime secrets, installed out of band, mode 0600
@@ -76,8 +76,18 @@ write_files:
 
       Do not build application source on this host. Deploy immutable GHCR tags.
 
+swap:
+  filename: /swapfile
+  size: 2147483648
+  maxsize: 2147483648
+
 runcmd:
-  # Docker Engine and the Compose plugin from Docker's own ARM64 repository.
+  # Reduce swap aggressiveness: use it as an OOM cushion, not routinely, since
+  # the boot disk is slow standard persistent disk.
+  - sysctl -w vm.swappiness=10
+  - printf 'vm.swappiness=10\n' > /etc/sysctl.d/60-python-tts-swap.conf
+
+  # Docker Engine and the Compose plugin from Docker's official repository.
   - install -m 0755 -d /etc/apt/keyrings
   - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
   - chmod a+r /etc/apt/keyrings/docker.asc
@@ -104,11 +114,6 @@ runcmd:
   - chown ${admin_user}:${admin_user} ${app_dir}/.env.runtime
   - chmod 0600 ${app_dir}/.env.runtime
 
-  # OCI Ubuntu images ship a restrictive iptables policy. The proxy ports are
-  # already limited by the network security group; this makes the host agree.
-  - netfilter-persistent flush || true
-  - systemctl disable --now netfilter-persistent.service || true
-
   - systemctl restart ssh || systemctl restart sshd || true
 
-final_message: "python-tts OCI host ready after $UPTIME seconds. Install ${app_dir}/.env.runtime, then deploy a released tag."
+final_message: "python-tts GCP host ready after $UPTIME seconds. Install ${app_dir}/.env.runtime, then deploy a released tag."

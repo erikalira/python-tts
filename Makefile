@@ -42,4 +42,4 @@ compose-config:
 
 shellcheck:
 	docker run --rm -v "$(CURDIR):/mnt" -w /mnt koalaman/shellcheck:stable \
-		scripts/deploy/oci-deploy.sh scripts/deploy/oci-bootstrap-env.sh
+		scripts/deploy/vm-deploy.sh scripts/deploy/vm-bootstrap-env.sh
