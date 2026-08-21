@@ -25,7 +25,9 @@ than killing `dockerd` or `sshd`.
 
 **Use GCP when OCI Ampere A1 capacity is unavailable.** `Out of host capacity`
 on `tofu apply` is common and unpredictable; the GCP path exists so a bot does
-not wait on Oracle's inventory.
+not wait on Oracle's inventory. The network resources cost nothing, so leaving
+the OCI environment provisioned while retrying costs nothing either: a later
+`tofu apply` creates only the missing instance.
 
 Two cost differences are worth knowing before choosing GCP: the Free Tier
 requires an active billing account and bills automatically past its limits,
@@ -163,6 +165,10 @@ more reason to prefer that target when Ampere A1 capacity allows.
 ## Provisioning
 
 ### OCI
+
+`.terraform/` holds downloaded providers and modules, not state. It is
+gitignored and safe to delete; if a command reports "Module not installed",
+re-run `tofu init` and your state and resources are unaffected.
 
 ```bash
 cd infra/environments/oci
@@ -386,22 +392,44 @@ A CIDR allowlist for direct access exists as an explicit opt-in
 
 ## GitHub Actions
 
-Create a `oci-production` environment in the repository, then add:
+> **Network prerequisite.** This workflow connects over SSH from a GitHub-hosted
+> runner, and `ssh_allowed_cidrs` deliberately restricts port 22 to an
+> administrative range. A hosted runner's address is not in that range, so the
+> deploy step times out. GitHub publishes thousands of runner CIDRs that change
+> over time, so allowlisting them would both defeat the least-privilege rule and
+> break routinely.
+>
+> Choose one before relying on this workflow:
+>
+> - **Deploy from a workstation instead** (recommended for a single-node host).
+>   `vm-deploy.sh` over SSH does the same work, including rollback, and needs no
+>   firewall change. The workflow's `dry_run: true` mode still works from CI and
+>   validates that a release tag exists with the right architecture.
+> - **Register a self-hosted runner on the instance.** The runner polls
+>   outbound, so port 22 stays closed to the internet. Costs memory on a 1 GB
+>   host.
+> - **Put the runner and the instance on a private network** (Tailscale,
+>   WireGuard, or a cloud VPN) and allow SSH only from that network.
+
+Create a `cloud-vm-production` environment in the repository, then add:
 
 | Secret | Value |
 | --- | --- |
-| `OCI_DEPLOY_HOST` | Instance public IP or hostname |
-| `OCI_DEPLOY_USER` | `ubuntu` |
-| `OCI_DEPLOY_SSH_KEY` | Private key authorized on the instance |
-| `OCI_DEPLOY_KNOWN_HOSTS` | Output of `ssh-keyscan -H <PUBLIC_IP>` |
+| `VM_DEPLOY_HOST` | Instance public IP or hostname |
+| `VM_DEPLOY_USER` | `ubuntu` |
+| `VM_DEPLOY_SSH_KEY` | Private key authorized on the instance. Use a key dedicated to deployment, not a personal administrative key, so it can be revoked on its own |
+| `VM_DEPLOY_KNOWN_HOSTS` | Output of `ssh-keyscan -H <PUBLIC_IP>` |
+
+An ephemeral public IP changes when the instance is recreated; update
+`VM_DEPLOY_HOST` and `VM_DEPLOY_KNOWN_HOSTS` when that happens.
 
 Optional repository variable:
 
 | Variable | Default |
 | --- | --- |
-| `OCI_APP_DIR` | `/opt/python-tts` |
+| `VM_APP_DIR` | `/opt/python-tts` |
 
-`OCI_DEPLOY_KNOWN_HOSTS` pins the host key. Host key verification is never
+`VM_DEPLOY_KNOWN_HOSTS` pins the host key. Host key verification is never
 disabled; a substituted host cannot receive a deployment. No application secret
 is transmitted by the workflow — `DISCORD_TOKEN` and `BOT_SPEAK_TOKEN` live on
 the instance.
