@@ -34,6 +34,41 @@ guards the full inward dependency flow and keeps the desktop runtime
 independent of the bot runtime. Run it before finishing a change that moves
 imports between layers.
 
+# Production deployment
+
+The Discord bot runs in production on a **GCP e2-micro** (`us-central1`, amd64),
+not on the OCI Ampere A1 host the deployment guide presents as preferred. The
+OCI environment is fully provisioned except for the instance: every apply so far
+has returned `Out of host capacity`. Its network resources cost nothing and are
+left in place, so a later `tofu apply` creates only the missing instance.
+
+**Deploys are manual, by decision.** The `Deploy Cloud VM` workflow connects over
+SSH from a GitHub-hosted runner, and the firewall restricts port 22 to the
+maintainer's own address. Do not propose its real-deploy mode or widening
+`ssh_allowed_cidrs` to GitHub's runner ranges. Deploy over SSH instead:
+
+```bash
+ssh ubuntu@<HOST> '/opt/python-tts/scripts/vm-deploy.sh v1.2.5'
+ssh ubuntu@<HOST> '/opt/python-tts/scripts/vm-deploy.sh --rollback'
+```
+
+The workflow's `dry_run: true` mode does work from CI and is worth running first:
+it confirms a release tag exists for the target architecture.
+
+Two things that break quietly:
+
+- The GCP public IP is ephemeral, so recreating the instance changes it.
+- SSH is allowlisted to one address; if the maintainer's IP changes, SSH stops
+  working until `ssh_allowed_cidrs` is updated and `tofu apply` re-run.
+
+Release tags publish to GHCR **without the leading `v`**: `v1.2.3` becomes
+`1.2.3`. The deploy tooling accepts the git-tag form and resolves it. Create the
+tag only after committing — the Release workflow builds whatever commit the tag
+points at.
+
+See `docs/deploy/SMALL_CLOUD_VM_DEPLOY.md` and
+`docs/adr/0008-oci-ampere-a1-deployment-target.md`.
+
 # Validation
 
 Validate both runtimes before finishing a change that touches shared behavior,
