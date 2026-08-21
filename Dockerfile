@@ -1,5 +1,25 @@
 # Keep the runtime Python aligned with CI and release validation.
-FROM python:3.11-slim
+#
+# Two stages so the runtime image carries only what the bot needs at run time:
+# uv (~57 MB) and the build-time pip metadata stay in the builder, and the
+# virtualenv is copied in already owned by the runtime user, which avoids a
+# recursive chown duplicating every dependency into an extra layer.
+
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+# Install uv for lockfile-based dependency sync.
+RUN pip install --no-cache-dir uv==0.11.3
+
+# Copy dependency manifests before application code for better layer caching.
+COPY pyproject.toml uv.lock ./
+
+# Install runtime Python dependencies from the lockfile.
+RUN uv sync --locked --no-default-groups --no-install-project --no-cache
+
+
+FROM python:3.11-slim AS runtime
 
 ARG APP_VERSION=local
 ARG VCS_REF=unknown
@@ -20,23 +40,18 @@ RUN apt-get update && \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for lockfile-based dependency sync
-RUN pip install --no-cache-dir uv==0.11.3
+# Create the non-root user before copying, so every COPY can land already-owned
+# files instead of needing a recursive chown afterwards.
+RUN useradd -m -u 1000 appuser
 
-# Copy dependency manifests before application code for better layer caching
-COPY pyproject.toml uv.lock ./
-
-# Install runtime Python dependencies from the lockfile
-RUN uv sync --locked --no-default-groups --no-install-project --no-cache
+# The virtualenv is the largest artifact; copying it with --chown keeps it in a
+# single layer rather than one layer to write and another to re-own.
+COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
 
 # Copy application code
-COPY . .
+COPY --chown=appuser:appuser . .
 
 ENV PATH="/app/.venv/bin:$PATH"
-
-# Create a non-root user and switch to it
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
 
 USER appuser
 
