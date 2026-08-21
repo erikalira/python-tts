@@ -411,12 +411,21 @@ A CIDR allowlist for direct access exists as an explicit opt-in
 > - **Deploy from a workstation instead** (recommended for a single-node host).
 >   `vm-deploy.sh` over SSH does the same work, including rollback, and needs no
 >   firewall change. The workflow's `dry_run: true` mode still works from CI and
->   validates that a release tag exists with the right architecture.
-> - **Register a self-hosted runner on the instance.** The runner polls
->   outbound, so port 22 stays closed to the internet. Costs memory on a 1 GB
->   host.
-> - **Put the runner and the instance on a private network** (Tailscale,
->   WireGuard, or a cloud VPN) and allow SSH only from that network.
+>   validates that a release tag exists for the architecture you select. Set
+>   `target_arch` to match the host you are checking — `amd64` for the GCP
+>   e2-micro, `arm64` for OCI Ampere A1 — because a manifest can carry one
+>   without the other.
+> - **Register a self-hosted runner on the instance**, so the runner polls
+>   outbound and port 22 stays closed. This needs a workflow change: the job
+>   hardcodes `runs-on: ubuntu-latest`, so it must target the self-hosted
+>   labels, and the SSH hop becomes a local call. Costs memory on a 1 GB host.
+> - **Put a runner and the instance on a private network** (Tailscale,
+>   WireGuard, or a cloud VPN) and allow SSH only from that network. This also
+>   needs a workflow change: `runs-on` must point at a runner inside that
+>   network, or the job must join it before the SSH step.
+>
+> The last two are not configuration toggles. Until `runs-on` changes, every
+> real-deploy run executes on a GitHub-hosted runner and times out.
 
 Create a `cloud-vm-production` environment in the repository, then add:
 
