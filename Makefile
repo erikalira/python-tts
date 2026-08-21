@@ -2,7 +2,7 @@ UV_PROJECT_ENVIRONMENT ?= .test-artifacts/uv-venv
 PYTHONPATH ?= $(CURDIR)
 CRITICAL_TESTS := tests/unit tests/contract tests/e2e tests/chaos tests/smoke
 
-.PHONY: sync lint typecheck test security ci docker-build docker-build-arm64 kustomize compose-config shellcheck
+.PHONY: sync lint typecheck test security ci docker-build docker-build-arm64 kustomize compose-config shellcheck oci-retry
 
 sync:
 	UV_PROJECT_ENVIRONMENT=$(UV_PROJECT_ENVIRONMENT) uv sync --locked --group test
@@ -35,6 +35,12 @@ kustomize:
 	kubectl kustomize deploy/k8s/overlays/minikube >/dev/null
 	kubectl kustomize deploy/k8s/overlays/staging >/dev/null
 	kubectl kustomize deploy/k8s/overlays/prod >/dev/null
+
+# Retry the OCI Ampere A1 instance, which is frequently out of capacity.
+# Runs init first: .terraform/ is disposable, so a missing one is not an error.
+oci-retry:
+	tofu -chdir=infra/environments/oci init -input=false >/dev/null
+	tofu -chdir=infra/environments/oci apply -input=false
 
 compose-config:
 	docker compose --env-file .env.prod.example -f docker-compose.prod.yml config >/dev/null
