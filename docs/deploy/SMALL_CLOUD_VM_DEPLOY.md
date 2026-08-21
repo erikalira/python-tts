@@ -170,6 +170,13 @@ more reason to prefer that target when Ampere A1 capacity allows.
 gitignored and safe to delete; if a command reports "Module not installed",
 re-run `tofu init` and your state and resources are unaffected.
 
+To retry the OCI instance without thinking about that, use the target that
+always inits first:
+
+```bash
+make oci-retry
+```
+
 ```bash
 cd infra/environments/oci
 
