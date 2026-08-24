@@ -18,9 +18,14 @@ class TTSRequest:
     config_override: Optional["TTSConfig"] = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class TTSConfig:
-    """TTS engine configuration."""
+    """TTS engine configuration.
+
+    Frozen: this value object is shared across every layer and is handed out by
+    config repositories. Build a modified copy with ``dataclasses.replace``
+    rather than mutating an instance a repository may still hold.
+    """
 
     engine: str = "gtts"  # 'gtts' or 'pyttsx3'
     language: str = "pt"

@@ -1,5 +1,9 @@
 """Tests for configuration repository."""
 
+from dataclasses import FrozenInstanceError
+
+import pytest
+
 from src.core.entities import TTSConfig
 from src.infrastructure.tts.config_repository import InMemoryConfigRepository
 
@@ -62,14 +66,15 @@ class TestInMemoryConfigRepository:
         assert repo.get_config(guild_id=3).language == "pt"  # Default
 
     def test_config_isolation(self):
-        """Test that configs are isolated (no shared references)."""
+        """Test that handed-out configs cannot be mutated in place."""
         default_config = TTSConfig(engine="gtts", language="pt")
         repo = InMemoryConfigRepository(default_config)
 
         config1 = repo.get_config()
         config2 = repo.get_config()
 
-        # Modifying one shouldn't affect the other
-        config1.language = "modified"
+        # TTSConfig is frozen, so a caller cannot corrupt repository-owned state
+        with pytest.raises(FrozenInstanceError):
+            config1.language = "modified"  # type: ignore[misc]
 
         assert config2.language == "pt"

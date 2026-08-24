@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from src.desktop.config.desktop_config import DesktopAppConfig
 from src.desktop.gui.config_helpers import (
     build_updated_config,
@@ -79,10 +81,7 @@ def test_build_updated_config_preserves_existing_values_for_none_fields():
     current = DesktopAppConfig.create_default()
     current.discord.member_id = "123"
     current.discord.bot_url = "http://bot"
-    current.tts.engine = "gtts"
-    current.tts.language = "pt"
-    current.tts.voice_id = "voice"
-    current.tts.rate = 180
+    current.tts = replace(current.tts, engine="gtts", language="pt", voice_id="voice", rate=180)
     current.hotkey.trigger_open = "{"
     current.hotkey.trigger_close = "}"
     current.interface.show_notifications = True

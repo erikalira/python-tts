@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from dataclasses import replace
 
 from src.desktop.config.desktop_config import (
     ConfigurationRepository,
@@ -87,7 +88,7 @@ def test_environment_updater_sets_expected_variables(monkeypatch):
     config.discord.bot_url = get_default_discord_bot_url()
     config.discord.member_id = "99"
     config.discord.speak_token = "secret-token"
-    config.tts.output_device = "Speaker"
+    config.tts = replace(config.tts, output_device="Speaker")
 
     monkeypatch.delenv("DISCORD_BOT_URL", raising=False)
     monkeypatch.delenv("DISCORD_MEMBER_ID", raising=False)
@@ -106,7 +107,7 @@ def test_environment_updater_removes_optional_identifiers_when_missing(monkeypat
     config = DesktopAppConfig.create_default()
     config.discord.bot_url = get_default_discord_bot_url()
     config.discord.member_id = None
-    config.tts.output_device = None
+    config.tts = replace(config.tts, output_device=None)
 
     monkeypatch.setenv("DISCORD_MEMBER_ID", "member")
     monkeypatch.setenv("TTS_OUTPUT_DEVICE", "Speaker")
@@ -119,7 +120,7 @@ def test_environment_updater_removes_optional_identifiers_when_missing(monkeypat
 def test_configuration_validator_reports_invalid_values():
     config = DesktopAppConfig.create_default()
     config.discord.member_id = "abc"
-    config.tts.rate = 10
+    config.tts = replace(config.tts, rate=10)
     config.network.request_timeout = 0
     config.network.max_text_length = 3000
 

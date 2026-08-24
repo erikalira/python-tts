@@ -203,6 +203,36 @@ class IAudioQueue(ABC):
         """
 
     @abstractmethod
+    async def list_guild_ids(self) -> list[int | None]:
+        """List guilds that currently have queued work.
+
+        Returns:
+            Guild identifiers with pending items.
+        """
+
+    @abstractmethod
+    async def acquire_guild_lock(self, guild_id: int | None, owner_token: str, ttl_seconds: int = 30) -> bool:
+        """Acquire the distributed processing lock for a guild.
+
+        Args:
+            guild_id: Guild identifier
+            owner_token: Lock owner token
+            ttl_seconds: Lock TTL
+
+        Returns:
+            True when the lock was acquired by this owner.
+        """
+
+    @abstractmethod
+    async def release_guild_lock(self, guild_id: int | None, owner_token: str) -> None:
+        """Release the distributed processing lock for a guild.
+
+        Args:
+            guild_id: Guild identifier
+            owner_token: Lock owner token
+        """
+
+    @abstractmethod
     async def renew_guild_lock(self, guild_id: int | None, owner_token: str, ttl_seconds: int = 30) -> bool:
         """Refresh the distributed guild lock while processing is still active.
 

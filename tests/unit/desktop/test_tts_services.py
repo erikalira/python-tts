@@ -1,3 +1,4 @@
+from dataclasses import replace
 from types import SimpleNamespace
 from unittest.mock import ANY, Mock
 
@@ -62,10 +63,7 @@ def test_http_discord_bot_client_builds_payload_and_url():
     config = DesktopAppConfig.create_default()
     config.discord.bot_url = get_default_discord_bot_url().rstrip("/") + "/"
     config.discord.member_id = "20"
-    config.tts.engine = "edge-tts"
-    config.tts.language = "pt-BR"
-    config.tts.voice_id = "pt-BR-FranciscaNeural"
-    config.tts.rate = 210
+    config.tts = replace(config.tts, engine="edge-tts", language="pt-BR", voice_id="pt-BR-FranciscaNeural", rate=210)
 
     client = HttpDiscordBotClient(config)
     request = client.build_request("hello")
@@ -86,9 +84,7 @@ def test_http_discord_bot_client_builds_payload_and_url():
 
 def test_discord_tts_service_builds_payload_and_sends_request():
     config = DesktopAppConfig.create_default()
-    config.tts.engine = "pyttsx3"
-    config.tts.language = "system"
-    config.tts.voice_id = "David"
+    config.tts = replace(config.tts, engine="pyttsx3", language="system", voice_id="David")
     bot_client = FakeDiscordBotClient(available=True, result=True)
     service = DiscordTTSService(config, bot_client=bot_client)
 
@@ -277,7 +273,7 @@ def test_build_tts_engine_chain_prefers_local_engine_when_configured():
 
 def test_desktop_app_tts_service_prefers_local_engine_when_configured():
     config = DesktopAppConfig.create_default()
-    config.tts.engine = "pyttsx3"
+    config.tts = replace(config.tts, engine="pyttsx3")
     config.interface.local_tts_enabled = True
     bot_client = FakeDiscordBotClient(available=True, result=True)
     local_engine = FakeEngine(available=True, result=True)
@@ -294,7 +290,7 @@ def test_desktop_app_tts_service_prefers_local_engine_when_configured():
 
 def test_desktop_app_tts_service_uses_discord_when_local_voice_is_disabled():
     config = DesktopAppConfig.create_default()
-    config.tts.engine = "pyttsx3"
+    config.tts = replace(config.tts, engine="pyttsx3")
     config.interface.local_tts_enabled = False
     bot_client = FakeDiscordBotClient(available=True, result=True)
     local_engine = FakeEngine(available=True, result=True)
@@ -335,7 +331,7 @@ def test_desktop_app_tts_service_returns_false_for_blank_text():
 
 def test_local_pyttsx3_engine_initializes_and_speaks():
     config = DesktopAppConfig.create_default()
-    config.tts.voice_id = "target"
+    config.tts = replace(config.tts, voice_id="target")
 
     engine = Mock()
     engine.say = Mock()

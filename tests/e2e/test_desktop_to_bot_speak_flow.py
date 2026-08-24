@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import replace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -44,10 +45,7 @@ async def test_desktop_client_posts_speak_request_to_bot_http_endpoint():
         config.discord.bot_url = f"http://127.0.0.1:{port}"
         config.discord.member_id = "123"
         config.discord.speak_token = "e2e-token"
-        config.tts.engine = "edge-tts"
-        config.tts.language = "pt-BR"
-        config.tts.voice_id = "pt-BR-FranciscaNeural"
-        config.tts.rate = 210
+        config.tts = replace(config.tts, engine="edge-tts", language="pt-BR", voice_id="pt-BR-FranciscaNeural", rate=210)
 
         client = HttpDiscordBotClient(config)
         accepted = await asyncio.to_thread(client.send_text, "hello from desktop")

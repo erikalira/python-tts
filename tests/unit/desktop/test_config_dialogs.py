@@ -1,4 +1,5 @@
 import logging
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -138,10 +139,7 @@ def test_console_config_keeps_existing_values_when_inputs_are_blank(monkeypatch)
     config = DesktopAppConfig.create_default()
     config.discord.member_id = "123"
     config.discord.bot_url = "http://bot"
-    config.tts.engine = "gtts"
-    config.tts.language = "pt"
-    config.tts.voice_id = "voice"
-    config.tts.rate = 180
+    config.tts = replace(config.tts, engine="gtts", language="pt", voice_id="voice", rate=180)
     responses = iter(["", "", "", "", "", "", "", "", "", ""])
 
     monkeypatch.setattr("builtins.input", lambda _prompt: next(responses))
@@ -287,10 +285,7 @@ def test_gui_config_create_tabs_populates_variables(monkeypatch):
     gui.config = DesktopAppConfig.create_default()
     gui.config.discord.member_id = "123"
     gui.config.discord.bot_url = "http://bot"
-    gui.config.tts.engine = "pyttsx3"
-    gui.config.tts.language = "system"
-    gui.config.tts.voice_id = "David"
-    gui.config.tts.rate = 220
+    gui.config.tts = replace(gui.config.tts, engine="pyttsx3", language="system", voice_id="David", rate=220)
     gui.config.hotkey.trigger_open = "["
     gui.config.hotkey.trigger_close = "]"
     gui.config.interface.local_tts_enabled = True
