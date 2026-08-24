@@ -169,32 +169,23 @@ class BotQueueWorker:
                 await self._release_guild_lock(guild_id)
 
     async def _list_guild_ids(self) -> list[int | None]:
-        list_guild_ids = getattr(self._audio_queue, "list_guild_ids", None)
-        if list_guild_ids is None:
-            return []
-        return await list_guild_ids()
+        return await self._audio_queue.list_guild_ids()
 
     async def _acquire_guild_lock(self, guild_id: int | None) -> bool:
-        acquire_guild_lock = getattr(self._audio_queue, "acquire_guild_lock", None)
-        if acquire_guild_lock is None:
-            return True
-        return await acquire_guild_lock(guild_id, self._worker_token, ttl_seconds=self._guild_lock_ttl_seconds)
+        return await self._audio_queue.acquire_guild_lock(
+            guild_id,
+            self._worker_token,
+            ttl_seconds=self._guild_lock_ttl_seconds,
+        )
 
     async def _release_guild_lock(self, guild_id: int | None) -> None:
-        release_guild_lock = getattr(self._audio_queue, "release_guild_lock", None)
-        if release_guild_lock is None:
-            return
-        await release_guild_lock(guild_id, self._worker_token)
+        await self._audio_queue.release_guild_lock(guild_id, self._worker_token)
 
     async def _renew_guild_lock_loop(self, guild_id: int | None) -> None:
-        renew_guild_lock = getattr(self._audio_queue, "renew_guild_lock", None)
-        if renew_guild_lock is None:
-            return
-
         try:
             while not self._stop_event.is_set():
                 await asyncio.sleep(self._guild_lock_renew_interval_seconds)
-                renewed = await renew_guild_lock(
+                renewed = await self._audio_queue.renew_guild_lock(
                     guild_id,
                     self._worker_token,
                     ttl_seconds=self._guild_lock_ttl_seconds,

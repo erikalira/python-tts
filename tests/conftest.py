@@ -229,6 +229,7 @@ class MockAudioQueue(IAudioQueue):
         self.items = []
         self.completed = []
         self.processing_guilds = set()
+        self.locked_guilds: dict[int | None, str] = {}
 
     async def enqueue(self, item: AudioQueueItem) -> str | None:
         """Add item to queue."""
@@ -262,6 +263,23 @@ class MockAudioQueue(IAudioQueue):
             if existing_item.item_id == item.item_id:
                 self.items[index] = item
                 return
+
+    async def list_guild_ids(self) -> list[int | None]:
+        """List guilds that currently have queued items."""
+        return list({item.request.guild_id for item in self.items})
+
+    async def acquire_guild_lock(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
+        """Acquire a mock guild lock."""
+        del ttl_seconds
+        if guild_id in self.locked_guilds:
+            return False
+        self.locked_guilds[guild_id] = owner_token
+        return True
+
+    async def release_guild_lock(self, guild_id, owner_token: str) -> None:
+        """Release a mock guild lock held by this owner."""
+        if self.locked_guilds.get(guild_id) == owner_token:
+            del self.locked_guilds[guild_id]
 
     async def renew_guild_lock(self, guild_id, owner_token: str, ttl_seconds: int = 30) -> bool:
         """Renew a mock guild lock."""

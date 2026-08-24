@@ -1,4 +1,7 @@
 import asyncio
+from dataclasses import FrozenInstanceError
+
+import pytest
 
 from src.application.dto import ConfigureTTSResult, TTSConfigurationData
 from src.application.use_cases import ConfigureTTSUseCase
@@ -110,7 +113,8 @@ def test_user_scope_fallback_returns_isolated_copy_of_guild_cache(tmp_path):
     repo.set_config(123, guild_config)
 
     resolved = repo.get_config(123, user_id=999)
-    resolved.voice_id = "Maria"
+    with pytest.raises(FrozenInstanceError):
+        resolved.voice_id = "Maria"  # type: ignore[misc]
 
     cached_guild = repo.get_config(123)
     assert cached_guild.voice_id == "David"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 
 from src.application.dto import ConfigureTTSResult, TTSConfigurationData
 from src.core.interfaces import IConfigRepository
@@ -47,6 +48,7 @@ class ConfigureTTSUseCase:
 
         logger.info("[CONFIG_USE_CASE] Updating config for guild %s", guild_id)
         current_config = self._config_repository.get_config(guild_id, user_id=user_id)
+        updates: dict[str, object] = {}
 
         if engine is not None:
             if engine.lower() not in ["gtts", "pyttsx3", "edge-tts"]:
@@ -54,18 +56,23 @@ class ConfigureTTSUseCase:
                     success=False,
                     message="Invalid engine. Use 'gtts', 'pyttsx3' or 'edge-tts'",
                 )
-            current_config.engine = engine.lower()
+            updates["engine"] = engine.lower()
         if language is not None:
-            current_config.language = language.lower()
+            updates["language"] = language.lower()
         if voice_id is not None:
-            current_config.voice_id = voice_id
+            updates["voice_id"] = voice_id
         if rate is not None:
             if not (50 <= rate <= 300):
                 return ConfigureTTSResult(
                     success=False,
                     message="Rate must be between 50 and 300",
                 )
-            current_config.rate = rate
+            updates["rate"] = rate
+
+        # Build a new config instead of mutating the repository's instance: an
+        # IConfigRepository that returns a cached object would otherwise leak
+        # this guild's edits into every other caller holding the same instance.
+        current_config = replace(current_config, **updates)
 
         saved = await self._config_repository.save_config_async(guild_id, current_config, user_id=user_id)
         if not saved:
