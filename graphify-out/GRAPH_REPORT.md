@@ -1,16 +1,16 @@
-# Graph Report - python-tts  (2026-08-21)
+# Graph Report - python-tts  (2026-08-25)
 
 ## Corpus Check
-- 284 files · ~120,380 words
+- 284 files · ~121,111 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4044 nodes · 7883 edges · 446 communities (153 shown, 293 thin omitted)
-- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 965 edges (avg confidence: 0.57)
+- 4071 nodes · 7954 edges · 457 communities (165 shown, 292 thin omitted)
+- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 979 edges (avg confidence: 0.57)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4268522d`
+- Built from commit: `01de8326`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -147,8 +147,11 @@
 - Bot Speak Runtime Flow Docs
 - Audio Queue Status Interface
 - Observability Stack Services
+- BotSpeakRequestDTO
 - Desktop Hotkey Config Model
 - Getting Started: Environment Setup
+- ConsoleNotificationService
+- BotReadinessProbe
 - Conftest Temp Paths
 - Generated Diagrams: Discord TTS Service
 - Generated Diagrams: Desktop Bot Gateway
@@ -190,10 +193,14 @@
 - Release Checklist
 - README.md
 - Elite Upgrade Implementation Plan
+- SystemTrayIconAdapter
+- test_container_config_storage.py
 - Deployment Guide
+- .__init__
 - .handle
 - Docker + Postgres + Redis Deploy
 - Project Rules
+- server.py
 - Backup And Restore Database
 - Desktop App Guide
 - Codacy Rules
@@ -206,13 +213,16 @@
 - Environment Configuration
 - Baseline And Release Gates
 - Documentation
+- SpeakTextInputDTO
 - Kubernetes Manifests
 - Architecture Transitions
 - DummyTextWidget
 - Mutation Testing
 - .get_channel_id
+- .run_tray
 - Documentation Organization
 - .get_last_error_message
+- .hide
 - .__init__
 - Argo CD GitOps Application Manifests
 - BOT_RATE_LIMIT_MAX_REQUESTS
@@ -465,19 +475,19 @@
 7. `AudioFile` - 62 edges
 8. `TTSQueueOrchestrator` - 61 edges
 9. `DesktopApp` - 61 edges
-10. `DesktopAppConfig` - 58 edges
+10. `SpeakController` - 59 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `assets/icon.png (project microphone icon)` --conceptually_related_to--> `Distributed TTS System`  [INFERRED]
   assets/icon.png → README.md
+- `test_hotkey_config_keys_property()` --calls--> `HotkeyConfig`  [INFERRED]
+  tests/unit/desktop/test_desktop_config.py → src/desktop/config/models.py
 - `config/quality_gates.json` --semantically_similar_to--> `Codacy Coverage Threshold (77%)`  [INFERRED] [semantically similar]
   .github/workflows/test.yml → .codacy.yml
 - `Production Postgres Service` --semantically_similar_to--> `Postgres-only Compose Service`  [INFERRED] [semantically similar]
   docker-compose.prod.yml → docker-compose.postgres.yml
 - `Production Redis Service` --semantically_similar_to--> `Redis-only Compose Service`  [INFERRED] [semantically similar]
   docker-compose.prod.yml → docker-compose.redis.yml
-- `SecurityTestChannel` --uses--> `MockVoiceChannel`  [INFERRED]
-  scripts/test/manual_security_check.py → tests/conftest.py
 
 ## Import Cycles
 - None detected.
@@ -498,43 +508,43 @@
 - **Supply Chain Provenance Chain (SBOM, scan, sign, attest)** — docs_maintenance_dependency_maintenance_cyclonedx, trivy_scanner, cosign_signing, github_build_provenance_attestation, ghcr_registry [EXTRACTED 1.00]
 - **/speak Endpoint Threat Model And Runtime Controls** — speak_endpoint, docs_security_threat_model_runtime_controls, bot_rate_limit_max_requests, bot_rate_limit_window_seconds, docs_security_threat_model_trust_boundaries [EXTRACTED 1.00]
 
-## Communities (446 total, 293 thin omitted)
+## Communities (457 total, 292 thin omitted)
 
 ### Community 0 - "Desktop App Configuration"
 Cohesion: 0.04
-Nodes (54): DesktopBotConnectionStatus, DesktopBotVoiceContextStatus, DesktopApp, Handle first-run configuration when required., Start all runtime services., Run the main Desktop App loop., Execute queued UI actions on the main thread., Show the main Desktop App panel when Tkinter is available. (+46 more)
+Nodes (45): DesktopTTSServiceStatusDTO, Runtime status exposed by the Desktop App TTS processor., DesktopConfigurationApplicationService, Application services for Desktop App configuration flows., Validate, persist, and apply Desktop App configuration side effects., DesktopConfigurationCoordinator, Action coordinators for the Windows Desktop App runtime., Coordinate configuration edits and their side effects for the Desktop App. (+37 more)
 
 ### Community 1 - "TTS Queue Orchestrator & Security"
-Cohesion: 0.07
-Nodes (40): Test the valid scenario where the user is in the bot channel., Test channel with a stable channel id., Test repository for security scenarios., Test the vulnerable scenario where the user moved channels., SecurityTestChannel, SecurityTestRepository, test_security_valid_scenario(), test_security_vulnerability() (+32 more)
+Cohesion: 0.09
+Nodes (32): Test the valid scenario where the user is in the bot channel., Test channel with a stable channel id., Test repository for security scenarios., Test the vulnerable scenario where the user moved channels., SecurityTestChannel, SecurityTestRepository, test_security_valid_scenario(), test_security_vulnerability() (+24 more)
 
 ### Community 2 - "TTS Execution Service"
-Cohesion: 0.04
-Nodes (62): DesktopTTSExecutionPort, Protocol, Shared execution services for TTS flows., Structured result for Desktop App TTS execution., Port for Desktop App TTS execution and status reporting., Execute speech for the provided normalized text., Return whether the underlying TTS flow is available., Return the latest execution error when available. (+54 more)
+Cohesion: 0.05
+Nodes (42): Shared execution services for TTS flows., Structured result for Desktop App TTS execution., Execute Desktop App TTS through an explicit Desktop App port., Return whether the underlying TTS service is available., Expose status info from the underlying TTS service., SpeakTextExecutionUseCase, TTSExecutionResult, Recreate the hotkey manager so it points at the latest services. (+34 more)
 
 ### Community 3 - "Core Interfaces & Telemetry"
 Cohesion: 0.03
-Nodes (57): Input DTO for speak-text use-case boundaries., Speak-text application use case., BotRuntimeTelemetry, NoOpBotRuntimeTelemetry, Protocol, Application-facing runtime telemetry contracts., Application-facing contract for bot runtime observability., Safe default telemetry implementation for tests and opt-out runtimes. (+49 more)
+Nodes (70): Speak-text application use case., BotRuntimeTelemetry, NoOpBotRuntimeTelemetry, Protocol, Application-facing runtime telemetry contracts., Application-facing contract for bot runtime observability., Record the outcome of a speak request submission., Record the outcome of queued playback processing. (+62 more)
 
 ### Community 4 - "Redis Audio Queue"
-Cohesion: 0.07
-Nodes (36): AudioQueueItemStatusDTO, AudioQueueStatusDTO, View of a single queued audio item., Queue details for a guild-scoped audio queue., AudioQueueItemStatus, Status of an audio queue item., _build_status_dto(), _item_from_payload() (+28 more)
+Cohesion: 0.08
+Nodes (24): _item_to_payload(), _normalize_guild_id(), _null_span_context, Any, Redis-backed FIFO queue with item metadata per guild., RedisAudioQueue, _request_to_payload(), _CoordinatedOrchestrator (+16 more)
 
 ### Community 5 - "Bot Queue Worker"
 Cohesion: 0.05
-Nodes (15): Record the outcome of queued playback processing., AudioQueueItem, Represents an item in the audio queue.      Tracks a TTS request through the pro, Mark item as currently being processed., Mark item as successfully completed., Mark item as failed with error message.          Args:             error: Error, Get duration in seconds if completed., Get time waited in queue before processing. (+7 more)
+Nodes (23): AudioQueueItem, Get time waited in queue before processing., Represents a text-to-speech request., Represents an item in the audio queue.      Tracks a TTS request through the pro, Mark item as currently being processed., Mark item as successfully completed., Mark item as failed with error message.          Args:             error: Error, Get duration in seconds if completed. (+15 more)
 
 ### Community 6 - "Desktop Main Window GUI"
-Cohesion: 0.16
-Nodes (3): DesktopAppMainWindow, Any, Main Desktop App window that keeps configuration, actions, and logs visible.
+Cohesion: 0.06
+Nodes (27): DesktopAppMainWindow, DesktopAppMainWindowPresenter, MainWindowMessage, Presentation helpers for the Desktop App main window., View-ready text and color for a main-window status field., Build user-facing messages for the Desktop App main window., Any, Main Desktop App window that keeps configuration, actions, and logs visible. (+19 more)
 
 ### Community 7 - "Desktop Hotkey Backend"
-Cohesion: 0.15
-Nodes (10): BotHealthResponseDTO, Wire contract for GET /health responses., DesktopBotConnectionStatusDTO, DesktopBotVoiceContextStatusDTO, Typed Desktop App result DTOs., Structured health-check response from the bot runtime., Structured voice-context response from the bot runtime., HTTP adapter for sending TTS requests to the Discord bot runtime. (+2 more)
+Cohesion: 0.18
+Nodes (8): BotHealthResponseDTO, Wire contract for GET /health responses., DesktopBotConnectionStatusDTO, Structured health-check response from the bot runtime., HTTP adapter for sending TTS requests to the Discord bot runtime., Return the bot health endpoint URL., Check whether the bot runtime is reachable and healthy., Check whether the bot runtime is reachable.
 
 ### Community 8 - "TTS Audio Engines"
 Cohesion: 0.06
-Nodes (45): Future, AudioFile, Represents an audio file path., ITTSEngine, Interface for text-to-speech engines., Generate audio file from text.          Args:             text: Text to convert, Delete or release generated audio resources., Play audio in the voice channel.          Args:             audio: AudioFile to (+37 more)
+Nodes (40): Future, AudioFile, Represents an audio file path., Delete or release generated audio resources., Play audio in the voice channel.          Args:             audio: AudioFile to, _cleanup_temp_audio_file_when_done(), _create_temp_audio_path(), EdgeTTSEngine (+32 more)
 
 ### Community 9 - "Bot Settings & Runtime Config"
 Cohesion: 0.05
@@ -542,26 +552,26 @@ Nodes (49): _configure_logging(), main(), Main entry point for Discord bot with 
 
 ### Community 10 - "Config Migration to Postgres"
 Cohesion: 0.05
-Nodes (41): main(), migrate(), Migrate guild config files from JSON storage into Postgres., Dependency injection container., GuildConfigRepository, IConfigStorage, JSONConfigStorage, ABC (+33 more)
+Nodes (38): main(), migrate(), Migrate guild config files from JSON storage into Postgres., Dependency injection container., GuildConfigRepository, IConfigStorage, JSONConfigStorage, ABC (+30 more)
 
 ### Community 11 - "Desktop TTS Status Gateway"
-Cohesion: 0.09
-Nodes (19): DesktopTTSStatusGateway, DesktopTTSStatusUseCase, Shared Desktop App TTS orchestration helpers., Build Desktop App status information for local/remote TTS availability., Return the typed TTS status for Desktop App runtime views., Port for status data needed by Desktop App TTS views., Return whether the remote/Discord path is available., Return whether local TTS is enabled in configuration. (+11 more)
+Cohesion: 0.14
+Nodes (10): DesktopTTSStatusGateway, Protocol, Return the typed TTS status for Desktop App runtime views., Port for status data needed by Desktop App TTS views., Return whether the remote/Discord path is available., Return whether local TTS is enabled in configuration., Return whether the local TTS adapter is usable., Return whether the local TTS dependency is installed. (+2 more)
 
 ### Community 12 - "Interface Language Preferences"
 Cohesion: 0.05
 Nodes (21): InterfaceLanguagePreferenceRepository, Protocol, Persistence contract for interface language preferences., Return a user's explicit interface language for a guild, if any., Return a guild's explicit default interface language, if any., Persist a user's explicit interface language for a guild., Persist a guild's explicit default interface language., JSONInterfaceLanguagePreferenceRepository (+13 more)
 
 ### Community 13 - "Hotkey Monitoring Service"
-Cohesion: 0.04
-Nodes (52): HotkeyManagerStatusDTO, High-level hotkey manager status., is_keyboard_backend_available(), KeyboardHookBackend, Adapter around the optional keyboard library., Return whether the keyboard backend is installed., Register a keyboard event callback., Remove all registered keyboard callbacks. (+44 more)
+Cohesion: 0.03
+Nodes (60): Main entry point for the Windows desktop app., HotkeyManagerStatusDTO, HotkeyServiceStatusDTO, Detailed hotkey service status., High-level hotkey manager status., is_keyboard_backend_available(), KeyboardHookBackend, Adapter around the optional keyboard library. (+52 more)
 
 ### Community 14 - "Desktop Bot Gateway"
-Cohesion: 0.11
-Nodes (12): DesktopBotGateway, Protocol, Fetch the current voice context using the injected gateway., Port for Desktop App operations against the bot runtime., Return whether the bot base URL is configured., Return whether the configured Discord member is available., Check whether the bot runtime is reachable., Send a text payload to the bot runtime. (+4 more)
+Cohesion: 0.07
+Nodes (26): DesktopBotConnectionStatus, CheckDesktopBotConnectionUseCase, DesktopBotGateway, FetchDesktopBotVoiceContextUseCase, Protocol, Application use cases for Desktop App interactions with the bot runtime., Query the current detected voice context for the configured member., Fetch the current voice context using the injected gateway. (+18 more)
 
 ### Community 15 - "Desktop Discord Bot Client"
-Cohesion: 0.26
+Cohesion: 0.22
 Nodes (6): BotErrorResponseDTO, Normalized bot HTTP error payload., DiscordBotHttpResponse, DiscordBotHttpTransport, Minimal normalized HTTP response used by the desktop bot client., Thin HTTP transport for bot runtime requests.
 
 ### Community 16 - "Deploy: K8s Observability Metrics"
@@ -569,8 +579,8 @@ Cohesion: 0.07
 Nodes (42): bot_queue_age_seconds metric, bot_queue_depth metric, bot_queue_lock_loss_total metric (Redis-backed queue worker), bot_tts_enqueue_to_playback_seconds metric, bot_tts_submissions_total metric, bot-config ConfigMap, bot Deployment, bot-secrets Kubernetes Secret (external) (+34 more)
 
 ### Community 17 - "Discord Voice Channel & FFmpeg"
-Cohesion: 0.15
-Nodes (8): DiscordVoiceChannel, Play audio in the voice channel with resilient connection handling.          Arg, Discord voice channel wrapper.      Follows Single Responsibility: only handles, Get the channel name., Schedule automatic disconnect after idle timeout., Cancel scheduled disconnect., Initialize with discord.VoiceChannel.          Args:             channel: Discor, Check if member is still in the cached channel.
+Cohesion: 0.16
+Nodes (8): DiscordVoiceChannel, Play audio in the voice channel with resilient connection handling.          Arg, Discord voice channel wrapper.      Follows Single Responsibility: only handles, Get the channel name., Schedule automatic disconnect after idle timeout., Cancel scheduled disconnect., Auto-disconnect after timeout., Check if member is still in the cached channel.
 
 ### Community 18 - "Architecture Diagrams: Runtime"
 Cohesion: 0.27
@@ -585,55 +595,55 @@ Cohesion: 0.11
 Nodes (8): mock_voice_channel(), MockVoiceChannel, Fixture for mock voice channel., Mock voice channel for testing., Get mock channel name., Configurable repository for voice resolution scenarios., ResolutionRepository, TestVoiceChannelResolutionService
 
 ### Community 21 - "Discord Presenters & Results"
-Cohesion: 0.12
-Nodes (22): CommandTree, JoinVoiceChannelResult, LeaveVoiceChannelResult, Typed application result objects for shared TTS flows., Typed result base for shared application flows., ResultBase, RateLimitResult, Typed result for rate limit decisions. (+14 more)
+Cohesion: 0.11
+Nodes (21): Application DTOs and typed contracts for use-case boundaries., JoinVoiceChannelResult, LeaveVoiceChannelResult, Typed application result objects for shared TTS flows., Typed result base for shared application flows., ResultBase, Input DTO for voice-context queries., RateLimitResult (+13 more)
 
 ### Community 22 - "Core Entities & Config"
 Cohesion: 0.05
-Nodes (26): TTS engine configuration., TTSConfig, Get resolved TTS configuration for a guild/user scope or the global default., Load resolved TTS configuration asynchronously for a guild/user scope or the glo, Set TTS configuration for a specific guild or guild/user scope., Persist TTS configuration asynchronously for a specific guild or guild/user scop, PostgreSQLConfigStorage, Any (+18 more)
+Nodes (25): DiscordVoiceChannelCacheStatsDTO, Diagnostic cache stats for the Discord voice-channel repository., TTS engine configuration.      Frozen: this value object is shared across every, TTSConfig, Get resolved TTS configuration for a guild/user scope or the global default., Load resolved TTS configuration asynchronously for a guild/user scope or the glo, Set TTS configuration for a specific guild or guild/user scope., Persist TTS configuration asynchronously for a specific guild or guild/user scop (+17 more)
 
 ### Community 23 - "Discord Voice Channel Interfaces"
-Cohesion: 0.10
-Nodes (15): A selectable voice option exposed to presentation layers., Return available voice options., Resolve a selectable option by its stable key., Resolve the currently active configuration back to a catalog option., TTSVoiceOption, Expose runtime-selectable voices for Discord command autocomplete., RuntimeTTSCatalog, mock_tts_catalog() (+7 more)
+Cohesion: 0.11
+Nodes (12): A selectable voice option exposed to presentation layers., Return available voice options., Resolve a selectable option by its stable key., Resolve the currently active configuration back to a catalog option., TTSVoiceOption, Infrastructure adapter for listing TTS voices exposed to the Discord bot., Expose runtime-selectable voices for Discord command autocomplete., RuntimeTTSCatalog (+4 more)
 
 ### Community 24 - "Discord Commands Tests"
-Cohesion: 0.04
-Nodes (23): Protocol, Application contracts for Discord voice runtime availability., Structured availability details for Discord voice support., Return whether all required runtime dependencies are present., Return the names of missing runtime dependencies., Port for checking whether Discord voice runtime support is available., Return the current runtime availability details., VoiceRuntimeAvailability (+15 more)
+Cohesion: 0.05
+Nodes (14): Test DiscordCommands initialization., Test successful /speak command., Test /speak when dependencies are missing., Test /speak command failure., Test /speak suppresses non-HTTP interaction update failures during shutdown., Test /config command to get current config., Test /config command to update engine., Test /config command failure. (+6 more)
 
 ### Community 25 - "Desktop HTTP Bot Client"
-Cohesion: 0.17
-Nodes (6): Check whether HTTP requests can be sent to the bot., Build a speak request from Desktop App configuration., Build and send a text payload through the bot runtime., Return the bot speak endpoint URL., Send a speak request to the configured Discord bot., Build a user-facing error message from an HTTP failure.
+Cohesion: 0.08
+Nodes (32): DesktopBotVoiceContextStatus, get_default_discord_bot_url(), Return the default Discord bot URL for the current environment., Create configuration with default values., HttpDiscordBotClient, HTTP adapter for the Discord bot speak endpoint., Check whether HTTP requests can be sent to the bot., Return whether the bot base URL is configured. (+24 more)
 
 ### Community 26 - "Discord i18n & Locale"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (23): Locale, locale_str, command_text(), command_translation(), DiscordCommandTranslator, DiscordLocaleResolver, normalize_discord_locale(), Any (+15 more)
 
 ### Community 27 - "Desktop GUI Logging"
-Cohesion: 0.25
-Nodes (7): build_action_buttons(), build_header(), build_help_section(), Layout helpers for Desktop App main window sections., Build the main action row., Build the usage help section., Build the main window title and introductory copy.
+Cohesion: 0.11
+Nodes (16): Service for choosing Desktop App configuration interfaces., Desktop App GUI public exports., Main Desktop App panel implementation., build_action_buttons(), build_header(), build_help_section(), Layout helpers for Desktop App main window sections., Build the main action row. (+8 more)
 
 ### Community 28 - "Pyttsx3 TTS Adapter"
 Cohesion: 0.10
 Nodes (19): Logger, Pyttsx3Adapter, Thin adapter around pyttsx3 initialization., Return whether pyttsx3 is installed., Create a pyttsx3 engine instance., Create and configure a pyttsx3 engine instance., configure_pyttsx3_engine(), list_pyttsx3_voices() (+11 more)
 
 ### Community 29 - "Desktop Config Dialogs"
-Cohesion: 0.07
-Nodes (22): LogRecord, Queue, Logging helpers for Desktop App GUI surfaces., Logging handler that forwards formatted records to a queue., UILogHandler, build_fake_tk_module(), build_fake_ttk_module(), DummyRoot (+14 more)
+Cohesion: 0.08
+Nodes (17): LogRecord, Logging handler that forwards formatted records to a queue., UILogHandler, build_fake_tk_module(), build_fake_ttk_module(), DummyRoot, DummyVar, DummyWidget (+9 more)
 
 ### Community 30 - "Speak HTTP Controller"
-Cohesion: 0.13
-Nodes (20): SpeakTextResult, Use case for accepting TTS requests and delegating queued playback., SpeakTextUseCase, Controller for /speak endpoint., SpeakController, _speak_request(), test_rate_limit_retry_without_retry_after_keeps_contract_message(), test_speak_contract_accepts_authenticated_json_request() (+12 more)
+Cohesion: 0.16
+Nodes (19): SpeakTextResult, Use case for accepting TTS requests and delegating queued playback., SpeakTextUseCase, Application, StreamResponse, The desktop's outgoing payload must satisfy the bot's speak parser., _route(), _speak_request() (+11 more)
 
 ### Community 32 - "TTS Voice Catalog GUI"
-Cohesion: 0.08
-Nodes (20): Wire tray callbacks and hotkey processing to the current services., Wire tray callbacks to the provided notification service., Recreate the hotkey manager so it points at the latest services., DesktopAppHotkeyHandler, DesktopAppTTSResultPresenter, Hotkey handler that integrates captured text with TTS processing., Handle when text is captured between hotkey triggers., Translate structured TTS execution results into desktop notifications. (+12 more)
+Cohesion: 0.25
+Nodes (4): Check if events should be suppressed., Handle keyboard events., Process individual key presses., Handle when text is captured between hotkey triggers.
 
 ### Community 33 - "Speak Use Case Tests"
-Cohesion: 0.09
-Nodes (15): build_speak_use_case(), Factory for SpeakTextUseCase with explicit collaborators., Speak use case should reuse the shared TTS text preparation rules., Speak use case should derive the guild from the member's current voice channel., Test that use case finds channel by channel_id first., Queue overflow should reject the request instead of faking a queued success., Test SpeakTextUseCase., Test successful execution of speak use case. (+7 more)
+Cohesion: 0.07
+Nodes (19): build_speak_use_case(), Factory for SpeakTextUseCase with explicit collaborators., Speak use case should reuse the shared TTS text preparation rules., Speak use case should derive the guild from the member's current voice channel., Test that use case finds channel by channel_id first., Queue overflow should reject the request instead of faking a queued success., Test SpeakTextUseCase., Test successful execution of speak use case. (+11 more)
 
 ### Community 34 - "Discord Command Config"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (5): Choice, DiscordSpeakPreparationErrorCode, DiscordCommands, Interaction, Discord slash commands handler.
 
 ### Community 35 - "Config Embed Builder"
@@ -649,32 +659,32 @@ Cohesion: 0.12
 Nodes (8): JoinVoiceChannelUseCase, LeaveVoiceChannelUseCase, Use case for connecting the bot to a member's current voice channel., Use case for disconnecting the bot from a guild voice channel., Join use case should connect to the member channel., Leave use case should disconnect an active guild voice channel., Leave use case should report not connected when no voice session exists., Create a DiscordCommands instance for testing.
 
 ### Community 38 - "Dependency Maintenance Script"
-Cohesion: 0.09
-Nodes (52): Namespace, ParseResult, _build_parser(), _class_matches_path(), _coverage_line_totals(), CoverageDomainGate, CoverageGateConfig, CoverageGateResult (+44 more)
+Cohesion: 0.05
+Nodes (64): deque, Namespace, ParseResult, _build_parser(), _class_matches_path(), _coverage_line_totals(), CoverageDomainGate, CoverageGateConfig (+56 more)
 
 ### Community 39 - "Configure TTS Use Case"
 Cohesion: 0.09
-Nodes (16): TTSConfigurationData, ConfigureTTSUseCase, TTS configuration application use case., Use case for configuring TTS settings per guild., DiscordAboutCommandHandler, Focused handlers for Discord bot command flows., Build and send the `/about` response., Test ConfigureTTSUseCase. (+8 more)
+Nodes (18): DiscordSpeakRequestBuilder, Build speak-command input from Discord interaction primitives., TTSConfigurationData, ConfigureTTSUseCase, TTS configuration application use case., Use case for configuring TTS settings per guild., test_builder_creates_request_with_voice_override(), test_builder_requires_guild_id() (+10 more)
 
 ### Community 40 - "Interface Language Discord Commands"
 Cohesion: 0.09
-Nodes (8): ConfigureInterfaceLanguageUseCase, InterfaceLanguagePreferenceResult, Use cases for Discord interface language preferences., Result for interface language preference updates., Delete a user's explicit interface language preference., Delete a guild's explicit default interface language., Configure interface language preferences without changing TTS voice settings., FakeInterfaceLanguagePreferenceRepository
+Nodes (9): ConfigureInterfaceLanguageUseCase, InterfaceLanguagePreferenceResult, Use cases for Discord interface language preferences., Result for interface language preference updates., Delete a user's explicit interface language preference., Delete a guild's explicit default interface language., Configure interface language preferences without changing TTS voice settings., Public import surface for shared application use cases.  This module is intentio (+1 more)
 
 ### Community 41 - "Bot Runtime Container"
-Cohesion: 0.12
-Nodes (13): Container, Sync slash commands only once per process to avoid reconnect churn., Centralize dependency construction and wiring., _build_config(), test_container_requires_redis_dependency_for_redis_backend(), test_container_uses_inmemory_audio_queue_by_default(), test_container_uses_json_storage_when_configured(), test_container_uses_postgres_storage_when_configured() (+5 more)
+Cohesion: 0.19
+Nodes (5): Container, Sync slash commands only once per process to avoid reconnect churn., Centralize dependency construction and wiring., Tests for bot runtime container behavior., TestContainer
 
 ### Community 42 - "Docs: Dependency & Elite Upgrade Plan"
 Cohesion: 0.29
 Nodes (6): Accepted Vulnerability Exceptions, Artifact Verification, Automated Gates, Release Expectations, Runtime Entry Points, Security Gates
 
 ### Community 43 - "Desktop Config Dialog Helpers"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (22): Presentation helpers for Desktop App configuration dialogs., build_updated_config(), normalize_optional_text(), prompt_numeric_input(), Return stripped text or None when blank., Return stripped text or fallback when blank., Prompt until the user provides a numeric value or keeps the current one., Validate a numeric text field and return an error message when invalid. (+14 more)
 
 ### Community 44 - "In-Memory Config Repository"
-Cohesion: 0.09
-Nodes (16): InMemoryConfigRepository, Configuration repository implementation., Initialize repository with default configuration.          Args:             def, Get resolved TTS configuration for a guild/user scope or the global default., Load configuration asynchronously using the in-memory state., Set TTS configuration for a specific guild or guild/user scope.          Args:, Persist configuration asynchronously using the in-memory state., In-memory configuration storage.      Follows Single Responsibility: only manage (+8 more)
+Cohesion: 0.10
+Nodes (14): InMemoryConfigRepository, Initialize repository with default configuration.          Args:             def, Get resolved TTS configuration for a guild/user scope or the global default., Load configuration asynchronously using the in-memory state., Set TTS configuration for a specific guild or guild/user scope.          Args:, Persist configuration asynchronously using the in-memory state., In-memory configuration storage.      Follows Single Responsibility: only manage, Test InMemoryConfigRepository. (+6 more)
 
 ### Community 45 - "Fake Redis Audio Queue Tests"
 Cohesion: 0.08
@@ -685,52 +695,52 @@ Cohesion: 0.08
 Nodes (24): Alertmanager Incident Routing, Contain, Contain, Contain, Engine Degradation, First Response, Follow-Up, Follow-Up (+16 more)
 
 ### Community 48 - "TTS Voice Catalog Runtime"
-Cohesion: 0.15
-Nodes (13): Application contracts for exposing user-selectable TTS voice options., ConfigInterface, ABC, Shared contracts for Desktop App configuration dialogs., Abstract interface for Desktop App configuration flows., Show a configuration UI and return the updated config when accepted., Public entrypoint for Desktop App configuration dialog flows.  This module inten, ConsoleConfig (+5 more)
+Cohesion: 0.18
+Nodes (11): ConfigInterface, ABC, Shared contracts for Desktop App configuration dialogs., Abstract interface for Desktop App configuration flows., Show a configuration UI and return the updated config when accepted., Public entrypoint for Desktop App configuration dialog flows.  This module inten, ConsoleConfig, Console-based configuration dialog for the Desktop App. (+3 more)
 
 ### Community 49 - "Postgres Config Storage"
-Cohesion: 0.08
-Nodes (19): DesktopTTSBotClient, DiscordTTSService, LocalPyTTSX3Engine, ABC, Return the latest local TTS error, when any., TTS service that sends text to the Discord bot., Send text to the Discord bot for TTS., Create the shared Desktop App TTS flow service. (+11 more)
+Cohesion: 0.05
+Nodes (61): DesktopTTSFlowService, DesktopTTSStatusUseCase, Shared Desktop App TTS orchestration helpers., Build Desktop App status information for local/remote TTS availability., Coordinate text preparation and engine fallback for Desktop App TTS., Return whether at least one configured TTS engine is available., Expose the latest error captured by the fallback chain., DesktopTTSStatusDTO (+53 more)
 
 ### Community 50 - "Desktop Config Validation"
-Cohesion: 0.05
-Nodes (44): Shared timeout defaults used across bot and desktop runtimes., Return whether the Desktop App has minimum required configuration., Validate the provided Desktop App configuration., Test connectivity against the bot health endpoint., Send a short manual test message through the bot., Refresh the currently detected Discord voice context., Create the bot gateway used by Desktop App panel actions., EnvironmentUpdater (+36 more)
+Cohesion: 0.07
+Nodes (27): Shared timeout defaults used across bot and desktop runtimes., Return whether the Desktop App has minimum required configuration., Validate the provided Desktop App configuration., Run first-time configuration when required., EnvironmentUpdater, Updates environment variables from configuration., Update environment variables from configuration., DesktopAppConfig (+19 more)
 
 ### Community 51 - "Initial Setup Dialog"
-Cohesion: 0.12
-Nodes (13): ConfigDialogsPresenter, DialogFeedback, InitialSetupResult, User-facing dialog feedback., Structured output for the initial Desktop App setup flow., Build dialog messages and form results for Desktop App configuration UIs., InitialSetupGUI, Initial setup dialog flow for the Desktop App. (+5 more)
+Cohesion: 0.11
+Nodes (16): ConfigDialogsPresenter, DialogFeedback, InitialSetupResult, User-facing dialog feedback., Structured output for the initial Desktop App setup flow., Build dialog messages and form results for Desktop App configuration UIs., InitialSetupGUI, Initial setup dialog flow for the Desktop App. (+8 more)
 
 ### Community 52 - "Voice Runtime Status"
-Cohesion: 0.15
-Nodes (15): has_ffmpeg_runtime(), _is_usable_executable(), FFmpeg runtime helpers for Discord voice support., Return whether the given path points to an executable file., Return the FFmpeg executable path from env or PATH., Return whether FFmpeg is available for the current process., resolve_ffmpeg_executable(), Discord voice channel implementation. (+7 more)
+Cohesion: 0.17
+Nodes (14): has_ffmpeg_runtime(), _is_usable_executable(), FFmpeg runtime helpers for Discord voice support., Return whether the given path points to an executable file., Return the FFmpeg executable path from env or PATH., Return whether FFmpeg is available for the current process., resolve_ffmpeg_executable(), DependencyVoiceRuntimeAvailability (+6 more)
 
 ### Community 53 - "Infrastructure HTTP Server"
-Cohesion: 0.07
-Nodes (29): ObservabilitySnapshotProvider, ReadinessProvider, RequestHandler, _append_vary_origin(), HTTPServer, _null_span_context, Application, Request (+21 more)
+Cohesion: 0.15
+Nodes (16): HTTPServer, Application, HTTP server for bot endpoints.      Follows Single Responsibility: only handles, Build aiohttp application with operational and integration endpoints., test_desktop_client_posts_speak_request_to_bot_http_endpoint(), test_bot_health_endpoint_smoke(), Tests for aiohttp HTTP server endpoints., test_http_server_applies_cors_headers_for_allowed_origin() (+8 more)
 
 ### Community 54 - "Discord.py Dependency Docs"
 Cohesion: 0.06
 Nodes (39): Bot /health and /ready endpoints, Cosign keyless image signing, discord.py, docker-compose.prod.yml, Dockerfile (bot image build), pyright (typecheck), ruff (lint), Dependency Maintenance Guide (+31 more)
 
 ### Community 55 - "Rate Limiting"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (15): Protocol, RateLimiter, RateLimitRequest, Shared rate limiting contracts for runtime entrypoints., Input used by runtimes to check a caller-specific rate limit., Contract implemented by runtime-specific rate limit adapters., InMemoryRateLimiter, In-memory rate limiting adapter for runtime entrypoints. (+7 more)
 
 ### Community 56 - "Runtime Telemetry Spans"
-Cohesion: 0.14
-Nodes (7): AbstractContextManager, NullRuntimeSpan, Any, BaseException, Protocol, RuntimeSpan, RuntimeTelemetry
+Cohesion: 0.13
+Nodes (8): AbstractContextManager, NullRuntimeSpan, Any, BaseException, Protocol, Shared observability contracts for application and presentation layers., RuntimeSpan, RuntimeTelemetry
 
 ### Community 57 - "Voice Context Query DTOs"
-Cohesion: 0.14
-Nodes (10): VoiceContextResult, HTTPSpeakPresenter, HTTPVoiceContextPresenter, HTTP-specific presentation mapping for typed application results., Map speak results to HTTP text and status., Map voice-context results to HTTP JSON/status., Build the explicit HTTP response DTO for voice-context lookups., Unit tests for HTTP presenters. (+2 more)
+Cohesion: 0.12
+Nodes (13): VoiceContextResult, Normalized input contract for current voice-context queries., VoiceContextQueryDTO, HTTP controllers for handling web requests., HTTPSpeakPresenter, HTTPVoiceContextPresenter, HTTP-specific presentation mapping for typed application results., Map speak results to HTTP text and status. (+5 more)
 
 ### Community 58 - "TTS Fallback Routing"
-Cohesion: 0.09
-Nodes (20): Logger, build_tts_engine_chain(), Logger, Protocol, Shared routing helpers for selecting TTS delivery engines., Contract for Desktop App delivery engines used by the fallback chain., Speak the provided text., Return whether the engine can be used. (+12 more)
+Cohesion: 0.07
+Nodes (24): Logger, Port for a synchronous TTS engine used by the Desktop App., Speak the given text., Return whether the engine can be used., Prepare and speak text using the configured fallback chain., TTSEnginePort, build_tts_engine_chain(), Logger (+16 more)
 
 ### Community 59 - "System Tray Notifications"
-Cohesion: 0.12
-Nodes (14): FileAudioCleanup, Infrastructure helpers for cleaning up generated audio files., Delete temporary audio files from disk., Integration tests for TTS engines with actual implementation., Test lazy initialization of pyttsx3 engine., Test GTTSEngine with actual gTTS library., Test that GTTSEngine creates an audio file., Test generating audio in different languages. (+6 more)
+Cohesion: 0.13
+Nodes (13): FileAudioCleanup, Infrastructure helpers for cleaning up generated audio files., Delete temporary audio files from disk., Integration tests for TTS engines with actual implementation., Test lazy initialization of pyttsx3 engine., Test GTTSEngine with actual gTTS library., Test that GTTSEngine creates an audio file., Test generating audio in different languages. (+5 more)
 
 ### Community 60 - "Desktop Settings Dialog"
 Cohesion: 0.19
@@ -741,64 +751,64 @@ Cohesion: 0.13
 Nodes (10): HotkeyCaptureResult, HotkeyTextCaptureSession, Pure hotkey text-capture state used by the Desktop App keyboard monitor., Structured result produced when a capture session is completed., Track buffered text between configured trigger keys., Clear current recording state., Consume a key press and return a completed capture when available., test_hotkey_capture_session_ignores_empty_capture_and_reset_clears_state() (+2 more)
 
 ### Community 62 - "TTS Execution Port"
-Cohesion: 0.18
-Nodes (13): CheckDesktopBotConnectionUseCase, FetchDesktopBotVoiceContextUseCase, Application use cases for Desktop App interactions with the bot runtime., Query the current detected voice context for the configured member., Validate whether the Desktop App can reach the bot runtime., Send a short Desktop App test message through the bot runtime., SendDesktopBotTestMessageUseCase, FakeDesktopBotGateway (+5 more)
+Cohesion: 0.06
+Nodes (20): AudioQueueItemStatusDTO, AudioQueueStatusDTO, View of a single queued audio item., Queue details for a guild-scoped audio queue., AudioQueueItemStatus, Status of an audio queue item., _build_status_dto(), InMemoryAudioQueue (+12 more)
 
 ### Community 63 - "Bot Readiness Probes"
-Cohesion: 0.07
-Nodes (33): Self, BotDependencyReadinessDTO, Readiness state for one bot runtime dependency., AudioQueueHealthPort, BotReadinessConfig, BotReadinessProbe, ConfigRepositoryHealthPort, ConfigStorageHealthPort (+25 more)
+Cohesion: 0.17
+Nodes (14): AudioQueueHealthPort, BotReadinessConfig, ConfigRepositoryHealthPort, DiscordClientReadinessPort, Protocol, QueueWorkerReadinessPort, Readiness checks for the Discord bot runtime., Configuration values needed by readiness checks. (+6 more)
 
 ### Community 64 - "Desktop App TTS Service"
-Cohesion: 0.12
-Nodes (8): Check if pyttsx3 is available., Check if Discord TTS is available., Check if TTS service is available., Return whether the Discord bot transport is currently usable., Return whether the configured local engine is available., Remove typed characters from the active window., Initialize the pyttsx3 engine., Speak text using pyttsx3.
+Cohesion: 0.07
+Nodes (13): is_pyttsx3_available(), Expose pyttsx3 availability for status reporting., _DesktopAppTTSStatusGateway, Check if pyttsx3 is available., Check if Discord TTS is available., Check if TTS service is available., Return whether the Discord bot transport is currently usable., Return whether the configured local engine is available. (+5 more)
 
 ### Community 65 - "Mock Audio Queue Tests"
-Cohesion: 0.10
-Nodes (8): mock_audio_queue(), MockAudioQueue, Mock audio queue for testing., Remove and return next item., Persist in-memory item updates for tests., Renew a mock guild lock., Clear completed items., Fixture for mock audio queue.
+Cohesion: 0.08
+Nodes (11): mock_audio_queue(), MockAudioQueue, Mock audio queue for testing., Remove and return next item., Persist in-memory item updates for tests., List guilds that currently have queued items., Acquire a mock guild lock., Release a mock guild lock held by this owner. (+3 more)
 
 ### Community 66 - "Core Entities Tests"
-Cohesion: 0.26
-Nodes (4): _NullSpan, Any, BaseException, Optional OpenTelemetry tracing and metrics for the bot runtime.
+Cohesion: 0.33
+Nodes (3): _NullSpan, Any, BaseException
 
 ### Community 67 - "OpenTelemetry Fake Exporters"
 Cohesion: 0.14
-Nodes (11): _FakeMetricExporter, _FakeMetricReader, _FakePropagate, _FakeResource, _FakeSpanExporter, _FakeSpanKind, _FakeSpanProcessor, _FakeStatus (+3 more)
+Nodes (15): _FakeMeterProvider, _FakeMetricExporter, _FakeMetricReader, _FakePropagate, _FakeProvider, _FakeResource, _FakeSpanExporter, _FakeSpanKind (+7 more)
 
 ### Community 68 - "System Tray Notification Service"
-Cohesion: 0.03
-Nodes (48): System tray availability and runtime status., SystemTrayStatusDTO, create_system_tray_icon(), is_system_tray_available(), NullSystemTrayIcon, Any, PySystemTrayIcon, Show system tray icon. (+40 more)
+Cohesion: 0.15
+Nodes (16): System tray availability and runtime status., SystemTrayStatusDTO, Start system tray service only after startup is confirmed., Check if system tray support exists in the environment., Check if the tray loop is actually running., Get system tray service status., Service for managing system tray functionality., SystemTrayService (+8 more)
 
 ### Community 69 - "Voice Context Controller"
-Cohesion: 0.11
-Nodes (15): Normalized input contract for current voice-context queries., VoiceContextQueryDTO, NullRuntimeSpanContext, Shared observability contracts for application and presentation layers., Public import surface for shared application use cases.  This module is intentio, GetCurrentVoiceContextUseCase, Voice-channel related application use cases., Use case for discovering the member's current voice context. (+7 more)
+Cohesion: 0.09
+Nodes (19): GetCurrentVoiceContextUseCase, Use case for discovering the member's current voice context., Controller for querying the current voice context for a member., VoiceContextController, _desktop_transport(), _FakeResponse, Minimal stand-in for a requests.Response, as the desktop parsers see it., The bot's real /health body must satisfy the desktop's health parser. (+11 more)
 
 ### Community 70 - "Generated Diagrams: Config Repository"
 Cohesion: 0.29
 Nodes (7): Bot Production Persistence, Initial schema, Next recommended evolution, Recommendation, Runtime configuration, Suggested rollout, Why Postgres
 
 ### Community 71 - "Desktop TTS Bot Client"
-Cohesion: 0.40
-Nodes (4): AudioDevice, Protocol, Protocol for audio device selection., Set the output device for audio playback.
+Cohesion: 0.13
+Nodes (8): PostgreSQLConfigStorage, Any, Persist guild-scoped config in Postgres with room for future growth., FakeConnection, FakeCursor, test_postgres_storage_deletes_config(), test_postgres_storage_saves_and_loads_config(), test_postgres_storage_saves_and_loads_user_config()
 
 ### Community 73 - "Codacy CI Workflow"
 Cohesion: 0.15
 Nodes (13): CODACY_PROJECT_TOKEN secret, Bandit Engine, Codacy Coverage Threshold (77%), Prospector Engine, Pylint Engine, config/quality_gates.json, Test Workflow, Test: critical-tests job (+5 more)
 
 ### Community 74 - "HTTP Speak Presenter"
-Cohesion: 0.21
-Nodes (14): build_main_window(), DummyLabel, DummyRoot, DummyVar, test_main_window_clear_logs_resets_widget_and_pushes_log(), test_main_window_drain_logs_appends_messages_and_reschedules(), test_main_window_drain_ui_actions_runs_callback_and_reschedules(), test_main_window_handle_refresh_voice_context_updates_voice_context_message() (+6 more)
+Cohesion: 0.13
+Nodes (16): get_config_directory(), Path, Get configuration directory following OS best practices., ConfigurationRepository, Any, Path, Save configuration to file., Repository for configuration persistence. (+8 more)
 
 ### Community 75 - "Docs: Copilot & Architecture Guide"
 Cohesion: 0.10
 Nodes (20): app.py (desktop app entrypoint), deploy/winsw/install-or-update-service.ps1, dist/HotkeyTTS.exe, docs/architecture/ARCHITECTURE.md, docs/README.md, Documentation placement, GitHub Copilot Instructions, Non-negotiable rules (+12 more)
 
 ### Community 76 - "Discord Speak Request Builder"
-Cohesion: 0.13
-Nodes (15): DiscordSpeakPreparationResult, DiscordSpeakRequestBuilder, Protocol, Application service for preparing Discord speak-command input., Prepared speak input or a user-facing validation error., Minimal config lookup needed to build a speak request., Return the effective TTS config for a guild/user., Build speak-command input from Discord interaction primitives. (+7 more)
+Cohesion: 0.07
+Nodes (28): CommandTree, DiscordSpeakPreparationResult, Protocol, Application service for preparing Discord speak-command input., Prepared speak input or a user-facing validation error., Minimal config lookup needed to build a speak request., Return the effective TTS config for a guild/user., TTSConfigLookup (+20 more)
 
 ### Community 77 - "Desktop UI Runtime Coordinator"
-Cohesion: 0.17
-Nodes (11): DesktopAppUIRuntimeCoordinator, Queue, Queue a UI action to run on the main thread., Run all queued UI actions without blocking the Tk main loop., Own Desktop App window state, queued UI actions, and tray-triggered UI flows., test_ui_runtime_coordinator_drains_queued_actions(), test_ui_runtime_coordinator_handle_configure_focuses_existing_window(), test_ui_runtime_coordinator_queues_actions() (+3 more)
+Cohesion: 0.10
+Nodes (19): DesktopAppRuntimeStatusDTO, Aggregated Desktop App runtime status for tray and UI consumers., Get a compact view of current runtime status., DesktopAppUIRuntimeCoordinator, NotificationInfoPort, Queue, UI runtime coordination for the Desktop App., Queue a UI action to run on the main thread. (+11 more)
 
 ### Community 78 - "Desktop App Build Docs"
 Cohesion: 0.09
@@ -813,52 +823,56 @@ Cohesion: 0.18
 Nodes (11): DesktopTTSProcessorStatusPort, HotkeyManagerStatusPort, NotificationServiceStatusPort, Protocol, Contract needed to determine Desktop App hotkey activity., Return whether hotkey monitoring is active., Contract needed to determine Desktop App TTS availability., Return the typed TTS runtime status. (+3 more)
 
 ### Community 81 - "Desktop Discord Bot Client Requests"
-Cohesion: 0.14
-Nodes (10): BotSpeakRequestDTO, Wire contract for POST /speak requests sent to the bot runtime., Serialize the request into the JSON payload expected by the bot., DiscordBotClient, Protocol, Port for sending TTS requests to the Discord bot runtime., Return whether the bot client is ready for requests., Build a speak request from the provided text. (+2 more)
+Cohesion: 0.18
+Nodes (7): DiscordBotClient, Protocol, Port for sending TTS requests to the Discord bot runtime., Return whether the bot client is ready for requests., Build a speak request from the provided text., Send a speak request to the Discord bot., Return the latest human-readable error from the bot client.
 
 ### Community 82 - "HTTP Server Tracing"
 Cohesion: 0.17
-Nodes (7): BotVoiceContextResponseDTO, Wire contract for GET /voice-context responses., Return whether the HTTP transport dependency is installed., Return the bot health endpoint URL., Return the bot voice-context endpoint URL., Check whether the bot runtime is reachable and healthy., Fetch the current guild/channel detected for the configured member.
+Nodes (8): BotVoiceContextResponseDTO, Wire contract for GET /voice-context responses., DesktopBotVoiceContextStatusDTO, Structured voice-context response from the bot runtime., Return whether the HTTP transport dependency is installed., Return the bot voice-context endpoint URL., Fetch the current guild/channel detected for the configured member., Fetch the current voice context for the configured member.
 
 ### Community 83 - "Postgres Deploy & Restore Docs"
 Cohesion: 0.40
 Nodes (4): Chaos Testing, Current Scope, Future Runtime Drills, Local Run
 
 ### Community 84 - "Desktop UI Configuration Coordinator"
-Cohesion: 0.21
-Nodes (8): ConfigurationCoordinatorLike, HotkeyManagerLike, Protocol, Handle configure requests from tray or fallback UI flow., Contract needed for configure flows triggered from the tray., Return whether hotkeys are active., Contract for the tray-triggered configuration flow., Run the configuration flow and return the updated config.
+Cohesion: 0.13
+Nodes (13): Open configuration UI and apply changes from the tray flow., ConfigurationCoordinatorLike, HotkeyManagerLike, NotificationFeedbackPort, Protocol, Handle configure requests from tray or fallback UI flow., Contract needed for configure flows triggered from the tray., Return whether hotkeys are active. (+5 more)
 
 ### Community 85 - "Desktop Config Models"
 Cohesion: 0.10
 Nodes (21): 1. Download WinSW, 2.5. Prepare the server `.env`, 2. Copy the XML template, 3. Optional: run with a dedicated service account, 4. Install the service, Bot HTTP API is not reachable from another machine, Does it auto-update when `main` changes?, Install steps (+13 more)
 
 ### Community 86 - "Notification Service Protocol"
-Cohesion: 0.11
-Nodes (11): Protocol, Initialize system tray with handlers., Stop system tray service., Protocol for system tray functionality., Show the system tray icon., Hide the system tray icon., Set the tooltip text., Check if system tray is available. (+3 more)
+Cohesion: 0.13
+Nodes (9): Protocol, Create appropriate system tray icon based on availability., Initialize system tray with handlers., Protocol for system tray functionality., Set the tooltip text., Check if system tray is available., Check if the tray loop is running., Set callback handlers for tray actions. (+1 more)
 
 ### Community 87 - "OpenTelemetry Fake Spans"
-Cohesion: 0.20
-Nodes (3): _FakeSpan, _FakeStartedSpan, test_disabled_runtime_span_contexts_are_noops()
+Cohesion: 0.14
+Nodes (4): _FakeSpan, _FakeStartedSpan, _FakeTracer, test_disabled_runtime_span_contexts_are_noops()
 
 ### Community 88 - "In-Memory Runtime Telemetry"
-Cohesion: 0.18
-Nodes (7): deque, InMemoryBotRuntimeTelemetry, In-memory operational metrics for the Discord bot runtime., Track a compact rolling baseline of bot runtime metrics., test_bot_observability_sli_baseline_smoke(), test_runtime_observability_snapshot_is_empty_when_no_data_exists(), test_runtime_observability_tracks_percentiles_and_error_rates()
+Cohesion: 0.11
+Nodes (9): Any, PySystemTrayIcon, Show system tray icon., Hide system tray icon., pystray adapter is available when constructed., Return whether the tray event loop is running., pystray-backed system tray adapter., Set callback handlers for tray actions. (+1 more)
 
 ### Community 89 - "ADR: Docker Compose Postgres"
 Cohesion: 0.06
 Nodes (27): ADR 0001: Record Architecture Decisions, Consequences, Context, Decision, Status, ADR 0003: Use Redis For Queue Coordination, Consequences, Context (+19 more)
 
 ### Community 91 - "Bot Readiness DB Ports"
-Cohesion: 0.17
-Nodes (5): is_pyttsx3_available(), Expose pyttsx3 availability for status reporting., _DesktopAppTTSStatusGateway, Return whether the bot client transport dependency is installed., Adapter exposing Desktop App TTS status through the shared status port.
+Cohesion: 0.10
+Nodes (12): Tests for core entities., Test creating TTSRequest with all fields., Test AudioFile string representation., Test creating TTSRequest with only text., Test TTSRequest equality comparison., Test TTSRequest string representation., Test TTSRequest entity., Test AudioFile entity. (+4 more)
 
 ### Community 92 - "Desktop Config Paths"
-Cohesion: 0.04
-Nodes (33): Record the outcome of a speak request submission., BotQueueWorker, _default_lock_renew_interval_seconds(), _null_span_context, Protocol, QueueOrchestratorPort, Minimal queue orchestrator behavior needed by the worker., Process the next item for a guild. (+25 more)
+Cohesion: 0.18
+Nodes (3): BotQueueWorker, _null_span_context, Poll queue backends and drain pending guild queues.
+
+### Community 93 - "OpenTelemetry Audio Queue"
+Cohesion: 0.17
+Nodes (3): OpenTelemetryRuntime, Provide tracing and metrics with a safe no-op fallback., test_runtime_stays_disabled_when_otel_imports_are_unavailable()
 
 ### Community 94 - "OpenTelemetry Fake Providers"
-Cohesion: 0.18
-Nodes (4): _FakeProvider, _FakeTracer, _FakeTracerProvider, test_shutdown_flushes_meter_and_tracer_providers()
+Cohesion: 0.16
+Nodes (8): create_system_tray_icon(), is_system_tray_available(), NullSystemTrayIcon, Create the most appropriate tray adapter for the environment., Expose pystray availability for status reporting., Null object used when no tray implementation is available., test_null_system_tray_icon_is_never_available(), test_system_tray_service_start_returns_false_when_unavailable()
 
 ### Community 95 - "Deploy: Tempo Tracing"
 Cohesion: 0.08
@@ -869,20 +883,20 @@ Cohesion: 0.13
 Nodes (15): Config, Dependency Rules, Desktop App, Desktop App, Discord Bot, Entry Points, Execution, Main Structure (+7 more)
 
 ### Community 98 - "Desktop App Status DTOs"
-Cohesion: 0.20
-Nodes (8): DesktopAppRuntimeStatusDTO, Aggregated Desktop App runtime status for tray and UI consumers., Get a compact view of current runtime status., NotificationInfoPort, UI runtime coordination for the Desktop App., Show current app status via the main window or tray notifications., Contract needed to show tray status notifications., Show an informational notification.
+Cohesion: 0.14
+Nodes (7): Self, ConfigStorageHealthPort, DatabaseConnectionPort, DatabaseCursorPort, Minimal DB cursor surface used by readiness pings., Minimal DB connection/context-manager surface., Storage adapter surface used for readiness pings.
 
 ### Community 99 - "Desktop Config Environment"
-Cohesion: 0.05
-Nodes (40): Main entry point for the Windows desktop app., DesktopConfigurationSaveResultDTO, Structured result for Desktop App configuration saves from the main window., DesktopConfigEnvironment, DesktopConfigRepository, DesktopConfigurationApplicationService, Protocol, Application services for Desktop App configuration flows. (+32 more)
+Cohesion: 0.20
+Nodes (8): DesktopConfigEnvironment, DesktopConfigRepository, Protocol, Port for Desktop App configuration persistence., Persist the provided Desktop App configuration., Port for synchronizing Desktop App configuration into the environment., Synchronize runtime environment variables from configuration., Persist configuration and apply its runtime side effects.
 
 ### Community 100 - "Bot-Desktop HTTP Contract Tests"
-Cohesion: 0.50
-Nodes (4): Application, StreamResponse, _route(), test_health_and_readiness_contracts_are_json()
+Cohesion: 0.15
+Nodes (8): DesktopTTSExecutionPort, Protocol, Port for Desktop App TTS execution and status reporting., Execute speech for the provided normalized text., Return whether the underlying TTS flow is available., Return runtime status details for the Desktop App., Return the latest execution error when available., Execute a text-to-speech request and return a neutral result payload.
 
 ### Community 101 - "OpenTelemetry Fake Meters"
-Cohesion: 0.16
-Nodes (6): _FakeCounter, _FakeHistogram, _FakeMeter, _FakeMeterProvider, test_runtime_records_tts_submission_and_latency_metrics(), test_runtime_stays_disabled_when_otel_imports_are_unavailable()
+Cohesion: 0.15
+Nodes (4): _FakeCounter, _FakeHistogram, _FakeMeter, test_runtime_records_tts_submission_and_latency_metrics()
 
 ### Community 104 - "Manual Integration Check Script"
 Cohesion: 0.25
@@ -905,8 +919,8 @@ Cohesion: 0.27
 Nodes (7): MonkeyPatch, Path, test_get_outdated_versions_returns_empty_dict_for_invalid_json(), test_rewrite_requirement_lines_preserves_environment_marker(), test_rewrite_requirement_lines_preserves_inline_comment(), test_run_command_dispatches_unit_tests(), test_validate_command_rejects_arbitrary_python_executable()
 
 ### Community 109 - "Bot Dependency Readiness DTO"
-Cohesion: 0.22
-Nodes (6): Protocol, Port for a synchronous TTS engine used by the Desktop App., Speak the given text., Return whether the engine can be used., Prepare and speak text using the configured fallback chain., TTSEnginePort
+Cohesion: 0.17
+Nodes (8): _default_lock_renew_interval_seconds(), Protocol, QueueOrchestratorPort, Background queue worker for Discord bot delivery., Minimal queue orchestrator behavior needed by the worker., Process the next item for a guild., Return a safe renew cadence for distributed locks and leases., Optional OpenTelemetry tracing and metrics for the bot runtime.
 
 ### Community 110 - "Console Notification Service"
 Cohesion: 0.33
@@ -941,12 +955,12 @@ Cohesion: 0.12
 Nodes (16): assets/icon.png (project microphone icon), Architecture, Author, Contents, Distributed TTS System, Documentation, Future Improvements, License (+8 more)
 
 ### Community 122 - "Edge-TTS Engine"
-Cohesion: 0.23
-Nodes (8): DesktopTTSFlowService, Coordinate text preparation and engine fallback for Desktop App TTS., Return whether at least one configured TTS engine is available., Expose the latest error captured by the fallback chain., FakeEngine, test_desktop_tts_flow_service_ignores_blank_text(), test_desktop_tts_flow_service_reports_unavailable_when_no_engine_is_available(), test_desktop_tts_flow_service_truncates_text_before_speaking()
+Cohesion: 0.26
+Nodes (5): Request, Response, Health check endpoint for container and runtime probes., Expose a compact runtime observability snapshot for operational baselines., Readiness endpoint that checks configured external dependencies.
 
 ### Community 124 - "Desktop Config Reconfigure Action"
-Cohesion: 0.29
-Nodes (5): Open configuration UI and apply changes from the tray flow., NotificationFeedbackPort, Contract used to show configuration feedback., Show an error notification., Show a success notification.
+Cohesion: 0.18
+Nodes (7): NotificationService, ABC, Abstract interface for notification services., Show an informational notification., Show a success notification., Show an error notification., Check if notification service is available.
 
 ### Community 125 - "Manual Discord Connection Test"
 Cohesion: 0.38
@@ -961,12 +975,16 @@ Cohesion: 0.24
 Nodes (13): ImportFrom, _find_forbidden_imports(), _iter_python_files(), _matches_forbidden_prefix(), Path, Guards the guard: a relative import must not slip past the prefix match., Resolve an import to its absolute dotted module path.      Relative imports (``f, _resolve_module() (+5 more)
 
 ### Community 128 - "OTel Collector Pipeline"
-Cohesion: 0.13
-Nodes (15): DesktopBotActionResultDTO, DesktopBotVoiceContextResultDTO, Structured result for Desktop App actions against the bot runtime., Structured result for Desktop App voice-context detection., Create and show the main Desktop App window., DesktopAppMainWindowPresenter, MainWindowMessage, Presentation helpers for the Desktop App main window. (+7 more)
+Cohesion: 0.11
+Nodes (14): DesktopBotActionResultDTO, DesktopBotVoiceContextResultDTO, DesktopConfigurationSaveResultDTO, Typed Desktop App result DTOs., Structured result for Desktop App actions against the bot runtime., Structured result for Desktop App voice-context detection., Structured result for Desktop App configuration saves from the main window., Validate, persist, and apply configuration changes from the main window. (+6 more)
 
 ### Community 130 - "Audio Queue Status Interface"
 Cohesion: 0.33
 Nodes (4): AudioQueueStatusView, Protocol, Core-facing view of queue status without depending on application DTOs., Get current queue status for a guild.          Args:             guild_id: Guild
+
+### Community 132 - "BotSpeakRequestDTO"
+Cohesion: 0.22
+Nodes (6): BotSpeakRequestDTO, Wire contract for POST /speak requests sent to the bot runtime., Serialize the request into the JSON payload expected by the bot., Send text to the Discord bot for TTS., Build the bot speak request for text., Send the prepared speak request.
 
 ### Community 133 - "Desktop Hotkey Config Model"
 Cohesion: 0.12
@@ -976,21 +994,29 @@ Nodes (15): 1. Inspect the current state, 2. Choose the upgrade style, 3. Upgrad
 Cohesion: 0.11
 Nodes (18): 1. Create `.venv`, 2. Activate `.venv`, 3. Install Dependencies, 4. Install FFmpeg On Windows For Discord Voice, 5.1. Local Bot Storage, 5.2. Optional Redis Queue For The Bot, 5.3. Full Local Production Stack, 5. Validate The Environment (+10 more)
 
+### Community 136 - "ConsoleNotificationService"
+Cohesion: 0.20
+Nodes (3): ConsoleNotificationService, Console-based notification service., test_console_notification_service_is_available()
+
+### Community 137 - "BotReadinessProbe"
+Cohesion: 0.56
+Nodes (8): BotReadinessProbe, Evaluate whether the bot runtime is ready to receive production traffic., _config(), _dependency(), test_readiness_reports_not_ready_when_postgres_connect_method_is_missing(), test_readiness_reports_not_ready_when_postgres_is_unavailable(), test_readiness_reports_not_ready_when_queue_worker_is_stopped(), test_readiness_reports_not_ready_when_redis_ping_raises()
+
 ### Community 177 - "Scripts Directory"
 Cohesion: 0.12
 Nodes (17): Build Scripts, CI/CD Integration, Contributing, Dependency Errors, Included Capabilities, Linux Permissions, Manual Checks, OCI Deployment (+9 more)
 
 ### Community 178 - "__init__.py"
-Cohesion: 0.12
-Nodes (16): BotReadinessResponseDTO, BotRuntimeErrorRateDTO, BotRuntimeObservabilityDTO, DesktopTTSServiceStatusDTO, DiscordVoiceChannelCacheStatsDTO, HotkeyServiceStatusDTO, Explicit DTO contracts shared across application and desktop runtime flows., Wire contract for GET /ready responses. (+8 more)
+Cohesion: 0.20
+Nodes (7): BotDependencyReadinessDTO, BotReadinessResponseDTO, Explicit DTO contracts shared across application and desktop runtime flows., Readiness state for one bot runtime dependency., Wire contract for GET /ready responses., Return whether the Discord client is connected and ready., Return whether queue processing is active.
 
 ### Community 179 - ".is_connected"
-Cohesion: 0.18
-Nodes (8): Disconnect from the voice channel., Check if connected to voice channel., Auto-disconnect after timeout., Clean up voice channel instances that haven't been used recently.          Remov, Synchronize cached voice client with Discord's guild state., Clean up all cached voice channel instances.          Useful for graceful shutdo, Connect to the voice channel with retry logic., VoiceClient
+Cohesion: 0.21
+Nodes (7): Disconnect from the voice channel., Check if connected to voice channel., Clean up voice channel instances that haven't been used recently.          Remov, Synchronize cached voice client with Discord's guild state., Clean up all cached voice channel instances.          Useful for graceful shutdo, Connect to the voice channel with retry logic., VoiceClient
 
 ### Community 180 - "DiscordVoiceChannelRepository"
-Cohesion: 0.17
-Nodes (9): DiscordVoiceChannelRepository, Repository for finding Discord voice channels.      Follows Single Responsibilit, Find any voice channel where bot is already connected.          VALIDATION: Retu, Find voice channel where member is connected.          VALIDATION: Ensures membe, Find voice channel by ID.          Args:             channel_id: Channel ID, Find first available voice channel in guild.          Args:             guild_id, Update member cache on voice state change.          Args:             member_id:, Get statistics about the channel instance cache.          Returns:             T (+1 more)
+Cohesion: 0.15
+Nodes (10): DiscordVoiceChannelRepository, Repository for finding Discord voice channels.      Follows Single Responsibilit, Find any voice channel where bot is already connected.          VALIDATION: Retu, Initialize with discord.VoiceChannel.          Args:             channel: Discor, Find voice channel where member is connected.          VALIDATION: Ensures membe, Find voice channel by ID.          Args:             channel_id: Channel ID, Find first available voice channel in guild.          Args:             guild_id, Update member cache on voice state change.          Args:             member_id: (+2 more)
 
 ### Community 181 - "Runtime Flows"
 Cohesion: 0.13
@@ -1008,9 +1034,25 @@ Nodes (8): Generated Application Diagram, Generated Core Diagram, Generated Desk
 Cohesion: 0.14
 Nodes (13): Chosen Upgrade Stack, Commit And Validation Rule, Current Baseline, Elite Upgrade Implementation Plan, Implementation Status, Non-Goals For The First Pass, Phase 1: Supply Chain Security, Phase 2: Release Engineering (+5 more)
 
+### Community 185 - "SystemTrayIconAdapter"
+Cohesion: 0.22
+Nodes (3): Abstractable base for system tray adapters., Set callback handlers for tray actions., SystemTrayIconAdapter
+
+### Community 186 - "test_container_config_storage.py"
+Cohesion: 0.42
+Nodes (8): _build_config(), test_container_requires_redis_dependency_for_redis_backend(), test_container_uses_inmemory_audio_queue_by_default(), test_container_uses_json_storage_when_configured(), test_container_uses_postgres_storage_when_configured(), test_container_uses_redis_audio_queue_when_configured(), test_readiness_payload_reports_ready_for_inmemory_runtime(), test_readiness_payload_reports_redis_failure()
+
 ### Community 187 - "Deployment Guide"
 Cohesion: 0.15
 Nodes (13): Deployment Guide, I need backup and restore for the database, I need production runbooks or release operations, I need staging or rollback guidance, I only need environment variables, I want a lightweight always-on cloud deploy, I want Docker plus Postgres, I want only local Postgres (+5 more)
+
+### Community 188 - ".__init__"
+Cohesion: 0.29
+Nodes (5): ObservabilitySnapshotProvider, ReadinessProvider, RequestHandler, StreamResponse, Initialize HTTP server.          Args:             speak_handler: Handler for /s
+
+### Community 189 - ".handle"
+Cohesion: 0.20
+Nodes (5): NullRuntimeSpanContext, Request, Response, Controller for /speak endpoint., SpeakController
 
 ### Community 190 - "Docker + Postgres + Redis Deploy"
 Cohesion: 0.18
@@ -1019,6 +1061,10 @@ Nodes (11): 1. Prepare environment, 2.1. Local Postgres only, 2. Start the stack
 ### Community 191 - "Project Rules"
 Cohesion: 0.18
 Nodes (10): Architecture boundary (hard rule), Contracts, Documentation placement, Environment, Language and encoding, Project Rules, Transition code, Two runtimes (+2 more)
+
+### Community 192 - "server.py"
+Cohesion: 0.25
+Nodes (4): _append_vary_origin(), _null_span_context, HTTP server using aiohttp., Version information for the Discord bot and Desktop App.
 
 ### Community 193 - "Backup And Restore Database"
 Cohesion: 0.20
@@ -1068,6 +1114,10 @@ Nodes (8): Baseline And Release Gates, Branch protection expectation, Desktop ap
 Cohesion: 0.25
 Nodes (8): Conventions, Documentation, Getting Started, Governance, Maintenance, Navigation, Operate And Deploy, Understand The System
 
+### Community 206 - "SpeakTextInputDTO"
+Cohesion: 0.50
+Nodes (3): Input DTO for speak-text use-case boundaries., Normalized input contract for speak text requests., SpeakTextInputDTO
+
 ### Community 207 - "Kubernetes Manifests"
 Cohesion: 0.29
 Nodes (6): Database Schema, GitOps, Kubernetes Manifests, Local Validation, Overlays, Secret Handling
@@ -1075,6 +1125,10 @@ Nodes (6): Database Schema, GitOps, Kubernetes Manifests, Local Validation, Over
 ### Community 208 - "Architecture Transitions"
 Cohesion: 0.29
 Nodes (6): Architecture Transitions, Bad repository-specific examples, Good repository-specific examples, How to use this guide, Typical transition shapes in this repository, Where transitions usually belong
+
+### Community 209 - "DummyTextWidget"
+Cohesion: 0.50
+Nodes (3): prepare_tts_text(), Shared text preparation rules for TTS flows., Normalize user text before it enters a TTS pipeline.
 
 ### Community 210 - "Mutation Testing"
 Cohesion: 0.40
@@ -1091,19 +1145,19 @@ Nodes (3): Documentation Organization, Quick examples, Rules
 ## Knowledge Gaps
 - **711 isolated node(s):** `tts-hotkey-windows`, `Dependency Rules`, `Pull Request Checklist`, `Adding Features`, `What Not To Do` (+706 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **293 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **292 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `Provider Adoption Rule` and `render.yaml`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `TTSConfig` connect `Core Entities & Config` to `Desktop App Configuration`, `TTS Queue Orchestrator & Security`, `Audio Queue Status Interface`, `Core Interfaces & Telemetry`, `Redis Audio Queue`, `Bot Queue Worker`, `Desktop Hotkey Backend`, `TTS Audio Engines`, `Bot Settings & Runtime Config`, `Config Migration to Postgres`, `Desktop TTS Status Gateway`, `Hotkey Monitoring Service`, `Desktop Discord Bot Client`, `Voice Channel Resolution`, `Discord Voice Channel Interfaces`, `Desktop HTTP Bot Client`, `Pyttsx3 TTS Adapter`, `Speak HTTP Controller`, `In-Memory Config Repository`, `__init__.py`, `Desktop Config Validation`, `System Tray Notifications`, `.handle`, `Bot Readiness Probes`, `Mock Audio Queue Tests`, `System Tray Notification Service`, `Voice Context Controller`, `Discord Speak Request Builder`, `Desktop Discord Bot Client Requests`, `HTTP Server Tracing`, `Desktop Config Paths`, `Desktop App Status DTOs`?**
-  _High betweenness centrality (0.187) - this node is a cross-community bridge._
-- **Why does `DesktopAppConfig` connect `Desktop Config Validation` to `OTel Collector Pipeline`, `Desktop App Configuration`, `TTS Execution Service`, `Desktop Config Environment`, `System Tray Notification Service`, `Desktop Main Window GUI`, `Desktop Config Dialog Helpers`, `Hotkey Monitoring Service`, `Desktop Settings Dialog`, `Desktop App Status Builder`, `TTS Voice Catalog Runtime`, `Postgres Config Storage`, `Desktop UI Configuration Coordinator`, `Core Entities & Config`, `Desktop Config Reconfigure Action`?**
-  _High betweenness centrality (0.043) - this node is a cross-community bridge._
-- **Why does `DesktopApp` connect `Desktop App Configuration` to `TTS Voice Catalog GUI`, `TTS Execution Service`, `Desktop Config Environment`, `Desktop App Status DTOs`, `Hotkey Monitoring Service`, `Desktop Bot Gateway`, `Desktop UI Runtime Coordinator`, `Desktop Config Validation`, `Desktop App Lifecycle`, `In-Memory Runtime Telemetry`, `TTS Execution Port`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+- **Why does `TTSConfig` connect `Core Entities & Config` to `Desktop App Configuration`, `TTS Queue Orchestrator & Security`, `Audio Queue Status Interface`, `Core Interfaces & Telemetry`, `BotSpeakRequestDTO`, `Redis Audio Queue`, `Desktop Hotkey Backend`, `TTS Audio Engines`, `Bot Settings & Runtime Config`, `Config Migration to Postgres`, `Hotkey Monitoring Service`, `Desktop Discord Bot Client`, `Voice Channel Resolution`, `Desktop HTTP Bot Client`, `Pyttsx3 TTS Adapter`, `Speak HTTP Controller`, `Dependency Maintenance Script`, `Configure TTS Use Case`, `In-Memory Config Repository`, `Postgres Config Storage`, `__init__.py`, `Desktop Config Validation`, `Voice Context Query DTOs`, `System Tray Notifications`, `.handle`, `TTS Execution Port`, `Mock Audio Queue Tests`, `System Tray Notification Service`, `._process_item`, `Voice Context Controller`, `Desktop TTS Bot Client`, `HTTP Speak Presenter`, `Discord Speak Request Builder`, `Desktop UI Runtime Coordinator`, `SpeakTextInputDTO`, `Desktop Discord Bot Client Requests`, `HTTP Server Tracing`, `Bot Readiness DB Ports`?**
+  _High betweenness centrality (0.175) - this node is a cross-community bridge._
+- **Why does `HttpDiscordBotClient` connect `Desktop HTTP Bot Client` to `Desktop App Configuration`, `Desktop App TTS Service`, `Voice Context Controller`, `Desktop Hotkey Backend`, `Hotkey Monitoring Service`, `Desktop Discord Bot Client`, `Postgres Config Storage`, `HTTP Server Tracing`, `Infrastructure HTTP Server`, `Core Entities & Config`, `Speak HTTP Controller`?**
+  _High betweenness centrality (0.037) - this node is a cross-community bridge._
+- **Why does `DesktopAppConfig` connect `Desktop Config Validation` to `OTel Collector Pipeline`, `Desktop App Configuration`, `Desktop Config Environment`, `Desktop Main Window GUI`, `HTTP Speak Presenter`, `Desktop Config Dialog Helpers`, `Hotkey Monitoring Service`, `Desktop Discord Bot Client`, `Desktop App Status Builder`, `Postgres Config Storage`, `TTS Voice Catalog Runtime`, `Desktop UI Configuration Coordinator`, `Core Entities & Config`, `Notification Service Protocol`, `In-Memory Runtime Telemetry`, `Desktop HTTP Bot Client`, `Desktop Settings Dialog`, `OpenTelemetry Fake Providers`?**
+  _High betweenness centrality (0.034) - this node is a cross-community bridge._
 - **Are the 88 inferred relationships involving `TTSConfig` (e.g. with `DiscordSpeakPreparationResult` and `DiscordSpeakRequestBuilder`) actually correct?**
   _`TTSConfig` has 88 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 36 inferred relationships involving `AudioQueueItem` (e.g. with `SpeakTextUseCase` and `BotRuntimeTelemetry`) actually correct?**
