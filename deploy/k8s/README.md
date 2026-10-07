@@ -46,6 +46,13 @@ Required keys:
 - `BOT_SPEAK_TOKEN`
 - `POSTGRES_PASSWORD`
 
+Optional keys:
+
+- `FISH_AUDIO` - Fish Audio API key. Required only when a guild or user selects
+  the `fish-audio` TTS engine, and required at startup when the bot boots with
+  `TTS_ENGINE=fish-audio`. The model identifier is not a secret and lives in the
+  `bot-config` ConfigMap as `FISH_AUDIO_MODEL`.
+
 Use a sealed secret, external secret operator, CI-created Secret, or a private
 overlay that is not committed.
 

@@ -6,6 +6,7 @@ import pytest
 from aiohttp import web
 
 from src.application.dto import SpeakTextResult
+from src.application.rate_limiting import RateLimitResult
 from src.application.use_cases import GetCurrentVoiceContextUseCase, SpeakTextUseCase
 from src.core.entities import TTSConfig
 from src.infrastructure.opentelemetry_runtime import OpenTelemetryRuntime
@@ -462,3 +463,320 @@ class _FakeSpanContext:
 
 
 # pyright: reportOperatorIssue=false, reportOptionalMemberAccess=false
+
+
+class TestSpeakControllerConfigOverrideValidation:
+    """The /speak override must be validated like /config is.
+
+    Before Fish Audio every engine was keyless, so an unvalidated engine
+    override cost nothing. A caller holding BOT_SPEAK_TOKEN could otherwise
+    drive the operator's credentialed provider account with an arbitrary voice.
+    """
+
+    def _controller(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+        )
+        return SpeakController(use_case)
+
+    async def test_rejects_unknown_engine_override(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        controller = self._controller(
+            mock_tts_engine, mock_channel_repository, mock_config_repository, mock_audio_queue, build_speak_use_case
+        )
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": "hi", "guild_id": 1, "engine": "totally-made-up"})
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert "Unsupported engine override" in response.text
+        # The value the caller sent must not be reflected back into the body.
+        assert "totally-made-up" not in response.text
+        assert mock_tts_engine.calls == []
+
+    async def test_rejects_fish_audio_override_with_malformed_voice_id(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        controller = self._controller(
+            mock_tts_engine, mock_channel_repository, mock_config_repository, mock_audio_queue, build_speak_use_case
+        )
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(
+            return_value={"text": "hi", "guild_id": 1, "engine": "fish-audio", "voice_id": "not-hex"}
+        )
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert "voice_id" in response.text
+        assert mock_tts_engine.calls == []
+
+    async def test_accepts_fish_audio_override_with_valid_reference_id(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        controller = self._controller(
+            mock_tts_engine, mock_channel_repository, mock_config_repository, mock_audio_queue, build_speak_use_case
+        )
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(
+            return_value={
+                "text": "hi",
+                "guild_id": 789012,
+                "channel_id": 123456,
+                "member_id": 345678,
+                "engine": "fish-audio",
+                "voice_id": "0123456789abcdef0123456789abcdef",
+            }
+        )
+
+        response = await controller.handle(request)
+
+        assert response.status == 200
+        # Status alone would stay green if the override were silently ignored
+        # and the stored base config used instead.
+        assert mock_audio_queue.items
+        override = mock_audio_queue.items[-1].request.config_override
+        assert override is not None
+        assert override.engine == "fish-audio"
+        assert override.voice_id == "0123456789abcdef0123456789abcdef"
+
+
+class TestSpeakControllerOverrideEdgeCases:
+    """Cases the first pass of override validation missed."""
+
+    def _controller(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+        )
+        return SpeakController(use_case)
+
+    async def test_validation_applies_inside_the_nested_override_form(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """The controller reads data["config_override"] first, so test that shape."""
+        controller = self._controller(
+            mock_tts_engine, mock_channel_repository, mock_config_repository, mock_audio_queue, build_speak_use_case
+        )
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(
+            return_value={
+                "text": "hi",
+                "guild_id": 1,
+                "config_override": {"engine": "fish-audio", "voice_id": "not-hex"},
+            }
+        )
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert mock_tts_engine.calls == []
+
+    async def test_voice_only_override_is_validated_against_the_stored_engine(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """resolved_engine comes from the base config when none is sent."""
+        mock_config_repository.set_config(
+            1,
+            TTSConfig(engine="fish-audio", language="pt", voice_id="0123456789abcdef0123456789abcdef", rate=180),
+        )
+        controller = self._controller(
+            mock_tts_engine, mock_channel_repository, mock_config_repository, mock_audio_queue, build_speak_use_case
+        )
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": "hi", "guild_id": 1, "voice_id": "bogus"})
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert mock_tts_engine.calls == []
+
+    async def test_fish_override_voice_id_is_stripped_before_use(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """What was validated must be what is transmitted."""
+        controller = self._controller(
+            mock_tts_engine, mock_channel_repository, mock_config_repository, mock_audio_queue, build_speak_use_case
+        )
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(
+            return_value={
+                "text": "hi",
+                "guild_id": 789012,
+                "channel_id": 123456,
+                "member_id": 345678,
+                "engine": "fish-audio",
+                "voice_id": "  0123456789abcdef0123456789abcdef\n",
+            }
+        )
+
+        response = await controller.handle(request)
+
+        assert response.status == 200
+        override = mock_audio_queue.items[-1].request.config_override
+        assert override.voice_id == "0123456789abcdef0123456789abcdef"
+
+    @pytest.mark.parametrize("engine", ["gtts", "pyttsx3", "edge-tts"])
+    async def test_existing_engines_still_accepted_as_overrides(
+        self,
+        engine,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """Regression: the new gate must not reject the three keyless engines."""
+        controller = self._controller(
+            mock_tts_engine, mock_channel_repository, mock_config_repository, mock_audio_queue, build_speak_use_case
+        )
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(
+            return_value={
+                "text": "hi",
+                "guild_id": 789012,
+                "channel_id": 123456,
+                "member_id": 345678,
+                "engine": engine,
+            }
+        )
+
+        response = await controller.handle(request)
+
+        assert response.status == 200
+        assert mock_audio_queue.items[-1].request.config_override.engine == engine
+
+
+class TestRateLimitPrecedesOverrideValidation:
+    """The reject path must cost budget, so it cannot be driven for free."""
+
+    def _controller(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+        rate_limiter=None,
+    ):
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+        )
+        if rate_limiter is None:
+            return SpeakController(use_case)
+        return SpeakController(use_case, rate_limiter=rate_limiter)
+
+    async def test_invalid_override_consumes_one_unit_of_budget(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        calls: list = []
+
+        class _CountingLimiter:
+            def check(self, request):
+                calls.append(request)
+                return RateLimitResult(allowed=True, scope="test")
+
+        controller = self._controller(
+            mock_tts_engine,
+            mock_channel_repository,
+            mock_config_repository,
+            mock_audio_queue,
+            build_speak_use_case,
+            rate_limiter=_CountingLimiter(),
+        )
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": "hi", "guild_id": 1, "engine": "nope"})
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert len(calls) == 1
+
+    async def test_exhausted_budget_wins_over_an_invalid_override(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """A caller over budget gets the rate-limit answer, not the 400."""
+
+        class _BlockingLimiter:
+            def check(self, request):
+                return RateLimitResult(allowed=False, scope="test", retry_after_seconds=3)
+
+        controller = self._controller(
+            mock_tts_engine,
+            mock_channel_repository,
+            mock_config_repository,
+            mock_audio_queue,
+            build_speak_use_case,
+            rate_limiter=_BlockingLimiter(),
+        )
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": "hi", "guild_id": 1, "engine": "nope"})
+
+        response = await controller.handle(request)
+
+        assert response.status != 400
+        assert mock_tts_engine.calls == []

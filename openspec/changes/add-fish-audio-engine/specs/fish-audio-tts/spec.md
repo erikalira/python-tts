@@ -7,17 +7,17 @@ The bot SHALL accept `fish-audio` as a valid TTS engine identifier wherever
 that identifier to the Fish Audio HTTP API.
 
 #### Scenario: Operator selects the engine at runtime
-- **WHEN** a user runs `/config engine:fish-audio` in a guild
-- **THEN** the configuration SHALL be accepted and persisted for that scope
+- **WHEN** a user runs `/config voice:0123456789abcdef0123456789abcdef` in a guild
+- **THEN** the engine SHALL resolve to `fish-audio` and persist for that scope
 - **AND** subsequent `/speak` requests in that scope SHALL synthesize via Fish Audio
 
 #### Scenario: Engine selected through environment
 - **WHEN** the bot starts with `TTS_ENGINE=fish-audio`
 - **THEN** startup validation SHALL accept the value as a known engine
 
-#### Scenario: Unknown engine still rejected
-- **WHEN** a user runs `/config engine:fish-audioo`
-- **THEN** the command SHALL fail with a message naming every valid engine
+#### Scenario: Unresolvable voice still rejected
+- **WHEN** a user runs `/config voice:not-a-voice`, which is neither a catalog key nor a well-formed reference_id
+- **THEN** the command SHALL fail with the invalid-voice message
 - **AND** the stored configuration SHALL remain unchanged
 
 ### Requirement: User-supplied voice identity
@@ -30,14 +30,21 @@ Fish Audio voices, and SHALL NOT verify that a given voice model exists before a
 synthesis attempt.
 
 #### Scenario: User configures an arbitrary voice model
-- **WHEN** a user runs `/config engine:fish-audio voice_id:ed7de8309b7f4643932df8f4b56ac988`
-- **THEN** the value SHALL be persisted verbatim as `voice_id`
+- **WHEN** a user runs `/config voice:0123456789abcdef0123456789abcdef`
+- **THEN** the value SHALL be persisted verbatim as `voice_id` with engine `fish-audio`
 - **AND** synthesis requests SHALL send it as the `reference_id` field
+- **AND** the stored `language` SHALL be left unchanged, because the voice model determines it
 
 #### Scenario: Voice autocomplete excludes Fish Audio
 - **WHEN** a user browses the `/config` voice autocomplete options
 - **THEN** no Fish Audio voices SHALL be listed
 - **AND** the autocomplete SHALL continue to list `gtts`, `edge-tts`, and `pyttsx3` voices
+- **AND** a reference_id typed in full SHALL still be accepted despite matching no suggestion
+
+#### Scenario: A one-off voice for a single utterance
+- **WHEN** a user runs `/speak text:<text> voice:<a 32-hexadecimal reference_id>`
+- **THEN** that utterance SHALL synthesize via Fish Audio with that voice
+- **AND** the stored configuration for the scope SHALL remain unchanged
 
 ### Requirement: Voice identifier shape validation
 
@@ -47,9 +54,9 @@ exactly 32 hexadecimal characters. Validation SHALL be limited to shape: a
 well-formed identifier that does not exist remotely SHALL be accepted at
 configuration time and surface later as a synthesis error.
 
-#### Scenario: Malformed identifier rejected at config time
-- **WHEN** a user runs `/config engine:fish-audio voice_id:not-a-valid-id`
-- **THEN** the command SHALL fail with a message stating the expected format
+#### Scenario: Malformed identifier rejected before any request
+- **WHEN** a configuration update sets engine `fish-audio` with a `voice_id` that is not 32 hexadecimal characters
+- **THEN** the update SHALL fail with a message stating the expected format
 - **AND** no synthesis request SHALL be sent to Fish Audio
 - **AND** the stored configuration SHALL remain unchanged
 
@@ -123,13 +130,18 @@ message for each, rather than a generic synthesis failure.
 - **THEN** the failure message SHALL indicate that the configured model requires API credit
 - **AND** the message SHALL name the configured model identifier
 
-#### Scenario: Voice model unavailable
+#### Scenario: Voice model unavailable, as documented
 - **WHEN** Fish Audio responds with status 404
 - **THEN** the failure message SHALL indicate that the configured voice no longer exists
 - **AND** the message SHALL instruct the user to reconfigure `voice_id`
 
+#### Scenario: Voice model unavailable, as actually observed
+- **WHEN** Fish Audio responds with status 400 and a body reporting that the reference was not found
+- **THEN** the failure message SHALL indicate that the configured voice no longer exists
+- **AND** the message SHALL instruct the user to reconfigure `voice_id`
+
 #### Scenario: Request rejected as invalid
-- **WHEN** Fish Audio responds with status 422
+- **WHEN** Fish Audio responds with status 422, or with a status 400 unrelated to a missing voice
 - **THEN** the failure message SHALL indicate a rejected request and include the reason reported by the API
 
 #### Scenario: Network failure or timeout
@@ -165,3 +177,24 @@ end-user machines.
 - **WHEN** a Desktop App user triggers speech for a scope configured to `fish-audio`
 - **THEN** synthesis SHALL occur in the bot runtime
 - **AND** the Desktop App SHALL NOT require a Fish Audio credential
+
+### Requirement: Configuration override validation on the HTTP entrypoint
+
+The inline configuration override accepted by `POST /speak` SHALL be validated
+to the same standard as a `/config` update, because selecting this engine now
+spends a third-party credential and the endpoint's shared token is distributed
+to Desktop App clients.
+
+#### Scenario: Unknown engine in an override
+- **WHEN** a `/speak` request body sets `engine` to a value outside the supported set
+- **THEN** the endpoint SHALL respond 400
+- **AND** no synthesis SHALL occur
+
+#### Scenario: Malformed Fish Audio voice in an override
+- **WHEN** a `/speak` request body sets `engine` to `fish-audio` and `voice_id` to a value that is not 32 hexadecimal characters
+- **THEN** the endpoint SHALL respond 400
+- **AND** no outbound request to Fish Audio SHALL be made
+
+#### Scenario: Valid Fish Audio override accepted
+- **WHEN** a `/speak` request body sets `engine` to `fish-audio` with a well-formed reference_id
+- **THEN** the request SHALL be accepted

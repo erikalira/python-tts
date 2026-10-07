@@ -37,7 +37,7 @@ from src.infrastructure.persistence.postgres_storage import PostgreSQLConfigStor
 from src.infrastructure.rate_limiting import InMemoryRateLimiter
 from src.infrastructure.runtime_observability import InMemoryBotRuntimeTelemetry
 from src.infrastructure.tts.audio_cleanup import FileAudioCleanup
-from src.infrastructure.tts.engines import RoutedTTSEngine
+from src.infrastructure.tts.engines import FishAudioSettings, RoutedTTSEngine
 from src.infrastructure.tts.voice_catalog import RuntimeTTSCatalog
 from src.presentation.discord_commands import DiscordCommands
 from src.presentation.http_controllers import SpeakController, VoiceContextController
@@ -81,7 +81,7 @@ class Container:
         )
         self.audio_queue: Any = self._build_audio_queue(config)
         self.audio_cleanup = FileAudioCleanup()
-        self.tts_engine = RoutedTTSEngine()
+        self.tts_engine = RoutedTTSEngine(fish_audio=self._build_fish_audio_settings(config))
         self.tts_catalog = RuntimeTTSCatalog()
         self.runtime_telemetry = InMemoryBotRuntimeTelemetry()
         self.rate_limiter = InMemoryRateLimiter()
@@ -161,6 +161,24 @@ class Container:
 
         self._log_voice_runtime_status()
         self._register_events()
+
+    def _build_fish_audio_settings(self, config: Config) -> FishAudioSettings | None:
+        """Build Fish Audio provider settings, or None when no key is configured.
+
+        A guild can select ``fish-audio`` through ``/config`` even when the bot
+        did not start with ``TTS_ENGINE=fish-audio``, so the absence of a key is
+        a valid state here: the engine factory then fails with a configuration
+        error instead of attempting an unauthenticated request.
+        """
+        if not config.fish_audio_api_key:
+            return None
+        logger.warning(
+            "Fish Audio TTS is configured (model=%s). Text spoken through this engine is sent to a "
+            "third party that may retain it to train its models. Confirm the members of every guild "
+            "this bot serves have been told before enabling it for them.",
+            config.fish_audio_model,
+        )
+        return FishAudioSettings(api_key=config.fish_audio_api_key, model=config.fish_audio_model)
 
     def _build_config_storage(self, config: Config) -> IConfigStorage:
         if config.config_storage_backend == "postgres":

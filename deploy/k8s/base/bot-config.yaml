@@ -12,6 +12,9 @@ data:
   TTS_LANGUAGE: "pt"
   TTS_VOICE_ID: "roa/pt-br"
   TTS_RATE: "180"
+  # Model identifier only. The API key is FISH_AUDIO in the bot-secrets
+  # Secret and must never appear in this ConfigMap.
+  FISH_AUDIO_MODEL: "s2.1-pro-free"
   MAX_TEXT_LENGTH: "500"
   BOT_HTTP_MAX_BODY_BYTES: "4096"
   BOT_HTTP_CORS_ALLOWED_ORIGINS: ""

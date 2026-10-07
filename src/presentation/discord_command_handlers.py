@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import platform
+from dataclasses import dataclass
 
 import discord
 
@@ -11,15 +12,52 @@ from src.application.dto import ConfigureTTSResult, TTSConfigurationData
 from src.application.tts_config_use_case import ConfigureTTSUseCase
 from src.application.tts_voice_catalog import TTSCatalog
 from src.application.voice_runtime import VoiceRuntimeStatus
+from src.core.entities import normalize_fish_audio_reference_id
 from src.presentation.discord_i18n import DEFAULT_LOCALE, DiscordMessageCatalog
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _VoiceSelection:
+    """A resolved voice choice, from the catalog or supplied by the user."""
+
+    engine: str
+    voice_id: str
+    language: str | None = None
+    """None leaves the stored language untouched.
+
+    Fish Audio ignores language entirely - the voice model determines it - so
+    overwriting the stored value would imply control the provider does not offer.
+    """
 
 
 class _BaseConfigEmbedBuilder:
     def __init__(self, tts_catalog: TTSCatalog) -> None:
         self._tts_catalog = tts_catalog
         self._messages = DiscordMessageCatalog()
+
+    def _resolve_voice_selection(self, voice: str) -> _VoiceSelection | None:
+        """Resolve the `voice` option into a concrete engine and voice.
+
+        A catalog key selects a curated voice. Anything that is not a catalog
+        key but has the shape of a Fish Audio reference_id is taken as one:
+        Fish voices are account-scoped and community-authored, so the
+        application ships no catalog for them and the user supplies the id.
+        """
+        option = self._tts_catalog.get_voice_option(voice)
+        if option is not None:
+            return _VoiceSelection(
+                engine=option.engine,
+                voice_id=option.voice_id,
+                language=option.language,
+            )
+
+        supplied_reference_id = normalize_fish_audio_reference_id(voice)
+        if supplied_reference_id is not None:
+            return _VoiceSelection(engine="fish-audio", voice_id=supplied_reference_id)
+
+        return None
 
     def _resolve_voice_name(self, config: TTSConfigurationData) -> str:
         resolved_voice = self._tts_catalog.find_voice_option(
@@ -36,6 +74,8 @@ class _BaseConfigEmbedBuilder:
             return f"Google TTS - {voice_id}"
         if engine == "edge-tts":
             return f"Edge TTS - {voice_id}"
+        if engine == "fish-audio":
+            return f"Fish Audio - {voice_id}"
         return f"R.E.P.O. - {voice_id}"
 
     def _add_voice_resolution_field(self, embed: discord.Embed, engine: str, voice_id: str, locale: str) -> None:
@@ -51,6 +91,17 @@ class _BaseConfigEmbedBuilder:
             embed.add_field(
                 name=self._messages.text("voice_resolution.name", locale),
                 value=self._messages.text("voice_resolution.edge", locale, voice_id=voice_id),
+                inline=False,
+            )
+            return
+
+        # Fish Audio voices are remote and user-supplied, so there is no local
+        # catalog to check against: falling through would reach the pyttsx3
+        # branch and report a Windows voice lookup for a remote reference_id.
+        if engine == "fish-audio":
+            embed.add_field(
+                name=self._messages.text("voice_resolution.name", locale),
+                value=self._messages.text("voice_resolution.fish", locale, voice_id=voice_id),
                 inline=False,
             )
             return
@@ -114,7 +165,7 @@ class DiscordConfigCommandHandler(_BaseConfigEmbedBuilder):
 
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
-            selected_voice = self._tts_catalog.get_voice_option(voice)
+            selected_voice = self._resolve_voice_selection(voice)
             if selected_voice is None:
                 await interaction.edit_original_response(content=self._messages.text("error.invalid_voice", locale))
                 return
@@ -281,7 +332,7 @@ class DiscordServerConfigCommandHandler(_BaseConfigEmbedBuilder):
 
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
-            selected_voice = self._tts_catalog.get_voice_option(voice)
+            selected_voice = self._resolve_voice_selection(voice)
             if selected_voice is None:
                 await interaction.edit_original_response(content=self._messages.text("error.invalid_voice", locale))
                 return

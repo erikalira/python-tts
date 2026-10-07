@@ -7,7 +7,7 @@ from typing import Literal, Protocol
 
 from src.application.dto import ConfigureTTSResult, SpeakTextInputDTO
 from src.application.tts_voice_catalog import TTSCatalog
-from src.core.entities import TTSConfig
+from src.core.entities import TTSConfig, normalize_fish_audio_reference_id
 
 DISCORD_SPEAK_PREP_MISSING_GUILD_ID = "missing_guild_id"
 DISCORD_SPEAK_PREP_INVALID_VOICE = "invalid_voice"
@@ -27,6 +27,13 @@ class DiscordSpeakPreparationResult:
     request: SpeakTextInputDTO | None = None
     error_code: DiscordSpeakPreparationErrorCode | None = None
     error_message: str | None = None
+    used_supplied_provider_voice: bool = False
+    """True when the caller supplied a raw third-party voice id.
+
+    The caller is told, in that case, that the text leaves this server. On the
+    curated-catalog path the engines are keyless and nothing is retained
+    elsewhere, so there is nothing to disclose.
+    """
 
 
 class TTSConfigLookup(Protocol):
@@ -59,9 +66,12 @@ class DiscordSpeakRequestBuilder:
             )
 
         config_override = None
+        supplied_reference_id: str | None = None
         if voice_key is not None:
             selected_voice = self._tts_catalog.get_voice_option(voice_key)
             if selected_voice is None:
+                supplied_reference_id = normalize_fish_audio_reference_id(voice_key)
+            if selected_voice is None and supplied_reference_id is None:
                 return DiscordSpeakPreparationResult(
                     error_code=DISCORD_SPEAK_PREP_INVALID_VOICE,
                     error_message="invalid voice",
@@ -74,14 +84,26 @@ class DiscordSpeakRequestBuilder:
                     error_message="voice config unavailable",
                 )
 
-            config_override = TTSConfig(
-                engine=selected_voice.engine,
-                language=selected_voice.language,
-                voice_id=selected_voice.voice_id,
-                rate=current_config.config.rate,
-            )
+            if selected_voice is not None:
+                config_override = TTSConfig(
+                    engine=selected_voice.engine,
+                    language=selected_voice.language,
+                    voice_id=selected_voice.voice_id,
+                    rate=current_config.config.rate,
+                )
+            elif supplied_reference_id is not None:
+                # A raw Fish Audio reference_id: no catalog entry exists for it,
+                # and the voice model determines the language, so the stored
+                # language is preserved rather than guessed at.
+                config_override = TTSConfig(
+                    engine="fish-audio",
+                    language=current_config.config.language,
+                    voice_id=supplied_reference_id,
+                    rate=current_config.config.rate,
+                )
 
         return DiscordSpeakPreparationResult(
+            used_supplied_provider_voice=supplied_reference_id is not None,
             request=SpeakTextInputDTO(
                 text=text,
                 guild_id=guild_id,

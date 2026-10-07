@@ -45,6 +45,12 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "voice_resolution.name": "Resolução da Voz",
         "voice_resolution.gtts": "Google TTS usa o idioma selecionado; não há catálogo local de vozes do sistema.",
         "voice_resolution.edge": "Edge TTS usará a voz neural '{voice_id}'.",
+        "voice_resolution.fish": (
+            "Fish Audio usará o reference_id '{voice_id}'. A voz é hospedada no fish.audio e "
+            "não é validada aqui; se ela deixar de existir, a fala falhará com erro de voz não encontrada. "
+            "Atenção: o texto enviado sai deste servidor para o Fish Audio, que pode retê-lo para treinar "
+            "os modelos dele."
+        ),
         "voice_resolution.pyttsx3.found": "Voz do Windows encontrada para '{voice_id}'.",
         "voice_resolution.pyttsx3.missing": "Voice ID '{voice_id}' não encontrado; o pyttsx3 usará a voz padrão do Windows.",
         "server_config.permission.update": "❌ Você precisa da permissão de gerenciar o servidor para alterar a voz padrão.",
@@ -78,6 +84,10 @@ _MESSAGES: dict[str, dict[str, str]] = {
             "• `/about` - Mostrar estas informações"
         ),
         "speak.queued": "Sua mensagem entrou na **fila** (**{position}**/{queue_size}).",
+        "speak.supplied_provider_voice_notice": (
+            "Voz do Fish Audio: o texto desta mensagem sai deste servidor para o Fish Audio, "
+            "que pode retê-lo para treinar os modelos dele."
+        ),
         "speak.missing_text": "Texto não informado.",
         "speak.user_not_in_channel": "Você não está em nenhuma sala de voz. Entre em uma sala e tente novamente.",
         "speak.queue_full": "Fila de áudio cheia. Tente novamente mais tarde.",
@@ -145,6 +155,12 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "voice_resolution.name": "Voice Resolution",
         "voice_resolution.gtts": "Google TTS uses the selected language; there is no local system voice catalog.",
         "voice_resolution.edge": "Edge TTS will use the neural voice '{voice_id}'.",
+        "voice_resolution.fish": (
+            "Fish Audio will use reference_id '{voice_id}'. The voice is hosted on fish.audio and "
+            "is not validated here; if it stops existing, speech fails with a voice-not-found error. "
+            "Note: text spoken through this engine leaves this server for Fish Audio, which may retain "
+            "it to train their models."
+        ),
         "voice_resolution.pyttsx3.found": "Windows voice found for '{voice_id}'.",
         "voice_resolution.pyttsx3.missing": "Voice ID '{voice_id}' was not found; pyttsx3 will use the default Windows voice.",
         "server_config.permission.update": "❌ You need the manage server permission to change the default voice.",
@@ -178,6 +194,10 @@ _MESSAGES: dict[str, dict[str, str]] = {
             "• `/about` - Show this info"
         ),
         "speak.queued": "Your message entered the **queue** (**{position}**/{queue_size}).",
+        "speak.supplied_provider_voice_notice": (
+            "Fish Audio voice: the text of this message leaves this server for Fish Audio, "
+            "which may retain it to train their models."
+        ),
         "speak.missing_text": "No text was provided.",
         "speak.user_not_in_channel": "You are not in a voice channel. Join one and try again.",
         "speak.queue_full": "Audio queue is full. Try again later.",

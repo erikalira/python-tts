@@ -6,9 +6,11 @@ import logging
 from dataclasses import replace
 
 from src.application.dto import ConfigureTTSResult, TTSConfigurationData
+from src.core.entities import SUPPORTED_TTS_ENGINES, normalize_fish_audio_reference_id
 from src.core.interfaces import IConfigRepository
 
 logger = logging.getLogger(__name__)
+
 
 
 class ConfigureTTSUseCase:
@@ -51,16 +53,37 @@ class ConfigureTTSUseCase:
         updates: dict[str, object] = {}
 
         if engine is not None:
-            if engine.lower() not in ["gtts", "pyttsx3", "edge-tts"]:
+            if engine.lower() not in SUPPORTED_TTS_ENGINES:
+                valid = ", ".join(f"'{name}'" for name in SUPPORTED_TTS_ENGINES)
                 return ConfigureTTSResult(
                     success=False,
-                    message="Invalid engine. Use 'gtts', 'pyttsx3' or 'edge-tts'",
+                    message=f"Invalid engine. Use one of: {valid}",
                 )
             updates["engine"] = engine.lower()
         if language is not None:
             updates["language"] = language.lower()
         if voice_id is not None:
             updates["voice_id"] = voice_id
+
+        # Validate against the engine this update resolves to, not just the one
+        # being set: switching to fish-audio while keeping another engine's
+        # voice_id would otherwise persist a configuration that can never speak.
+        resolved_engine = str(updates.get("engine", current_config.engine))
+        if resolved_engine == "fish-audio":
+            resolved_voice_id = str(updates.get("voice_id", current_config.voice_id))
+            normalized_voice_id = normalize_fish_audio_reference_id(resolved_voice_id)
+            if normalized_voice_id is None:
+                return ConfigureTTSResult(
+                    success=False,
+                    message=(
+                        "Invalid voice_id for fish-audio. Expected a 32-character hexadecimal "
+                        "reference_id copied from fish.audio, for example "
+                        "0123456789abcdef0123456789abcdef"
+                    ),
+                )
+            # Persist what was validated, not the raw input: a pasted identifier
+            # often carries whitespace, and storing it would send that to the API.
+            updates["voice_id"] = normalized_voice_id
         if rate is not None:
             if not (50 <= rate <= 300):
                 return ConfigureTTSResult(

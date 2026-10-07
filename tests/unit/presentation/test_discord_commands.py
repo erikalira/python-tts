@@ -29,6 +29,8 @@ from src.presentation.discord_i18n import (
     supported_message_locales,
 )
 
+FISH_REFERENCE_ID = "0123456789abcdef0123456789abcdef"
+
 
 class FakeInterfaceLanguagePreferenceRepository:
     def __init__(self):
@@ -775,6 +777,181 @@ class TestDiscordCommands:
         resolution_field = next(field for field in embed.fields if field.name == "Voice Resolution")
         assert "edge tts" in resolution_field.value.lower()
         assert "francisca" in resolution_field.value.lower()
+
+    # ---- Fish Audio at the command surface -------------------------------
+    # The fall-through is wired at two independent call sites. Reverting either
+    # one to a bare catalog lookup leaves the resolution helper's own tests
+    # green, so the user-facing requirement is only pinned from here.
+
+    def _fish_interaction(self, guild_id: int = 67890, user_id: int = 67890, manage_guild: bool = True):
+        interaction = Mock()
+        interaction.user = Mock()
+        interaction.user.id = user_id
+        interaction.user.guild_permissions = Mock()
+        interaction.user.guild_permissions.manage_guild = manage_guild
+        interaction.guild = Mock()
+        interaction.guild.id = guild_id
+        interaction.guild.name = "Test Guild"
+        interaction.response = AsyncMock()
+        interaction.edit_original_response = AsyncMock()
+        return interaction
+
+    @pytest.mark.asyncio
+    async def test_config_accepts_a_raw_fish_reference_id(self, commands_instance, mock_config_repository):
+        await commands_instance._handle_config(self._fish_interaction(), FISH_REFERENCE_ID)
+
+        config = mock_config_repository.get_config(67890, user_id=67890)
+        assert config.engine == "fish-audio"
+        assert config.voice_id == FISH_REFERENCE_ID
+
+    @pytest.mark.asyncio
+    async def test_config_fish_leaves_the_stored_language_untouched(
+        self, commands_instance, mock_config_repository
+    ):
+        """Fish ignores language, so configuring it must not overwrite the value."""
+        before = mock_config_repository.get_config(67890, user_id=67890).language
+
+        await commands_instance._handle_config(self._fish_interaction(), FISH_REFERENCE_ID)
+
+        after = mock_config_repository.get_config(67890, user_id=67890)
+        assert after.engine == "fish-audio"
+        assert after.language == before
+
+    @pytest.mark.asyncio
+    async def test_config_strips_a_pasted_fish_reference_id(self, commands_instance, mock_config_repository):
+        """What was validated must be what is stored, whitespace removed."""
+        pasted = "  " + FISH_REFERENCE_ID + "\n"
+        await commands_instance._handle_config(self._fish_interaction(), pasted)
+
+        config = mock_config_repository.get_config(67890, user_id=67890)
+        assert config.voice_id == FISH_REFERENCE_ID
+
+    @pytest.mark.asyncio
+    async def test_config_rejects_an_unresolvable_voice(self, commands_instance, mock_config_repository):
+        interaction = self._fish_interaction()
+
+        await commands_instance._handle_config(interaction, "not-a-voice")
+
+        interaction.edit_original_response.assert_called_once()
+        content = interaction.edit_original_response.call_args[1].get("content", "")
+        assert "voice" in content.lower()
+        assert mock_config_repository.get_config(67890, user_id=67890).engine != "fish-audio"
+
+    @pytest.mark.asyncio
+    async def test_server_config_accepts_a_raw_fish_reference_id(
+        self, commands_instance, mock_config_repository
+    ):
+        await commands_instance._handle_server_config(self._fish_interaction(), FISH_REFERENCE_ID)
+
+        config = mock_config_repository.get_config(67890)
+        assert config.engine == "fish-audio"
+        assert config.voice_id == FISH_REFERENCE_ID
+
+    @pytest.mark.asyncio
+    async def test_catalog_key_still_wins_at_the_command_surface(
+        self, commands_instance, mock_config_repository
+    ):
+        await commands_instance._handle_config(self._fish_interaction(), "edge-tts:pt-br-francisca")
+
+        config = mock_config_repository.get_config(67890, user_id=67890)
+        assert config.engine == "edge-tts"
+        assert config.voice_id == "pt-BR-FranciscaNeural"
+        # The use case lowercases language; pre-existing behaviour.
+        assert config.language == "pt-br"
+
+    @pytest.mark.asyncio
+    async def test_switching_from_fish_back_to_a_catalog_voice_refreshes_language(
+        self, commands_instance, mock_config_repository
+    ):
+        """A stale language from the Fish detour must not survive the switch back."""
+        await commands_instance._handle_config(self._fish_interaction(), FISH_REFERENCE_ID)
+        await commands_instance._handle_config(self._fish_interaction(), "edge-tts:pt-br-francisca")
+
+        config = mock_config_repository.get_config(67890, user_id=67890)
+        assert config.engine == "edge-tts"
+        assert config.language == "pt-br"
+
+    @pytest.mark.asyncio
+    async def test_speak_with_a_supplied_fish_voice_discloses_the_third_party_hop(
+        self, commands_instance, mock_config_repository
+    ):
+        """The accepted retention decision assumes members are told.
+
+        /config renders the notice in its embed, but /speak is the path members
+        actually use and it deletes its reply on success, so without this the
+        broadest path disclosed nothing.
+        """
+        interaction = self._fish_interaction()
+
+        await commands_instance._handle_speak(interaction, "ola", FISH_REFERENCE_ID)
+
+        interaction.delete_original_response.assert_not_called()
+        interaction.edit_original_response.assert_called()
+        content = interaction.edit_original_response.call_args[1].get("content", "")
+        assert "fish audio" in content.lower()
+        assert "retain" in content.lower() or "retê" in content.lower()
+
+    @pytest.mark.asyncio
+    async def test_speak_with_a_catalog_voice_shows_no_retention_notice(
+        self, commands_instance, mock_config_repository
+    ):
+        """The curated engines are keyless and retain nothing elsewhere."""
+        interaction = self._fish_interaction()
+
+        await commands_instance._handle_speak(interaction, "ola", "edge-tts:pt-br-francisca")
+
+        calls = interaction.edit_original_response.call_args_list
+        contents = " ".join(str(call[1].get("content", "")) for call in calls)
+        assert "retain" not in contents.lower()
+
+    @pytest.mark.asyncio
+    async def test_speak_queued_behind_others_keeps_the_queue_position_and_adds_the_notice(
+        self, commands_instance, mock_audio_queue
+    ):
+        """Replacing the reply would cost the caller their queue position."""
+        mock_audio_queue.processing_guilds.add(67890)
+        interaction = self._fish_interaction()
+
+        await commands_instance._handle_speak(interaction, "ola", FISH_REFERENCE_ID)
+
+        interaction.delete_original_response.assert_not_called()
+        content = interaction.edit_original_response.call_args[1].get("content", "")
+        # Both the queue information and the disclosure must survive.
+        assert "fila" in content.lower() or "queue" in content.lower()
+        assert "fish audio" in content.lower()
+
+    @pytest.mark.asyncio
+    async def test_speak_catalog_voice_queued_behind_others_is_unchanged(
+        self, commands_instance, mock_audio_queue
+    ):
+        """Regression: the curated path must keep its original reply exactly."""
+        mock_audio_queue.processing_guilds.add(67890)
+        interaction = self._fish_interaction()
+
+        await commands_instance._handle_speak(interaction, "ola", "edge-tts:pt-br-francisca")
+
+        content = interaction.edit_original_response.call_args[1].get("content", "")
+        assert "fila" in content.lower() or "queue" in content.lower()
+        assert "fish audio" not in content.lower()
+
+    def test_config_embed_describes_a_fish_voice_and_warns_about_retention(self, commands_instance):
+        result = ConfigureTTSResult(
+            success=True,
+            guild_id=67890,
+            config=type(
+                "Cfg",
+                (),
+                {"engine": "fish-audio", "language": "pt", "voice_id": FISH_REFERENCE_ID, "rate": 180},
+            )(),
+        )
+
+        embed = commands_instance._config_handler._build_updated_config_embed("Test Guild", 67890, result)
+
+        resolution_field = next(field for field in embed.fields if field.name == "Voice Resolution")
+        assert "fish.audio" in resolution_field.value.lower()
+        assert "retain" in resolution_field.value.lower()
+        # Must not fall through to the pyttsx3 Windows-voice lookup.
+        assert "windows" not in resolution_field.value.lower()
 
 
 class TestDiscordI18n:
