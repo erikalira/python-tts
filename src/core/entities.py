@@ -1,5 +1,6 @@
 """Domain entities - pure business objects without external dependencies."""
 
+import re
 import time
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -18,6 +19,47 @@ class TTSRequest:
     config_override: Optional["TTSConfig"] = None
 
 
+SUPPORTED_TTS_ENGINES: tuple[str, ...] = ("gtts", "pyttsx3", "edge-tts", "fish-audio")
+"""Engine identifiers accepted by configuration and runtime validation.
+
+Single source of truth: the bot's startup validation and the ``/config`` use
+case both read this, so the two cannot drift apart.
+"""
+
+DEFAULT_FISH_AUDIO_MODEL = "s2.1-pro-free"
+"""Model sent as the Fish Audio ``model`` request header when none is configured.
+
+Lives here rather than in the engine so settings can default it without the
+configuration layer depending on infrastructure. The free model costs neither
+API credit nor platform quota but is announced only through 2026-11-30; omitting
+the header entirely falls back to the paid default, which answers 402.
+"""
+
+_FISH_AUDIO_REFERENCE_ID_PATTERN = re.compile(r"[0-9a-fA-F]{32}")
+
+
+def normalize_fish_audio_reference_id(value: str) -> str | None:
+    """Return the canonical Fish Audio ``reference_id``, or None if malformed.
+
+    Returning the normalized value instead of a boolean is deliberate: a caller
+    that validates gets back exactly the string it should persist and transmit,
+    so validation and storage cannot disagree. Validating a stripped value and
+    then storing the raw one sent the surrounding whitespace to the provider and
+    produced the very failure the check exists to prevent.
+
+    Only the shape is checked. Verifying that the voice exists would add a
+    network round trip to configuration and would still race against the voice
+    being deleted afterwards, so a well-formed but missing voice is reported at
+    synthesis time instead.
+
+    ``fullmatch`` is deliberate: an anchored ``$`` would accept a trailing
+    newline, and a pasted identifier often carries one.
+    """
+    candidate = value.strip()
+    return candidate if _FISH_AUDIO_REFERENCE_ID_PATTERN.fullmatch(candidate) else None
+
+
+
 @dataclass(frozen=True)
 class TTSConfig:
     """TTS engine configuration.
@@ -27,7 +69,7 @@ class TTSConfig:
     rather than mutating an instance a repository may still hold.
     """
 
-    engine: str = "gtts"  # 'gtts' or 'pyttsx3'
+    engine: str = "gtts"  # one of SUPPORTED_TTS_ENGINES
     language: str = "pt"
     voice_id: str = "roa/pt-br"
     rate: int = 180

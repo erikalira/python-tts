@@ -8,7 +8,12 @@ from typing import overload
 
 from dotenv import dotenv_values, load_dotenv
 
-from src.core.entities import TTSConfig
+from src.core.entities import (
+    DEFAULT_FISH_AUDIO_MODEL,
+    SUPPORTED_TTS_ENGINES,
+    TTSConfig,
+    normalize_fish_audio_reference_id,
+)
 from src.core.timeouts import (
     DEFAULT_BOT_TTS_GENERATION_TIMEOUT_SECONDS,
     DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
@@ -125,12 +130,20 @@ class Config:
         self.tts_config = TTSConfig(
             engine=self._getenv("TTS_ENGINE", "gtts").lower(),
             language=self._getenv("TTS_LANGUAGE", "pt"),
-            voice_id=self._getenv("TTS_VOICE_ID", "roa/pt-br"),
+            voice_id=self._getenv("TTS_VOICE_ID", "roa/pt-br").strip(),
             rate=int(self._getenv("TTS_RATE", "180")),
         )
         self.config_storage_backend = self._getenv("CONFIG_STORAGE_BACKEND", "json").strip().lower() or "json"
         self.config_storage_dir = self._getenv("CONFIG_STORAGE_DIR", "configs")
         self.database_url: str | None = self._getenv("DATABASE_URL")
+
+        # Fish Audio provider settings. The model is configurable because the
+        # free model is only announced through 2026-11-30; when it stops being
+        # served the API answers 402 and an operator switches this value.
+        self.fish_audio_api_key = self._normalized_optional(self._getenv("FISH_AUDIO"))
+        self.fish_audio_model = (
+            self._getenv("FISH_AUDIO_MODEL", DEFAULT_FISH_AUDIO_MODEL).strip() or DEFAULT_FISH_AUDIO_MODEL
+        )
 
     def validate(self) -> tuple[bool, str]:
         """Validate required configuration.
@@ -141,8 +154,25 @@ class Config:
         if not self.discord_token:
             return False, "DISCORD_TOKEN not set"
 
-        if self.tts_config.engine not in ["gtts", "pyttsx3", "edge-tts"]:
+        if self.tts_config.engine not in SUPPORTED_TTS_ENGINES:
             return False, f"Invalid TTS_ENGINE: {self.tts_config.engine}"
+
+        # Fail the boot rather than let the first /speak discover the missing
+        # credential. Conditional on selection, so operators who never use Fish
+        # Audio are unaffected.
+        if self.tts_config.engine == "fish-audio":
+            if not self.fish_audio_api_key:
+                return False, "FISH_AUDIO not set for TTS_ENGINE=fish-audio"
+            # TTS_VOICE_ID defaults to another engine's value, which would boot
+            # successfully and then fail on the first /speak. Reject it here.
+            # The value is already stripped at read time, so discarding the
+            # normalizer's return here is safe - and explicit, so a reader
+            # can see that this call only checks and never stores.
+            if normalize_fish_audio_reference_id(self.tts_config.voice_id) is None:
+                return False, (
+                    f"Invalid TTS_VOICE_ID for TTS_ENGINE=fish-audio: {self.tts_config.voice_id!r}. "
+                    "Expected a 32-character hexadecimal Fish Audio reference_id."
+                )
 
         if self.config_storage_backend not in ["json", "postgres"]:
             return False, f"Invalid CONFIG_STORAGE_BACKEND: {self.config_storage_backend}"

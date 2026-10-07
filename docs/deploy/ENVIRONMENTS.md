@@ -46,11 +46,13 @@ observability are already working.
 | `DISCORD_MEMBER_ID` | Optional | No | No | Desktop App targeting preference. |
 | `BOT_RATE_LIMIT_MAX_REQUESTS` | Optional | Optional | No | Maximum `/speak` requests per caller within the configured window. Defaults to `8`; use `0` to disable. |
 | `BOT_RATE_LIMIT_WINDOW_SECONDS` | Optional | Optional | No | Sliding rate-limit window for bot `/speak` entrypoints. Defaults to `10`. |
-| `TTS_ENGINE` | Optional | Optional | No | Defaults to `gtts`. Validated by the bot runtime. Accepted values today: `gtts`, `pyttsx3`, `edge-tts`. |
+| `TTS_ENGINE` | Optional | Optional | No | Defaults to `gtts`. Validated by the bot runtime. Accepted values today: `gtts`, `pyttsx3`, `edge-tts`, `fish-audio`. |
 | `TTS_LANGUAGE` | Optional | Optional | No | Defaults to `pt`. |
 | `TTS_VOICE_ID` | Optional | Optional | No | Defaults to `roa/pt-br`. |
 | `TTS_RATE` | Optional | Optional | No | Defaults to `180`. |
 | `TTS_OUTPUT_DEVICE` | Optional | No | No | Desktop-only local audio output setting. |
+| `FISH_AUDIO` | Optional | Yes when `fish-audio` is used | Yes when `fish-audio` is used | Fish Audio API key. Store as a secret and never commit real values. Startup fails when `TTS_ENGINE=fish-audio` and this is empty. Bot-only: the Desktop App never needs it. |
+| `FISH_AUDIO_MODEL` | Optional | Optional | Optional | Model sent as the Fish Audio `model` request header. Defaults to `s2.1-pro-free`. Not a secret. Omitting the header entirely would fall back to the paid default, so the bot always sends this value explicitly. |
 | `MAX_TEXT_LENGTH` | Optional | Optional | No | Bot runtime limit for incoming text. |
 | `CONFIG_STORAGE_BACKEND` | Optional | Yes | Yes in practice for production | `json` for local dev, `postgres` for production-grade bot persistence. |
 | `CONFIG_STORAGE_DIR` | Optional | No | No | Directory used only by the JSON config backend. |

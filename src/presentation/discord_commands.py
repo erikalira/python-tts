@@ -278,8 +278,25 @@ class DiscordCommands:
                 submit_ms,
             )
 
+            # A user-supplied third-party voice sends this text off the server,
+            # so the notice is shown instead of dismissing the response. The
+            # curated engines are keyless and retain nothing, so they keep the
+            # quieter behaviour of deleting the reply on success.
+            provider_notice = (
+                self._messages.text("speak.supplied_provider_voice_notice", locale)
+                if prepared_request.used_supplied_provider_voice
+                else None
+            )
+
             try:
-                if result.code == SPEAK_RESULT_QUEUED:
+                if provider_notice is not None:
+                    # The notice is appended rather than substituted: replacing
+                    # the reply would cost the caller their queue position, and
+                    # the disclosure must not depend on whether playback worked.
+                    await interaction.edit_original_response(
+                        content=self._compose_speak_notice(result, provider_notice, locale)
+                    )
+                elif result.code == SPEAK_RESULT_QUEUED:
                     if result.starts_immediately:
                         await interaction.delete_original_response()
                     else:
@@ -404,6 +421,19 @@ class DiscordCommands:
 
     def _build_speak_message(self, result: SpeakTextResult, locale: str) -> str:
         return self._speak_presenter.build_message(result, locale)
+
+    def _compose_speak_notice(self, result: SpeakTextResult, notice: str, locale: str) -> str:
+        """Combine the normal speak reply with a third-party disclosure notice.
+
+        A reply that would otherwise be deleted carries the notice alone; one
+        that carries information the caller needs - a queue position, an error -
+        keeps it and gains the notice underneath.
+        """
+        if result.code == SPEAK_RESULT_OK or (
+            result.code == SPEAK_RESULT_QUEUED and result.starts_immediately
+        ):
+            return notice
+        return f"{self._build_speak_message(result, locale)}\n\n-# {notice}"
 
     def _build_preparation_error_message(
         self,

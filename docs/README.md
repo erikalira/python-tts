@@ -19,6 +19,7 @@ This directory contains the repository's supporting documentation. The root
 - [architecture/ARCHITECTURE_DIAGRAMS.md](architecture/ARCHITECTURE_DIAGRAMS.md): curated architecture diagrams grouped by layer and runtime
 - [architecture/ARCHITECTURE_DIAGRAMS_GENERATED.md](architecture/ARCHITECTURE_DIAGRAMS_GENERATED.md): entrypoint for the automatic diagram set generated from code
 - [architecture/ARCHITECTURE_TRANSITIONS.md](architecture/ARCHITECTURE_TRANSITIONS.md): repository-specific examples for temporary facades, compatibility paths, and transition structure
+- [reference/FISH_AUDIO_TTS.md](reference/FISH_AUDIO_TTS.md): the `fish-audio` TTS engine - supplying a voice reference_id, measured billing behavior, and failure modes
 - [reference/ENGINEERING_REFERENCES.md](reference/ENGINEERING_REFERENCES.md): books and engineering concepts that inform repository design decisions
 - [adr/README.md](adr/README.md): architecture decision records for durable technical choices and tradeoffs
 

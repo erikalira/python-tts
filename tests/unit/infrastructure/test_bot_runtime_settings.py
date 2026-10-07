@@ -5,6 +5,7 @@ import os
 import pytest
 
 from src.bot_runtime.settings import Config
+from src.core.entities import DEFAULT_FISH_AUDIO_MODEL
 from src.core.timeouts import (
     DEFAULT_BOT_TTS_GENERATION_TIMEOUT_SECONDS,
     DEFAULT_BOT_TTS_PLAYBACK_TIMEOUT_SECONDS,
@@ -472,3 +473,147 @@ def test_config_requires_otlp_endpoint_when_otel_is_enabled(tmp_path):
         False,
         "OTEL_EXPORTER_OTLP_ENDPOINT not set for OTEL_ENABLED=true",
     )
+
+
+def test_config_defaults_fish_audio_model_and_leaves_key_unset(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DISCORD_TOKEN=test-token\n", encoding="utf-8")
+
+    config = Config(env_file=env_file)
+
+    assert bool(config.fish_audio_api_key) is False
+    assert config.fish_audio_model == DEFAULT_FISH_AUDIO_MODEL
+
+
+def test_config_reads_fish_audio_settings_from_env(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "FISH_AUDIO=fish-key",
+                "FISH_AUDIO_MODEL=s2.1-pro",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+
+    assert config.fish_audio_api_key == "fish-key"
+    assert config.fish_audio_model == "s2.1-pro"
+
+
+def test_config_requires_fish_audio_key_when_engine_is_fish_audio(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "TTS_ENGINE=fish-audio",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+    is_valid, message = config.validate()
+
+    assert is_valid is False
+    assert "FISH_AUDIO" in message
+
+
+def test_config_accepts_fish_audio_engine_when_key_is_present(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "TTS_ENGINE=fish-audio",
+                "FISH_AUDIO=fish-key",
+                "TTS_VOICE_ID=0123456789abcdef0123456789abcdef",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+    is_valid, message = config.validate()
+
+    assert is_valid is True, message
+
+
+def test_config_allows_missing_fish_audio_key_for_other_engines(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "TTS_ENGINE=gtts",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+    is_valid, message = config.validate()
+
+    assert is_valid is True, message
+    assert bool(config.fish_audio_api_key) is False
+
+
+def test_config_rejects_fish_audio_engine_with_another_engines_voice_id(tmp_path):
+    """TTS_VOICE_ID defaults to a gtts value, which would boot and never speak."""
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "TTS_ENGINE=fish-audio",
+                "FISH_AUDIO=fish-key",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+    is_valid, message = config.validate()
+
+    assert is_valid is False
+    assert "TTS_VOICE_ID" in message
+
+
+def test_config_strips_whitespace_from_tts_voice_id(tmp_path):
+    """A ConfigMap or Docker env value can carry a trailing newline.
+
+    Validating a stripped value and then transmitting the raw one is the bug
+    this strip exists to prevent, so it is pinned here rather than assumed.
+    """
+    env_file = tmp_path / ".env"
+    env_file.write_text("DISCORD_TOKEN=test-token\n", encoding="utf-8")
+    os.environ["TTS_VOICE_ID"] = "  0123456789abcdef0123456789abcdef\n"
+
+    config = Config(env_file=env_file)
+
+    assert config.tts_config.voice_id == "0123456789abcdef0123456789abcdef"
+
+
+def test_config_accepts_a_padded_fish_voice_id_at_boot(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "DISCORD_TOKEN=test-token",
+                "TTS_ENGINE=fish-audio",
+                "FISH_AUDIO=fish-key",
+                "TTS_VOICE_ID=  0123456789abcdef0123456789abcdef  ",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = Config(env_file=env_file)
+    is_valid, message = config.validate()
+
+    assert is_valid is True, message
+    assert config.tts_config.voice_id == "0123456789abcdef0123456789abcdef"

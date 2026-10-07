@@ -339,10 +339,83 @@ class TestConfigureTTSUseCase:
 
         assert result == ConfigureTTSResult(
             success=False,
-            message="Invalid engine. Use 'gtts', 'pyttsx3' or 'edge-tts'",
+            message="Invalid engine. Use one of: 'gtts', 'pyttsx3', 'edge-tts', 'fish-audio'",
         )
         assert result.message is not None
         assert "Invalid engine" in result.message
+
+    @pytest.mark.asyncio
+    async def test_update_fish_audio_engine_with_reference_id(self, mock_config_repository):
+        """Switching to fish-audio requires a well-formed reference_id."""
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(
+            guild_id=123,
+            engine="fish-audio",
+            voice_id="0123456789abcdef0123456789abcdef",
+        )
+
+        assert result.success is True
+        assert result.config is not None
+        assert result.config.engine == "fish-audio"
+        assert result.config.voice_id == "0123456789abcdef0123456789abcdef"
+
+    @pytest.mark.asyncio
+    async def test_fish_audio_rejects_malformed_reference_id(self, mock_config_repository):
+        """A malformed reference_id fails at config time, not at synthesis time."""
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(
+            guild_id=123,
+            engine="fish-audio",
+            voice_id="not-a-valid-id",
+        )
+
+        assert result.success is False
+        assert result.message is not None
+        assert "fish-audio" in result.message
+        # Nothing was persisted.
+        assert mock_config_repository.get_config(123).engine == "gtts"
+
+    @pytest.mark.asyncio
+    async def test_fish_audio_rejects_switch_that_keeps_another_engines_voice(self, mock_config_repository):
+        """Selecting fish-audio alone leaves a voice_id that can never speak."""
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(guild_id=123, engine="fish-audio")
+
+        assert result.success is False
+        assert mock_config_repository.get_config(123).engine == "gtts"
+
+    @pytest.mark.asyncio
+    async def test_fish_audio_validates_voice_id_against_already_stored_engine(self, mock_config_repository):
+        """Changing only voice_id is validated when the stored engine is fish-audio."""
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+        await use_case.update_config_async(
+            guild_id=123,
+            engine="fish-audio",
+            voice_id="0123456789abcdef0123456789abcdef",
+        )
+
+        result = await use_case.update_config_async(guild_id=123, voice_id="bogus")
+
+        assert result.success is False
+        assert mock_config_repository.get_config(123).voice_id == "0123456789abcdef0123456789abcdef"
+
+    @pytest.mark.asyncio
+    async def test_reference_id_shape_not_enforced_for_other_engines(self, mock_config_repository):
+        """The 32-hex rule is Fish-specific and must not leak onto other engines."""
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(
+            guild_id=123,
+            engine="edge-tts",
+            voice_id="pt-BR-FranciscaNeural",
+        )
+
+        assert result.success is True
+        assert result.config is not None
+        assert result.config.voice_id == "pt-BR-FranciscaNeural"
 
 
 @pytest.mark.asyncio
@@ -402,3 +475,87 @@ class TestVoiceChannelUseCases:
         assert result.config.engine == "pyttsx3"
         assert result.config.language == "en"
         assert result.config.voice_id == "en-us"
+
+
+class TestFishAudioReferenceIdShape:
+    """Boundary cases for the shared reference_id shape check."""
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "0123456789abcdef0123456789abcdef",
+            "ED7DE8309B7F4643932DF8F4B56AC988",
+            "0123456789abcdef0123456789abcdef\n",
+            "  0123456789abcdef0123456789abcdef  ",
+        ],
+    )
+    def test_accepts_well_formed_identifiers(self, value):
+        from src.core.entities import normalize_fish_audio_reference_id
+
+        # Assert the canonical value, not truthiness: the whole point of
+        # returning it is that callers persist exactly what was validated.
+        assert normalize_fish_audio_reference_id(value) == value.strip()
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "",
+            "roa/pt-br",
+            "pt-BR-FranciscaNeural",
+            "0123456789abcdef0123456789abcde",  # 31 chars
+            "0123456789abcdef0123456789abcdef8",  # 33 chars
+            "0123456789abcdef0123456789abcdeg",  # non-hex
+            "01234567-89ab-cdef-0123-456789abcdef",  # dashed uuid form
+            "https://fish.audio/m/0123456789abcdef0123456789abcdef",
+        ],
+    )
+    def test_rejects_malformed_identifiers(self, value):
+        from src.core.entities import normalize_fish_audio_reference_id
+
+        assert normalize_fish_audio_reference_id(value) is None
+
+
+class TestFishAudioStoresWhatItValidated:
+    """Validation stripped the value; storage must not keep the raw one.
+
+    Validating a stripped identifier and then persisting the unstripped input
+    sent the surrounding whitespace to the provider, producing the very
+    not-found failure the shape check exists to prevent.
+    """
+
+    @pytest.mark.asyncio
+    async def test_trailing_newline_is_stripped_before_persisting(self, mock_config_repository):
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(
+            guild_id=123,
+            engine="fish-audio",
+            voice_id="0123456789abcdef0123456789abcdef\n",
+        )
+
+        assert result.success is True
+        assert mock_config_repository.get_config(123).voice_id == "0123456789abcdef0123456789abcdef"
+        assert result.config is not None
+        assert result.config.voice_id == "0123456789abcdef0123456789abcdef"
+
+    @pytest.mark.asyncio
+    async def test_surrounding_whitespace_is_stripped_before_persisting(self, mock_config_repository):
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(
+            guild_id=123,
+            engine="fish-audio",
+            voice_id="  0123456789abcdef0123456789abcdef  ",
+        )
+
+        assert result.success is True
+        assert mock_config_repository.get_config(123).voice_id == "0123456789abcdef0123456789abcdef"
+
+    @pytest.mark.asyncio
+    async def test_other_engines_keep_their_voice_id_verbatim(self, mock_config_repository):
+        """The normalization is Fish-specific and must not touch other engines."""
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        await use_case.update_config_async(guild_id=123, engine="pyttsx3", voice_id="  David  ")
+
+        assert mock_config_repository.get_config(123).voice_id == "  David  "
