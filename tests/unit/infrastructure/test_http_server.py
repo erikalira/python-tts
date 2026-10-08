@@ -210,3 +210,42 @@ async def test_http_server_returns_503_when_readiness_provider_reports_not_ready
 
 
 # pyright: reportAttributeAccessIssue=false
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("asyncio_debug", [False, True])
+async def test_unhandled_handler_exception_does_not_leak_internals(asyncio_debug, monkeypatch):
+    """An exception escaping a handler must yield a bare 500.
+
+    aiohttp defaults the app's debug flag to `loop.get_debug()`, and with debug
+    on it inlines `traceback.format_exc()` into the 500 body - handing a caller
+    the internals of whatever raised. Nothing in deploy/ sets
+    PYTHONASYNCIODEBUG, but `handler_args={"debug": False}` makes that a
+    property of this code rather than an operator's accident. Parametrized over
+    both loop states so the guarantee is pinned, not inherited.
+    """
+    import asyncio
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    secret = "internal detail: /secret/path/db.sqlite row 42"
+
+    async def exploding_handler(_request):
+        raise ValueError(secret)
+
+    asyncio.get_running_loop().set_debug(asyncio_debug)
+    server = HTTPServer(
+        speak_handler=exploding_handler,
+        voice_context_handler=exploding_handler,
+        port=0,
+        host="127.0.0.1",
+    )
+
+    async with TestClient(TestServer(server._build_app())) as client:
+        response = await client.post("/speak", json={"text": "x"}, headers={"Content-Type": "application/json"})
+        body = await response.text()
+
+    assert response.status == 500
+    assert secret not in body
+    assert "db.sqlite" not in body
+    assert "Traceback" not in body

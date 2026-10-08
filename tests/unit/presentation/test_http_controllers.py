@@ -812,14 +812,11 @@ class TestConfigOverrideErrorDoesNotLeakInternals:
         request = Mock(spec=web.Request)
         request.json = AsyncMock(return_value={"text": "hi", "guild_id": 1, "engine": "gtts"})
 
-        try:
-            response = await controller.handle(request)
-        except ValueError:
-            # Propagating is acceptable: aiohttp answers 500 with no body detail.
-            return
-
-        assert "secret" not in response.text
-        assert "db.sqlite" not in response.text
+        # Propagation is the contract, not a tolerated outcome: aiohttp turns it
+        # into a 500 with no body detail, which the server-level test below
+        # verifies against a real app.
+        with pytest.raises(ValueError, match="internal detail"):
+            await controller.handle(request)
 
     async def test_authored_message_is_still_reflected(
         self,
@@ -882,3 +879,27 @@ class TestBearerTokenParsing:
         response = await controller.handle(request)
 
         assert response.status == 200
+
+
+class TestConfigOverrideErrorInvariants:
+    """What keeps subclassing ValueError safe, pinned rather than assumed."""
+
+    def test_str_equals_public_message(self):
+        """The equality is what makes the ValueError subclassing safe.
+
+        A hypothetical upstream `except ValueError` reflecting `str(exc)` gets
+        the same authored literal. If someone later writes
+        `super().__init__(f"{public}: {internal}")` while public_message stays
+        clean, the class becomes silently leaky to any bare handler - and every
+        other test here would still pass.
+        """
+        from src.presentation.http_controllers import ConfigOverrideError
+
+        exc = ConfigOverrideError("authored text only")
+
+        assert str(exc) == exc.public_message == "authored text only"
+
+    def test_is_a_valueerror(self):
+        from src.presentation.http_controllers import ConfigOverrideError
+
+        assert isinstance(ConfigOverrideError("x"), ValueError)
