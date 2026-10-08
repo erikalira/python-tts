@@ -846,8 +846,11 @@ class TestConfigOverrideErrorDoesNotLeakInternals:
 class TestBearerTokenParsing:
     """Malformed Authorization headers had no coverage.
 
-    The scheme check and the empty-value check are separate rejections, and
-    neither was exercised: only the happy path and the missing-header path were.
+    The scheme check was unexercised: only the happy path and the
+    missing-header path were. The `not value` clause is covered separately
+    below, by asserting on the parser rather than the status code - a 401 is
+    also what a wrong token produces, so the status alone cannot tell the two
+    rejections apart.
     """
 
     @pytest.mark.parametrize(
@@ -866,6 +869,27 @@ class TestBearerTokenParsing:
 
         assert response.status == 401
         use_case.execute.assert_not_awaited()
+
+    def test_scheme_without_a_value_presents_no_token(self):
+        """Asserts the parser, because a 401 cannot distinguish this case.
+
+        `partition(" ")` on "Bearer    " yields three spaces - truthy - so that
+        header never reaches `not value` and gets its 401 from the token
+        mismatch instead. Only "Bearer" with no separator exercises the clause,
+        and only an assertion on the parser can see it.
+        """
+        use_case = Mock(spec=SpeakTextUseCase)
+        controller = SpeakController(use_case, auth_token="secret")
+
+        assert controller._presented_token({"Authorization": "Bearer"}) is None
+
+    def test_whitespace_only_value_is_not_the_empty_value_case(self):
+        """Documents the gap rather than pretending it is covered."""
+        use_case = Mock(spec=SpeakTextUseCase)
+        controller = SpeakController(use_case, auth_token="secret")
+
+        # Truthy, so it is rejected downstream by the digest comparison.
+        assert controller._presented_token({"Authorization": "Bearer    "}) == "   "
 
     async def test_lowercase_bearer_scheme_is_accepted(self):
         """RFC 7235 makes the scheme case-insensitive."""

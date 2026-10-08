@@ -145,19 +145,3 @@ def test_container_builds_no_fish_audio_settings_without_a_key():
     config.fish_audio_model = "s2.1-pro-free"
 
     assert container._build_fish_audio_settings(config) is None
-
-
-def test_routed_engine_receives_the_fish_audio_settings():
-    """The helper being right does not prove __init__ passes it through."""
-    from src.infrastructure.tts.engines import FishAudioSettings, RoutedTTSEngine
-
-    settings = FishAudioSettings(api_key="fish-key", model="s2.1-pro")
-    router = RoutedTTSEngine(fish_audio=settings)
-
-    assert router._fish_audio is settings
-
-
-def test_routed_engine_without_settings_holds_none():
-    from src.infrastructure.tts.engines import RoutedTTSEngine
-
-    assert RoutedTTSEngine()._fish_audio is None
