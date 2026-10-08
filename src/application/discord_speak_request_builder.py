@@ -109,5 +109,5 @@ class DiscordSpeakRequestBuilder:
                 guild_id=guild_id,
                 member_id=member_id,
                 config_override=config_override,
-            )
+            ),
         )

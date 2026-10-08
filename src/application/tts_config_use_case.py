@@ -12,7 +12,6 @@ from src.core.interfaces import IConfigRepository
 logger = logging.getLogger(__name__)
 
 
-
 class ConfigureTTSUseCase:
     """Use case for configuring TTS settings per guild."""
 

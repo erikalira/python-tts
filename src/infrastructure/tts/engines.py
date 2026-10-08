@@ -281,9 +281,7 @@ class FishAudioEngine(ITTSEngine):
         try:
             async with (
                 aiohttp.ClientSession() as session,
-                session.post(
-                    FISH_AUDIO_TTS_URL, json=payload, headers=headers, allow_redirects=False
-                ) as response,
+                session.post(FISH_AUDIO_TTS_URL, json=payload, headers=headers, allow_redirects=False) as response,
             ):
                 if response.status != 200:
                     body = await response.text()

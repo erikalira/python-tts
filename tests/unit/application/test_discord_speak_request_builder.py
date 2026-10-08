@@ -72,9 +72,7 @@ class TestFishAudioVoiceFallThrough:
     def test_raw_reference_id_selects_fish_audio(self, mock_tts_catalog):
         builder = DiscordSpeakRequestBuilder(_config_use_case_stub(), mock_tts_catalog)
 
-        result = builder.build(
-            text="oi", guild_id=123, member_id=None, voice_key="0123456789abcdef0123456789abcdef"
-        )
+        result = builder.build(text="oi", guild_id=123, member_id=None, voice_key="0123456789abcdef0123456789abcdef")
 
         assert result.error_code is None
         assert result.request is not None
@@ -89,9 +87,7 @@ class TestFishAudioVoiceFallThrough:
         """Fish ignores language, so the stored value must not be overwritten."""
         builder = DiscordSpeakRequestBuilder(_config_use_case_stub(language="en", rate=210), mock_tts_catalog)
 
-        result = builder.build(
-            text="oi", guild_id=123, member_id=None, voice_key="0123456789abcdef0123456789abcdef"
-        )
+        result = builder.build(text="oi", guild_id=123, member_id=None, voice_key="0123456789abcdef0123456789abcdef")
 
         assert result.request is not None
         override = result.request.config_override
@@ -102,9 +98,7 @@ class TestFishAudioVoiceFallThrough:
     def test_uppercase_reference_id_is_accepted(self, mock_tts_catalog):
         builder = DiscordSpeakRequestBuilder(_config_use_case_stub(), mock_tts_catalog)
 
-        result = builder.build(
-            text="oi", guild_id=123, member_id=None, voice_key="0123456789ABCDEF0123456789ABCDEF"
-        )
+        result = builder.build(text="oi", guild_id=123, member_id=None, voice_key="0123456789ABCDEF0123456789ABCDEF")
 
         assert result.error_code is None
         assert result.request is not None

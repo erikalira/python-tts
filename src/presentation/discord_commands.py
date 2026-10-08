@@ -429,9 +429,7 @@ class DiscordCommands:
         that carries information the caller needs - a queue position, an error -
         keeps it and gains the notice underneath.
         """
-        if result.code == SPEAK_RESULT_OK or (
-            result.code == SPEAK_RESULT_QUEUED and result.starts_immediately
-        ):
+        if result.code == SPEAK_RESULT_OK or (result.code == SPEAK_RESULT_QUEUED and result.starts_immediately):
             return notice
         return f"{self._build_speak_message(result, locale)}\n\n-# {notice}"
 
