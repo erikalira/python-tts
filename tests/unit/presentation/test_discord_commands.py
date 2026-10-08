@@ -805,9 +805,7 @@ class TestDiscordCommands:
         assert config.voice_id == FISH_REFERENCE_ID
 
     @pytest.mark.asyncio
-    async def test_config_fish_leaves_the_stored_language_untouched(
-        self, commands_instance, mock_config_repository
-    ):
+    async def test_config_fish_leaves_the_stored_language_untouched(self, commands_instance, mock_config_repository):
         """Fish ignores language, so configuring it must not overwrite the value."""
         before = mock_config_repository.get_config(67890, user_id=67890).language
 
@@ -838,9 +836,7 @@ class TestDiscordCommands:
         assert mock_config_repository.get_config(67890, user_id=67890).engine != "fish-audio"
 
     @pytest.mark.asyncio
-    async def test_server_config_accepts_a_raw_fish_reference_id(
-        self, commands_instance, mock_config_repository
-    ):
+    async def test_server_config_accepts_a_raw_fish_reference_id(self, commands_instance, mock_config_repository):
         await commands_instance._handle_server_config(self._fish_interaction(), FISH_REFERENCE_ID)
 
         config = mock_config_repository.get_config(67890)
@@ -848,9 +844,7 @@ class TestDiscordCommands:
         assert config.voice_id == FISH_REFERENCE_ID
 
     @pytest.mark.asyncio
-    async def test_catalog_key_still_wins_at_the_command_surface(
-        self, commands_instance, mock_config_repository
-    ):
+    async def test_catalog_key_still_wins_at_the_command_surface(self, commands_instance, mock_config_repository):
         await commands_instance._handle_config(self._fish_interaction(), "edge-tts:pt-br-francisca")
 
         config = mock_config_repository.get_config(67890, user_id=67890)
@@ -921,9 +915,7 @@ class TestDiscordCommands:
         assert "fish audio" in content.lower()
 
     @pytest.mark.asyncio
-    async def test_speak_catalog_voice_queued_behind_others_is_unchanged(
-        self, commands_instance, mock_audio_queue
-    ):
+    async def test_speak_catalog_voice_queued_behind_others_is_unchanged(self, commands_instance, mock_audio_queue):
         """Regression: the curated path must keep its original reply exactly."""
         mock_audio_queue.processing_guilds.add(67890)
         interaction = self._fish_interaction()

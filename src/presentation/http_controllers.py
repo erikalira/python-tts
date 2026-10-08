@@ -19,6 +19,22 @@ logger = logging.getLogger(__name__)
 _ALLOW_RATE_LIMIT_RESULT = RateLimitResult(allowed=True, scope="disabled")
 
 
+class ConfigOverrideError(ValueError):
+    """A caller-supplied configuration override was rejected.
+
+    Carries its own ``public_message`` rather than relying on ``str(exc)``: the
+    handler reflects that attribute into a 400 body, so only text authored here
+    can reach a caller. Catching bare ``ValueError`` would also catch one raised
+    from the config repository and relay its internals.
+
+    Subclasses ``ValueError`` so existing callers that catch it still behave.
+    """
+
+    def __init__(self, public_message: str) -> None:
+        super().__init__(public_message)
+        self.public_message = public_message
+
+
 class SpeakController:
     """Controller for /speak endpoint."""
 
@@ -103,10 +119,10 @@ class SpeakController:
 
             try:
                 config_override = self._parse_config_override(data, guild_id, self._parse_int(member_id_value))
-            except ValueError as exc:
-                logger.warning("Rejected config override on /speak: %s", exc)
+            except ConfigOverrideError as exc:
+                logger.warning("Rejected config override on /speak: %s", exc.public_message)
                 span.set_attribute("result_code", "invalid_config_override")
-                return web.Response(text=str(exc), status=400)
+                return web.Response(text=exc.public_message, status=400)
             request_dto = BotSpeakRequestDTO(
                 text=parsed_text,
                 channel_id=self._parse_int(data.get("channel_id")),
@@ -224,11 +240,13 @@ class SpeakController:
             # Name the field, not the value: the value is caller-supplied and this
             # message reaches a response body and a log line, where a CRLF
             # would let an authorized caller forge log entries.
-            raise ValueError("Unsupported engine override: not a supported TTS engine")
+            raise ConfigOverrideError("Unsupported engine override: not a supported TTS engine")
         if resolved_engine == "fish-audio":
             normalized_voice_id = normalize_fish_audio_reference_id(resolved_voice_id)
             if normalized_voice_id is None:
-                raise ValueError("Invalid voice_id override for fish-audio: expected a 32-character hexadecimal id")
+                raise ConfigOverrideError(
+                    "Invalid voice_id override for fish-audio: expected a 32-character hexadecimal id"
+                )
             # Use the validated value, not the raw one.
             resolved_voice_id = normalized_voice_id
 

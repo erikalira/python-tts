@@ -314,9 +314,7 @@ class _FakeFishSession:
         self._calls = calls
 
     def post(self, url, json=None, headers=None, allow_redirects=True):
-        self._calls.append(
-            {"url": url, "json": json, "headers": headers, "allow_redirects": allow_redirects}
-        )
+        self._calls.append({"url": url, "json": json, "headers": headers, "allow_redirects": allow_redirects})
         if self._response.raise_on_post is not None:
             raise self._response.raise_on_post
         return self._response

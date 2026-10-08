@@ -1,5 +1,6 @@
 """Tests for HTTP controllers."""
 
+from typing import Any, cast
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -780,3 +781,66 @@ class TestRateLimitPrecedesOverrideValidation:
 
         assert response.status != 400
         assert mock_tts_engine.calls == []
+
+
+class TestConfigOverrideErrorDoesNotLeakInternals:
+    """Only text authored in this module may reach a 400 body.
+
+    Catching bare ValueError would also catch one raised inside the config
+    repository and relay its internals to an external caller - the exposure
+    CodeQL flagged on PR #86.
+    """
+
+    async def test_repository_valueerror_is_not_reflected(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        class _ExplodingRepository:
+            def get_config(self, guild_id=None, user_id=None):
+                raise ValueError("internal detail: /secret/path/db.sqlite row 42")
+
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=cast(Any, _ExplodingRepository()),
+            mock_audio_queue=mock_audio_queue,
+        )
+        controller = SpeakController(use_case, config_repository=cast(Any, _ExplodingRepository()))
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": "hi", "guild_id": 1, "engine": "gtts"})
+
+        try:
+            response = await controller.handle(request)
+        except ValueError:
+            # Propagating is acceptable: aiohttp answers 500 with no body detail.
+            return
+
+        assert "secret" not in response.text
+        assert "db.sqlite" not in response.text
+
+    async def test_authored_message_is_still_reflected(
+        self,
+        mock_tts_engine,
+        mock_channel_repository,
+        mock_config_repository,
+        mock_audio_queue,
+        build_speak_use_case,
+    ):
+        """The actionable detail Gard approved must survive the hardening."""
+        use_case = build_speak_use_case(
+            mock_tts_engine=mock_tts_engine,
+            mock_channel_repository=mock_channel_repository,
+            mock_config_repository=mock_config_repository,
+            mock_audio_queue=mock_audio_queue,
+        )
+        controller = SpeakController(use_case)
+        request = Mock(spec=web.Request)
+        request.json = AsyncMock(return_value={"text": "hi", "guild_id": 1, "engine": "fish-audio", "voice_id": "nope"})
+
+        response = await controller.handle(request)
+
+        assert response.status == 400
+        assert "32-character hexadecimal" in response.text

@@ -59,7 +59,6 @@ def normalize_fish_audio_reference_id(value: str) -> str | None:
     return candidate if _FISH_AUDIO_REFERENCE_ID_PATTERN.fullmatch(candidate) else None
 
 
-
 @dataclass(frozen=True)
 class TTSConfig:
     """TTS engine configuration.
