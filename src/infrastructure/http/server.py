@@ -64,6 +64,14 @@ class HTTPServer:
         app = web.Application(
             client_max_size=self._max_request_body_bytes,
             middlewares=[self._cors_middleware],
+            # Pin debug off. aiohttp otherwise defaults it to loop.get_debug(),
+            # and with debug on it inlines traceback.format_exc() into the 500
+            # body - so an unhandled exception would hand a caller the internals
+            # of whatever raised it. Nothing in deploy/ sets PYTHONASYNCIODEBUG,
+            # but that makes the property an operator's accident rather than a
+            # guarantee from this code. handler_args wins over the app's own
+            # _debug, and the deprecated Application(debug=...) kwarg does not.
+            handler_args={"debug": False},
         )
         app.router.add_get("/", self._home)
         app.router.add_get("/health", self._health, name="health")
