@@ -19,18 +19,34 @@ def tmp_path():
         shutil.rmtree(path, ignore_errors=True)
 
 
-_PROVIDER_CREDENTIAL_ENV_VARS = ("FISH_AUDIO", "FISH_AUDIO_MODEL")
+# Config reads these through os.environ when its own env file does not declare
+# them, and `load_dotenv(override=True)` means any test that declares one in a
+# tmp .env exports it to the process for every test that follows. So this list
+# covers two hazards with one fixture: a developer's real credential leaking in,
+# and one test's fixture value leaking into the next.
+_LEAK_PRONE_ENV_VARS = (
+    # Provider credentials: a test asserting absence would otherwise read the
+    # developer's real key, and pytest prints it in a failing diff. That
+    # happened once during the Fish Audio work.
+    "FISH_AUDIO",
+    "FISH_AUDIO_MODEL",
+    # Cross-test leakage: a container test declaring these made a later
+    # settings test, which asserts their absence, read them from the process.
+    "BOT_SPEAK_TOKEN",
+    "MAX_TEXT_LENGTH",
+    "BOT_RATE_LIMIT_MAX_REQUESTS",
+)
 
 
 @pytest.fixture(autouse=True)
-def sanitize_provider_credentials(monkeypatch):
-    """Keep a developer's real provider credentials out of every test.
+def sanitize_leak_prone_env(monkeypatch):
+    """Isolate every test from environment another test or shell may have set.
 
-    `Config` falls back to `os.environ`, so a test that asserts on a variable its
-    own tmp `.env` does not declare would read the real value - and pytest prints
-    it in the comparison diff when the assertion fails. That happened once during
-    the Fish Audio work. Autouse here makes the guarantee structural: a new test
-    for a new provider inherits it instead of having to remember a fixture.
+    Autouse makes the guarantee structural: a new test inherits it instead of
+    having to remember a fixture. `monkeypatch.delenv` restores automatically,
+    so this composes with the per-module env snapshots rather than fighting
+    them, and a test that declares the variable in its own tmp `.env` is
+    unaffected because `load_dotenv(override=True)` wins for declared keys.
     """
-    for key in _PROVIDER_CREDENTIAL_ENV_VARS:
+    for key in _LEAK_PRONE_ENV_VARS:
         monkeypatch.delenv(key, raising=False)

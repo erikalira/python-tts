@@ -127,6 +127,11 @@ class TestAudioQueueItemTiming:
         item = AudioQueueItem(request=TTSRequest(text="oi"))
         item.mark_processing()
 
+        # Without this, the test stays green even if mark_processing stops
+        # stamping started_at - at which point wait_time_seconds silently falls
+        # through to its time.time() - created_at branch and the queue status
+        # DTO reports a plausible, wrong, ever-growing wait.
+        assert item.started_at is not None
         assert item.duration_seconds == 0.0
 
     def test_duration_spans_start_to_completion(self):

@@ -132,14 +132,32 @@ class TestContainerWiring:
         assert "retain" in caplog.text.lower()
         assert "fish-key" not in caplog.text
 
-    def test_collaborators_are_wired(self, tmp_path):
+    def test_security_relevant_settings_reach_their_collaborators(self, tmp_path):
+        """The constructor can drop these silently, and nothing else notices.
+
+        All three kwargs have permissive defaults (None, None, 500), so cutting
+        one raises no TypeError. Dropping `auth_token` leaves HTTP /speak
+        unauthenticated in production; mutation testing confirmed the whole
+        suite stayed green through exactly that cut. Six `is not None` checks
+        proved only that the attribute names exist, which no realistic bug
+        produces on its own.
+        """
         from src.bot_runtime.settings import Config
 
-        container = Container(Config(env_file=_write_env(tmp_path)))
+        config = Config(
+            env_file=_write_env(
+                tmp_path,
+                [
+                    "BOT_SPEAK_TOKEN=http-secret",
+                    "MAX_TEXT_LENGTH=321",
+                    "BOT_RATE_LIMIT_MAX_REQUESTS=5",
+                ],
+            )
+        )
+        container = Container(config)
 
-        assert container.config_repository is not None
-        assert container.tts_queue_orchestrator is not None
-        assert container.queue_worker is not None
-        assert container.speak_controller is not None
-        assert container.readiness_probe is not None
-        assert container.discord_client is not None
+        assert container.speak_controller._auth_token == "http-secret"
+        assert container.speak_controller._rate_limiter is container.rate_limiter
+        assert container.speak_controller._rate_limit_max_requests == 5
+        assert container.speak_controller._max_text_length == 321
+        assert container.speak_use_case._max_text_length == 321
