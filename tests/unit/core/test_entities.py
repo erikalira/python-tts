@@ -109,3 +109,40 @@ class TestAudioFile:
 
         assert "AudioFile" in repr_str
         assert "/tmp/test.mp3" in repr_str
+
+
+class TestAudioQueueItemTiming:
+    """The timing properties the queue reports on, previously untested."""
+
+    def test_duration_is_zero_before_completion(self):
+        from src.core.entities import AudioQueueItem, TTSRequest
+
+        item = AudioQueueItem(request=TTSRequest(text="oi"))
+
+        assert item.duration_seconds == 0.0
+
+    def test_duration_is_zero_while_only_started(self):
+        from src.core.entities import AudioQueueItem, TTSRequest
+
+        item = AudioQueueItem(request=TTSRequest(text="oi"))
+        item.mark_processing()
+
+        assert item.duration_seconds == 0.0
+
+    def test_duration_spans_start_to_completion(self):
+        from src.core.entities import AudioQueueItem, TTSRequest
+
+        item = AudioQueueItem(request=TTSRequest(text="oi"))
+        item.started_at = 100.0
+        item.completed_at = 102.5
+
+        assert item.duration_seconds == 2.5
+
+    def test_wait_time_measures_queue_delay_once_started(self):
+        from src.core.entities import AudioQueueItem, TTSRequest
+
+        item = AudioQueueItem(request=TTSRequest(text="oi"))
+        item.created_at = 100.0
+        item.started_at = 103.0
+
+        assert item.wait_time_seconds == 3.0

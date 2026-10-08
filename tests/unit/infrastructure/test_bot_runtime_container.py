@@ -80,3 +80,66 @@ class TestContainer:
         await Container._start_queue_worker_once(container)
 
         assert container.queue_worker.start.await_count == 2
+
+
+def _write_env(tmp_path, extra: list[str] | None = None):
+    lines = [
+        "DISCORD_TOKEN=test-token",
+        f"CONFIG_STORAGE_DIR={tmp_path / 'configs'}",
+        "CONFIG_STORAGE_BACKEND=json",
+        "TTS_QUEUE_BACKEND=inmemory",
+        *(extra or []),
+    ]
+    env_file = tmp_path / ".env"
+    env_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return env_file
+
+
+class TestContainerWiring:
+    """Build a real Container and assert what __init__ actually hands over.
+
+    The per-helper tests prove each builder in isolation; only constructing the
+    container proves __init__ passes their results to the collaborators that
+    need them. A dropped keyword there leaves every helper test green.
+    """
+
+    def test_fish_audio_settings_reach_the_routed_engine(self, tmp_path):
+        from src.bot_runtime.settings import Config
+        from src.infrastructure.tts.engines import FishAudioSettings
+
+        config = Config(env_file=_write_env(tmp_path, ["FISH_AUDIO=fish-key", "FISH_AUDIO_MODEL=s2.1-pro"]))
+        container = Container(config)
+
+        assert container.tts_engine._fish_audio == FishAudioSettings(api_key="fish-key", model="s2.1-pro")
+
+    def test_no_fish_settings_when_no_key_is_configured(self, tmp_path):
+        from src.bot_runtime.settings import Config
+
+        container = Container(Config(env_file=_write_env(tmp_path)))
+
+        assert container.tts_engine._fish_audio is None
+
+    def test_container_warns_about_third_party_retention(self, tmp_path, caplog):
+        """An operator must not be able to enable this engine silently."""
+        import logging
+
+        from src.bot_runtime.settings import Config
+
+        config = Config(env_file=_write_env(tmp_path, ["FISH_AUDIO=fish-key"]))
+        with caplog.at_level(logging.WARNING):
+            Container(config)
+
+        assert "retain" in caplog.text.lower()
+        assert "fish-key" not in caplog.text
+
+    def test_collaborators_are_wired(self, tmp_path):
+        from src.bot_runtime.settings import Config
+
+        container = Container(Config(env_file=_write_env(tmp_path)))
+
+        assert container.config_repository is not None
+        assert container.tts_queue_orchestrator is not None
+        assert container.queue_worker is not None
+        assert container.speak_controller is not None
+        assert container.readiness_probe is not None
+        assert container.discord_client is not None
