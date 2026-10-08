@@ -844,3 +844,41 @@ class TestConfigOverrideErrorDoesNotLeakInternals:
 
         assert response.status == 400
         assert "32-character hexadecimal" in response.text
+
+
+class TestBearerTokenParsing:
+    """Malformed Authorization headers had no coverage.
+
+    The scheme check and the empty-value check are separate rejections, and
+    neither was exercised: only the happy path and the missing-header path were.
+    """
+
+    @pytest.mark.parametrize(
+        "header",
+        ["Basic secret", "Bearer", "Bearer    ", "Token secret", "secret"],
+    )
+    async def test_malformed_authorization_header_is_rejected(self, header):
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
+        controller = SpeakController(use_case, auth_token="secret")
+        request = Mock(spec=web.Request)
+        request.headers = {"Authorization": header}
+        request.json = AsyncMock(return_value={"text": "Hello", "guild_id": 789012})
+
+        response = await controller.handle(request)
+
+        assert response.status == 401
+        use_case.execute.assert_not_awaited()
+
+    async def test_lowercase_bearer_scheme_is_accepted(self):
+        """RFC 7235 makes the scheme case-insensitive."""
+        use_case = Mock(spec=SpeakTextUseCase)
+        use_case.execute = AsyncMock(return_value=SpeakTextResult(success=True, code="queued", queued=True, position=0))
+        controller = SpeakController(use_case, auth_token="secret")
+        request = Mock(spec=web.Request)
+        request.headers = {"Authorization": "bearer secret"}
+        request.json = AsyncMock(return_value={"text": "Hello", "guild_id": 789012})
+
+        response = await controller.handle(request)
+
+        assert response.status == 200

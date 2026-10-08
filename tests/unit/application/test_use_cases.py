@@ -559,3 +559,58 @@ class TestFishAudioStoresWhatItValidated:
         await use_case.update_config_async(guild_id=123, engine="pyttsx3", voice_id="  David  ")
 
         assert mock_config_repository.get_config(123).voice_id == "  David  "
+
+
+class TestConfigureTTSUseCaseRejectionPaths:
+    """Validation and persistence failures that had no test."""
+
+    @pytest.mark.asyncio
+    async def test_rate_below_range_is_rejected(self, mock_config_repository):
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(guild_id=123, rate=49)
+
+        assert result.success is False
+        assert result.message is not None
+        assert "between 50 and 300" in result.message
+        assert mock_config_repository.get_config(123).rate == 180
+
+    @pytest.mark.asyncio
+    async def test_rate_above_range_is_rejected(self, mock_config_repository):
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        result = await use_case.update_config_async(guild_id=123, rate=301)
+
+        assert result.success is False
+        assert mock_config_repository.get_config(123).rate == 180
+
+    @pytest.mark.asyncio
+    async def test_failed_persistence_is_reported_not_swallowed(self, mock_config_repository):
+        """A storage layer that refuses the write must not look like success."""
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        async def _refuse(*_args, **_kwargs):
+            return False
+
+        mock_config_repository.save_config_async = _refuse
+
+        result = await use_case.update_config_async(guild_id=123, engine="gtts")
+
+        assert result.success is False
+        assert result.message is not None
+        assert "Failed to save" in result.message
+
+    @pytest.mark.asyncio
+    async def test_reset_reports_a_failed_delete(self, mock_config_repository):
+        use_case = ConfigureTTSUseCase(config_repository=mock_config_repository)
+
+        async def _refuse(*_args, **_kwargs):
+            return False
+
+        mock_config_repository.delete_config_async = _refuse
+
+        result = await use_case.reset_config_async(guild_id=123)
+
+        assert result.success is False
+        assert result.message is not None
+        assert "Failed to reset" in result.message
